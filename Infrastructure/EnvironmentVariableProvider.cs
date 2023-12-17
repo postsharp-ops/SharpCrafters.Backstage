@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Extensibility;
+namespace Metalama.Backstage.Infrastructure;
 
 public class EnvironmentVariableProvider : IEnvironmentVariableProvider
 {

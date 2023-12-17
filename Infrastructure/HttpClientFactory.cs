@@ -2,7 +2,7 @@
 
 using System.Net.Http;
 
-namespace Metalama.Backstage.Extensibility;
+namespace Metalama.Backstage.Infrastructure;
 
 internal class HttpClientFactory : IHttpClientFactory
 {

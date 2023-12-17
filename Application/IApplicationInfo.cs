@@ -4,7 +4,7 @@ using Metalama.Backstage.Diagnostics;
 using System;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Application
 {
     /// <summary>
     /// Provides version information about an application.

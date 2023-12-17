@@ -4,7 +4,7 @@ using Metalama.Backstage.Utilities;
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Infrastructure
 {
     // We base this class on
     // https://enbravikov.wordpress.com/2018/09/15/special-folder-enum-values-on-windows-and-linux-ubuntu-16-04-in-net-core/

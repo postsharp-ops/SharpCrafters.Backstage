@@ -2,9 +2,9 @@
 
 using Metalama.Backstage.Extensibility;
 
-namespace Metalama.Backstage.Program;
+namespace Metalama.Backstage.Tools;
 
-public interface IWorkerProgram : IBackstageService
+public interface IBackstageToolsExtractor : IBackstageService
 {
-    void Start( string arguments );
+    void ExtractAll();
 }

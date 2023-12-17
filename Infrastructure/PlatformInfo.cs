@@ -1,11 +1,12 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using Metalama.Backstage.Diagnostics;
+using Metalama.Backstage.Extensibility;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Infrastructure
 {
     internal sealed class PlatformInfo : IPlatformInfo
     {
@@ -84,7 +85,7 @@ namespace Metalama.Backstage.Extensibility
 
             // Explicitly resolve PATH, because in the Rider process, "dotnet" alone would resolve to Rider's limited dotnet.
             // While doing so, ignore Rider's ReSharperHost paths, which contain that dotnet.
-            
+
             var path = Environment.GetEnvironmentVariable( "PATH" );
 
             if ( path != null )

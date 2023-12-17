@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using ILoggerFactory = Metalama.Backstage.Diagnostics.ILoggerFactory;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Application
 {
     /// <summary>
     /// Implementation of <see cref="IApplicationInfo" /> interface with build information

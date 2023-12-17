@@ -2,7 +2,7 @@
 
 using System.Diagnostics;
 
-namespace Metalama.Backstage.Extensibility;
+namespace Metalama.Backstage.Infrastructure;
 
 internal class ProcessExecutor : IProcessExecutor
 {

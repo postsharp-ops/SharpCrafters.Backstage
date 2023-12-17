@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Extensibility;
+namespace Metalama.Backstage.Application;
 
 /// <summary>
 /// Exposes information about the components, or plug-ins, of an application. This information

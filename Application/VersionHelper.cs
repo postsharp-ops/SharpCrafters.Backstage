@@ -2,13 +2,12 @@
 
 using System;
 
-namespace Metalama.Backstage.Extensibility;
+namespace Metalama.Backstage.Application;
 
 internal static class VersionHelper
 {
 #pragma warning disable CA1307
-    public static bool IsPrereleaseVersion( string version )
-        => version.Contains( "-" ) && !version.EndsWith( "-rc", StringComparison.Ordinal );
+    public static bool IsPrereleaseVersion( string version ) => version.Contains( "-" ) && !version.EndsWith( "-rc", StringComparison.Ordinal );
 #pragma warning restore CA1307
 
     public static bool IsDevelopmentVersion( string version )

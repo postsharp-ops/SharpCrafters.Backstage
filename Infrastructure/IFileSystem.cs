@@ -1,12 +1,13 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using JetBrains.Annotations;
+using Metalama.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Infrastructure
 {
     /// <summary>
     /// Provides access to file system.

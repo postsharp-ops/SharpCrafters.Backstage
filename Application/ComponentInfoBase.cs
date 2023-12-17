@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using System.Reflection;
 
-namespace Metalama.Backstage.Extensibility;
+namespace Metalama.Backstage.Application;
 
 public abstract class ComponentInfoBase : IComponentInfo
 {

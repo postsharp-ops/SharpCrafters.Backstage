@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Infrastructure
 {
     /// <summary>
     /// Provides current date and time using <see cref="DateTime.Now" />.

@@ -7,7 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 
-namespace Metalama.Backstage.Extensibility
+namespace Metalama.Backstage.Infrastructure
 {
     /// <summary>
     /// Provides access to file system using API in <see cref="System.IO" /> namespace.
