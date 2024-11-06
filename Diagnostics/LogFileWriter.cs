@@ -39,7 +39,7 @@ internal class LogFileWriter
 
             // The filename must be unique because several instances of the current assembly (of different versions) may be loaded in the process.
             this.LogFile = Path.Combine(
-                loggerFactory.LogDirectory!,
+                loggerFactory.LogDirectory,
                 $"Metalama-{loggerFactory.ProcessKind}{scopeWithDash}-{Guid.NewGuid()}.log" );
         }
         catch
