@@ -34,7 +34,7 @@ namespace Metalama.Backstage.Licensing
         Ultimate = 3,
 
         /// <summary>
-        /// PostSharp Framework.
+        /// PostSharp Framework (deprecated in 2025.1).
         /// </summary>
         Framework = 4,
 
@@ -76,7 +76,12 @@ namespace Metalama.Backstage.Licensing
         /// <summary>
         /// Caching Library.
         /// </summary>
-        CachingLibrary = 15
+        CachingLibrary = 15,
+
+        /// <summary>
+        /// PostSharp Professional (introduced in 2025.1).
+        /// </summary>
+        PostSharpProfessional = 20,
 
         // 255 is reserved as unknown for testing purposes
     }
