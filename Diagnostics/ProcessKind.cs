@@ -56,7 +56,7 @@ public enum ProcessKind
     DotNetTool,
 
     /// <summary>
-    /// The Visual Studio test host.
+    /// The .Net test host.
     /// </summary>
     [PublicAPI]
     TestHost,

@@ -75,6 +75,9 @@ public static class ProcessUtilities
             case "microsoft.visualstudio.code.languageserver":
                 return ProcessKind.LanguageServer;
 
+            case "testhost":
+                return ProcessKind.TestHost;
+
             case "dotnet":
                 {
                     var commandLine = Environment.CommandLine.ToLowerInvariant();
