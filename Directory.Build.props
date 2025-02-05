@@ -1,7 +1,7 @@
 <Project>
 
     <PropertyGroup>
-        <RepoDirectory>$(MSBuildThisFileDirectory)</RepoDirectory>
+        <RepoDirectory>$(MSBuildThisFileDirectory)../</RepoDirectory>
         <RepoKind>GitHub</RepoKind>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
@@ -30,9 +30,9 @@ warning IDE0028: Collection initialization can be simplified (https://learn.micr
         </AssemblyAttribute>
     </ItemGroup>
 
-    <Import Project="eng\Versions.props"/>
-    <Import Project="eng\StrongName.props"/>
-    <Import Project="eng\Packaging.props"/>
+    <Import Project="..\eng\Versions.props"/>
+    <Import Project="..\eng\StrongName.props"/>
+    <Import Project="..\eng\Packaging.props"/>
 
     <Import Sdk="PostSharp.Engineering.Sdk" Project="BuildOptions.props"/>
     <Import Sdk="PostSharp.Engineering.Sdk" Project="SourceLink.props"/>
