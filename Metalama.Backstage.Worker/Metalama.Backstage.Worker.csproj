@@ -81,7 +81,7 @@
             <ZipInputFiles Include="$(OutputPath)Packed\**\*" />
         </ItemGroup>
 
-        <CreateDeterministicZip SourceDirectory="$(OutputPath)Packed" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(MetalamaBackstageBuildDate)" />
+        <CreateDeterministicZip SourceDirectory="$(OutputPath)Packed" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(MetalamaBuildDate)" />
         <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High" />
     </Target>
     
