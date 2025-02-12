@@ -77,6 +77,7 @@ namespace Metalama.Backstage.Licensing.Licenses
 
         /// <summary>
         /// Commercial license (Enterprise edition).
+        /// Deprecated in 6.6.
         /// </summary>
         [Obsolete( "No longer issued." )]
         Enterprise = 15,
@@ -107,7 +108,12 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <summary>
         /// Usable with a preview build.
         /// </summary>
-        Preview
+        Preview = 20,
+
+        /// <summary>
+        /// Community license (introduced in 2025.1).
+        /// </summary>
+        Community = 21,
 
         // 255 is reserved as unknown for testing purposes
     }
