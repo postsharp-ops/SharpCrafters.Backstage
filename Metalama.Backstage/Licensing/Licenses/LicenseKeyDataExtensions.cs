@@ -37,7 +37,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 LicensedProduct.PostSharp30 => licenseKeyData.LicenseType == LicenseType.Professional ? LicensedProduct.Framework : LicensedProduct.Ultimate,
                 LicensedProduct.MetalamaFree => LicensedProduct.None,
                 LicensedProduct.MetalamaStarter => LicensedProduct.MetalamaProfessional,
-                LicensedProduct.MetalamaUltimate => LicensedProduct.MetalamaEnterprise,
+                LicensedProduct.MetalamaUltimate => LicensedProduct.MetalamaProfessional,
                 _ => licenseKeyData.Product
             };
 #pragma warning restore CS0618
@@ -51,10 +51,9 @@ namespace Metalama.Backstage.Licensing.Licenses
                 LicensedProduct.ModelLibrary => "PostSharp MVVM",
                 LicensedProduct.ThreadingLibrary => "PostSharp Threading",
                 LicensedProduct.CachingLibrary => "PostSharp Caching",
-                LicensedProduct.MetalamaEnterprise => "Metalama Enterprise",
                 LicensedProduct.MetalamaProfessional => "Metalama Professional",
                 LicensedProduct.MetalamaCommunity => "Metalama Community",
-                LicensedProduct.None => "Metalama Core",
+                LicensedProduct.None => "Metalama Open Source",
                 _ => string.Format( CultureInfo.InvariantCulture, "Unknown Product ({0})", licenseKeyData.Product )
             };
 

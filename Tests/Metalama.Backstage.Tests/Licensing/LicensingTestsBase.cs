@@ -12,6 +12,7 @@ namespace Metalama.Backstage.Tests.Licensing
     public abstract class LicensingTestsBase : TestsBase
     {
         private LicenseFactory _licenseFactory = null!;
+        private UnsignedLicenseFactory _unsignedLicenseFactory = null!;
 
         private protected LicenseFactory LicenseFactory
         {
@@ -20,6 +21,16 @@ namespace Metalama.Backstage.Tests.Licensing
                 this.EnsureServicesInitialized();
 
                 return this._licenseFactory;
+            }
+        }
+
+        private protected UnsignedLicenseFactory UnsignedLicenseFactory
+        {
+            get
+            {
+                this.EnsureServicesInitialized();
+
+                return this._unsignedLicenseFactory;
             }
         }
 
@@ -38,6 +49,7 @@ namespace Metalama.Backstage.Tests.Licensing
             base.OnAfterServicesCreated( services );
 
             this._licenseFactory = new LicenseFactory( services.ServiceProvider );
+            this._unsignedLicenseFactory = new UnsignedLicenseFactory( services.ServiceProvider );
             this.UserDeviceDetection.IsInteractiveDevice = true;
         }
 

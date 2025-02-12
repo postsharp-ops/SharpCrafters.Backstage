@@ -6,16 +6,16 @@ namespace Metalama.Backstage.Pages.Shared;
 
 public static class GlobalState
 {
-    public static LicenseKind LicenseKind { get; set; }
+    public static SelectedAction SelectedAction { get; set; }
 
     public static string? LicenseKey { get; set; }
 }
 
 [PublicAPI]
-public enum LicenseKind
+public enum SelectedAction
 {    
     None,
-    Core,
+    OpenSource,
     Community,
     Trial,
     Register,

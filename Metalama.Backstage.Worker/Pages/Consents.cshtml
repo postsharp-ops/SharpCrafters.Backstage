@@ -51,7 +51,7 @@
     }
     <div class="checkbox">
         @{
-            var mandatoryTelemetry = GlobalState.LicenseKind == LicenseKind.Community;
+            var mandatoryTelemetry = GlobalState.SelectedAction == SelectedAction.Community;
         }
 
         <input type="checkbox" asp-for="EnableTelemetry" checked="@mandatoryTelemetry" disabled="@mandatoryTelemetry">

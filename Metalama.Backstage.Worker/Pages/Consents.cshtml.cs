@@ -150,7 +150,7 @@ internal class ConsentsPageModel : PageModel
                     + $"?captcha={WebUtility.UrlEncode( this.RecaptchaResponse )}"
                     + $"&version={this._applicationInfo.PackageVersion}"
                     + $"&email={WebUtility.UrlEncode( this.EmailAddress )}"
-                    + $"&registration={GlobalState.LicenseKind.ToString().ToLowerInvariant()}" );
+                    + $"&registration={GlobalState.SelectedAction.ToString().ToLowerInvariant()}" );
             }
             catch ( Exception e )
             {
@@ -161,12 +161,12 @@ internal class ConsentsPageModel : PageModel
         }
 
         // Register the license.
-        switch ( GlobalState.LicenseKind )
+        switch ( GlobalState.SelectedAction )
         {
-            case LicenseKind.Core:
-                return this.Redirect( "/DoneCore" );
+            case SelectedAction.OpenSource:
+                return this.Redirect( "/DoneOpenSource" );
 
-            case LicenseKind.Community:
+            case SelectedAction.Community:
                 {
                     if ( !this._licenseRegistrationService.TryRegisterCommunityEdition( out var errorMessage ) )
                     {
@@ -178,7 +178,7 @@ internal class ConsentsPageModel : PageModel
                     break;
                 }
 
-            case LicenseKind.Trial:
+            case SelectedAction.Trial:
                 {
                     if ( !this._licenseRegistrationService.TryRegisterTrialEdition( out var errorMessage ) )
                     {
@@ -190,7 +190,7 @@ internal class ConsentsPageModel : PageModel
                     break;
                 }
 
-            case LicenseKind.Skip:
+            case SelectedAction.Skip:
                 {
                     this._toastNotificationStatusService.Mute( ToastNotificationKinds.RequiresLicense );
 

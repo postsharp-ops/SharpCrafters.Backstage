@@ -62,7 +62,7 @@ internal class ToastNotificationDetectionService : IToastNotificationDetectionSe
                             new ToastNotification(
                                 ToastNotificationKinds.TrialExpiring,
                                 $"Your Metalama trial {this.FormatExpiration( license.ValidTo.Value )}",
-                                "Switch to Metalama [Free] or register a license key to avoid losing functionality." ) );
+                                "Register a new license key to avoid losing functionality." ) );
                     }
                     else
                     {
@@ -70,7 +70,7 @@ internal class ToastNotificationDetectionService : IToastNotificationDetectionSe
                             new ToastNotification(
                                 ToastNotificationKinds.LicenseExpiring,
                                 $"Your Metalama license {this.FormatExpiration( license.ValidTo.Value )}",
-                                "Register a new license license key to avoid losing functionality." ) );
+                                "Register a new license key to avoid losing functionality." ) );
                     }
 
                     notificationReported = true;

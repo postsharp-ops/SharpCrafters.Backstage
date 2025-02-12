@@ -22,28 +22,28 @@ public class ChooseLicenseKindPageModel : PageModel
     {
         switch ( action )
         {
-            case "UseCore":
-                GlobalState.LicenseKind = LicenseKind.Core;
+            case "UseOpenSource":
+                GlobalState.SelectedAction = SelectedAction.OpenSource;
 
-                return this.Redirect( "/DoneCore" );
+                return this.Redirect( "/DoneOpenSource" );
 
             case "UseCommunity":
-                GlobalState.LicenseKind = LicenseKind.Community;
+                GlobalState.SelectedAction = SelectedAction.Community;
 
                 return this.Redirect( "/Community" );
 
             case "StartTrial":
-                GlobalState.LicenseKind = LicenseKind.Trial;
+                GlobalState.SelectedAction = SelectedAction.Trial;
 
                 return this.Redirect( "/Consents" );
 
             case "Skip":
-                GlobalState.LicenseKind = LicenseKind.Skip;
+                GlobalState.SelectedAction = SelectedAction.Skip;
 
                 return this.Redirect( "/Consents" );
 
             case "RegisterKey":
-                GlobalState.LicenseKind = LicenseKind.Register;
+                GlobalState.SelectedAction = SelectedAction.Register;
 
                 return this.Redirect( "/LicenseKey" );
         }

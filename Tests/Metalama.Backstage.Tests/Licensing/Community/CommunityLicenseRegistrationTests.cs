@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Licensing.Essentials
+namespace Metalama.Backstage.Tests.Licensing.Community
 {
     public class CommunityLicenseRegistrationTests : LicensingTestsBase
     {

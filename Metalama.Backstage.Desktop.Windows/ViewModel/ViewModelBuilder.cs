@@ -24,8 +24,7 @@ internal static class ViewModelBuilder
                 settings.Kind,
                 "Activate Metalama",
                 """
-                Choose between Metalama Core,
-                Metalama Community, or register a license key.
+                Use Metalama Community, or register a license key.
                 """,
                 new CommandActionViewModel( "Activate", activationArguments.Setup ) );
 

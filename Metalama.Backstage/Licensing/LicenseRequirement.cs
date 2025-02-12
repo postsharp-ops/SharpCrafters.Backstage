@@ -34,27 +34,16 @@ namespace Metalama.Backstage.Licensing
             return this._name;
         }
 
-        public static readonly LicenseRequirement Core = new(
-            "Core",
-            LicensedProduct.None,
-            LicensedProduct.MetalamaCommunity,
-            LicensedProduct.MetalamaProfessional,
-            LicensedProduct.MetalamaEnterprise,
-            LicensedProduct.Framework,
-            LicensedProduct.Ultimate );
-
         public static readonly LicenseRequirement Community = new(
             "Community",
             LicensedProduct.MetalamaCommunity,
             LicensedProduct.MetalamaProfessional,
-            LicensedProduct.MetalamaEnterprise,
             LicensedProduct.Framework,
             LicensedProduct.Ultimate );
 
         public static readonly LicenseRequirement Professional = new(
             "Professional",
             LicensedProduct.MetalamaProfessional,
-            LicensedProduct.MetalamaEnterprise,
             LicensedProduct.Framework,
             LicensedProduct.Ultimate );
 
