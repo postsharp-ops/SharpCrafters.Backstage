@@ -34,33 +34,30 @@ namespace Metalama.Backstage.Licensing
             return this._name;
         }
 
-        public static readonly LicenseRequirement Free = new(
-            "Free",
-            LicensedProduct.MetalamaFree,
-            LicensedProduct.MetalamaStarter,
+        public static readonly LicenseRequirement Core = new(
+            "Core",
+            LicensedProduct.None,
+            LicensedProduct.MetalamaCommunity,
             LicensedProduct.MetalamaProfessional,
-            LicensedProduct.MetalamaUltimate,
+            LicensedProduct.MetalamaEnterprise,
             LicensedProduct.Framework,
             LicensedProduct.Ultimate );
 
-        public static readonly LicenseRequirement Starter = new(
-            "Starter",
-            LicensedProduct.MetalamaStarter,
+        public static readonly LicenseRequirement Community = new(
+            "Community",
+            LicensedProduct.MetalamaCommunity,
             LicensedProduct.MetalamaProfessional,
-            LicensedProduct.MetalamaUltimate,
+            LicensedProduct.MetalamaEnterprise,
             LicensedProduct.Framework,
             LicensedProduct.Ultimate );
 
         public static readonly LicenseRequirement Professional = new(
             "Professional",
             LicensedProduct.MetalamaProfessional,
-            LicensedProduct.MetalamaUltimate,
+            LicensedProduct.MetalamaEnterprise,
             LicensedProduct.Framework,
             LicensedProduct.Ultimate );
 
-        public static readonly LicenseRequirement Ultimate = new(
-            "Ultimate",
-            LicensedProduct.MetalamaUltimate,
-            LicensedProduct.Ultimate );
+        // There is no LicenseRequirement for Enterprise, because it has the same features as Professional.
     }
 }
