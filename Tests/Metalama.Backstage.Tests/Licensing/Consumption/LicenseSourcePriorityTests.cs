@@ -66,7 +66,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
     public void NoMessageGivenWithNoLicense()
     {
         var licenseConsumptionManager = this.CreateLicenseConsumer( false, null, null, false );
-        Assert.False( licenseConsumptionManager.Consumer.CanConsume( _testLicenseRequirement ) );
+        Assert.False( licenseConsumptionManager.Consumer.TryConsume( _testLicenseRequirement ) );
         Assert.Empty( licenseConsumptionManager.Messages );
     }
 
@@ -75,7 +75,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
     {
         // We don't pass an invalid project license, because project license disables unattended license.
         var licenseConsumptionManager = this.CreateLicenseConsumer( true, null, _invalidUserLicense, false );
-        Assert.True( licenseConsumptionManager.Consumer.CanConsume( _testLicenseRequirement ) );
+        Assert.True( licenseConsumptionManager.Consumer.TryConsume( _testLicenseRequirement ) );
         Assert.Empty( licenseConsumptionManager.Messages );
     }
 
@@ -83,7 +83,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
     public void ProjectLicenseHasPriorityOverUserLicense()
     {
         var licenseConsumptionManager = this.CreateLicenseConsumer( false, _invalidProjectLicense, _invalidUserLicense, false );
-        Assert.False( licenseConsumptionManager.Consumer.CanConsume( _testLicenseRequirement ) );
+        Assert.False( licenseConsumptionManager.Consumer.TryConsume( _testLicenseRequirement ) );
         Assert.Contains( _invalidProjectLicense, licenseConsumptionManager.Messages[0].Text, StringComparison.OrdinalIgnoreCase );
     }
 
@@ -91,7 +91,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
     public void UserLicenseHasPriorityOverPreviewLicense()
     {
         var licenseConsumptionManager = this.CreateLicenseConsumer( false, null, _invalidUserLicense, true );
-        Assert.False( licenseConsumptionManager.Consumer.CanConsume( _testLicenseRequirement ) );
+        Assert.False( licenseConsumptionManager.Consumer.TryConsume( _testLicenseRequirement ) );
         Assert.Contains( _invalidUserLicense, licenseConsumptionManager.Messages[0].Text, StringComparison.OrdinalIgnoreCase );
     }
 }

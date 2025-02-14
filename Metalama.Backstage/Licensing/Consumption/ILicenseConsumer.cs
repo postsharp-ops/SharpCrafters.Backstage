@@ -9,13 +9,9 @@ namespace Metalama.Backstage.Licensing.Consumption;
 public interface ILicenseConsumer
 {
     /// <summary>
-    /// Provides information about availability of <paramref name="requirement"/>.
+    /// Attempts to consume a license. If it succeeds, marks the license for audit.
     /// </summary>
-    /// <param name="requirement">The required license requirement.</param>
+    /// <param name="requirement">A predicate indicating whether the license key can be consumed.</param>
     /// <returns>A value indicating if the <paramref name="requirement"/> is available.</returns>
-    bool CanConsume( Predicate<LicenseConsumptionData> requirement );
-
-    bool IsTrialLicense { get; }
-
-    string? LicenseString { get; }
+    bool TryConsume( Predicate<LicenseConsumptionData> requirement );
 }

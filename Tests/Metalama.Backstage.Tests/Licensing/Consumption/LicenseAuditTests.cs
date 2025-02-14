@@ -47,7 +47,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionManagerTestsBase
     {
         var license = this.CreateLicense( licenseKey );
         var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.True( consumer.CanConsume( _ => true ) );
+        Assert.True( consumer.TryConsume( _ => true ) );
 
         return license;
     }

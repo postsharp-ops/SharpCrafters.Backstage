@@ -97,7 +97,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     }
 
     /// <inheritdoc />
-    public bool CanConsume( Predicate<LicenseConsumptionData> predicate )
+    public bool TryConsume( Predicate<LicenseConsumptionData> predicate )
     {
         if ( this._license == null )
         {

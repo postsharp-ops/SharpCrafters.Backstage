@@ -47,7 +47,7 @@ public abstract class LicenseConsumptionManagerTestsBase : LicensingTestsBase
 
     private protected static void AssertCanConsume( ILicenseConsumptionService service, Predicate<LicenseConsumptionData> license, bool expectedCanConsume )
     {
-        var actualCanConsume = service.CreateConsumer().CanConsume( license );
+        var actualCanConsume = service.CreateConsumer().TryConsume( license );
         Assert.Equal( expectedCanConsume, actualCanConsume );
     }
 }
