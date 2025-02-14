@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace Metalama.Backstage.Telemetry
 {
-    internal class UsageTelemetryReport : TelemetryReport
+    internal sealed class UsageTelemetryReport : TelemetryReport
     {
         public override string Kind => "Usage";
 

@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.Registration
 {
-    public class LicenseFileStorageTests : LicensingTestsBase
+    public sealed class LicenseFileStorageTests : LicensingTestsBase
     {
         public LicenseFileStorageTests( ITestOutputHelper logger )
             : base( logger ) { }
@@ -132,10 +132,10 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             this.SetStoredLicenseString( LicenseKeyProvider.PostSharpUltimate );
 
             var storage = this.OpenOrCreateStorage();
-            this.Add( storage, LicenseKeyProvider.MetalamaStarterPersonal );
+            this.Add( storage, LicenseKeyProvider.MetalamaProfessionalPersonal );
 
-            this.AssertStorageContains( storage, LicenseKeyProvider.MetalamaStarterPersonal );
-            this.AssertFileContains( LicenseKeyProvider.MetalamaStarterPersonal );
+            this.AssertStorageContains( storage, LicenseKeyProvider.MetalamaProfessionalPersonal );
+            this.AssertFileContains( LicenseKeyProvider.MetalamaProfessionalPersonal );
         }
     }
 }

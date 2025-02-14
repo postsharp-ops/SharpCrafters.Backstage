@@ -10,7 +10,7 @@ namespace Metalama.Backstage.Licensing.Registration
     /// <summary>
     /// Creates unsigned licenses for self-registration.
     /// </summary>
-    internal class UnsignedLicenseFactory
+    internal sealed class UnsignedLicenseFactory
     {
         private readonly IDateTimeProvider _time;
 
@@ -35,7 +35,7 @@ namespace Metalama.Backstage.Licensing.Registration
             var licenseKeyData = new LicenseKeyDataBuilder()
             {
                 LicenseGuid = Guid.NewGuid(),
-                Product = LicensedProduct.MetalamaUltimate,
+                Product = LicensedProduct.MetalamaProfessional,
                 LicenseType = LicenseType.Evaluation,
                 ValidFrom = start,
                 ValidTo = end,
@@ -52,13 +52,13 @@ namespace Metalama.Backstage.Licensing.Registration
         /// Creates an unsigned Metalama Free license.
         /// </summary>
         /// <returns>The unsigned Metalama Free license.</returns>
-        public (string LicenseKey, LicenseProperties Data) CreateFreeLicense()
+        public (string LicenseKey, LicenseProperties Data) CreateCommunityLicense()
         {
             var start = this._time.UtcNow;
 
-            var licenseKeyData = new LicenseKeyDataBuilder
+            var licenseKeyData = new LicenseKeyDataBuilder()
             {
-                LicenseGuid = Guid.NewGuid(), Product = LicensedProduct.MetalamaFree, LicenseType = LicenseType.Personal, ValidFrom = start
+                LicenseGuid = Guid.NewGuid(), Product = LicensedProduct.MetalamaCommunity, LicenseType = LicenseType.Community, ValidFrom = start
             };
 
             var licenseKey = licenseKeyData.Serialize();

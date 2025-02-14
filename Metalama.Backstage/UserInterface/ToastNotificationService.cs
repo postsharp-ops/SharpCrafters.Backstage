@@ -6,7 +6,7 @@ using System;
 
 namespace Metalama.Backstage.UserInterface;
 
-internal class ToastNotificationService : IToastNotificationService
+internal sealed class ToastNotificationService : IToastNotificationService
 {
     private readonly IToastNotificationStatusService _toastNotificationStatusService;
     private readonly IUserInterfaceService _userInterfaceService;

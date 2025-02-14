@@ -1,7 +1,6 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Audit;
 using Metalama.Backstage.Telemetry;
 using Metalama.Backstage.Testing;
@@ -16,9 +15,9 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.Consumption;
 
-public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
+public sealed class LicenseAuditTests : LicenseConsumptionManagerTestsBase
 {
-    private static readonly string _auditedLicenseKey = LicenseKeyProvider.MetalamaUltimateBusiness;
+    private static readonly string _auditedLicenseKey = LicenseKeyProvider.MetalamaProfessionalBusiness;
 
     public LicenseAuditTests( ITestOutputHelper logger ) : base( logger, isTelemetryEnabled: true ) { }
 
@@ -48,7 +47,7 @@ public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
     {
         var license = this.CreateLicense( licenseKey );
         var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.True( consumer.CanConsume( LicenseRequirement.Free ) );
+        Assert.True( consumer.TryConsume( _ => true ) );
 
         return license;
     }
@@ -64,8 +63,8 @@ public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
     }
 
     [Theory]
-    [InlineData( nameof(LicenseKeyProvider.MetalamaUltimateBusiness) )]
-    [InlineData( nameof(LicenseKeyProvider.MetalamaUltimateBusinessNotAuditable) )]
+    [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusiness) )]
+    [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusinessNotAuditable) )]
     public void LicenseIsAudited( string licenseKeyName )
     {
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
@@ -88,7 +87,7 @@ public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
             Assert.Equal( HttpMethod.Get, matomoRequest.Method );
 
             Assert.Equal(
-                "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1=MetalamaUltimate&dimension2=PerUser&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=5cf58a1a689e1e0c",
+                "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1=MetalamaProfessional&dimension2=Business&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=5cf58a1a689e1e0c",
                 matomoRequestUri );
 
             // Second time in the same day.
@@ -109,7 +108,9 @@ public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
             var thirdReports = this.GetReports();
             Assert.Single( thirdReports );
 
-            var (thirdMatomoRequest, _) = Assert.Single( this.HttpClientFactory.ProcessedRequests, r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" );
+            var (thirdMatomoRequest, _) = Assert.Single(
+                this.HttpClientFactory.ProcessedRequests,
+                r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" );
 
             var thirdMatomoRequestUri = thirdMatomoRequest.RequestUri?.ToString();
 
@@ -118,7 +119,7 @@ public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
             Assert.Equal( HttpMethod.Get, thirdMatomoRequest.Method );
 
             Assert.Equal(
-                "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1=MetalamaUltimate&dimension2=PerUser&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=624e91464771d36f",
+                "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1=MetalamaProfessional&dimension2=Business&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=624e91464771d36f",
                 thirdMatomoRequestUri );
         }
         else
@@ -130,7 +131,7 @@ public class LicenseAuditTests : LicenseConsumptionManagerTestsBase
     [Fact]
     public void LicenseAuditReportsDistinctLicenseKeyWithNoDelay()
     {
-        var licenseKeys = new List<string> { LicenseKeyProvider.MetalamaUltimateBusiness, LicenseKeyProvider.MetalamaProfessionalBusiness };
+        var licenseKeys = new List<string> { LicenseKeyProvider.MetalamaProfessionalBusiness, LicenseKeyProvider.MetalamaProfessionalPersonal };
 
         licenseKeys.ForEach( l => this.CreateAndConsumeLicense( l ) );
 

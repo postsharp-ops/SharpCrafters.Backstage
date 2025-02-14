@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class MiniDumper : IMiniDumper
+internal sealed class MiniDumper : IMiniDumper
 {
     private static int _isAppDomainInitialized;
     private static volatile WeakReference<MiniDumper>? _latestDumper;

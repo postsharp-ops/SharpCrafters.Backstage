@@ -6,12 +6,12 @@ using System.Xml;
 namespace Metalama.Backstage.Telemetry;
 
 /// <exclude />
-public class DefaultExceptionAdapter : IExceptionAdapter
+public sealed class DefaultExceptionAdapter : IExceptionAdapter
 {
-    public static DefaultExceptionAdapter Instance { get; } = new DefaultExceptionAdapter();
-        
+    public static DefaultExceptionAdapter Instance { get; } = new();
+
     private DefaultExceptionAdapter() { }
-        
+
     public string? GetTypeFullName( Exception e ) => e.GetType().FullName;
 
     public string? GetStackTrace( Exception e ) => e.StackTrace;

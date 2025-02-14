@@ -8,7 +8,7 @@ using System.Linq;
 namespace Metalama.Backstage.Telemetry;
 
 [ConfigurationFile( "telemetry.json" )]
-public record TelemetryConfiguration : ConfigurationFile
+public sealed record TelemetryConfiguration : ConfigurationFile
 {
     public ReportingAction ExceptionReportingAction { get; init; } = ReportingAction.Ask;
 

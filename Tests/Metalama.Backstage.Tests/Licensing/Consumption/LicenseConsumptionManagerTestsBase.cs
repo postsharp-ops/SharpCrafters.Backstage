@@ -45,23 +45,9 @@ public abstract class LicenseConsumptionManagerTestsBase : LicensingTestsBase
         return new LicenseConsumptionService( this.ServiceProvider, Array.Empty<ILicenseSource>() );
     }
 
-    private protected static void TestConsumption(
-        ILicenseConsumptionService service,
-        LicenseRequirementTestEnum requestedRequirement,
-        bool expectedCanConsume )
-        => TestConsumption(
-            service,
-            requestedRequirement,
-            "Foo",
-            expectedCanConsume );
-
-    private protected static void TestConsumption(
-        ILicenseConsumptionService service,
-        LicenseRequirementTestEnum requestedRequirement,
-        string requiredNamespace,
-        bool expectedCanConsume )
+    private protected static void AssertCanConsume( ILicenseConsumptionService service, Predicate<LicenseConsumptionData> license, bool expectedCanConsume )
     {
-        var actualCanConsume = service.CreateConsumer().CanConsume( LicenseRequirementHelper.GetRequirement( requestedRequirement ), requiredNamespace );
+        var actualCanConsume = service.CreateConsumer().TryConsume( license );
         Assert.Equal( expectedCanConsume, actualCanConsume );
     }
 }

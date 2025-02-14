@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class LogFileWriter
+internal sealed class LogFileWriter
 {
     private const int _inactiveStatus = 0;
     private const int _activeStatus = 1;
@@ -28,7 +28,7 @@ internal class LogFileWriter
     public string Scope { get; }
 
     public string LogFile { get; }
-    
+
     public bool IsFailed { get; private set; }
 
     public LogFileWriter( LoggerFactory loggerFactory, string scope )
@@ -71,7 +71,7 @@ internal class LogFileWriter
                     catch
                     {
                         // Don't fail if we cannot initialize the log.
-                        
+
                         this.IsFailed = true;
 
                         return;

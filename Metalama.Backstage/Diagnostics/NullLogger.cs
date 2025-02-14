@@ -5,7 +5,7 @@ using System;
 
 namespace Metalama.Backstage.Diagnostics;
 
-public class NullLogger : ILogger, ILoggerFactory
+public sealed class NullLogger : ILogger, ILoggerFactory
 {
     private NullLogger() { }
 

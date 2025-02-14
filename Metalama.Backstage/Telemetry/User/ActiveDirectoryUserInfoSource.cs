@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Metalama.Backstage.Telemetry.User;
 
-internal class ActiveDirectoryUserInfoSource : UserInfoSource
+internal sealed class ActiveDirectoryUserInfoSource : UserInfoSource
 {
     public override bool TryGetUserInfo( [NotNullWhen( true )] out UserInfo? userInfo )
     {
@@ -41,7 +41,7 @@ internal class ActiveDirectoryUserInfoSource : UserInfoSource
         {
             return false;
         }
-        
+
         static string? GetValue( ResultPropertyValueCollection property )
         {
             if ( property.Count == 1 )

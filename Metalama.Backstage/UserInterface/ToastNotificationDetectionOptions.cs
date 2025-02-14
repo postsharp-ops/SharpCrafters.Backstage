@@ -5,7 +5,7 @@ namespace Metalama.Backstage.UserInterface;
 /// <summary>
 /// Options for <see cref="IToastNotificationDetectionService"/>.
 /// </summary>
-public record ToastNotificationDetectionOptions
+public sealed record ToastNotificationDetectionOptions
 {
     /// <summary>
     /// Gets a value indicating whether the caller knows that a valid license is available.

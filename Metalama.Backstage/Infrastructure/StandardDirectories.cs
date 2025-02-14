@@ -13,7 +13,7 @@ namespace Metalama.Backstage.Infrastructure
     // but not all platforms respect this. For such platforms, we provide fallbacks.
 
     /// <inheritdoc />
-    internal class StandardDirectories : IStandardDirectories
+    internal sealed class StandardDirectories : IStandardDirectories
     {
         private readonly IServiceProvider _serviceProvider;
 

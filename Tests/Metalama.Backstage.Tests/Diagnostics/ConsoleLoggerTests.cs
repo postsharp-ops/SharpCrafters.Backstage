@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Diagnostics;
 
-public class ConsoleLoggerTests : TestsBase
+public sealed class ConsoleLoggerTests : TestsBase
 {
     public ConsoleLoggerTests( ITestOutputHelper logger ) : base( logger ) { }
 

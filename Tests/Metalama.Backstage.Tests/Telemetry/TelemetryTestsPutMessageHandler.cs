@@ -17,7 +17,7 @@ using System.Linq;
 
 namespace Metalama.Backstage.Tests.Telemetry;
 
-internal class TelemetryTestsPutMessageHandler : TestHttpMessageHandler
+internal sealed class TelemetryTestsPutMessageHandler : TestHttpMessageHandler
 {
 #if NET
     private readonly TelemetryPutHandler _telemetryPutHandler;

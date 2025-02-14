@@ -17,7 +17,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Maintenance;
 
-public class CleanUpTests : TestsBase
+public sealed class CleanUpTests : TestsBase
 {
     private readonly int _subdirectoriesPerCacheDirectory = 5;
     private readonly IStandardDirectories _standardDirectories;
@@ -125,7 +125,7 @@ public class CleanUpTests : TestsBase
             CleanUpStrategy.FileOneMonthAfterCreation => TimeSpan.FromDays( 30 ),
             _ => throw new InvalidOperationException( $"The strategy '{strategy}' is invalid for '{nameof(this.TestIndividualFilesAreDeleted)}' method." )
         };
-        
+
         this.Time.AddTime( directoryDeletionDelay );
         tempFileManager.CleanTempDirectories( true );
         Assert.False( this.FileSystem.DirectoryExists( directory ) );
@@ -202,7 +202,7 @@ public class CleanUpTests : TestsBase
                     Assert.False( this.FileSystem.DirectoryExists( cacheDirectoryPath ) );
 
                     break;
-                    
+
                 case CleanUpStrategy.Always:
                 case CleanUpStrategy.FileOneMonthAfterCreation:
                     // Assert always cleaned directories and outdated directories are empty.
@@ -371,7 +371,7 @@ public class CleanUpTests : TestsBase
         Assert.False( this.FileSystem.FileExists( oldFilePath ) );
         Assert.True( this.FileSystem.FileExists( newFilePath ) );
     }
-    
+
     [Fact]
     public void AlwaysStrategyCleansUpIndividualFilesAfter4Hours()
     {

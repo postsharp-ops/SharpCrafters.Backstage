@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Metalama.Backstage.UserInterface;
 
-internal class LinuxUserInterfaceService( IServiceProvider serviceProvider ) : BrowserBasedUserInterfaceService( serviceProvider )
+internal sealed class LinuxUserInterfaceService( IServiceProvider serviceProvider ) : BrowserBasedUserInterfaceService( serviceProvider )
 {
     private readonly IProcessExecutor _processExecutor = serviceProvider.GetRequiredBackstageService<IProcessExecutor>();
 
@@ -16,7 +16,7 @@ internal class LinuxUserInterfaceService( IServiceProvider serviceProvider ) : B
         // In some scenarios, like building from Visual Studio Code, starting a process with the URL as the file name doesn't work.
         // We try to use xdg-open to open the URL and if xdg-open is available.
         // xdg-open should be available on most Linux distributions.
-        
+
         var whichXdgOpen = this._processExecutor.Start( new ProcessStartInfo( "which xdg-open" ) { UseShellExecute = true } );
         whichXdgOpen.WaitForExit();
 

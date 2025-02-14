@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Tools.Config.Tests.Commands.Licensing
 {
-    public class RegisterTrialCommandTests : LicensingCommandsTestsBase
+    public sealed class RegisterTrialCommandTests : LicensingCommandsTestsBase
     {
         private static readonly DateTime _evaluationStart = new( 2020, 1, 1, 0, 0, 0, DateTimeKind.Utc );
 

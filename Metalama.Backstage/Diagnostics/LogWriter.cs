@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class LogWriter : ILogWriter
+internal sealed class LogWriter : ILogWriter
 {
     private readonly string _prefix;
     private readonly LoggerFactory _loggerFactory;

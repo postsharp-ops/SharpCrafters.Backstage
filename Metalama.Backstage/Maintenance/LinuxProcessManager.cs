@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 
 namespace Metalama.Backstage.Maintenance;
 
-internal class LinuxProcessManager : ProcessManagerBase
+internal sealed class LinuxProcessManager : ProcessManagerBase
 {
     public LinuxProcessManager( IServiceProvider serviceProvider ) : base( serviceProvider ) { }
 

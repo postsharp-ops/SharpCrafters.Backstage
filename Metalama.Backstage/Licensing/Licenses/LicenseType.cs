@@ -23,15 +23,21 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// </summary>
         None = 0,
 
+        [Obsolete( "Renamed to Community" )]
+        Essentials = Community,
+
         /// <summary>
-        /// Essentials license (former Community, Essentials, Express or Starter).
+        /// Metalama Community.
         /// </summary>
-        Essentials = 1,
+        Community = 1,
 
         /// <summary>
         /// Commercial PerUser license.
         /// </summary>
-        PerUser = 2,
+        [Obsolete( "Renamed to Business" )]
+        PerUser = Business,
+
+        Business = 2,
 
         /// <summary>
         /// Site license.
@@ -91,9 +97,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// </summary>
         Unmodified = 17,
 
-        /// <summary>
-        /// License limiting the number of enhanced types. This is used with Ultimate or with the aspect libraries.
-        /// </summary>
+        [Obsolete( "No longer issued or supported." )]
         PerUsage = 18,
 
         /// <summary>

@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 
 namespace Metalama.Backstage.Diagnostics;
 
-public record ProfilingConfiguration
+public sealed record ProfilingConfiguration
 {
     /// <summary>
     /// Gets or sets the kind of profiling. Possible values

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Metalama.Backstage.Tests.Extensibility;
 
-internal class ServiceCollectionBuilder : ServiceProviderBuilder
+internal sealed class ServiceCollectionBuilder : ServiceProviderBuilder
 {
     public IServiceCollection ServiceCollection { get; }
 

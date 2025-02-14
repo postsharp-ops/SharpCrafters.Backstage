@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Metalama.Backstage.Tests.Licensing.Licenses
 {
-    internal class TestLicense : ILicense, IUsable
+    internal sealed class TestLicense : ILicense, IUsable
     {
         public ILicense License { get; }
 
@@ -36,7 +36,9 @@ namespace Metalama.Backstage.Tests.Licensing.Licenses
             out LicenseProperties licenseProperties,
             out string errorMessage )
         {
-            throw new NotImplementedException();
+            this.NumberOfUses++;
+
+            return this.License.TryGetProperties( out licenseProperties!, out errorMessage! );
         }
 
         public void ResetUsage()

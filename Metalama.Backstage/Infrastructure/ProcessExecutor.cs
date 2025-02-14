@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Metalama.Backstage.Infrastructure;
 
-internal class ProcessExecutor : IProcessExecutor
+internal sealed class ProcessExecutor : IProcessExecutor
 {
     public IProcess Start( ProcessStartInfo startInfo )
     {
@@ -28,7 +28,7 @@ internal class ProcessExecutor : IProcessExecutor
     private class ProcessWrapper : IProcess
     {
         private readonly Process _process;
-        
+
         public int ExitCode => this._process.ExitCode;
 
         public ProcessWrapper( Process process )
@@ -45,7 +45,7 @@ internal class ProcessExecutor : IProcessExecutor
         public event Action? Exited;
 
         public bool HasExited => this._process.HasExited;
-        
+
         public void WaitForExit() => this._process.WaitForExit();
 
         public void Dispose()

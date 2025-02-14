@@ -15,7 +15,7 @@ namespace Metalama.Backstage.UserInterface;
 
 #pragma warning disable CA1416
 
-internal class WindowsUserInterfaceService : UserInterfaceService
+internal sealed class WindowsUserInterfaceService : UserInterfaceService
 {
     private readonly IBackstageToolsExecutor _toolsExecutor;
 
@@ -111,7 +111,7 @@ internal class WindowsUserInterfaceService : UserInterfaceService
                 using ( var progIdKey = Registry.ClassesRoot.OpenSubKey( browser + @"\shell\open\command" ) )
                 {
 #pragma warning disable CA1307
-                    
+
                     // ReSharper disable once RedundantSuppressNullableWarningExpression
                     path = progIdKey?.GetValue( null )?.ToString()!.Replace( "\"", "" );
 #pragma warning restore CA1307

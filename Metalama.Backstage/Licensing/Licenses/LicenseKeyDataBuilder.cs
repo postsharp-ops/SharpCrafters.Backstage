@@ -29,8 +29,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
             LicenseId = this.LicenseId,
             LicenseType = this.LicenseType,
             LicenseGuid = this.LicenseGuid,
-            LicenseString = this.LicenseString,
-            HasValidSignature = this.Signature != null && this.VerifySignature()
+            LicenseString = this.LicenseString
         };
 
     private object? GetFieldValue( LicenseFieldIndex index )
@@ -121,7 +120,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     /// <summary>
     /// Gets the license version.
     /// </summary>
-    public byte Version { get; private init; }
+    public byte Version { get; private init; } = LicenseKeyDataSerializer.CurrentVersion;
 
     public Guid? LicenseGuid { get; set; }
 
@@ -182,7 +181,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     public byte? SignatureKeyId
     {
         get => (byte?) this.GetFieldValue( LicenseFieldIndex.SignatureKeyId );
-        private set => this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SignatureKeyId, value );
+        internal set => this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SignatureKeyId, value );
     }
 
     /// <summary>

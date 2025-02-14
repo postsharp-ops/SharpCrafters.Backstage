@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Metalama.Backstage.Licensing.Consumption.Sources;
 
-internal class UnattendedLicenseSource : ILicenseSource, ILicense
+internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
@@ -48,7 +48,7 @@ internal class UnattendedLicenseSource : ILicenseSource, ILicense
         [MaybeNullWhen( true )] out string errorMessage )
     {
         licenseConsumptionData = new LicenseConsumptionData(
-            LicensedProduct.MetalamaUltimate,
+            LicensedProduct.MetalamaProfessional,
             LicenseType.Unattended,
             null,
             "Unattended Process License",
