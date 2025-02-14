@@ -5,7 +5,7 @@ using Metalama.Backstage.Configuration;
 namespace Metalama.Backstage.Tests.ConfigurationManager;
 
 [ConfigurationFile( "test.json" )]
-internal record TestConfigurationFile : ConfigurationFile
+internal sealed record TestConfigurationFile : ConfigurationFile
 {
     public bool IsModified { get; init; }
 }

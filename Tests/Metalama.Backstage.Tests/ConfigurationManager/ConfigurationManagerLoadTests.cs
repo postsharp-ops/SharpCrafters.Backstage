@@ -15,7 +15,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.ConfigurationManager;
 
-public class ConfigurationManagerLoadTests : TestsBase
+public sealed class ConfigurationManagerLoadTests : TestsBase
 {
     public ConfigurationManagerLoadTests( ITestOutputHelper logger ) : base( logger ) { }
 

@@ -2,4 +2,4 @@
 
 namespace Metalama.Backstage.UserInterface;
 
-public record ToastNotification( ToastNotificationKind Kind, string? Title = null, string? Text = null, string? Uri = null );
+public sealed record ToastNotification( ToastNotificationKind Kind, string? Title = null, string? Text = null, string? Uri = null );

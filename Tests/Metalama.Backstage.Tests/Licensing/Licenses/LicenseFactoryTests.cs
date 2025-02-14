@@ -1,5 +1,6 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
+using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Licenses;
 using Xunit;
 using Xunit.Abstractions;
@@ -10,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace Metalama.Backstage.Tests.Licensing.Licenses
 {
-    public class LicenseFactoryTests : LicensingTestsBase
+    public sealed class LicenseFactoryTests : LicensingTestsBase
     {
         public LicenseFactoryTests( ITestOutputHelper logger )
             : base( logger ) { }
@@ -83,10 +84,14 @@ namespace Metalama.Backstage.Tests.Licensing.Licenses
         [Fact]
         public void LicenseKeyWithInvalidSignatureFails()
         {
-            const string licenseKeyWithInvalidSignature =
-                "38-ZTDQQQQQZTQEQCRCE4UW3UFEB4URXMHRB8KQBJJSB64LX7EAQBFWVXMN427EKZ65PRVX5REXJGX4JXFNVJQZFKKUA6RYS6CY5897CWN85QQVBSREX3U5Z8WTX8KNK8XDRLB29PB2J2K5C98UYNAWU5YJ4QQWANS3P3";
-
-            Assert.True( this.LicenseFactory.TryCreate( licenseKeyWithInvalidSignature, out var license, out var errorMessage ) );
+            var licenseKey = new LicenseKeyDataBuilder
+            {
+                Product = LicensedProduct.MetalamaProfessional,
+                Signature = new byte[16],
+                SignatureKeyId = this.LicensingAuthority.KeyId
+            }.SerializeToLicenseString();
+            
+            Assert.True( this.LicenseFactory.TryCreate( licenseKey, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
 

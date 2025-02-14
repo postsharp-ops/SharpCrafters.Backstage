@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace Metalama.Backstage.UserInterface;
 
-internal class WindowsUserDeviceDetectionService : IUserDeviceDetectionService
+internal sealed class WindowsUserDeviceDetectionService : IUserDeviceDetectionService
 {
     private readonly ILogger _logger;
     private readonly ILoggerFactory _loggerFactory;

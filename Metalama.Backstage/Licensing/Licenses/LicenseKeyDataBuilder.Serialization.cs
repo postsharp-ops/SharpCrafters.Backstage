@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 
 namespace Metalama.Backstage.Licensing.Licenses
 {
@@ -132,12 +131,12 @@ namespace Metalama.Backstage.Licensing.Licenses
                     case LicensedProduct.PostSharp20:
                     case LicensedProduct.PostSharp30:
 #pragma warning restore CS0618 // Type or member is obsolete
-                    case LicensedProduct.Ultimate:
-                    case LicensedProduct.Framework:
-                    case LicensedProduct.DiagnosticsLibrary:
-                    case LicensedProduct.ModelLibrary:
-                    case LicensedProduct.ThreadingLibrary:
-                    case LicensedProduct.CachingLibrary:
+                    case LicensedProduct.PostSharpUltimate:
+                    case LicensedProduct.PostSharpFramework:
+                    case LicensedProduct.PostSharpDiagnosticsLibrary:
+                    case LicensedProduct.PostSharpModelLibrary:
+                    case LicensedProduct.PostSharpThreadingLibrary:
+                    case LicensedProduct.PostSharpCachingLibrary:
                         return true;
 
                     default:
@@ -168,7 +167,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <summary>
         /// Serializes the current license key data into a string and sets the value to the <see cref="LicenseString"/> property.
         /// </summary>
-        private void SerializeToLicenseString()
+        internal string SerializeToLicenseString()
         {
             var memoryStream = new MemoryStream();
 
@@ -190,6 +189,8 @@ namespace Metalama.Backstage.Licensing.Licenses
             }
 
             this.LicenseString = prefix + "-" + Base32.ToBase32String( memoryStream.ToArray(), 0 );
+
+            return this.LicenseString;
         }
 
         /// <summary>
@@ -207,12 +208,10 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <summary>
         /// Signs the current license.
         /// </summary>
-        /// <param name="signatureKeyId">Identifier of the private key.</param>
-        /// <param name="privateKey">XML representation of the private key.</param>
-        public string SignAndSerialize( byte signatureKeyId, string privateKey )
+        public string SignAndSerialize( LicensingAuthority authority )
         {
             this.SetMinPostSharpVersionIfRequired();
-            this.Sign( signatureKeyId, privateKey );
+            this.Sign( authority );
             this.SerializeToLicenseString();
 
             return this.LicenseString!;
@@ -221,13 +220,11 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <summary>
         /// Signs the current license.
         /// </summary>
-        /// <param name="signatureKeyId">Identifier of the private key.</param>
-        /// <param name="privateKey">XML representation of the private key.</param>
-        private void Sign( byte signatureKeyId, string privateKey )
+        private void Sign( LicensingAuthority authority )
         {
-            this.SignatureKeyId = signatureKeyId;
+            this.SignatureKeyId = authority.KeyId;
             var signedBuffer = this.GetSignedBuffer();
-            this.Signature = LicenseCryptography.Sign( signedBuffer, privateKey );
+            this.Signature = authority.Sign( signedBuffer );
         }
 
         public static bool TryDeserialize(
@@ -284,8 +281,11 @@ namespace Metalama.Backstage.Licensing.Licenses
             }
         }
 
-        /// <exclude/>
-        private bool VerifySignature()
+        /// <summary>
+        /// Verifies the signature of the current license.
+        /// </summary>
+        /// <returns><c>true</c> if the signature is correct, otherwise <c>false</c>.</returns>
+        private bool VerifySignature( LicensingAuthority authority )
         {
             if ( !this.RequiresSignature() )
             {
@@ -297,28 +297,6 @@ namespace Metalama.Backstage.Licensing.Licenses
                 return false;
             }
 
-            var publicKey = LicenseCryptography.GetPublicKey( this.SignatureKeyId.Value );
-            
-            return this.VerifySignature( publicKey );
-        }
-
-        /// <summary>
-        /// Verifies the signature of the current license.
-        /// </summary>
-        /// <param name="publicKey">Public key.</param>
-        /// <returns><c>true</c> if the signature is correct, otherwise <c>false</c>.</returns>
-        private bool VerifySignature( DSA publicKey )
-        {
-            if ( !this.RequiresSignature() )
-            {
-                return true;
-            }
-
-            if ( publicKey == null )
-            {
-                throw new ArgumentNullException( nameof(publicKey) );
-            }
-
             var signature = this.Signature;
 
             if ( signature == null )
@@ -326,7 +304,12 @@ namespace Metalama.Backstage.Licensing.Licenses
                 throw new InvalidOperationException( "Unknown signature." );
             }
 
-            return LicenseCryptography.VerifySignature( this.GetSignedBuffer(), publicKey, signature );
+            if ( this.SignatureKeyId != authority.KeyId )
+            {
+                throw new InvalidOperationException( "Licensing authority mismatch." );
+            }
+
+            return authority.VerifySignature( this.GetSignedBuffer(), signature );
         }
     }
 }

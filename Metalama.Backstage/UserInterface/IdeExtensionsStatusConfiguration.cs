@@ -8,7 +8,7 @@ namespace Metalama.Backstage.UserInterface;
 
 [ConfigurationFile( "ideExtensionsStatus.json" )]
 [Description( "IDE extension status." )]
-public record IdeExtensionsStatusConfiguration : ConfigurationFile
+public sealed record IdeExtensionsStatusConfiguration : ConfigurationFile
 {
     [JsonProperty( "vs" )]
     public bool IsVisualStudioExtensionInstalled { get; init; }

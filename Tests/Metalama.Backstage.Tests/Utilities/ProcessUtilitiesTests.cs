@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Utilities;
 
-public class ProcessUtilitiesTests : TestsBase
+public sealed class ProcessUtilitiesTests : TestsBase
 {
     public ProcessUtilitiesTests( ITestOutputHelper logger ) : base( logger ) { }
 
@@ -17,7 +17,7 @@ public class ProcessUtilitiesTests : TestsBase
     {
         var logger = this.ServiceProvider.GetLoggerFactory().GetLogger( nameof(ProcessUtilitiesTests) );
         var parentProcesses = ProcessUtilities.GetParentProcesses( logger );
-        
+
         Assert.NotEmpty( parentProcesses );
 
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local

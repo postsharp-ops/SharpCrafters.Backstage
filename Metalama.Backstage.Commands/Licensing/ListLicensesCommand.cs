@@ -18,7 +18,7 @@ namespace Metalama.Backstage.Commands.Licensing
             {
                 context.Console.WriteMessage( "The following license is currently registered:" + Environment.NewLine );
 
-                string? Format( DateTime? dateTime )
+                static string? Format( DateTime? dateTime )
                 {
                     if ( dateTime == null )
                     {

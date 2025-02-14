@@ -9,7 +9,7 @@ namespace Metalama.Backstage.Licensing.Licenses
     /// <summary>
     /// Creates an <see cref="ILicense" /> object from a license string.
     /// </summary>
-    public class LicenseFactory
+    internal sealed class LicenseFactory
     {
         private readonly IServiceProvider _services;
         private readonly ILogger _logger;

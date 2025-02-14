@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Metalama.Backstage.Tests.Extensibility;
 
-public class RegisterServiceExtensionsTests
+public sealed class RegisterServiceExtensionsTests
 {
     private static ServiceCollectionBuilder CreateServiceCollectionBuilder() => new();
 

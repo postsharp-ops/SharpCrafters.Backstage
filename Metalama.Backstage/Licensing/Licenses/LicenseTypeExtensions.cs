@@ -14,15 +14,16 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <returns>The name of the <paramref name="licenseType"/>.</returns>
         public static string GetLicenseTypeName( this LicenseType licenseType )
         {
-#pragma warning disable 618
             switch ( licenseType )
             {
-                case LicenseType.Essentials:
-                    return "Essentials License";
+                case LicenseType.Community:
+                    return "Community License";
 
+#pragma warning disable 618
                 case LicenseType.Enterprise:
-                case LicenseType.PerUser:
-                    return "Per-Developer Subscription";
+#pragma warning restore 618                    
+                case LicenseType.Business:
+                    return "Business License";
 
                 case LicenseType.Site:
                     return "Site License";
@@ -42,10 +43,10 @@ namespace Metalama.Backstage.Licensing.Licenses
                 case LicenseType.CommercialRedistribution:
                     return "Commercial Redistribution License";
 
+#pragma warning disable 618
                 case LicenseType.PerUsage:
                     return "Per-Usage Subscription";
 
-#pragma warning disable 618
                 case LicenseType.Anonymous:
                     return "Anonymous License";
 #pragma warning restore 618

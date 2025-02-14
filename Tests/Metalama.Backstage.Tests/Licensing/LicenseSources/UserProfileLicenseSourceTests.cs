@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.LicenseSources
 {
-    public class UserProfileLicenseSourceTests : LicensingTestsBase
+    public sealed class UserProfileLicenseSourceTests : LicensingTestsBase
     {
         private const string _licenseFilePath = "licensing.json";
 

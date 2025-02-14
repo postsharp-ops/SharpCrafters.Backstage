@@ -8,7 +8,7 @@ using System.IO;
 
 namespace Metalama.Backstage.Utilities;
 
-internal class ParentProcessSearchLinux : ParentProcessSearchBase<int>
+internal sealed class ParentProcessSearchLinux : ParentProcessSearchBase<int>
 {
     public ParentProcessSearchLinux( ILogger logger ) : base( logger ) { }
 
@@ -31,7 +31,7 @@ internal class ParentProcessSearchLinux : ParentProcessSearchBase<int>
             this.Logger.Error?.Log( $"Could not read '/proc/{processId}/comm' file: {e.Message}" );
             commandImageName = null;
         }
-        
+
         // Read status file of the process.
         string? processStatus;
 

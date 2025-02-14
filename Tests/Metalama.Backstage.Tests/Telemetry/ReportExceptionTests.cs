@@ -16,7 +16,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Telemetry;
 
-public class ReportExceptionTests : TestsBase
+public sealed class ReportExceptionTests : TestsBase
 {
     public ReportExceptionTests( ITestOutputHelper logger ) : base( logger, new TestApplicationInfo() { IsTelemetryEnabled = true } ) { }
 
@@ -234,7 +234,7 @@ public class ReportExceptionTests : TestsBase
 
         this.AssertFilesCount( 1 );
     }
-    
+
     [Fact]
     public void StackFramesAfterUserStackFramesAreNotIgnored()
     {
@@ -249,7 +249,7 @@ public class ReportExceptionTests : TestsBase
 
         this.AssertFilesCount( 2 );
     }
-    
+
     [Fact]
     public void MultipleUserStackTraceSectionsAreNotIgnored()
     {

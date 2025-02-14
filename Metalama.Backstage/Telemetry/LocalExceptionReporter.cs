@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class LocalExceptionReporter : IBackstageService
+internal sealed class LocalExceptionReporter : IBackstageService
 {
     private readonly IStandardDirectories _standardDirectories;
     private readonly IApplicationInfoProvider _applicationInfoProvider;
@@ -34,7 +34,7 @@ internal class LocalExceptionReporter : IBackstageService
     public void ReportException( Exception exception, string? localReportPath )
     {
         this._logger.Error?.Log( exception.ToString() );
-        
+
         // The app may crash after reporting the exception, so we flush the logs first.
         this._loggerFactory.Flush();
 

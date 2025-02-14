@@ -25,7 +25,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             [MaybeNullWhen( true )] out string errorMessage );
 
         /// <summary>
-        /// Tries to deserialize data relevant to license registration.
+        /// Tries to deserialize data relevant to license registration but does not attempt to validate all properties.
         /// </summary>
         /// <param name="licenseProperties">The license data relevant to license registration.</param>
         /// <param name="errorMessage">Description of a failure when the return value is <c>false</c>.</param>

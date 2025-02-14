@@ -15,10 +15,10 @@ using System.Linq;
 
 namespace Metalama.Backstage.Maintenance;
 
-public class TempFileManager : ITempFileManager
+public sealed class TempFileManager : ITempFileManager
 {
     private const string _cleanUpFileName = "cleanup.json";
-    
+
     private readonly CleanUpConfiguration _configuration;
     private readonly IFileSystem _fileSystem;
     private readonly ILogger _logger;
@@ -58,7 +58,11 @@ public class TempFileManager : ITempFileManager
     /// <param name="force">Ignore last clean-up time.</param>
     public void CleanTempDirectories( bool force = false, bool all = false )
     {
-        if ( !MutexHelper.WithLock( this._standardDirectories.TempDirectory, this._fileSystem.SynchronizationPrefix, TimeSpan.FromMilliseconds( 1 ), out var mutex ) )
+        if ( !MutexHelper.WithLock(
+                this._standardDirectories.TempDirectory,
+                this._fileSystem.SynchronizationPrefix,
+                TimeSpan.FromMilliseconds( 1 ),
+                out var mutex ) )
         {
             this._logger.Warning?.Log( "Clean-up is already running." );
 
@@ -97,7 +101,7 @@ public class TempFileManager : ITempFileManager
         {
             return;
         }
-        
+
         var cleanUpAction = this.GetCleanUpAction( directory, all );
 
         switch ( cleanUpAction )
@@ -106,7 +110,7 @@ public class TempFileManager : ITempFileManager
                 foreach ( var subdirectory in this._fileSystem.EnumerateDirectories( directory ) )
                 {
                     this.CleanUpDirectory( subdirectory, all );
-                    
+
                     // If the directory became empty, we delete it.
                     if ( this._fileSystem.IsDirectoryEmpty( directory ) )
                     {
@@ -115,27 +119,27 @@ public class TempFileManager : ITempFileManager
                 }
 
                 break;
-            
+
             case CleanUpAction.DeleteDirectory:
                 this.DeleteDirectory( directory, false );
 
                 break;
-            
+
             case CleanUpAction.MoveAndDeleteDirectory:
                 this.DeleteDirectory( directory, true );
 
                 break;
-            
+
             case CleanUpAction.Delete4HoursOldFilesFirst:
                 this.DeleteIndividualFiles( directory, TimeSpan.FromHours( 4 ) );
 
                 break;
-            
+
             case CleanUpAction.DeleteOneMonthOldFilesFirst:
                 this.DeleteIndividualFiles( directory, TimeSpan.FromDays( 30 ) );
 
                 break;
-            
+
             default:
                 throw new InvalidOperationException( $"Unknown clean-up action '{cleanUpAction}'." );
         }
@@ -189,20 +193,23 @@ public class TempFileManager : ITempFileManager
             switch ( cleanUpFile.Strategy )
             {
                 case CleanUpStrategy.None:
-                    this._logger.Trace?.Log( $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.None)}'. The directory will not be deleted." );
-                    
+                    this._logger.Trace?.Log(
+                        $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.None)}'. The directory will not be deleted." );
+
                     return CleanUpAction.CleanUpSubdirectories;
-                
+
                 case CleanUpStrategy.Always:
-                    this._logger.Trace?.Log( $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.Always)}'. The individual files in the directory will be cleaned up." );
-                    
+                    this._logger.Trace?.Log(
+                        $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.Always)}'. The individual files in the directory will be cleaned up." );
+
                     return CleanUpAction.Delete4HoursOldFilesFirst;
-                
+
                 case CleanUpStrategy.AlwaysNoMove:
-                    this._logger.Trace?.Log( $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.AlwaysNoMove)}'. This is a new location of a directory that has previously failed to delete. The directory will be deleted." );
-                    
+                    this._logger.Trace?.Log(
+                        $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.AlwaysNoMove)}'. This is a new location of a directory that has previously failed to delete. The directory will be deleted." );
+
                     return CleanUpAction.DeleteDirectory;
-                
+
                 case CleanUpStrategy.WhenUnused:
                     var lastWriteTime = this._fileSystem.GetFileLastWriteTime( cleanUpFilePath );
                     var lastWriteTimeUtc = lastWriteTime.ToUniversalTime();
@@ -212,25 +219,27 @@ public class TempFileManager : ITempFileManager
                     {
                         this._logger.Trace?.Log(
                             $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.WhenUnused)}' and the directory hasn't been used for more than {days} days since {lastWriteTime:s}. The directory will be deleted." );
-                        
+
                         return CleanUpAction.MoveAndDeleteDirectory;
                     }
                     else
                     {
                         this._logger.Trace?.Log(
                             $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.WhenUnused)}' and the directory hasn't been used for less than {days} days since {lastWriteTime:s}. The directory will not be deleted." );
-                        
+
                         return CleanUpAction.CleanUpSubdirectories;
                     }
-                
+
                 case CleanUpStrategy.FileOneMonthAfterCreation:
-                    this._logger.Trace?.Log( $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.FileOneMonthAfterCreation)}'. The individual files in the directory will be cleaned up." );
-                    
+                    this._logger.Trace?.Log(
+                        $"The '{directory}' directory clean-up strategy has been set to '{nameof(CleanUpStrategy.FileOneMonthAfterCreation)}'. The individual files in the directory will be cleaned up." );
+
                     return CleanUpAction.DeleteOneMonthOldFilesFirst;
 
                 default:
-                    this._logger.Warning?.Log( $"The '{directory}' directory clean-up strategy '{cleanUpFile.Strategy}' is unknown. The directory will not be deleted." );
-                    
+                    this._logger.Warning?.Log(
+                        $"The '{directory}' directory clean-up strategy '{cleanUpFile.Strategy}' is unknown. The directory will not be deleted." );
+
                     return CleanUpAction.CleanUpSubdirectories;
             }
         }
@@ -264,7 +273,7 @@ public class TempFileManager : ITempFileManager
                 }
 
                 this._logger.Trace?.Log( $"Retrying to delete '{directory}' directory." );
-                
+
                 this._fileSystem.DeleteDirectory( directory, true );
             }
         }
@@ -330,9 +339,9 @@ public class TempFileManager : ITempFileManager
     private void DeleteIndividualFiles( string directory, TimeSpan age )
     {
         var threshold = this._time.UtcNow.Add( -age );
-        
+
         var preventDirectoryDeletion = false;
-        
+
         foreach ( var file in this._fileSystem.GetFiles( directory ) )
         {
             var isCleanupFile = Path.GetFileName( file ) == _cleanUpFileName;
@@ -347,7 +356,7 @@ public class TempFileManager : ITempFileManager
 
                     continue;
                 }
-                
+
                 try
                 {
                     this._logger.Trace?.Log( $"Deleting '{file}'. It has been last written more than {age} ago at {lastWriteTime:s}." );
@@ -373,7 +382,7 @@ public class TempFileManager : ITempFileManager
                 }
             }
         }
-        
+
         if ( preventDirectoryDeletion )
         {
             this._logger.Trace?.Log( $"The directory '{directory}' will not be deleted." );
@@ -381,7 +390,7 @@ public class TempFileManager : ITempFileManager
         else
         {
             this._logger.Trace?.Log( $"No files remained in the '{directory}' directory. The directory will be deleted." );
-                
+
             this.DeleteDirectory( directory, true );
         }
     }

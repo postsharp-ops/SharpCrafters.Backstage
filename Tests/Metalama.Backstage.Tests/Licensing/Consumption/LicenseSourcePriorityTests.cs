@@ -3,7 +3,6 @@
 using Metalama.Backstage.Application;
 using Metalama.Backstage.Configuration;
 using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Consumption;
 using Metalama.Backstage.Licensing.Consumption.Sources;
 using Metalama.Backstage.Testing;
@@ -16,13 +15,13 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.Consumption;
 
-public class LicenseSourcePriorityTests : LicensingTestsBase
+public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 {
     private const string _invalidProjectLicense = "invalid-project";
 
     private const string _invalidUserLicense = "invalid-user";
 
-    private static readonly LicenseRequirement _testLicenseRequirement = LicenseRequirement.Ultimate;
+    private static readonly Predicate<LicenseConsumptionData> _testLicenseRequirement = _ => true;
 
     public LicenseSourcePriorityTests( ITestOutputHelper logger ) : base( logger ) { }
 

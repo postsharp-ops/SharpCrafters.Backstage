@@ -7,10 +7,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Metalama.Backstage.Telemetry.User;
 
-internal class ConfigurationUserInfoSource : UserInfoSource
+internal sealed class ConfigurationUserInfoSource : UserInfoSource
 {
     private readonly IConfigurationManager _configurationManager;
-    
+
     public ConfigurationUserInfoSource( IServiceProvider serviceProvider )
     {
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
@@ -19,7 +19,7 @@ internal class ConfigurationUserInfoSource : UserInfoSource
     public override bool TryGetUserInfo( [NotNullWhen( true )] out UserInfo? userInfo )
     {
         userInfo = this._configurationManager.Get<UserInfo>();
-        
+
         return userInfo.EmailAddress != null;
     }
 

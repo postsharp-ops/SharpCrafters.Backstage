@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Tools.Config.Tests.Commands.Licensing
 {
-    public class RegisterCommandTests : LicensingCommandsTestsBase
+    public sealed class RegisterCommandTests : LicensingCommandsTestsBase
     {
         public RegisterCommandTests( ITestOutputHelper logger )
             : base( logger ) { }
@@ -20,19 +20,18 @@ namespace Metalama.Tools.Config.Tests.Commands.Licensing
         [Fact]
         public async Task OneLicenseKeyListedAfterOneRegistration()
         {
-            await this.TestCommandAsync( $"license register {LicenseKeyProvider.MetalamaStarterBusiness}" );
+            await this.TestCommandAsync( $"license register {LicenseKeyProvider.MetalamaProfessionalBusiness}" );
 
-            await this.TestCommandAsync( "license list", LicenseKeyProvider.MetalamaStarterBusiness );
+            await this.TestCommandAsync( "license list", LicenseKeyProvider.MetalamaProfessionalBusiness );
         }
 
         [Fact]
         public async Task OneLicenseKeyListedAfterMultipleLicenseKeysRegistered()
         {
-            await this.TestCommandAsync( $"license register {LicenseKeyProvider.MetalamaStarterBusiness}" );
+            await this.TestCommandAsync( $"license register {LicenseKeyProvider.MetalamaProfessionalBusiness}" );
             await this.TestCommandAsync( $"license register {LicenseKeyProvider.MetalamaProfessionalPersonal}" );
-            await this.TestCommandAsync( $"license register {LicenseKeyProvider.MetalamaUltimateOpenSourceRedistribution}" );
 
-            await this.TestCommandAsync( "license list", LicenseKeyProvider.MetalamaUltimateOpenSourceRedistribution );
+            await this.TestCommandAsync( "license list", LicenseKeyProvider.MetalamaProfessionalPersonal );
         }
     }
 }

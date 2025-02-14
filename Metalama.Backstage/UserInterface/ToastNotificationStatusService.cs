@@ -13,7 +13,7 @@ namespace Metalama.Backstage.UserInterface;
 /// <summary>
 /// The production implementation of <see cref="IToastNotificationStatusService"/>. 
 /// </summary>
-public class ToastNotificationStatusService : IToastNotificationStatusService
+public sealed class ToastNotificationStatusService : IToastNotificationStatusService
 {
     private readonly IConfigurationManager _configurationManager;
     private readonly IDateTimeProvider _dateTimeProvider;

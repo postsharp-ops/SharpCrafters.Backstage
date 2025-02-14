@@ -4,7 +4,7 @@ using System;
 
 namespace Metalama.Backstage.UserInterface;
 
-public record ToastNotificationKind( string Name )
+public sealed record ToastNotificationKind( string Name )
 {
     /// <summary>
     /// Gets the period when the notification should not be displayed after it has been displayed.

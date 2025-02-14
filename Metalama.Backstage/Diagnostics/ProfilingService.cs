@@ -19,7 +19,7 @@ using System.Threading;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class ProfilingService : IProfilingService
+internal sealed class ProfilingService : IProfilingService
 {
 #if PROFILING_ENABLED
     private static int _isProfiling;
@@ -50,7 +50,7 @@ internal class ProfilingService : IProfilingService
         {
             // ReSharper disable once RedundantBlankLines
 #if PROFILING_ENABLED
-            
+
             // The implementation is intentionally in a different type to avoid the loading of JetBrains assemblies if profiling
             // is not requested.
             ProfilerContainer.StartProfiler( this._tempFileManager, this._configuration, this._logger );
@@ -67,7 +67,7 @@ internal class ProfilingService : IProfilingService
         {
             // ReSharper disable once RedundantBlankLines
 #if PROFILING_ENABLED
-            
+
             // The implementation is intentionally in a different type to avoid the loading of JetBrains assemblies if profiling
             // is not requested.
             ProfilerContainer.CreateMemorySnapshot( this._configuration, this._logger, snapshotName );

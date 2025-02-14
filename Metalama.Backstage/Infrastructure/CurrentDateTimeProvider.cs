@@ -7,7 +7,7 @@ namespace Metalama.Backstage.Infrastructure
     /// <summary>
     /// Provides current date and time using <see cref="DateTime.UtcNow" />.
     /// </summary>
-    internal class CurrentDateTimeProvider : IDateTimeProvider
+    internal sealed class CurrentDateTimeProvider : IDateTimeProvider
     {
         /// <summary>
         /// Gets current date and time using <see cref="DateTime.UtcNow" />.

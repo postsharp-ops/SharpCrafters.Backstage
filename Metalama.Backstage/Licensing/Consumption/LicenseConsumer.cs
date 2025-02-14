@@ -13,21 +13,19 @@ using System.Linq;
 
 namespace Metalama.Backstage.Licensing.Consumption;
 
-internal class LicenseConsumer : ILicenseConsumer
+internal sealed class LicenseConsumer : ILicenseConsumer
 {
     private readonly ILogger _logger;
     private readonly LicenseConsumptionData? _license;
-    private readonly NamespaceLicenseInfo? _licensedNamespace;
     private readonly BackstageBackgroundTasksService _backgroundTasksService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILicenseAuditManager? _licenseAuditManager;
 
     private DateTime _lastAuditTime = DateTime.MinValue;
 
-    private LicenseConsumer( IServiceProvider services, LicenseConsumptionData? license, NamespaceLicenseInfo? licensedNamespace )
+    private LicenseConsumer( IServiceProvider services, LicenseConsumptionData? license )
     {
         this._license = license;
-        this._licensedNamespace = licensedNamespace;
         this._logger = services.GetLoggerFactory().Licensing();
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
         this._licenseAuditManager = services.GetBackstageService<ILicenseAuditManager>();
@@ -42,8 +40,6 @@ internal class LicenseConsumer : ILicenseConsumer
         var messagesBuilder = ImmutableArray.CreateBuilder<LicensingMessage>();
 
         var logger = services.GetLoggerFactory().Licensing();
-
-        NamespaceLicenseInfo? licensedNamespace = null;
 
         LicenseConsumptionData? licenseConsumptionData = null;
 
@@ -79,16 +75,19 @@ internal class LicenseConsumer : ILicenseConsumer
                 continue;
             }
 
-            licensedNamespace = string.IsNullOrEmpty( licenseConsumptionData.LicensedNamespace )
-                ? null
-                : new NamespaceLicenseInfo( licenseConsumptionData.LicensedNamespace! );
+            if ( !string.IsNullOrEmpty( licenseConsumptionData.LicensedNamespace ) )
+            {
+                logger.Warning?.Log( $"The license '{licenseConsumptionData.LicenseString}' has a namespace constraint, which is no longer supported." );
+
+                continue;
+            }
 
             break;
         }
 
         messages = messagesBuilder.ToImmutable();
 
-        return new LicenseConsumer( services, licenseConsumptionData, licensedNamespace );
+        return new LicenseConsumer( services, licenseConsumptionData );
 
         void ReportMessage( LicensingMessage message )
         {
@@ -98,7 +97,7 @@ internal class LicenseConsumer : ILicenseConsumer
     }
 
     /// <inheritdoc />
-    public bool CanConsume( LicenseRequirement requirement, string? consumerProjectName = null )
+    public bool CanConsume( Predicate<LicenseConsumptionData> predicate )
     {
         if ( this._license == null )
         {
@@ -107,29 +106,16 @@ internal class LicenseConsumer : ILicenseConsumer
             return false;
         }
 
-        this.AuditIfNecessary();
-
-        // Redistributable licenses allow building any namespace. Their namespace field limits the redistribution only.
-        // Ie., the namespace of redistributed aspects built with the redistribution license key.
-        if ( !this.IsRedistributionLicense
-             && !string.IsNullOrEmpty( consumerProjectName )
-             && this._licensedNamespace != null
-             && !this._licensedNamespace.AllowsNamespace( consumerProjectName ) )
+        if ( predicate( this._license ) )
         {
-            this._logger.Warning?.Log(
-                $"Project '{consumerProjectName}' is not licensed. Your license is limited to project names beginning with '{this._licensedNamespace.AllowedNamespace}'." );
+            this.AuditIfNecessary();
 
+            return true;
+        }
+        else
+        {
             return false;
         }
-
-        if ( !requirement.IsFulfilledBy( this._license ) )
-        {
-            this._logger.Warning?.Log( $"License requirement '{requirement}' is not licensed." );
-
-            return false;
-        }
-
-        return true;
     }
 
     private void AuditIfNecessary()
@@ -151,8 +137,6 @@ internal class LicenseConsumer : ILicenseConsumer
     }
 
     public bool IsTrialLicense => this._license?.LicenseType == LicenseType.Evaluation;
-
-    public bool IsRedistributionLicense => this._license?.IsRedistributable == true;
 
     public string? LicenseString => this._license?.LicenseString;
 }

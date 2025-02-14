@@ -14,7 +14,7 @@ internal static class TestLicenseFactory
     public static string CreateMetalamaFreeLicense( IServiceProvider services )
     {
         var licenseFactory = new UnsignedLicenseFactory( services );
-        var licenseKey = licenseFactory.CreateFreeLicense().LicenseKey;
+        var licenseKey = licenseFactory.CreateCommunityLicense().LicenseKey;
 
         return licenseKey;
     }

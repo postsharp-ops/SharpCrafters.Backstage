@@ -6,7 +6,7 @@ namespace Metalama.Backstage.UserInterface;
 
 #pragma warning disable CA1822
 
-public class WebLinks : IBackstageService
+public sealed class WebLinks : IBackstageService
 {
     // We don't add campaign tracking query string parameters so we do not override the attribution to the original campaign.
     public string AfterSetup => GetLink( "metalama-after-activation", false );
@@ -24,7 +24,7 @@ public class WebLinks : IBackstageService
     public string InstallVsx => this.VisualStudioMarketplace;
 
     public string RenewSubscription => GetLink( "metalama-renew-subscription" );
-    
+
     public string DotNetTool => GetLink( "metalama-dotnet_tool" );
 
     public string NewsletterGetCaptchaSiteKeyApi => "https://licensing.postsharp.net/GetCaptchaSiteKey.ashx";

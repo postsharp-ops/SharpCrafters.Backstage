@@ -3,15 +3,11 @@
 // ReSharper disable StringLiteralTypo
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using Metalama.Backstage.Licensing;
+using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Utilities;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Xml.Linq;
-using System.Xml.XPath;
+using System.Collections.Concurrent;
 
 #pragma warning disable SA1203
 
@@ -20,84 +16,68 @@ namespace Metalama.Backstage.Testing;
 [PublicAPI]
 public sealed class TestLicenseKeyProvider
 {
-    private readonly Dictionary<string, string>? _testLicenseKeys;
+    private readonly ConcurrentDictionary<string, string> _cachedLicenses = new();
 
-    public TestLicenseKeyProvider( Assembly assembly )
+    public LicensingAuthority Authority { get; } = LicensingAuthority.GetTestAuthority();
+
+    private string GenerateLicenseKey( int id, Action<LicenseKeyDataBuilder> action )
     {
-        var directory = AssemblyMetadataReader.GetInstance( assembly )["EngineeringDataDirectory"];
-        
-        // This is the same file name as in PostSharp.Engineering.BuildTools.Utilities.TestLicensesCache.FetchOnPrepareCompleted method,
-        // and has to be changed when the content should change.
-        const string testLicenseKeysCacheFileName = "TestLicenseKeys1.g.props";
+        var builder = new LicenseKeyDataBuilder { LicenseId = id, SubscriptionEndDate = this.SubscriptionExpirationDate };
+        action( builder );
 
-        var dummyApplicationInfo = new TestApplicationInfo( "DummyForTestLicenseKeys", false, "1.0", DateTime.UtcNow );
-        var servicesOptions = new BackstageInitializationOptions( dummyApplicationInfo );
-        var serviceProviderBuilder = new SimpleServiceProviderBuilder();
-        serviceProviderBuilder.AddBackstageServices( servicesOptions );
-        var testLicenseKeysCacheFile = Path.Combine( directory, testLicenseKeysCacheFileName );
+        // Ensure we always return the same license key for the same input because subsequent signing of the same thing
+        // do not return the same signature.
+        var hash = HashUtilities.HashToString( builder.GetSignedBuffer() );
 
-        if ( File.Exists( testLicenseKeysCacheFile ) )
-        {
-            var root = XElement.Load( testLicenseKeysCacheFile );
-
-            this._testLicenseKeys = root.XPathSelectElements( "//PropertyGroup/*" )
-                .Select( e => (e.Name.LocalName, e.Value) )
-                .Where( p => p.LocalName.EndsWith( "LicenseKey", StringComparison.OrdinalIgnoreCase ) )
-                .ToDictionary( p => p.LocalName[..^"LicenseKey".Length], p => p.Value );
-        }
+        return this._cachedLicenses.GetOrAdd( hash, _ => builder.SignAndSerialize( this.Authority ) );
     }
 
-    public string GetLicenseKey( string keyName )
-        => this._testLicenseKeys?.TryGetValue( keyName, out var key ) ?? false
-            ? key
-            : throw new InvalidOperationException(
-                $"Uknown test license key: '{keyName}'. Test license keys may not have been restored by PostSharp.Engineering. Licensing tests are only available on PostSharp-owned devices and will always fail otherwise." );
+    private string GenerateLicenseKey( int id, LicensedProduct product, LicenseType type = LicenseType.Business )
+        => this.GenerateLicenseKey(
+            id,
+            license =>
+            {
+                license.Product = product;
+                license.LicenseType = type;
+            } );
 
-    public string PostSharpEssentials => this.GetLicenseKey( nameof(this.PostSharpEssentials) );
+    public string PostSharpEssentials => this.GenerateLicenseKey( 1, LicensedProduct.PostSharpUltimate, LicenseType.Community );
 
-    public string PostSharpFramework => this.GetLicenseKey( nameof(this.PostSharpFramework) );
+    public string PostSharpFramework => this.GenerateLicenseKey( 2, LicensedProduct.PostSharpFramework );
 
-    public string PostSharpUltimate => this.GetLicenseKey( nameof(this.PostSharpUltimate) );
-
-    public string PostSharpEnterprise => this.GetLicenseKey( nameof(this.PostSharpEnterprise) );
+    public string PostSharpUltimate => this.GenerateLicenseKey( 3, LicensedProduct.PostSharpUltimate );
 
     public const string PostSharpUltimateOpenSourceRedistributionNamespace = "Oss";
 
-    public string PostSharpUltimateOpenSourceRedistribution => this.GetLicenseKey( nameof(this.PostSharpUltimateOpenSourceRedistribution) );
+    public string MetalamaProfessionalPersonal => this.GenerateLicenseKey( 4, LicensedProduct.MetalamaProfessional, LicenseType.Personal );
 
-    public string MetalamaFreePersonal => this.GetLicenseKey( nameof(this.MetalamaFreePersonal) );
+    public string MetalamaProfessionalBusiness => this.GenerateLicenseKey( 5, LicensedProduct.MetalamaProfessional );
 
-    public string MetalamaFreeBusiness => this.GetLicenseKey( nameof(this.MetalamaFreeBusiness) );
+    public string MetalamaCommunity => this.GenerateLicenseKey( 6, LicensedProduct.MetalamaCommunity, LicenseType.Community );
 
-    public string MetalamaStarterPersonal => this.GetLicenseKey( nameof(this.MetalamaStarterPersonal) );
+    [Obsolete]
+    public string MetalamaUltimatePersonal => this.GenerateLicenseKey( 7, LicensedProduct.MetalamaUltimate, LicenseType.Personal );
 
-    public string MetalamaStarterBusiness => this.GetLicenseKey( nameof(this.MetalamaStarterBusiness) );
+    [Obsolete]
+    public string MetalamaUltimateBusiness => this.GenerateLicenseKey( 8, LicensedProduct.MetalamaUltimate );
 
-    public string MetalamaProfessionalPersonal => this.GetLicenseKey( nameof(this.MetalamaProfessionalPersonal) );
-
-    public string MetalamaProfessionalBusiness => this.GetLicenseKey( nameof(this.MetalamaProfessionalBusiness) );
-
-    public string MetalamaUltimatePersonal => this.GetLicenseKey( nameof(this.MetalamaUltimatePersonal) );
-
-    public string MetalamaUltimateBusiness => this.GetLicenseKey( nameof(this.MetalamaUltimateBusiness) );
-
-    public string MetalamaUltimateBusinessNotAuditable => this.GetLicenseKey( nameof(this.MetalamaUltimateBusinessNotAuditable) );
-
-    public const string MetalamaUltimateRedistributionNamespace = "RedistributionTests.TargetNamespace";
-
-    public string MetalamaUltimateOpenSourceRedistribution => this.GetLicenseKey( nameof(this.MetalamaUltimateOpenSourceRedistribution) );
-
-    public string MetalamaUltimateCommercialRedistribution => this.GetLicenseKey( nameof(this.MetalamaUltimateCommercialRedistribution) );
-
-    public const string MetalamaUltimateProjectBoundProjectName = "ProjectBoundTestsProject";
-
-    public string MetalamaUltimatePersonalProjectBound => this.GetLicenseKey( nameof(this.MetalamaUltimatePersonalProjectBound) );
-
-    // This is to be used in Metalama Integration tests, where the test dependency has a random assembly name.
-    public const string MetalamaUltimateOpenSourceRedistributionForIntegrationTestsNamespace = "dependency_XXXXXXXXXXXXXXXX";
-
-    public string MetalamaUltimateOpenSourceRedistributionForIntegrationTests
-        => this.GetLicenseKey( nameof(this.MetalamaUltimateOpenSourceRedistributionForIntegrationTests) );
+    public string MetalamaProfessionalBusinessNotAuditable
+        => this.GenerateLicenseKey(
+            9,
+            key =>
+            {
+                key.Product = LicensedProduct.MetalamaProfessional;
+                key.LicenseType = LicenseType.Business;
+                key.Auditable = false;
+            } );
 
     public DateTime SubscriptionExpirationDate { get; } = new( 2050, 1, 1, 0, 0, 0, DateTimeKind.Utc );
+
+    public string GetLicenseKey( string licenseKeyName )
+    {
+        var propertyInfo = this.GetType().GetProperty( licenseKeyName )
+                           ?? throw new ArgumentOutOfRangeException();
+
+        return (string) propertyInfo.GetValue( this, null )!;
+    }
 }

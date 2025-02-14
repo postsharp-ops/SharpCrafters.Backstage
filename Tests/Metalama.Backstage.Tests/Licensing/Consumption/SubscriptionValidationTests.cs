@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.Consumption
 {
-    public class SubscriptionValidationTests : LicensingTestsBase
+    public sealed class SubscriptionValidationTests : LicensingTestsBase
     {
         public SubscriptionValidationTests( ITestOutputHelper logger )
             : base( logger ) { }
@@ -32,13 +32,13 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
 
         private void Test( IApplicationInfo applicationInfo, IComponentInfo? infringingComponent = null )
         {
-            var licenseKey = LicenseKeyProvider.MetalamaUltimateBusiness;
+            var licenseKey = LicenseKeyProvider.MetalamaProfessionalBusiness;
 
             var isDeserialized = LicenseKeyData.TryDeserialize( licenseKey, out var data, out _ );
 
             Assert.True( isDeserialized );
 
-            var isValid = data!.Validate( null, this.Time, applicationInfo, out var actualErrorDescription );
+            var isValid = data!.Validate( this.Time, applicationInfo, this.LicensingAuthority, out var actualErrorDescription );
 
             if ( infringingComponent == null )
             {

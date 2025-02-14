@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Tools;
 
-public class BackstageToolsExecutorTests : TestsBase
+public sealed class BackstageToolsExecutorTests : TestsBase
 {
     public BackstageToolsExecutorTests( ITestOutputHelper logger ) : base( logger ) { }
 
@@ -19,10 +19,10 @@ public class BackstageToolsExecutorTests : TestsBase
 
         Assert.Single( this.ProcessExecutor.StartedProcesses );
     }
-    
+
     [Fact]
     public void WorkerToolExecutes() => this.Test( BackstageTool.Worker );
-    
+
     [Fact]
     public void DesktopWindowsToolExecutes() => this.Test( BackstageTool.DesktopWindows );
 }

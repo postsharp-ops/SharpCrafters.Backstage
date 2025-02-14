@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.MiniDump;
 
-public class MiniDumpTests : TestsBase
+public sealed class MiniDumpTests : TestsBase
 {
     public MiniDumpTests( ITestOutputHelper logger ) : base( logger ) { }
 

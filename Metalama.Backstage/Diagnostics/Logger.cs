@@ -2,7 +2,7 @@
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class Logger : ILogger
+internal sealed class Logger : ILogger
 {
     public LoggerFactory LoggerFactory { get; }
 

@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Telemetry;
 
-public class TelemetryUploaderTests : TestsBase
+public sealed class TelemetryUploaderTests : TestsBase
 {
     private const string _feedbackDirectory = @"C:\feedback";
 
@@ -22,7 +22,7 @@ public class TelemetryUploaderTests : TestsBase
     {
         this.FileSystem.CreateDirectory( _feedbackDirectory );
         this._uploader = this.ServiceProvider.GetRequiredBackstageService<ITelemetryUploader>();
-        
+
         this.TelemetryConfigurationService.SetStatus( true );
     }
 
@@ -79,7 +79,7 @@ public class TelemetryUploaderTests : TestsBase
     public async Task ExceptionsAreUploaded()
     {
         this.TelemetryConfigurationService.SetStatus( true );
-        
+
         var exceptionsReporter = this.ServiceProvider.GetRequiredBackstageService<IExceptionReporter>();
         exceptionsReporter.ReportException( new InvalidOperationException( "Test Exception" ) );
 
@@ -90,7 +90,7 @@ public class TelemetryUploaderTests : TestsBase
     public async Task PerformanceProblemsAreUploaded()
     {
         this.TelemetryConfigurationService.SetStatus( true );
-        
+
         var exceptionsReporter = this.ServiceProvider.GetRequiredBackstageService<IExceptionReporter>();
         exceptionsReporter.ReportException( new InvalidOperationException( "Test Performance Problem" ), ExceptionReportingKind.PerformanceProblem );
 

@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace Metalama.Backstage.Maintenance;
 
-internal class MacProcessManager : ProcessManagerBase
+internal sealed class MacProcessManager : ProcessManagerBase
 {
     public MacProcessManager( IServiceProvider serviceProvider ) : base( serviceProvider ) { }
 

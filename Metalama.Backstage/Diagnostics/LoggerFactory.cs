@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 
 namespace Metalama.Backstage.Diagnostics
 {
-    internal class LoggerFactory : ILoggerFactory
+    internal sealed class LoggerFactory : ILoggerFactory
     {
         private readonly ConcurrentDictionary<string, ILogger> _loggers = new( StringComparer.OrdinalIgnoreCase );
         private readonly ConcurrentDictionary<string, LogFileWriter> _logFileWriters = new();
@@ -20,7 +20,7 @@ namespace Metalama.Backstage.Diagnostics
             ProcessKind processKind )
         {
             this._tempFileManager = serviceProvider.GetRequiredBackstageService<ITempFileManager>();
-            
+
             this.DateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
             this.FileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
 
@@ -39,7 +39,7 @@ namespace Metalama.Backstage.Diagnostics
         internal IFileSystem FileSystem { get; }
 
         public ProcessKind ProcessKind { get; }
-        
+
         public string GetLogDirectory() => this._tempFileManager.GetTempDirectory( "Logs", CleanUpStrategy.Always );
 
         public IDisposable EnterScope( string scope ) => LoggingContext.EnterScope( scope, this.CloseScope );

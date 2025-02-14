@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Metalama.Backstage.Tests.Infrastructure;
 
-public class BackstageBackgroundTasksServiceTests
+public sealed class BackstageBackgroundTasksServiceTests
 {
     [Fact]
     public async Task LoadTest()
@@ -30,7 +30,7 @@ public class BackstageBackgroundTasksServiceTests
 
         Assert.Equal( n, completedTasks );
     }
-    
+
     [Fact]
     public async Task LoadTestWithPauses()
     {

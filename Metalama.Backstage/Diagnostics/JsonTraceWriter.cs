@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class JsonTraceWriter : ITraceWriter
+internal sealed class JsonTraceWriter : ITraceWriter
 {
     private readonly string _filePath;
     private readonly ILogger _logger;
