@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class EarlyLoggerFactory : ILoggerFactory
+internal sealed class EarlyLoggerFactory : ILoggerFactory
 {
     private readonly ConcurrentDictionary<string, Logger> _loggers = new();
 

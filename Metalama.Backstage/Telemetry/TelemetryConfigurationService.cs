@@ -9,7 +9,7 @@ using System;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class TelemetryConfigurationService : ITelemetryConfigurationService
+internal sealed class TelemetryConfigurationService : ITelemetryConfigurationService
 {
     private readonly IConfigurationManager _configurationManager;
     private readonly IServiceProvider _serviceProvider;

@@ -10,7 +10,7 @@ namespace Metalama.Backstage.Licensing.Consumption
     /// Information about a license relevant to licensed features consumption.
     /// </summary>
     [PublicAPI]
-    public class LicenseConsumptionData
+    public sealed class LicenseConsumptionData
     {
         /// <summary>
         /// Gets the namespace constraint of the license.
@@ -68,7 +68,7 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// <param name="licenseString">The string representation of the license, if exists. <c>null</c> if the license doesn't have a string representation.</param>
         /// <param name="isRedistributable">Indicates whether the license is redistributable.</param>
         /// <param name="maxAspectsCount">The number of aspects allowed to be used.</param>
-        public LicenseConsumptionData(
+        internal LicenseConsumptionData(
             LicensedProduct licensedProduct,
             LicenseType licenseType,
             string? licensedNamespace,

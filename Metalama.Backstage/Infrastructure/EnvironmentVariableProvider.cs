@@ -4,7 +4,7 @@ using System;
 
 namespace Metalama.Backstage.Infrastructure;
 
-public class EnvironmentVariableProvider : IEnvironmentVariableProvider
+public sealed class EnvironmentVariableProvider : IEnvironmentVariableProvider
 {
     public string? GetEnvironmentVariable( string variable ) => Environment.GetEnvironmentVariable( variable, EnvironmentVariableTarget.Process );
 }

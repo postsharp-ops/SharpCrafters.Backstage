@@ -7,6 +7,8 @@ namespace Metalama.Backstage.Licensing.Licenses;
 
 internal static class LicenseKeyDataSerializer
 {
+    public const int CurrentVersion = 2;
+
     public static void Write( this ILicenseKeyData data, BinaryWriter writer, bool includeAll )
     {
         writer.Write( data.Version );
@@ -65,13 +67,7 @@ internal static class LicenseKeyDataSerializer
             return false;
         }
 
-        if ( data.LicenseId == 0 && (data.LicenseType == LicenseType.Essentials ||
-                                     data.LicenseType == LicenseType.Evaluation) )
-        {
-            return false;
-        }
-
-        if ( data.Product == LicensedProduct.MetalamaFree )
+        if ( data is { LicenseType: LicenseType.Community or LicenseType.Evaluation } )
         {
             return false;
         }

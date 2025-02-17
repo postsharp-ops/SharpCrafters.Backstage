@@ -8,10 +8,10 @@ namespace Metalama.Backstage.Telemetry.User;
 
 [ConfigurationFile( "userInfo.json" )]
 [Description( "User information." )]
-public record UserInfo : ConfigurationFile
+public sealed record UserInfo : ConfigurationFile
 {
     public UserInfo() { }
-    
+
     public UserInfo( string emailAddress )
     {
         this.EmailAddress = emailAddress;

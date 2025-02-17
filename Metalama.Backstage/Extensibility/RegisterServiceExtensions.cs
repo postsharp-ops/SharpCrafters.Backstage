@@ -6,6 +6,7 @@ using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Infrastructure;
 using Metalama.Backstage.Licensing.Audit;
 using Metalama.Backstage.Licensing.Consumption;
+using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Licensing.Registration;
 using Metalama.Backstage.Maintenance;
 using Metalama.Backstage.Telemetry;
@@ -133,6 +134,9 @@ public static class RegisterServiceExtensions
         LicensingInitializationOptions options,
         IApplicationInfo applicationInfo )
     {
+        var authority = options.UseTestAuthority ? LicensingAuthority.GetTestAuthority() : LicensingAuthority.GetProductionAuthority();
+        serviceProviderBuilder.AddSingleton( authority );
+
         if ( applicationInfo.IsLicenseAuditEnabled )
         {
             serviceProviderBuilder.AddSingleton<ILicenseAuditManager>( serviceProvider => new LicenseAuditManager( serviceProvider ) );

@@ -17,7 +17,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Telemetry;
 
-public class UsageReporterTests : TestsBase
+public sealed class UsageReporterTests : TestsBase
 {
     // This field can be modified by tests before the first use of the service provider.
     private TestApplicationInfo _applicationInfo = new() { IsTelemetryEnabled = true };

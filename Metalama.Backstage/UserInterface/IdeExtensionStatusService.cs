@@ -6,7 +6,7 @@ using System;
 
 namespace Metalama.Backstage.UserInterface;
 
-internal class IdeExtensionStatusService : IIdeExtensionStatusService
+internal sealed class IdeExtensionStatusService : IIdeExtensionStatusService
 {
     private readonly IUserDeviceDetectionService _userDeviceDetectionService;
     private readonly IConfigurationManager _configurationManager;

@@ -9,7 +9,7 @@ using System.IO;
 
 namespace Metalama.Backstage.Tools;
 
-internal class BackstageToolsExecutor : IBackstageToolsExecutor
+internal sealed class BackstageToolsExecutor : IBackstageToolsExecutor
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IPlatformInfo _platformInfo;

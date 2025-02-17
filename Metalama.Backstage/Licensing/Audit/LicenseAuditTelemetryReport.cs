@@ -5,16 +5,16 @@ using Metalama.Backstage.Application;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
 using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Telemetry;
 using Metalama.Backstage.Telemetry.Metrics;
+using Metalama.Backstage.Utilities;
 using System;
 using System.Globalization;
 using System.Text;
 
 namespace Metalama.Backstage.Licensing.Audit;
 
-internal class LicenseAuditTelemetryReport : TelemetryReport
+internal sealed class LicenseAuditTelemetryReport : TelemetryReport
 {
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
     private readonly IUsageReporter _usageReporter;
@@ -28,10 +28,10 @@ internal class LicenseAuditTelemetryReport : TelemetryReport
     public DateTime BuildDate { get; }
 
 #pragma warning disable CA1822
-    public long UserHash => LicenseCryptography.ComputeStringHash64( Environment.UserName );
+    public long UserHash => HashUtilities.HashToInt64( Environment.UserName );
 #pragma warning restore CA1822
 
-    public long DeviceHash => LicenseCryptography.ComputeStringHash64( this._telemetryConfigurationService.DeviceId.ToString() );
+    public long DeviceHash => HashUtilities.HashToInt64( this._telemetryConfigurationService.DeviceId.ToString() );
 
     public DateTime Date { get; }
 
@@ -67,7 +67,7 @@ internal class LicenseAuditTelemetryReport : TelemetryReport
         void AddToMetricsAndHashCode( Metric metric )
         {
             this.Metrics.Add( metric );
-            
+
             // ReSharper disable once RedundantSuppressNullableWarningExpression
             auditHashCodeBuilder.Update( Encoding.UTF8.GetBytes( metric.ToString()! ) );
         }

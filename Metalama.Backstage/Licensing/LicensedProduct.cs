@@ -31,16 +31,17 @@ namespace Metalama.Backstage.Licensing
         /// <summary>
         /// PostSharp Ultimate.
         /// </summary>
-        Ultimate = 3,
+        PostSharpUltimate = 3,
 
         /// <summary>
         /// PostSharp Framework.
         /// </summary>
-        Framework = 4,
+        PostSharpFramework = 4,
 
         /// <summary>
         /// Metalama Ultimate.
         /// </summary>
+        [Obsolete( "This product is no longer offered." )]
         MetalamaUltimate = 5,
 
         /// <summary>
@@ -51,32 +52,36 @@ namespace Metalama.Backstage.Licensing
         /// <summary>
         /// Metalama Starter.
         /// </summary>
+        [Obsolete( "This product is no longer offered." )]
         MetalamaStarter = 7,
 
         /// <summary>
         /// Metalama Free.
         /// </summary>
+        [Obsolete( "This product is no longer offered." )]
         MetalamaFree = 8,
 
         /// <summary>
         /// Logging Library.
         /// </summary>
-        DiagnosticsLibrary = 12,
+        PostSharpDiagnosticsLibrary = 12,
 
         /// <summary>
         /// MVVM Library (former XAML/Model Library).
         /// </summary>
-        ModelLibrary = 13,
+        PostSharpModelLibrary = 13,
 
         /// <summary>
         /// Threading Library.
         /// </summary>
-        ThreadingLibrary = 14,
+        PostSharpThreadingLibrary = 14,
 
         /// <summary>
         /// Caching Library.
         /// </summary>
-        CachingLibrary = 15,
+        PostSharpCachingLibrary = 15,
+
+        MetalamaCommunity = 16
 
         // 255 is reserved as unknown for testing purposes
     }

@@ -8,17 +8,17 @@ using System.Text.RegularExpressions;
 
 namespace Metalama.Backstage.Telemetry.User;
 
-internal class VisualStudioUserInfoSource : UserInfoSource
+internal sealed class VisualStudioUserInfoSource : UserInfoSource
 {
     public override bool TryGetUserInfo( [NotNullWhen( true )] out UserInfo? userInfo )
     {
         userInfo = null;
-        
+
         if ( !RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
             return false;
         }
-        
+
         const string connectedUserSubKeyPath = @"Software\Microsoft\VSCommon\ConnectedUser";
         const string emailAddressKeyName = "EmailAddress";
 
@@ -67,7 +67,7 @@ internal class VisualStudioUserInfoSource : UserInfoSource
             if ( !string.IsNullOrWhiteSpace( emailAddress ) )
             {
                 // ReSharper disable once RedundantSuppressNullableWarningExpression
-                userInfo = new( emailAddress! );
+                userInfo = new UserInfo( emailAddress! );
 
                 return true;
             }

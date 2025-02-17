@@ -2,7 +2,7 @@
 
 namespace Metalama.Backstage.Application
 {
-    internal class ApplicationInfoProvider : IApplicationInfoProvider
+    internal sealed class ApplicationInfoProvider : IApplicationInfoProvider
     {
         public IApplicationInfo CurrentApplication { get; set; }
 

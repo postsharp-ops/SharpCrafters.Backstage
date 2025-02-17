@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 
 namespace Metalama.Backstage.Licensing.Registration;
 
-internal class LicenseRegistrationService : ILicenseRegistrationService
+internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
@@ -27,7 +27,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( this.GetType().Name );
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._userDeviceDetectionService = serviceProvider.GetRequiredBackstageService<IUserDeviceDetectionService>();
-        
+
         // We intentionally omit to unsubscribe from the event because this service has generally the same lifetime as the application
         // and is never disposed of.
         serviceProvider.GetRequiredBackstageService<IConfigurationManager>().ConfigurationFileChanged += this.OnConfigurationChanged;
@@ -66,11 +66,11 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
     /// Success is indicated when a new Metalama Free license is registered
     /// as well as when an existing Metalama Free license is registered already.
     /// </returns>
-    public bool TryRegisterFreeEdition( [NotNullWhen( false )] out string? errorMessage )
+    public bool TryRegisterCommunityEdition( [NotNullWhen( false )] out string? errorMessage )
     {
         void TraceFailure( string message )
         {
-            this._logger.Trace?.Log( $"Failed to register Metalama Free license: {message}" );
+            this._logger.Trace?.Log( $"Failed to register Metalama Community: {message}" );
         }
 
         if ( !this.RequireAttendedSession( out errorMessage ) )
@@ -78,15 +78,15 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
             return false;
         }
 
-        this._logger.Trace?.Log( "Registering Metalama Free license." );
+        this._logger.Trace?.Log( "Registering Metalama Community." );
 
         try
         {
             var userStorage = LicensingConfigurationModel.Create( this._serviceProvider );
 
-            if ( userStorage.LicenseProperties is { Product: LicensedProduct.MetalamaFree } )
+            if ( userStorage.LicenseProperties is { Product: LicensedProduct.MetalamaCommunity } )
             {
-                TraceFailure( "A Metalama Free license is registered already." );
+                TraceFailure( "A Metalama Community license is registered already." );
 
                 errorMessage = null;
 
@@ -94,7 +94,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
             }
 
             var factory = new UnsignedLicenseFactory( this._serviceProvider );
-            var (licenseKey, data) = factory.CreateFreeLicense();
+            var (licenseKey, data) = factory.CreateCommunityLicense();
 
             userStorage.SetLicense( licenseKey, data );
         }
@@ -221,7 +221,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
         var factory = new LicenseFactory( this._serviceProvider );
 
         return factory.TryCreate( licenseKey, out var license, out errorMessage )
-               && license.TryGetProperties( out var _, out errorMessage );
+               && license.TryGetProperties( out _, out errorMessage );
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

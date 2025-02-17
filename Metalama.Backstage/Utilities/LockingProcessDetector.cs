@@ -19,7 +19,7 @@ using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 namespace Metalama.Backstage.Utilities;
 
-public class LockingProcessDetector : ILockingProcessDetector
+public sealed class LockingProcessDetector : ILockingProcessDetector
 {
     public static bool IsSupported => RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) && Environment.OSVersion.Version.Major >= 6;
 

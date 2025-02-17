@@ -5,7 +5,7 @@ using System;
 
 namespace Metalama.Backstage.UserInterface;
 
-public record ToastNotificationConfiguration
+public sealed record ToastNotificationConfiguration
 {
     [JsonProperty( "snoozeUntil" )]
     public DateTime? SnoozeUntil { get; init; }

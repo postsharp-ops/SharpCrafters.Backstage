@@ -13,6 +13,6 @@ namespace Metalama.Tools.Config.Tests.Commands.Licensing
             this.UserDeviceDetection.IsInteractiveDevice = true;
         }
 
-        protected static TestLicenseKeyProvider LicenseKeyProvider { get; } = new TestLicenseKeyProvider( typeof(LicensingCommandsTestsBase).Assembly );
+        protected static TestLicenseKeyProvider LicenseKeyProvider { get; } = new();
     }
 }

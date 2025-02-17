@@ -8,7 +8,7 @@ using System;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class UsageReporter : IUsageReporter
+internal sealed class UsageReporter : IUsageReporter
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfigurationManager _configurationManager;

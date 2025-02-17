@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Metalama.Backstage.Utilities;
 
-internal class ParentProcessSearchMac : ParentProcessSearchBase<int>
+internal sealed class ParentProcessSearchMac : ParentProcessSearchBase<int>
 {
     public ParentProcessSearchMac( ILogger logger ) : base( logger ) { }
 
@@ -20,7 +20,7 @@ internal class ParentProcessSearchMac : ParentProcessSearchBase<int>
     {
         // There's no handle on Mac.
         var processId = processHandle;
-        
+
         try
         {
             var processStartInfo = new ProcessStartInfo
@@ -39,7 +39,7 @@ internal class ParentProcessSearchMac : ParentProcessSearchBase<int>
                 {
                     throw new InvalidOperationException( "Failed to start 'ps' command." );
                 }
-                
+
                 cmdProcess.WaitForExit();
                 var output = cmdProcess.StandardOutput.ReadToEnd().Trim();
 

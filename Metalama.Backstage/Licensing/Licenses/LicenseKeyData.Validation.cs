@@ -12,9 +12,9 @@ namespace Metalama.Backstage.Licensing.Licenses
     public partial record LicenseKeyData
     {
         internal bool Validate(
-            byte[]? publicKeyToken,
             IDateTimeProvider dateTimeProvider,
             IApplicationInfo applicationInfo,
+            LicensingAuthority licensingAuthority,
             [MaybeNullWhen( true )] out string errorDescription )
         {
 #pragma warning disable CS0618
@@ -27,61 +27,44 @@ namespace Metalama.Backstage.Licensing.Licenses
             }
 #pragma warning restore CS0618
 
-            if ( this.LicenseId is not 0 and < 20 )
+            if ( this.SignatureKeyId == 0 && this.LicenseId is not 0 and < 20 )
             {
-                errorDescription = "has been revoked";
+                errorDescription = "the license key has been revoked";
 
                 return false;
             }
 
-            if ( this.RequiresSignature && !this.HasValidSignature )
+            if ( this.RequiresSignature && !this.VerifySignature( licensingAuthority ) )
             {
-                errorDescription = "has an invalid signature";
+                errorDescription = "the license key has an invalid signature";
 
                 return false;
             }
 
             if ( this.ValidFrom.HasValue && this.ValidFrom > dateTimeProvider.UtcNow )
             {
-                errorDescription = "is not yet valid";
+                errorDescription = "the license key is not yet valid";
 
                 return false;
             }
 
             if ( this.ValidTo.HasValue && this.ValidTo < dateTimeProvider.UtcNow )
             {
-                errorDescription = "has expired";
+                errorDescription = "the license key has expired";
 
                 return false;
             }
 
-            if ( this.PublicKeyToken != null )
-            {
-                if ( publicKeyToken == null )
-                {
-                    errorDescription = "cannot be validated because the validating assembly is missing a public key token";
-
-                    return false;
-                }
-
-                if ( !ComparePublicKeyToken( publicKeyToken, this.PublicKeyToken ) )
-                {
-                    errorDescription = "is invalid because the public key token of the assembly does not match the license";
-
-                    return false;
-                }
-            }
-
             if ( !Enum.IsDefined( typeof(LicenseType), this.LicenseType ) )
             {
-                errorDescription = "license type is unknown";
+                errorDescription = "the license key license type is unknown";
 
                 return false;
             }
 
             if ( !Enum.IsDefined( typeof(LicensedProduct), this.Product ) )
             {
-                errorDescription = "licensed product is unknown";
+                errorDescription = "the license key licensed product is unknown";
 
                 return false;
             }
@@ -91,7 +74,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                         i.IsMustUnderstand()
                         && !Enum.IsDefined( typeof(LicenseFieldIndex), i ) ) )
             {
-                errorDescription = "contains unknown must-understand fields";
+                errorDescription = "the license key contains unknown must-understand fields";
 
                 return false;
             }
@@ -108,7 +91,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 if ( this.SubscriptionEndDate < latestComponentMadeByPostSharp.BuildDate )
                 {
                     errorDescription =
-                        $"does not allow to use the licensed product '{latestComponentMadeByPostSharp.Name}' version {latestComponentMadeByPostSharp.PackageVersion} released on {latestComponentMadeByPostSharp.BuildDate:d} - only versions released before {this.SubscriptionEndDate:d} are allowed to use by this license";
+                        $"the license key does not allow to use the licensed product '{latestComponentMadeByPostSharp.Name}' version {latestComponentMadeByPostSharp.PackageVersion} released on {latestComponentMadeByPostSharp.BuildDate:d} - only versions released before {this.SubscriptionEndDate:d} are allowed to use by this license";
 
                     return false;
                 }
@@ -124,6 +107,28 @@ namespace Metalama.Backstage.Licensing.Licenses
             errorDescription = null;
 
             return true;
+        }
+
+        public bool VerifySignature( LicensingAuthority licensingAuthority )
+        {
+            if ( !this.RequiresSignature() )
+            {
+                return true;
+            }
+
+            if ( this.Signature == null )
+            {
+                return false;
+            }
+
+            if ( licensingAuthority.KeyId != this.SignatureKeyId )
+            {
+                throw new ArgumentOutOfRangeException( nameof(licensingAuthority), "Licensing authority mistmatch." );
+            }
+
+            var buffer = this.GetSignedBuffer();
+
+            return licensingAuthority.VerifySignature( buffer, this.Signature );
         }
     }
 }

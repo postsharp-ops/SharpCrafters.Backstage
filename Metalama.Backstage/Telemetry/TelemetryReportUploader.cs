@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class TelemetryReportUploader : IBackstageService
+internal sealed class TelemetryReportUploader : IBackstageService
 {
     private readonly IStandardDirectories _directories;
     private readonly IFileSystem _fileSystem;

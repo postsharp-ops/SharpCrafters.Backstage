@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.UserInterface;
 
-public class ToastNotificationStatusServiceTests : TestsBase
+public sealed class ToastNotificationStatusServiceTests : TestsBase
 {
     private readonly IToastNotificationStatusService _toastService;
 

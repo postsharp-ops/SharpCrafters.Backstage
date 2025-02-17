@@ -83,7 +83,7 @@ internal class ConsentsPageModel : PageModel
     private async Task PrepareCaptchaAsync()
     {
         var recaptchaSiteKey = await this._recaptcha.GetRecaptchaSiteKeyAsync();
-        
+
         if ( recaptchaSiteKey != null )
         {
             this.RecaptchaSiteKey = recaptchaSiteKey;
@@ -128,12 +128,12 @@ internal class ConsentsPageModel : PageModel
             if ( string.IsNullOrEmpty( this.EmailAddress ) )
             {
                 this.ErrorMessages.Add( "The email address is required to subscribe to the newsletter." );
-                
+
                 return this.Page();
             }
-            
+
             this._userInfoService.SaveEmailAddress( this.EmailAddress );
-            
+
             if ( string.IsNullOrEmpty( this.RecaptchaResponse ) )
             {
                 this.ErrorMessages.Add( "The reCaptcha challenge was invalid." );
@@ -177,7 +177,7 @@ internal class ConsentsPageModel : PageModel
 
             case LicenseKind.Free:
                 {
-                    if ( !this._licenseRegistrationService.TryRegisterFreeEdition( out var errorMessage ) )
+                    if ( !this._licenseRegistrationService.TryRegisterCommunityEdition( out var errorMessage ) )
                     {
                         this.ErrorMessages.Add( errorMessage );
 

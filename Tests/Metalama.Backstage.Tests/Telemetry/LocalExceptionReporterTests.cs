@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Telemetry;
 
-public class LocalExceptionReporterTests : TestsBase
+public sealed class LocalExceptionReporterTests : TestsBase
 {
     private readonly string _crashReportsDirectory;
 

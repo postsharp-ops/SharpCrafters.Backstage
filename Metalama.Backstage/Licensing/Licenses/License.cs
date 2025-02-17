@@ -17,7 +17,7 @@ namespace Metalama.Backstage.Licensing.Licenses
     /// <summary>
     /// Represents a license serialized in a license key.
     /// </summary>
-    public class License : ILicense
+    public sealed class License : ILicense
     {
         public const int CurrentVersion = 2;
         public static readonly string? OriginVersion = AssemblyMetadataReader.GetInstance( typeof(License ).Assembly ).PackageVersion;
@@ -27,6 +27,21 @@ namespace Metalama.Backstage.Licensing.Licenses
         private readonly IServiceProvider _services;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ILogger _logger;
+        private readonly LicensingAuthority _licensingAuthority;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="License"/> class.
+        /// </summary>
+        /// <param name="licenseKey">The license key.</param>
+        /// <param name="services">Services.</param>
+        internal License( string licenseKey, IServiceProvider services )
+        {
+            this._licenseKey = CleanLicenseKey( licenseKey );
+            this._services = services;
+            this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
+            this._licensingAuthority = services.GetRequiredBackstageService<LicensingAuthority>();
+            this._logger = services.GetLoggerFactory().Licensing();
+        }
 
         private static string CleanLicenseKey( string licenseKey )
         {
@@ -42,19 +57,6 @@ namespace Metalama.Backstage.Licensing.Licenses
             }
 
             return stringBuilder.ToString().ToUpperInvariant();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="License"/> class.
-        /// </summary>
-        /// <param name="licenseKey">The license key.</param>
-        /// <param name="services">Services.</param>
-        internal License( string licenseKey, IServiceProvider services )
-        {
-            this._licenseKey = CleanLicenseKey( licenseKey );
-            this._services = services;
-            this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
-            this._logger = services.GetLoggerFactory().Licensing();
         }
 
         /// <inheritdoc />
@@ -95,18 +97,16 @@ namespace Metalama.Backstage.Licensing.Licenses
         {
             this._logger.Trace?.Log( $"Deserializing license '{this._licenseKey}'." );
 
-            if ( LicenseKeyData.TryDeserialize( this._licenseKey, out data, out _ ) )
+            if ( LicenseKeyData.TryDeserialize( this._licenseKey, out data, out errorMessage ) )
             {
                 this._logger.Trace?.Log( $"Deserialized license: {data}" );
-
-                errorMessage = null;
 
                 return true;
             }
             else
             {
-                errorMessage = $"Cannot parse the license key '{this._licenseKey}'.";
-  
+                errorMessage = $"Cannot parse the license key '{this._licenseKey}': {errorMessage}.";
+
                 this._logger.Error?.Log( errorMessage );
 
                 return false;
@@ -125,9 +125,9 @@ namespace Metalama.Backstage.Licensing.Licenses
             var applicationInfoService = this._services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
 
             if ( !data.Validate(
-                    null,
                     this._dateTimeProvider,
                     applicationInfoService,
+                    this._licensingAuthority,
                     out validationErrorMessage ) )
             {
                 this._logger.Warning?.Log( $"The license key {data.LicenseUniqueId} is invalid: {validationErrorMessage}" );
@@ -148,7 +148,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 return false;
             }
 
-            if ( data is { RequiresSignature: true, HasValidSignature: false } )
+            if ( data is { RequiresSignature: true } && !data.VerifySignature( this._licensingAuthority ) )
             {
                 errorMessage = $"The license key {data.LicenseUniqueId} has an invalid signature.";
                 this._logger.Warning?.Log( errorMessage );

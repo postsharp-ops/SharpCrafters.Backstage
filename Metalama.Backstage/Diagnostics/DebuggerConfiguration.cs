@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 
 namespace Metalama.Backstage.Diagnostics;
 
-public record DebuggerConfiguration
+public sealed record DebuggerConfiguration
 {
     /// <summary>
     /// Gets a value indicating whether logging is enabled at all.

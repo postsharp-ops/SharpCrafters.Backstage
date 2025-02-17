@@ -10,7 +10,7 @@ namespace Metalama.Backstage.UserInterface;
 
 [ConfigurationFile( "toastNotifications.json" )]
 [Description( "Toast notifications." )]
-public record ToastNotificationsConfiguration : ConfigurationFile
+public sealed record ToastNotificationsConfiguration : ConfigurationFile
 {
     [JsonProperty( "pauses" )]
     public ImmutableDictionary<string, DateTime> Pauses { get; init; } = ImmutableDictionary<string, DateTime>.Empty;

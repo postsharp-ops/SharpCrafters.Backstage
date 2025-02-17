@@ -9,7 +9,7 @@ namespace Metalama.Backstage.Licensing.Consumption.Sources;
 /// <summary>
 /// License source providing licenses from a license file.
 /// </summary>
-internal class UserProfileLicenseSource : LicenseSourceBase
+internal sealed class UserProfileLicenseSource : LicenseSourceBase
 {
     private LicensingConfiguration _licensingConfiguration;
 

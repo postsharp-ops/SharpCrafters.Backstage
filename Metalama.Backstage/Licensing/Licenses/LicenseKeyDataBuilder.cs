@@ -2,7 +2,6 @@
 
 using JetBrains.Annotations;
 using Metalama.Backstage.Licensing.Licenses.LicenseFields;
-using Metalama.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -33,8 +32,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
             LicenseId = this.LicenseId,
             LicenseType = this.LicenseType,
             LicenseGuid = this.LicenseGuid,
-            LicenseString = this.LicenseString,
-            HasValidSignature = this.Signature != null && this.VerifySignature()
+            LicenseString = this.LicenseString
         };
 
     private object? GetFieldValue( LicenseFieldIndex index )
@@ -125,7 +123,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     /// <summary>
     /// Gets the license version.
     /// </summary>
-    public byte Version { get; internal init; }
+    public byte Version { get; private init; } = LicenseKeyDataSerializer.CurrentVersion;
 
     public Guid? LicenseGuid { get; set; }
 
@@ -186,7 +184,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     public byte? SignatureKeyId
     {
         get => (byte?) this.GetFieldValue( LicenseFieldIndex.SignatureKeyId );
-        private set => this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SignatureKeyId, value );
+        internal set => this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SignatureKeyId, value );
     }
 
     /// <summary>
@@ -282,7 +280,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     public string? OriginVersion
     {
         get => (string?) this.GetFieldValue( LicenseFieldIndex.OriginVersion );
-        internal init => this.SetFieldValue<LicenseFieldString>( LicenseFieldIndex.OriginVersion, value );
+        init => this.SetFieldValue<LicenseFieldString>( LicenseFieldIndex.OriginVersion, value );
     }
 
     public LicenseSupportPolicy SupportPolicy

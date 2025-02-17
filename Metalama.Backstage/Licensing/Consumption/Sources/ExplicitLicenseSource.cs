@@ -4,7 +4,7 @@ using System;
 
 namespace Metalama.Backstage.Licensing.Consumption.Sources;
 
-internal class ExplicitLicenseSource : LicenseSourceBase
+internal sealed class ExplicitLicenseSource : LicenseSourceBase
 {
     private readonly string _licenseString;
 

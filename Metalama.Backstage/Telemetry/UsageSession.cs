@@ -6,24 +6,24 @@ using System;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class UsageSession : IUsageSession
+internal sealed class UsageSession : IUsageSession
 {
     private readonly TelemetryReportUploader _telemetryReportUploader;
     private readonly ILogger _logger;
-    
+
     private UsageTelemetryReport? _usageSample;
-    
+
     public string Kind { get; }
 
     public MetricCollection Metrics => this._usageSample?.Metrics ?? throw new InvalidOperationException( "Usage session has ended." );
-    
+
     public UsageSession( IServiceProvider serviceProvider, string kind )
     {
-        this._usageSample = new( serviceProvider, kind );
+        this._usageSample = new UsageTelemetryReport( serviceProvider, kind );
         this._telemetryReportUploader = serviceProvider.GetRequiredBackstageService<TelemetryReportUploader>();
         this._logger = serviceProvider.GetLoggerFactory().Telemetry();
         this.Kind = kind;
-        
+
         if ( this._logger.Trace != null )
         {
             this._logger.Trace.Log( $"Usage session started." );
@@ -47,7 +47,7 @@ internal class UsageSession : IUsageSession
         this._telemetryReportUploader.Upload( this._usageSample );
         this._usageSample = null;
     }
-    
+
     private void TraceSample()
     {
         if ( this._logger.Trace == null )
