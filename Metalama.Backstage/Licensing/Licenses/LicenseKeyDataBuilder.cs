@@ -16,24 +16,15 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
 
     IReadOnlyDictionary<LicenseFieldIndex, LicenseField> ILicenseKeyData.Fields => this._fields;
 
-    public LicenseKeyDataBuilder() : this( true )
+    public LicenseKeyDataBuilder()
     {
+        this._fields = ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty.ToBuilder();
     }
 
     internal LicenseKeyDataBuilder( ImmutableSortedDictionary<LicenseFieldIndex, LicenseField> fields )
     {
         this._fields = fields.ToBuilder();
-    }
-
-    private LicenseKeyDataBuilder( bool initialize ) : this( ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty )
-    {
-        if ( initialize )
-        {
-            this.Version = 2;
-            this.OriginVersion = AssemblyMetadataReader.GetInstance( typeof( License ).Assembly ).PackageVersion;
-            this.Generation = LicenseGeneration.Current;
-        }
-    }
+    } 
 
     public LicenseKeyData Build()
         => new( this._fields.ToImmutable() )
@@ -134,7 +125,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     /// <summary>
     /// Gets the license version.
     /// </summary>
-    public byte Version { get; private init; }
+    public byte Version { get; internal init; }
 
     public Guid? LicenseGuid { get; set; }
 
@@ -291,7 +282,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     public string? OriginVersion
     {
         get => (string?) this.GetFieldValue( LicenseFieldIndex.OriginVersion );
-        private set => this.SetFieldValue<LicenseFieldString>( LicenseFieldIndex.OriginVersion, value );
+        internal init => this.SetFieldValue<LicenseFieldString>( LicenseFieldIndex.OriginVersion, value );
     }
 
     public LicenseSupportPolicy SupportPolicy
@@ -315,7 +306,6 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
                 this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SupportLevel, null );
             }
         }
-
     }
 
     public LicenseGeneration Generation

@@ -25,7 +25,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         {
             LicenseFieldIndex index;
 
-            var data = new LicenseKeyDataBuilder( false )
+            var data = new LicenseKeyDataBuilder()
             {
                 Version = reader.ReadByte(),
                 LicenseId = reader.ReadInt32(),
@@ -40,7 +40,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             {
                 LicenseField licenseField;
 
-                bool shouldReadFieldLength = index.IsPrefixedByLength();
+                var shouldReadFieldLength = index.IsPrefixedByLength();
 
                 switch ( index )
                 {

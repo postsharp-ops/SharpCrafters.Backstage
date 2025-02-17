@@ -18,6 +18,7 @@ namespace Metalama.Backstage.Licensing.Licenses
     {
         private static readonly DSA _productionPublicKey0 = DSA.Create();
         private static readonly DSA _productionPublicKey1 = DSA.Create();
+        private static readonly DSA _testKeyPair255 = DSA.Create();
 
         /// <summary>
         /// Initializes static members of the <see cref="LicenseCryptography"/> class.
@@ -33,6 +34,9 @@ namespace Metalama.Backstage.Licensing.Licenses
             _productionPublicKey1.FromXmlString2(
                 "<DSAKeyValue><P>vAmBC+eZJaZa7HdlTDAgsfcT0QSjqN8d8fEeZ9E1kxfIAYGerlHFHW/A5muBYy8FyO7W8r4mqxpxcvFQEeEqVe89BUXecHjh6FkTEsT25r/nbV4jnZBxNz16qb7A6t8MCr0jzuzrIGFVP5VG/ad0s/1078WqpwQqJQXHmH/lXX0=</P><Q>+RdtGnwCJw4u2H/goSLtaAGr1U0=</Q><G>sxQQgHIuRgYOMtB+r7EGRO/OTRGXhUrFyZ1R9nVerGGC2juEVWSoydr2JquILOwIO7+1kIOwbkhCjNlZIAdvWRlN5COF7gHfPi1dSX7LzDcNbZDADvrOUmk1KG3hZ3Vf67XIbug2/nq8aij7gbEs4eA26EWWpObO0a+e2QmsQII=</G><Y>dP073SH4QG5KiV5BbZEDLiV3/D2eD18D9jsMVD1p+eMZsffU88/Pxfen1Pe5cyulw8gQkEvlAa3GEmGsaGaa7Qp245NPD8fbEOLFu3tdwMhw/ylRHpjTS7BDRjvGeyGwSS0WTWQCwCyI8LN6Rvg7p4RfhHIaAWWkTJNVAG7AN7g=</Y><J>wUCV+9KzxPW+J3/DIm3sIfVf29Z8u5zPXnEZbMTrkWwdgOTSPuXimtiQku8knyWD3iC+GqyhtoFqdgXqQS6WcadAABb2U5mMTL0V1o6Jy6c0cyPb9blmf5wdZxMKVlXe9lcAO8rP16XhQGVs</J><Seed>h7zytTPqA9Ue3F7c/j+9iXW4Ebw=</Seed><PgenCounter>Aag=</PgenCounter></DSAKeyValue>" );
 
+            _testKeyPair255.FromXmlString(
+                "<DSAKeyValue><P>t/QRbIvIuL8TNplq95Z08AGO2VUOervAvCTK9hvAb5VqO88ZBoGDMAWIFIbrSv42dtsVJMW/OMhHtTqEHUmekNKfL9fP7CxU1SkD2UkX8ePtAiqxcwWwql5dfg/BrViJiyM1bITuYPD+4yUWlVW2xTBOlNg4KgEFz0thNgN+J1U=</P><Q>uv3t+kjNPBgHOgGRXQXx0+x57A8=</Q><G>kv+oJ8mg8syN+jyS5dQFOGge71/ZZK1JEAEig2Pj84KDyuhg6oQBPnJiZ1gEwmJfGSWCRnfLM8k5GkIGJ6eIld8gHNiI1pwa0Rr1WnQvf6+MPAP9jEJ2OXY7rONYDYu8DSATWoCATOJDoR7NVm8Xrav22/zxAgUNCaHM4PKXG6U=</G><Y>Ig1RCl3MJzTsVrf7pE6TxLg6a0t1hd3ZXiBcFoDn+3pPisV3+4yrKAyzKc3Jou30tXH9aWwUpjSCVwkJIn2K81gM9qMiXRx3xEip4p4Jl9yhxsx9iHVDaf/CbK9KDE17Ijm7JkiNZ9xLEmsB8Gw+2VklRYpc9rQuen4B/FJb15A=</Y><Seed>Vnv+pOO61OCvkrsvg5C4Bf3OiUA=</Seed><PgenCounter>AX0=</PgenCounter><X>VCRhs6ieOGpsME4HpD8DWxUy6Tw=</X></DSAKeyValue>" );
+            
             // ReSharper restore StringLiteralTypo
         }
 
