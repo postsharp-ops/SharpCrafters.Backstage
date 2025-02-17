@@ -6,13 +6,13 @@ using Xunit.Abstractions;
 
 namespace Metalama.Tools.Config.Tests.Commands.Licensing
 {
-    public class RegisterCommunityCommandTests : LicensingCommandsTestsBase
+    public sealed class RegisterCommunityCommandTests : LicensingCommandsTestsBase
     {
         public RegisterCommunityCommandTests( ITestOutputHelper logger )
             : base( logger ) { }
 
         [Fact]
-        public async Task FreeRegistersInEmptyEnvironment()
+        public async Task RegisterCommunityInEmptyEnvironment()
         {
             await this.TestCommandAsync( "license community" );
 

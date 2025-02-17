@@ -8,7 +8,7 @@ using System;
 
 namespace Metalama.Backstage.Tests.Licensing.LicenseSources
 {
-    internal class TestLicenseSource : ILicenseSource, IUsable
+    internal sealed class TestLicenseSource : ILicenseSource, IUsable
     {
         private readonly ILicense? _license;
 

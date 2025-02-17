@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Metalama.Backstage.Maintenance;
 
-internal class WindowsProcessManager : ProcessManagerBase
+internal sealed class WindowsProcessManager : ProcessManagerBase
 {
     public WindowsProcessManager( IServiceProvider serviceProvider ) : base( serviceProvider ) { }
 

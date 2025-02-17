@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Diagnostics;
 
-public class EnvironmentVariableConfigurationTests : TestsBase
+public sealed class EnvironmentVariableConfigurationTests : TestsBase
 {
     private readonly IConfigurationManager _configurationManager;
 

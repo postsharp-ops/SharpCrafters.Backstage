@@ -14,7 +14,7 @@ namespace Metalama.Backstage.Infrastructure
     /// <summary>
     /// Provides access to file system using API in <see cref="System.IO" /> namespace.
     /// </summary>
-    internal class FileSystem : IFileSystem
+    internal sealed class FileSystem : IFileSystem
     {
         public string? SynchronizationPrefix => null;
 
@@ -263,7 +263,7 @@ namespace Metalama.Backstage.Infrastructure
         {
             File.AppendAllLines( path, contents );
         }
-        
+
         /// <inheritdoc />
         public void AppendAllLines( string path, IEnumerable<string> contents, Encoding encoding )
         {

@@ -23,15 +23,6 @@ namespace Metalama.Backstage.Licensing.Consumption
             string? projectLicenseKey = null,
             LicenseSourceKind ignoredLicenseKinds = LicenseSourceKind.None );
 
-        /// <summary>
-        /// Returns <c>true</c> when the <paramref name="redistributionLicenseKey"/> is a valid redistribution license key
-        /// and the associated license allows to use a redistributed aspect defined in the <paramref name="aspectClassNamespace"/>.
-        /// </summary>
-        /// <remarks>
-        /// This method serves for validation of redistribution license keys embedded in referenced aspect libraries.
-        /// </remarks>
-        bool TryValidateRedistributionLicenseKey( string redistributionLicenseKey, string aspectClassNamespace, out ImmutableArray<LicensingMessage> errors );
-
         event Action? Changed;
     }
 }

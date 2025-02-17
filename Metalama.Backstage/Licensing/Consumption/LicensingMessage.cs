@@ -2,7 +2,7 @@
 
 namespace Metalama.Backstage.Licensing.Consumption;
 
-public record LicensingMessage( string Text )
+public sealed record LicensingMessage( string Text )
 {
     public bool IsError { get; init; }
 

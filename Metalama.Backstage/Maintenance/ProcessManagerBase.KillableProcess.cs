@@ -9,7 +9,7 @@ namespace Metalama.Backstage.Maintenance;
 
 internal abstract partial class ProcessManagerBase
 {
-    protected class KillableProcess
+    protected sealed class KillableProcess
     {
         private readonly ILogger _logger;
 

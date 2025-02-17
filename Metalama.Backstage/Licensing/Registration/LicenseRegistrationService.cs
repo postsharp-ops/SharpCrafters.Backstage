@@ -14,7 +14,7 @@ using System.Runtime.CompilerServices;
 
 namespace Metalama.Backstage.Licensing.Registration;
 
-internal class LicenseRegistrationService : ILicenseRegistrationService
+internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
@@ -27,7 +27,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( this.GetType().Name );
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._userDeviceDetectionService = serviceProvider.GetRequiredBackstageService<IUserDeviceDetectionService>();
-        
+
         // We intentionally omit to unsubscribe from the event because this service has generally the same lifetime as the application
         // and is never disposed of.
         serviceProvider.GetRequiredBackstageService<IConfigurationManager>().ConfigurationFileChanged += this.OnConfigurationChanged;
@@ -70,7 +70,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
     {
         void TraceFailure( string message )
         {
-            this._logger.Trace?.Log( $"Failed to register Metalama Community license: {message}" );
+            this._logger.Trace?.Log( $"Failed to register Metalama Community: {message}" );
         }
 
         if ( !this.RequireAttendedSession( out errorMessage ) )
@@ -78,7 +78,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
             return false;
         }
 
-        this._logger.Trace?.Log( "Registering Metalama Community license." );
+        this._logger.Trace?.Log( "Registering Metalama Community." );
 
         try
         {
@@ -221,7 +221,7 @@ internal class LicenseRegistrationService : ILicenseRegistrationService
         var factory = new LicenseFactory( this._serviceProvider );
 
         return factory.TryCreate( licenseKey, out var license, out errorMessage )
-               && license.TryGetProperties( out var _, out errorMessage );
+               && license.TryGetProperties( out _, out errorMessage );
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

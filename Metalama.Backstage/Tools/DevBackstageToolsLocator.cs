@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Metalama.Backstage.Tools;
 
-internal class DevBackstageToolsLocator : IBackstageToolsLocator
+internal sealed class DevBackstageToolsLocator : IBackstageToolsLocator
 {
 #if DEBUG
     private const string _buildConfiguration = "Debug";

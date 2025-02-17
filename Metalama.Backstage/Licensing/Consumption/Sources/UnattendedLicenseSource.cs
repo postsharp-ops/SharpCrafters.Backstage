@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Metalama.Backstage.Licensing.Consumption.Sources;
 
-internal class UnattendedLicenseSource : ILicenseSource, ILicense
+internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;

@@ -17,7 +17,7 @@ using LoggerFactory = Metalama.Backstage.Diagnostics.LoggerFactory;
 
 namespace Metalama.Backstage.Tests.Diagnostics;
 
-public class LoggerFactoryTests : TestsBase
+public sealed class LoggerFactoryTests : TestsBase
 {
     public LoggerFactoryTests( ITestOutputHelper logger ) : base( logger ) { }
 

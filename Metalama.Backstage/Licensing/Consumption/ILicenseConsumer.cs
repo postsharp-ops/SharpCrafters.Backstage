@@ -1,6 +1,7 @@
 // Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using JetBrains.Annotations;
+using System;
 
 namespace Metalama.Backstage.Licensing.Consumption;
 
@@ -8,16 +9,9 @@ namespace Metalama.Backstage.Licensing.Consumption;
 public interface ILicenseConsumer
 {
     /// <summary>
-    /// Provides information about availability of <paramref name="requirement"/>.
+    /// Attempts to consume a license. If it succeeds, marks the license for audit.
     /// </summary>
-    /// <param name="requirement">The required license requirement.</param>
-    /// <param name="consumerNamespace">The consuming namespace, or <c>null</c> if this is a global feature.</param>
+    /// <param name="requirement">A predicate indicating whether the license key can be consumed.</param>
     /// <returns>A value indicating if the <paramref name="requirement"/> is available.</returns>
-    bool CanConsume( LicenseRequirement requirement, string? consumerNamespace = null );
-
-    bool IsTrialLicense { get; }
-
-    bool IsRedistributionLicense { get; }
-
-    string? LicenseString { get; }
+    bool TryConsume( Predicate<LicenseConsumptionData> requirement );
 }

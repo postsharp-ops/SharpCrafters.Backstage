@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Metalama.Backstage.Telemetry
 {
-    internal class ExceptionSensitiveDataHelper
+    internal sealed class ExceptionSensitiveDataHelper
     {
         // The Windows regex takes all words delimited by space after the path.
         private const string _windowsPathRegex = @"(?:[a-zA-Z]\:)?\\[^\:;\r\n"",'\]\}]+";

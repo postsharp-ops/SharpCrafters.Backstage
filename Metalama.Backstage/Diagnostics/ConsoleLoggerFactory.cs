@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Metalama.Backstage.Diagnostics;
 
-internal class ConsoleLoggerFactory : ILoggerFactory
+internal sealed class ConsoleLoggerFactory : ILoggerFactory
 {
     public TextWriter TextWriter { get; }
 

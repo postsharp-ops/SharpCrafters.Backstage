@@ -10,7 +10,7 @@ namespace Metalama.Backstage.Licensing.Registration
     /// <summary>
     /// Creates unsigned licenses for self-registration.
     /// </summary>
-    internal class UnsignedLicenseFactory
+    internal sealed class UnsignedLicenseFactory
     {
         private readonly IDateTimeProvider _time;
 
@@ -56,7 +56,7 @@ namespace Metalama.Backstage.Licensing.Registration
         {
             var start = this._time.UtcNow;
 
-            var licenseKeyData = new LicenseKeyDataBuilder
+            var licenseKeyData = new LicenseKeyDataBuilder()
             {
                 LicenseGuid = Guid.NewGuid(), Product = LicensedProduct.MetalamaCommunity, LicenseType = LicenseType.Community, ValidFrom = start
             };

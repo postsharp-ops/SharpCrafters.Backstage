@@ -7,7 +7,7 @@ namespace Metalama.Backstage.Licensing.Licenses
     /// <summary>
     /// Exception thrown when an invalid license is provided.
     /// </summary>
-    public class InvalidLicenseException : Exception
+    public sealed class InvalidLicenseException : Exception
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="InvalidLicenseException"/> class.

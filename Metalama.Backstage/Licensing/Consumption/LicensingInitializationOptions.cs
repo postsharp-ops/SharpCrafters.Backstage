@@ -10,4 +10,10 @@ public record LicensingInitializationOptions
     public bool IgnoreUnattendedProcessLicense { get; init; }
 
     public bool IgnoreUserProfileLicenses { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the test licensing authority should be used.
+    /// This property may be set to <c>true</c> only for unit tests.
+    /// </summary>
+    public bool UseTestAuthority { get; init; }
 }

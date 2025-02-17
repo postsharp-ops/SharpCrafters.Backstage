@@ -20,7 +20,7 @@ using System.Xml;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class ExceptionReporter : IExceptionReporter, IDisposable
+internal sealed class ExceptionReporter : IExceptionReporter, IDisposable
 {
     private readonly TelemetryQueue _uploadManager;
     private readonly IDateTimeProvider _time;
@@ -247,14 +247,14 @@ internal class ExceptionReporter : IExceptionReporter, IDisposable
             if ( exceptionReportingKind == ExceptionReportingKind.Exception )
             {
                 this._logger.Trace?.Log( $"Reporting the exception locally." );
-                
+
                 this._localExceptionReporter?.ReportException( reportedException, localReportPath );
             }
 
             if ( !this._telemetryConfigurationService.IsEnabled )
             {
                 this._logger.Trace?.Log( $"The exception will not be reported remotely because the telemetry is disabled." );
-                
+
                 return;
             }
 
@@ -268,7 +268,7 @@ internal class ExceptionReporter : IExceptionReporter, IDisposable
 
                 return;
             }
-            
+
             this._logger.Trace?.Log( $"Reporting the exception remotely." );
 
             adapter ??= DefaultExceptionAdapter.Instance;

@@ -15,7 +15,7 @@ namespace Metalama.Backstage.Tests.Telemetry;
 
 // This is a copy of the code from BusinessSystems\web\Services\SharpCrafters.Internal.Services.TelemetryReceiver.Program.
 // Keep the code synchronized.
-public class TelemetryPutHandler
+public sealed class TelemetryPutHandler
 {
     private readonly IFileSystem _fileSystem;
     private readonly string _outputDirectory;

@@ -7,7 +7,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Tools.Config.Tests.Commands.Licensing
 {
-    public class UnregisterCommandTests : LicensingCommandsTestsBase
+    public sealed class UnregisterCommandTests : LicensingCommandsTestsBase
     {
         public UnregisterCommandTests( ITestOutputHelper logger )
             : base( logger ) { }

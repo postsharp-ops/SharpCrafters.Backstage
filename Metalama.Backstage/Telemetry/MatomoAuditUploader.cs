@@ -5,12 +5,13 @@ using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
 using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Audit;
+using Metalama.Backstage.Licensing.Licenses;
 using System;
 using System.Threading.Tasks;
 
 namespace Metalama.Backstage.Telemetry;
 
-internal class MatomoAuditUploader : IBackstageService
+internal sealed class MatomoAuditUploader : IBackstageService
 {
     private readonly ILogger _logger;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -31,14 +32,16 @@ internal class MatomoAuditUploader : IBackstageService
 
         var licensedProduct = report.License.LicensedProduct switch
         {
-            LicensedProduct.Framework => "PostSharpFramework",
-            LicensedProduct.Ultimate => "PostSharpUltimate",
+            LicensedProduct.PostSharpFramework => "PostSharpFramework",
+            LicensedProduct.PostSharpUltimate => "PostSharpUltimate",
             _ => report.License.LicensedProduct.ToString()
         };
 
-        var licenseType = report.License.LicensedProduct switch
+        var licenseType = report.License.LicenseType switch
         {
-            LicensedProduct.MetalamaCommunity => "Community",
+            // Avoid ambiguities due to duplicate names.
+            LicenseType.Business => nameof(LicenseType.Business),
+            LicenseType.Community => nameof(LicenseType.Community),
             _ => report.License.LicenseType.ToString()
         };
 

@@ -19,10 +19,10 @@ namespace Metalama.Backstage.Licensing.Licenses
         private static LicenseType TransformObsoleteLicenseType( this LicenseKeyData licenseKeyData )
         {
 #pragma warning disable CS0618 // Type or member is obsolete
-            if ( licenseKeyData.Product == LicensedProduct.PostSharp30 && licenseKeyData.LicenseType == LicenseType.Professional )
+            if ( licenseKeyData is { Product: LicensedProduct.PostSharp30, LicenseType: LicenseType.Professional } )
 #pragma warning restore CS0618 // Type or member is obsolete
             {
-                return LicenseType.PerUser;
+                return LicenseType.Business;
             }
             else
             {
@@ -34,7 +34,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         private static LicensedProduct TransformObsoleteProduct( this LicenseKeyData licenseKeyData )
             => licenseKeyData.Product switch
             {
-                LicensedProduct.PostSharp30 => licenseKeyData.LicenseType == LicenseType.Professional ? LicensedProduct.Framework : LicensedProduct.Ultimate,
+                LicensedProduct.PostSharp30 => licenseKeyData.LicenseType == LicenseType.Professional ? LicensedProduct.PostSharpFramework : LicensedProduct.PostSharpUltimate,
                 LicensedProduct.MetalamaFree => LicensedProduct.None,
                 LicensedProduct.MetalamaStarter => LicensedProduct.MetalamaProfessional,
                 LicensedProduct.MetalamaUltimate => LicensedProduct.MetalamaProfessional,
@@ -45,20 +45,27 @@ namespace Metalama.Backstage.Licensing.Licenses
         private static string GetProductName( this LicenseKeyData licenseKeyData )
             => TransformObsoleteProduct( licenseKeyData ) switch
             {
-                LicensedProduct.Framework => "PostSharp Framework",
-                LicensedProduct.Ultimate => licenseKeyData.LicenseType == LicenseType.Essentials ? "PostSharp Essentials" : "PostSharp Ultimate",
-                LicensedProduct.DiagnosticsLibrary => "PostSharp Logging",
-                LicensedProduct.ModelLibrary => "PostSharp MVVM",
-                LicensedProduct.ThreadingLibrary => "PostSharp Threading",
-                LicensedProduct.CachingLibrary => "PostSharp Caching",
-                LicensedProduct.MetalamaProfessional => "Metalama Professional",
+                LicensedProduct.PostSharpFramework => "PostSharp Framework",
+                LicensedProduct.PostSharpUltimate => licenseKeyData.LicenseType == LicenseType.Community ? "PostSharp Essentials" : "PostSharp Ultimate",
+                LicensedProduct.PostSharpDiagnosticsLibrary => "PostSharp Logging",
+                LicensedProduct.PostSharpModelLibrary => "PostSharp MVVM",
+                LicensedProduct.PostSharpThreadingLibrary => "PostSharp Threading",
+                LicensedProduct.PostSharpCachingLibrary => "PostSharp Caching",
+                LicensedProduct.MetalamaProfessional => $"Metalama Professional, {licenseKeyData.LicenseType.GetLicenseTypeName()}",
                 LicensedProduct.MetalamaCommunity => "Metalama Community",
+#pragma warning disable CS0618 // Type or member is obsolete
+                LicensedProduct.MetalamaUltimate => $"Metalama Ultimate, {licenseKeyData.LicenseType.GetLicenseTypeName()}",
+                LicensedProduct.MetalamaStarter => $"Metalama Starter, {licenseKeyData.LicenseType.GetLicenseTypeName()}",
+                LicensedProduct.MetalamaFree => "Metalama Free",
+#pragma warning restore CS0618 // Type or member is obsolete
                 LicensedProduct.None => "Metalama Open Source",
                 _ => string.Format( CultureInfo.InvariantCulture, "Unknown Product ({0})", licenseKeyData.Product )
             };
 
         private static Version GetMinPostSharpVersion( this LicenseKeyData licenseKeyData )
         {
+#pragma warning disable 618
+
             // This logic is for PostSharp versions before 6.9.3.
             // The later versions are forward compatible without the need of updating of this logic.
             // Products not based on PostSharp (e.g. Metalama) don't need this logic at all.
@@ -67,21 +74,19 @@ namespace Metalama.Backstage.Licensing.Licenses
             {
                 return licenseKeyData.MinPostSharpVersion;
             }
-            else if ( licenseKeyData.LicenseType == LicenseType.PerUsage || licenseKeyData.Product == LicensedProduct.CachingLibrary )
+            else if ( licenseKeyData.LicenseType == LicenseType.PerUsage || licenseKeyData.Product == LicensedProduct.PostSharpCachingLibrary )
             {
                 return new Version( 6, 6, 0 );
             }
-#pragma warning disable 618
             else if ( licenseKeyData.Product == LicensedProduct.PostSharp20 )
             {
                 return new Version( 2, 0, 0 );
             }
-            else if ( (licenseKeyData.Product == LicensedProduct.Ultimate || licenseKeyData.Product == LicensedProduct.Framework)
+            else if ( licenseKeyData.Product is LicensedProduct.PostSharpUltimate or LicensedProduct.PostSharpFramework
                       && licenseKeyData.LicenseType == LicenseType.Enterprise )
             {
                 return new Version( 5, 0, 22 );
             }
-#pragma warning restore 618
             else if ( licenseKeyData.LicenseServerEligible != null )
             {
                 return new Version( 5, 0, 22 );
@@ -90,6 +95,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             {
                 return new Version( 3, 0, 0 );
             }
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -99,7 +105,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         {
             var licenseType = licenseKeyData.TransformObsoleteLicenseType();
             var product = licenseKeyData.TransformObsoleteProduct();
-            var isRedistributable = licenseType == LicenseType.OpenSourceRedistribution || licenseType == LicenseType.CommercialRedistribution;
+            var isRedistributable = licenseType is LicenseType.OpenSourceRedistribution or LicenseType.CommercialRedistribution;
 
             LicenseConsumptionData data = new(
                 product,
@@ -127,14 +133,10 @@ namespace Metalama.Backstage.Licensing.Licenses
             {
                 licenseServerEligible = licenseKeyData.LicenseServerEligible.Value;
             }
-            else if ( licenseKeyData.LicenseType == LicenseType.PerUsage )
-            {
-                licenseServerEligible = false;
-            }
             else
             {
                 const int lastLicenseIdBefore50Rtm = 100802;
-                licenseServerEligible = licenseKeyData.LicenseId > 0 && licenseKeyData.LicenseId <= lastLicenseIdBefore50Rtm;
+                licenseServerEligible = licenseKeyData.LicenseId is > 0 and <= lastLicenseIdBefore50Rtm;
             }
 
             var auditable = licenseKeyData.LicenseType switch

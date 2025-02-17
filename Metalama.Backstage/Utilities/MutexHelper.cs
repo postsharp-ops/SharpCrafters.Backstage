@@ -75,13 +75,12 @@ public static class MutexHelper
         }
     }
 
-    private static Mutex OpenOrCreateGlobalMutex( string fullName, ILogger? logger )
-        => OpenOrCreateMutex( fullName, prefix: null, logger );
+    private static Mutex OpenOrCreateGlobalMutex( string fullName, ILogger? logger ) => OpenOrCreateMutex( fullName, prefix: null, logger );
 
     internal static Mutex OpenOrCreateMutex( string fullName, string? prefix, ILogger? logger )
     {
         prefix ??= "Global\\Metalama_";
-        var mutexName = prefix + HashUtilities.HashString( fullName );
+        var mutexName = prefix + HashUtilities.HashToString( fullName );
 
         return OpenOrCreateMutex( mutexName, logger );
     }
@@ -97,8 +96,7 @@ public static class MutexHelper
         //   2) Creating a new mutex fails, i.e. the mutex was created in the meantime by a process with higher set of rights.
         // The probability of mutex being destroyed when we call TryOpenExisting again is fairly low.
 
-        // ReSharper disable once BadSemicolonSpaces
-        for ( var i = 0; ; i++ )
+        for ( var i = 0; /* Intentionally empty */; i++ )
         {
             // First try opening the mutex.
             if ( Mutex.TryOpenExisting( mutexName, out var existingMutex ) )
@@ -121,7 +119,12 @@ public static class MutexHelper
                         logger?.Trace?.Log( "  Creating new mutex with access rule." );
 
                         var mutexSecurity = new MutexSecurity();
-                        mutexSecurity.AddAccessRule( new MutexAccessRule( new SecurityIdentifier( WellKnownSidType.WorldSid, null ), MutexRights.Synchronize | MutexRights.Modify, AccessControlType.Allow ) );
+
+                        mutexSecurity.AddAccessRule(
+                            new MutexAccessRule(
+                                new SecurityIdentifier( WellKnownSidType.WorldSid, null ),
+                                MutexRights.Synchronize | MutexRights.Modify,
+                                AccessControlType.Allow ) );
 
                         return MutexAcl.Create( false, mutexName, out _, mutexSecurity );
                     }

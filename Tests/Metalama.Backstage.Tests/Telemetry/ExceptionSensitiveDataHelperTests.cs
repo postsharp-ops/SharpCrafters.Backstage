@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Metalama.Backstage.Tests.Telemetry
 {
-    public class ExceptionSensitiveDataHelperTests
+    public sealed class ExceptionSensitiveDataHelperTests
     {
         [Theory]
         [InlineData( "   at MyNamespace.MyType..ctor(MyNamespace.MyType param) in :line 16707565", "   at #user(#user param) in :line 16707565" )]

@@ -2,7 +2,7 @@
 
 namespace Metalama.Backstage.Extensibility;
 
-internal class BackstageInitializationOptionsProvider : IBackstageService
+internal sealed class BackstageInitializationOptionsProvider : IBackstageService
 {
     public BackstageInitializationOptionsProvider( BackstageInitializationOptions options )
     {

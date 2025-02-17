@@ -14,7 +14,7 @@ namespace Metalama.Backstage.Licensing.Audit;
 /// <summary>
 /// An additional logger for the telemetry component, creating short but permanent logs.
 /// </summary>
-internal class TelemetryLogger : IBackstageService
+internal sealed class TelemetryLogger : IBackstageService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly string _logsDirectory;

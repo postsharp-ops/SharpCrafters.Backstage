@@ -9,7 +9,7 @@ using System;
 
 namespace Metalama.Backstage.UserInterface;
 
-internal class ToastNotificationDetectionService : IToastNotificationDetectionService
+internal sealed class ToastNotificationDetectionService : IToastNotificationDetectionService
 {
     private readonly IToastNotificationService _toastNotificationService;
     private readonly IDateTimeProvider _dateTimeProvider;

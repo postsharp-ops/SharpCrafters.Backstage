@@ -8,8 +8,8 @@ public static class BackstageTestLicenseKeyProvider
 {
     static BackstageTestLicenseKeyProvider()
     {
-        LicenseKeyProvider = new TestLicenseKeyProvider( typeof(BackstageTestLicenseKeyProvider).Assembly );
+        LicenseKeyProvider = new TestLicenseKeyProvider();
     }
-    
+
     public static TestLicenseKeyProvider LicenseKeyProvider { get; }
 }

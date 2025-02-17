@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.LicenseSources
 {
-    public class LicenseStringsLicenseSourceTests : LicensingTestsBase
+    public sealed class LicenseStringsLicenseSourceTests : LicensingTestsBase
     {
         public LicenseStringsLicenseSourceTests( ITestOutputHelper logger )
             : base( logger ) { }
@@ -14,7 +14,7 @@ namespace Metalama.Backstage.Tests.Licensing.LicenseSources
         [Fact]
         public void OneLicenseStringPasses()
         {
-            ExplicitLicenseSource source = new( LicenseKeyProvider.MetalamaUltimateBusiness, this.ServiceProvider );
+            ExplicitLicenseSource source = new( LicenseKeyProvider.MetalamaProfessionalBusiness, this.ServiceProvider );
 
             var license = source.GetLicense( _ => { } );
             Assert.NotNull( license );
@@ -22,7 +22,7 @@ namespace Metalama.Backstage.Tests.Licensing.LicenseSources
             var dataParsed = license.TryGetLicenseConsumptionData( out var data, out var errorMessage );
             Assert.True( dataParsed );
             Assert.Null( errorMessage );
-            Assert.Equal( LicenseKeyProvider.MetalamaUltimateBusiness, data!.LicenseString );
+            Assert.Equal( LicenseKeyProvider.MetalamaProfessionalBusiness, data!.LicenseString );
         }
     }
 }

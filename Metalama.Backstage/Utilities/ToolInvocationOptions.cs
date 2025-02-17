@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Metalama.Backstage.Utilities;
 
-public record ToolInvocationOptions(
+public sealed record ToolInvocationOptions(
     ImmutableDictionary<string, string?>? EnvironmentVariables = null,
     bool Silent = false,
     ImmutableArray<string> BlockedEnvironmentVariables = default,

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Licensing.Community
+namespace Metalama.Backstage.Tests.Licensing.Registration
 {
-    public class CommunityLicenseRegistrationTests : LicensingTestsBase
+    public sealed class CommunityLicenseRegistrationTests : LicensingTestsBase
     {
         public CommunityLicenseRegistrationTests( ITestOutputHelper logger )
             : base( logger ) { }
@@ -42,7 +42,7 @@ namespace Metalama.Backstage.Tests.Licensing.Community
 #pragma warning disable CA1307
             Assert.Single(
                 this.Log.Entries,
-                x => x.Message.Contains( "Failed to register Metalama Community license: A Metalama Community license is registered already." ) );
+                x => x.Message.Contains( "Failed to register Metalama Community: A Metalama Community license is registered already." ) );
 #pragma warning restore CA1307
         }
 

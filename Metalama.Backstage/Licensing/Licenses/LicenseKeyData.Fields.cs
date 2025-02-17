@@ -25,8 +25,6 @@ namespace Metalama.Backstage.Licensing.Licenses
             }
         }
 
-        public bool HasValidSignature { get; init; }
-
         public string? LicenseString { get; internal init; }
 
         /// <summary>
@@ -131,8 +129,8 @@ namespace Metalama.Backstage.Licensing.Licenses
                 return minPostSharpVersionString == null ? null : System.Version.Parse( minPostSharpVersionString );
             }
         }
-        
+
         internal LicenseKeyDataBuilder ToBuilder()
-            => new( this._fields ) { Product = this.Product, LicenseId = this.LicenseId, LicenseType = this.LicenseType, LicenseGuid = this.LicenseGuid };
+            => new() { Product = this.Product, LicenseId = this.LicenseId, LicenseType = this.LicenseType, LicenseGuid = this.LicenseGuid };
     }
 }

@@ -11,7 +11,7 @@ using System;
 
 namespace Metalama.Backstage.Licensing.Audit;
 
-internal class LicenseAuditManager : ILicenseAuditManager
+internal sealed class LicenseAuditManager : ILicenseAuditManager
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfigurationManager _configurationManager;
@@ -97,7 +97,7 @@ internal class LicenseAuditManager : ILicenseAuditManager
             var mustPerformAggregateAudit = this._configurationManager.UpdateIf<LicenseAuditConfiguration>(
                 c => c.LastMatomoAuditTime == null || c.LastMatomoAuditTime <= this._time.UtcNow.AddDays( -1 ),
                 c => c with { LastMatomoAuditTime = this._time.UtcNow } );
-            
+
             if ( mustPerformAggregateAudit )
             {
                 this._backgroundTasksService.Enqueue( () => this._matomoAuditUploader.UploadAsync( report ) );

@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Metalama.Backstage.Tests.Licensing.Evaluation
 {
-    public class EvaluationLicenseEligibilityTests : EvaluationLicenseRegistrationTestsBase
+    public sealed class EvaluationLicenseEligibilityTests : EvaluationLicenseRegistrationTestsBase
     {
         public EvaluationLicenseEligibilityTests( ITestOutputHelper logger )
             : base( logger ) { }

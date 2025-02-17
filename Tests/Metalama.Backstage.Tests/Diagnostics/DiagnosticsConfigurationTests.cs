@@ -17,7 +17,7 @@ namespace Metalama.Backstage.Tests.Diagnostics;
 /// <summary>
 /// This tests class works with predefined default configuration set in constructor.
 /// </summary>
-public class DiagnosticsConfigurationTests : TestsBase
+public sealed class DiagnosticsConfigurationTests : TestsBase
 {
     public DiagnosticsConfigurationTests( ITestOutputHelper logger ) : base( logger ) { }
 

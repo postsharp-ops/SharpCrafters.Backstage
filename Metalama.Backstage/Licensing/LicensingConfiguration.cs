@@ -7,7 +7,7 @@ using System;
 namespace Metalama.Backstage.Licensing;
 
 [ConfigurationFile( "licensing.json" )]
-internal record LicensingConfiguration : ConfigurationFile
+internal sealed record LicensingConfiguration : ConfigurationFile
 {
     /// <summary>
     /// Gets the date of the last evaluation period.

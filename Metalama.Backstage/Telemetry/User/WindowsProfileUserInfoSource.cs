@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Metalama.Backstage.Telemetry.User;
 
-internal class WindowsProfileUserInfoSource : UserInfoSource
+internal sealed class WindowsProfileUserInfoSource : UserInfoSource
 {
     public override bool TryGetUserInfo( [NotNullWhen( true )] out UserInfo? userInfo )
     {
@@ -17,7 +17,7 @@ internal class WindowsProfileUserInfoSource : UserInfoSource
         {
             return false;
         }
-        
+
         var trimChars = new[] { ' ', '\0', '\t' };
 
         var profile =
@@ -32,8 +32,7 @@ internal class WindowsProfileUserInfoSource : UserInfoSource
         }
 
         var key =
-            Registry.CurrentUser.OpenSubKey(
-                @"Software\Microsoft\Windows NT\CurrentVersion\Windows Messaging Subsystem\Profiles\" + profile );
+            Registry.CurrentUser.OpenSubKey( @"Software\Microsoft\Windows NT\CurrentVersion\Windows Messaging Subsystem\Profiles\" + profile );
 
         if ( key == null )
         {
@@ -50,7 +49,7 @@ internal class WindowsProfileUserInfoSource : UserInfoSource
             {
                 var emailAddress = Encoding.Unicode.GetString( emailBytes ).Trim( trimChars );
 
-                userInfo = new( emailAddress );
+                userInfo = new UserInfo( emailAddress );
 
                 return true;
             }

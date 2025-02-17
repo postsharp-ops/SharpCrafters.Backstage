@@ -6,6 +6,7 @@ using Metalama.Backstage.Configuration;
 using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
+using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Licensing.Registration;
 using Metalama.Backstage.Maintenance;
 using Metalama.Backstage.Telemetry;
@@ -19,7 +20,7 @@ using Xunit.Abstractions;
 using ILoggerFactory = Metalama.Backstage.Diagnostics.ILoggerFactory;
 
 namespace Metalama.Backstage.Testing
-{    
+{
     [PublicAPI]
     public abstract class TestsBase
     {
@@ -51,6 +52,8 @@ namespace Metalama.Backstage.Testing
         protected ILicenseRegistrationService LicenseRegistrationService => this._defaultTestContext.Value.LicenseRegistrationService;
 
         protected ITelemetryConfigurationService TelemetryConfigurationService => this._defaultTestContext.Value.TelemetryConfigurationService;
+
+        protected LicensingAuthority LicensingAuthority { get; } = LicensingAuthority.GetTestAuthority();
 
         private TestFileSystem? _uniqueFileSystem;
 
@@ -215,7 +218,8 @@ namespace Metalama.Backstage.Testing
                 .AddSingleton<IToastNotificationDetectionService>( serviceProvider => new ToastNotificationDetectionService( serviceProvider ) )
                 .AddSingleton<IStandardDirectories>( serviceProvider => new StandardDirectories( serviceProvider ) )
                 .AddSingleton<IBackstageToolsExtractor>( serviceProvider => new BackstageToolsExtractor( serviceProvider ) )
-                .AddSingleton<ITelemetryConfigurationService>( serviceProvider => new TelemetryConfigurationService( serviceProvider, Guid.Empty ) );
+                .AddSingleton<ITelemetryConfigurationService>( serviceProvider => new TelemetryConfigurationService( serviceProvider, Guid.Empty ) )
+                .AddSingleton( this.LicensingAuthority );
 
             var serviceProviderBuilder =
                 new ServiceProviderBuilder( ( type, instance ) => serviceCollection.AddSingleton( type, instance ) );

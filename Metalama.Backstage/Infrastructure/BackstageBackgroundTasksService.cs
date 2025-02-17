@@ -12,10 +12,10 @@ namespace Metalama.Backstage.Infrastructure;
 // tests would cause issues.
 #pragma warning disable CA1001
 
-public class BackstageBackgroundTasksService : IBackstageService
+public sealed class BackstageBackgroundTasksService : IBackstageService
 {
     private readonly object _lock = new();
-    
+
     private readonly TaskCompletionSource<bool> _completedTaskSource = new();
     private readonly List<TaskCompletionSource<bool>> _onQueueEmptyWaiters = new();
 
@@ -79,7 +79,7 @@ public class BackstageBackgroundTasksService : IBackstageService
             }
         }
     }
-    
+
     private void OnTaskStarting()
     {
         lock ( this._lock )
@@ -98,16 +98,16 @@ public class BackstageBackgroundTasksService : IBackstageService
     {
         IEnumerable<TaskCompletionSource<bool>> waiters;
         bool canEnqueue;
-        
+
         lock ( this._lock )
         {
             this._pendingTasks--;
-        
+
             if ( this._pendingTasks != 0 )
             {
                 return;
             }
-            
+
             // We make a copy of the waiters list to avoid a race condition
             // when the TaskCompletionSource.TrySetResult proceeds
             // to code that adds a new waiter before finishing the iteration
@@ -121,7 +121,7 @@ public class BackstageBackgroundTasksService : IBackstageService
         {
             waiter.TrySetResult( true );
         }
-        
+
         if ( !canEnqueue )
         {
             this._completedTaskSource.TrySetResult( true );
