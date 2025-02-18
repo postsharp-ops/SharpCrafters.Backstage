@@ -143,7 +143,8 @@ namespace Metalama.Backstage.Licensing.Licenses
                 licenseKeyData.SubscriptionEndDate,
                 auditable,
                 licenseServerEligible,
-                licenseKeyData.GetMinPostSharpVersion() );
+                licenseKeyData.GetMinPostSharpVersion(),
+                licenseKeyData.Generation );
 
             return data;
         }

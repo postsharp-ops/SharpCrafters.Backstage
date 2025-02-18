@@ -24,9 +24,14 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             return LicensingConfigurationModel.Create( this.ServiceProvider );
         }
 
-        private void AssertFileContains( string? expectedLicenseString )
+        private void AssertFileContainsGen0( string? expectedLicenseString )
         {
-            Assert.Equal( expectedLicenseString, this.ReadStoredLicenseString() );
+            Assert.Equal( expectedLicenseString, this.ReadStoredGen0LicenseString() );
+        }
+
+        private void AssertFileContainsGen1( string? expectedLicenseString )
+        {
+            Assert.Equal( expectedLicenseString, this.ReadStoredGen1LicenseString() );
         }
 
         private void AssertStorageContains( LicensingConfigurationModel storage, string? expectedLicenseString )
@@ -66,8 +71,8 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         [Fact]
         public void ExistingStorageSucceedsToRead()
         {
-            this.SetStoredLicenseString( "dummy" );
-            this.AssertFileContains( "dummy" );
+            this.SetStoredGen0LicenseString( "dummy" );
+            this.AssertFileContainsGen0( "dummy" );
         }
 
         [Fact]
@@ -81,7 +86,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         public void EmptyStorageCanBeCreated()
         {
             this.OpenOrCreateStorage();
-            this.AssertFileContains( null );
+            this.AssertFileContainsGen0( null );
         }
 
         [Fact]
@@ -90,13 +95,13 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             var storage = this.OpenOrCreateStorage();
             this.Add( storage, LicenseKeyProvider.PostSharpUltimate );
 
-            this.AssertFileContains( LicenseKeyProvider.PostSharpUltimate );
+            this.AssertFileContainsGen1( LicenseKeyProvider.PostSharpUltimate );
         }
 
         [Fact]
         public void ValidLicenseKeyCanBeRetrieved()
         {
-            this.SetStoredLicenseString( LicenseKeyProvider.PostSharpUltimate );
+            this.SetStoredGen0LicenseString( LicenseKeyProvider.PostSharpUltimate );
 
             var storage = this.OpenOrCreateStorage();
 
@@ -106,36 +111,60 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         [Fact]
         public void InvalidLicenseKeyCanBeRetrieved()
         {
-            this.SetStoredLicenseString( "dummy" );
+            this.SetStoredGen0LicenseString( "dummy" );
 
             var storage = this.OpenOrCreateStorage();
 
             this.AssertStorageContains( storage, "dummy" );
-            this.AssertFileContains( "dummy" );
-        }
-
-        [Fact]
-        public void PreviousInvalidLicenseKeyIsReplaced()
-        {
-            this.SetStoredLicenseString( "dummy" );
-
-            var storage = this.OpenOrCreateStorage();
-            this.Add( storage, LicenseKeyProvider.PostSharpUltimate );
-
-            this.AssertStorageContains( storage, LicenseKeyProvider.PostSharpUltimate );
-            this.AssertFileContains( LicenseKeyProvider.PostSharpUltimate );
+            this.AssertFileContainsGen0( "dummy" );
         }
 
         [Fact]
         public void PreviousValidLicenseKeysAreReplaced()
         {
-            this.SetStoredLicenseString( LicenseKeyProvider.PostSharpUltimate );
+            this.SetStoredGen1LicenseString( LicenseKeyProvider.PostSharpUltimate );
 
             var storage = this.OpenOrCreateStorage();
             this.Add( storage, LicenseKeyProvider.MetalamaProfessionalPersonal );
 
             this.AssertStorageContains( storage, LicenseKeyProvider.MetalamaProfessionalPersonal );
-            this.AssertFileContains( LicenseKeyProvider.MetalamaProfessionalPersonal );
+            this.AssertFileContainsGen1( LicenseKeyProvider.MetalamaProfessionalPersonal );
+        }
+
+        [Fact]
+        public void PreviousInvalidLicenseKeyIsNotReplacedWithGen1()
+        {
+            this.SetStoredGen0LicenseString( "dummy" );
+
+            var storage = this.OpenOrCreateStorage();
+            var communityLicense = LicenseKeyProvider.MetalamaCommunity;
+            this.Add( storage, communityLicense );
+
+            this.AssertStorageContains( storage, communityLicense );
+            this.AssertFileContainsGen0( "dummy" );
+            this.AssertFileContainsGen1( communityLicense );
+        }
+
+        [Fact]
+        public void PreviousValidLicenseKeysAreNotReplacedWithGen1()
+        {
+            this.SetStoredGen0LicenseString( LicenseKeyProvider.PostSharpUltimate );
+
+            var storage = this.OpenOrCreateStorage();
+            var communityLicense = LicenseKeyProvider.MetalamaCommunity;
+            this.Add( storage, communityLicense );
+
+            this.AssertStorageContains( storage, communityLicense );
+            this.AssertFileContainsGen0( LicenseKeyProvider.PostSharpUltimate );
+            this.AssertFileContainsGen1( communityLicense );
+        }
+
+        [Fact]
+        public void Gen1LiceseKeyTakesPriorityOverGen0()
+        {
+            this.SetStoredGen0LicenseString( LicenseKeyProvider.PostSharpUltimate );
+            var freeLicense = LicenseKeyProvider.MetalamaCommunity;
+            this.SetStoredGen1LicenseString( freeLicense );
         }
     }
 }

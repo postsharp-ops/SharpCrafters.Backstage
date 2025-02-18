@@ -15,7 +15,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
 
         private void AssertSingleCommunityLicenseRegistered()
         {
-            var registeredLicenseString = this.ReadStoredLicenseString();
+            var registeredLicenseString = this.ReadStoredGen1LicenseString();
             Assert.True( this.LicenseFactory.TryCreate( registeredLicenseString, out var registeredLicense, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( registeredLicense.TryGetProperties( out var data, out errorMessage ) );

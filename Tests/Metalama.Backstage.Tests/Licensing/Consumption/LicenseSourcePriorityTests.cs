@@ -48,7 +48,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 
         if ( userLicense != null )
         {
-            TestLicensingConfigurationHelpers.SetStoredLicenseString( serviceProvider, userLicense );
+            TestLicensingConfigurationHelpers.SetStoredGen0LicenseString( serviceProvider, userLicense );
         }
 
         var options = new LicensingInitializationOptions();

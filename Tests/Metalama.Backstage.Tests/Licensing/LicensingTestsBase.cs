@@ -41,10 +41,15 @@ namespace Metalama.Backstage.Tests.Licensing
             this.UserDeviceDetection.IsInteractiveDevice = true;
         }
 
-        protected string? ReadStoredLicenseString() => TestLicensingConfigurationHelpers.ReadStoredLicenseString( this.ServiceProvider );
+        protected string? ReadStoredGen0LicenseString() => TestLicensingConfigurationHelpers.ReadStoredGen0LicenseString( this.ServiceProvider );
 
-        protected void SetStoredLicenseString( string licenseString )
-            => TestLicensingConfigurationHelpers.SetStoredLicenseString( this.ServiceProvider, licenseString );
+        protected string? ReadStoredGen1LicenseString() => TestLicensingConfigurationHelpers.ReadStoredGen1LicenseString( this.ServiceProvider );
+
+        protected void SetStoredGen0LicenseString( string licenseString )
+            => TestLicensingConfigurationHelpers.SetStoredGen0LicenseString( this.ServiceProvider, licenseString );
+
+        protected void SetStoredGen1LicenseString( string licenseString )
+            => TestLicensingConfigurationHelpers.SetStoredGen1LicenseString( this.ServiceProvider, licenseString );
 
         internal LicenseProperties GetLicenseRegistrationData( string licenseString )
         {

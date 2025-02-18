@@ -39,6 +39,7 @@ public sealed class TestLicenseKeyProvider
             {
                 license.Product = product;
                 license.LicenseType = type;
+                license.Generation = LicenseGeneration.V20251;
             } );
 
     public string PostSharpEssentials => this.GenerateLicenseKey( 1, LicensedProduct.PostSharpUltimate, LicenseType.Community );
