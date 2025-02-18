@@ -64,7 +64,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             {
                 stringBuilder.AppendFormat(
                     CultureInfo.InvariantCulture,
-                    ", {0}={1}",
+                    ", {0}={{{1}}}",
                     licenseField.Key,
                     licenseField.Value );
             }

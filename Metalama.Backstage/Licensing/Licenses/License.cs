@@ -174,10 +174,13 @@ namespace Metalama.Backstage.Licensing.Licenses
                 }
             }
 
-            if ( options.RequireActiveOrGraceSubscription && subscriptionStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Grace) )
+            // VSX requires an active subscription (with a grace period), but only for license keys generated 
+            // after the change in business model. License keys generated before are not affected by the restriction.
+            if ( options.RequireActiveOrGraceSubscription
+                 && licenseKeyData.Generation >= LicenseGeneration.V20251
+                 && subscriptionStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Grace) )
             {
-                errorMessage =
-                    $"the subscription period has expired";
+                errorMessage = $"the subscription has expired";
 
                 return false;
             }
@@ -188,6 +191,13 @@ namespace Metalama.Backstage.Licensing.Licenses
                 case LicensedProduct.MetalamaProfessional:
                 case LicensedProduct.PostSharpFramework:
                 case LicensedProduct.PostSharpUltimate:
+                    break;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+                
+                // Development key of SharpCrafters.
+                case LicensedProduct.PostSharp30 when licenseKeyData.LicenseId == 22:
+#pragma warning restore CS0618 // Type or member is obsolete
                     break;
 
                 default:
