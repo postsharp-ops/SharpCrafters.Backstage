@@ -17,9 +17,11 @@ internal class RegisterCommunityCommand : BaseCommand<RegisterCommunityCommandSe
             throw new CommandException( "You must provide a value for the --reason option." );
         }
 
-        if ( !service.TryRegisterCommunityEdition( settings.Reason, out var errorMessage ) )
+        var result = service.RegisterCommunityEdition( settings.Reason );
+
+        if ( !result.IsSuccess )
         {
-            throw new CommandException( errorMessage );
+            throw new CommandException( result.ErrorMessage );
         }
 
         // TODO: We should ask for the reason (eligibility).

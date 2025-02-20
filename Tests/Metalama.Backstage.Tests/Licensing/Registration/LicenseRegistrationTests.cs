@@ -30,8 +30,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         public void RegisterValidLicense( string licenseKeyName )
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
-            Assert.True( this.LicenseRegistrationService.TryRegisterLicense( licenseKey, out var errorMessage ) );
-            Assert.Null( errorMessage );
+            Assert.True( this.LicenseRegistrationService.RegisterLicense( licenseKey ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( licenseKey, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
         }
@@ -59,8 +58,8 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-            Assert.Equal( isParsable, this.LicenseRegistrationService.TryParseLicenseKey( licenseKey, out _, out _ ) );
-            Assert.Equal( isValid, this.LicenseRegistrationService.TryValidateLicenseKey( licenseKey, out _ ) );
+            Assert.Equal( isParsable, this.LicenseRegistrationService.ParseLicenseKey( licenseKey ).IsSuccess );
+            Assert.Equal( isValid, this.LicenseRegistrationService.ValidateLicenseKey( licenseKey ).IsSuccess );
 
             // Check that this does not register the license.
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
@@ -73,8 +72,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-            Assert.False( this.LicenseRegistrationService.TryRegisterLicense( licenseKey, out var errorMessage ) );
-            Assert.NotNull( errorMessage );
+            Assert.False( this.LicenseRegistrationService.RegisterLicense( licenseKey ).IsSuccess );
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
         }
 
@@ -84,12 +82,12 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
             // First registration. 
-            Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness, out _ ) );
+            Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalBusiness, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
 
             // Second registration. 
-            Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaProfessionalPersonal, out _ ) );
+            Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalPersonal ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalPersonal, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
         }
@@ -99,7 +97,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         {
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
-            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( CommunityLicenseReason.Individual, out _ ) );
+            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicensedProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
         }
@@ -110,7 +108,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
             // First registration. 
-            Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness, out _ ) );
+            Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalBusiness, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
 

@@ -3,8 +3,8 @@
 using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing.Audit;
 using Metalama.Backstage.Licensing.Consumption.Sources;
+using Metalama.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -16,25 +16,19 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 {
     public ImmutableArray<LicensingMessage> Messages { get; }
 
-    private readonly ILogger _logger;
-    private readonly LicenseConsumptionProperties? _license;
-    private readonly BackstageBackgroundTasksService _backgroundTasksService;
+    private readonly ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> _licenses;
     private readonly IDateTimeProvider _dateTimeProvider;
-    private readonly ILicenseAuditManager? _licenseAuditManager;
 
     private DateTime _lastAuditTime = DateTime.MinValue;
 
     private LicenseConsumer(
         IServiceProvider services,
-        LicenseConsumptionProperties? license,
+        ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> licenses,
         ImmutableArray<LicensingMessage> messages )
     {
         this.Messages = messages;
-        this._license = license;
-        this._logger = services.GetLoggerFactory().Licensing();
+        this._licenses = licenses;
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
-        this._licenseAuditManager = services.GetBackstageService<ILicenseAuditManager>();
-        this._backgroundTasksService = services.GetRequiredBackstageService<BackstageBackgroundTasksService>();
     }
 
     public static ILicenseConsumer Create(
@@ -46,13 +40,13 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
         var logger = services.GetLoggerFactory().Licensing();
 
-        LicenseConsumptionProperties? licenseConsumptionData = null;
-
         var licenses = licenseSources.OrderBy( s => s.Priority ).SelectMany( s => s.GetLicenses( ReportMessage ).Select( l => (License: l, Source: s) ) );
+
+        var validLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
 
         foreach ( var license in licenses )
         {
-            if ( !license.License.TryGetConsumptionProperties( options, out licenseConsumptionData, out var errorMessage ) )
+            if ( !license.License.TryGetConsumptionProperties( options, out var licenseConsumptionData, out var errorMessage ) )
             {
                 _ = license.License.TryGetRegistrationProperties( out var registrationData, out _ );
                 var message = registrationData == null ? "A license" : $"The {registrationData.Description}";
@@ -82,10 +76,10 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             }
 #pragma warning restore CS0612 // Type or member is obsolete
 
-            break;
+            validLicenses.Add( (license.License, licenseConsumptionData) );
         }
 
-        return new LicenseConsumer( services, licenseConsumptionData, messagesBuilder.ToImmutable() );
+        return new LicenseConsumer( services, validLicenses.ToImmutableArray(), messagesBuilder.ToImmutable() );
 
         void ReportMessage( LicensingMessage message )
         {
@@ -97,40 +91,27 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     /// <inheritdoc />
     public bool TryConsume( Predicate<LicenseConsumptionProperties> predicate )
     {
-        if ( this._license == null )
-        {
-            this._logger.Warning?.Log( "No license provided." );
+        var mustAudit = false;
 
-            return false;
-        }
-
-        if ( predicate( this._license ) )
-        {
-            this.AuditIfNecessary();
-
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    private void AuditIfNecessary()
-    {
-        // Audit the use of the license once per day (more time checks are performed by the license audit manager).
-        if ( this._license != null && this._lastAuditTime.AddDays( 1 ) < this._dateTimeProvider.UtcNow )
+        if ( this._lastAuditTime.AddDays( 1 ) < this._dateTimeProvider.UtcNow )
         {
             this._lastAuditTime = this._dateTimeProvider.UtcNow;
+            mustAudit = true;
+        }
 
-            if ( this._licenseAuditManager != null )
+        foreach ( var license in this._licenses )
+        {
+            if ( predicate( license.Properties ) )
             {
-                this._backgroundTasksService.Enqueue( () => this._licenseAuditManager.ReportLicense( this._license ) );
-            }
-            else
-            {
-                this._logger.Warning?.Log( $"License audit is skipped because there is no {nameof(ILicenseAuditManager)}." );
+                if ( mustAudit )
+                {
+                    license.License.OnConsumed();
+                }
+
+                return true;
             }
         }
+
+        return false;
     }
 }

@@ -26,7 +26,7 @@ public sealed class LicenseUsageTests : LicenseConsumptionManagerTestsBase
         Assert.Equal( 1, license1.NumberOfUses );
         Assert.Equal( 0, license2.NumberOfUses );
         Assert.Equal( 1, source1.NumberOfUses );
-        Assert.Equal( 0, source2.NumberOfUses );
+        Assert.Equal( 1, source2.NumberOfUses );
     }
 
     [Fact]
@@ -39,10 +39,10 @@ public sealed class LicenseUsageTests : LicenseConsumptionManagerTestsBase
         var source2 = new TestLicenseSource( "source2", license2 );
 
         var manager = this.CreateConsumptionService( source1, source2 );
-        AssertCanConsume( manager, license => license.LicensedProduct == LicensedProduct.MetalamaProfessional, false );
-        Assert.Equal( 1, license1.NumberOfUses );
-        Assert.Equal( 0, license2.NumberOfUses );
+        AssertCanConsume( manager, license => license.LicensedProduct == LicensedProduct.MetalamaProfessional, true );
+        Assert.Equal( 0, license1.NumberOfUses );
+        Assert.Equal( 1, license2.NumberOfUses );
         Assert.Equal( 1, source1.NumberOfUses );
-        Assert.Equal( 0, source2.NumberOfUses );
+        Assert.Equal( 1, source2.NumberOfUses );
     }
 }

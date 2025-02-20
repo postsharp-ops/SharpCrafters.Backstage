@@ -13,9 +13,11 @@ internal class RegisterLegacyFreeCommand : BaseCommand<BaseCommandSettings>
     {
         var service = context.ServiceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
 
-        if ( !service.TryRegisterLegacyFreeEdition( out var errorMessage ) )
+        var result = service.RegisterLegacyFreeEdition();
+
+        if ( !result.IsSuccess )
         {
-            throw new CommandException( errorMessage );
+            throw new CommandException( result.ErrorMessage );
         }
 
         context.Console.WriteSuccess( "You are now using Metalama Community." );

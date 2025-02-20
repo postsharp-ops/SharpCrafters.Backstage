@@ -17,9 +17,9 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     [Fact]
     public void FreeLicenseIsNotOverwrittenByCommunity()
     {
-        Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaFree, out _ ) );
+        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaFree ).IsSuccess );
         Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
-        Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaCommunity, out _ ) );
+        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaCommunity ).IsSuccess );
 
         var registeredLicenses = this.LicenseRegistrationService.RegisteredLicenses.ToList();
         Assert.Equal( 2, registeredLicenses.Count );
@@ -30,9 +30,9 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     [Fact]
     public void CommunityLicenseIsNotOverwrittenByFree()
     {
-        Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaCommunity, out _ ) );
+        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaCommunity ).IsSuccess );
         Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
-        Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaFree, out _ ) );
+        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaFree ).IsSuccess );
 
         var registeredLicenses = this.LicenseRegistrationService.RegisteredLicenses.ToList();
         Assert.Equal( 2, registeredLicenses.Count );
@@ -43,7 +43,7 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     [Fact]
     public void MetalamaCommunityNotStoredInLegacyField()
     {
-        Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaCommunity, out _ ) );
+        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaCommunity ).IsSuccess );
 
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 
@@ -55,7 +55,7 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     [Fact]
     public void MetalamaProfessionalStoredInLegacyField()
     {
-        Assert.True( this.LicenseRegistrationService.TryRegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness, out _ ) );
+        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
 
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 

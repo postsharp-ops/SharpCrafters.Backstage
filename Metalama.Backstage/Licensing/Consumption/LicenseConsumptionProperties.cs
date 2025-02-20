@@ -75,7 +75,7 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// <param name="licenseString">The string representation of the license, if exists. <c>null</c> if the license doesn't have a string representation.</param>
         /// <param name="isRedistributable">Indicates whether the license is redistributable.</param>
         /// <param name="maxAspectsCount">The number of aspects allowed to be used.</param>
-        internal LicenseConsumptionProperties(
+        public LicenseConsumptionProperties(
             LicensedProduct licensedProduct,
             LicenseType licenseType,
             string? licensedNamespace,

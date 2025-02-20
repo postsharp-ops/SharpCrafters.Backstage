@@ -27,8 +27,6 @@ public sealed record LicenseConsumptionOptions
     /// </summary>
     internal bool AcceptsObsoleteLicenses { get; private init; }
 
-    public bool RequireActiveOrGraceSubscription { get; init; }
-
     public static LicenseConsumptionOptions Default { get; } = new();
 
     // While registering license keys, we ignore the subscription period, i.e. we allow to register the license key for any build

@@ -35,19 +35,16 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
                 buildDate,
                 isThirdParty ? "The Corp" : "PostSharp Technologies" );
 
-        private void AssertPasses( IApplicationInfo applicationInfo, bool requireActiveSubscription = false, string? licenseKey = null )
-            => this.TestCore( applicationInfo, requireActiveSubscription, true, null, licenseKey );
+        private void AssertPasses( IApplicationInfo applicationInfo, string? licenseKey = null ) => this.TestCore( applicationInfo, true, null, licenseKey );
 
         private void AssertFails(
             IApplicationInfo applicationInfo,
-            bool requireActiveSubscription = false,
             IComponentInfo? infringingComponent = null,
             string? licenseKey = null )
-            => this.TestCore( applicationInfo, requireActiveSubscription, false, infringingComponent, licenseKey );
+            => this.TestCore( applicationInfo, false, infringingComponent, licenseKey );
 
         private void TestCore(
             IApplicationInfo applicationInfo,
-            bool requireActiveSubscription,
             bool mustSucceed,
             IComponentInfo? infringingComponent,
             string? licenseKey )
@@ -58,10 +55,7 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
             var licenseConsumer = LicenseConsumer.Create(
-                LicenseConsumptionOptions.Default with
-                {
-                    RequireActiveOrGraceSubscription = requireActiveSubscription, SubscriptionGracePeriod = _subscriptionGracePeriod
-                },
+                LicenseConsumptionOptions.Default with { SubscriptionGracePeriod = _subscriptionGracePeriod },
                 serviceProvider,
                 [new ExplicitLicenseSource( licenseKey, serviceProvider )] );
 
@@ -85,26 +79,10 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
         }
 
         [Fact]
-        public void FailsWithValidBuildDateButExpiredSubscription()
-        {
-            var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.SubscriptionExpirationDate );
-            this.Time.Set( LicenseKeyProvider.SubscriptionExpirationDate.Add( _subscriptionGracePeriod ).AddDays( 1 ) );
-            this.AssertFails( applicationInfo, true );
-        }
-
-        [Fact]
-        public void PassesWithValidBuildDateButExpiredSubscriptionWithLegacyKey()
-        {
-            var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.SubscriptionExpirationDate );
-            this.Time.Set( LicenseKeyProvider.SubscriptionExpirationDate.Add( _subscriptionGracePeriod ).AddDays( 1 ) );
-            this.AssertPasses( applicationInfo, true, licenseKey: LicenseKeyProvider.ExpiredSubscriptionLegacyGeneration );
-        }
-
-        [Fact]
         public void FailsWithInvalidSubscription()
         {
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.SubscriptionExpirationDate.AddDays( 1 ) );
-            this.AssertFails( applicationInfo, false, applicationInfo );
+            this.AssertFails( applicationInfo, applicationInfo );
         }
 
         [Fact]
@@ -120,7 +98,7 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
         {
             var componentInfo = CreateComponentInfo( LicenseKeyProvider.SubscriptionExpirationDate.AddDays( 1 ), false );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.SubscriptionExpirationDate, componentInfo );
-            this.AssertFails( applicationInfo, false, componentInfo );
+            this.AssertFails( applicationInfo, componentInfo );
         }
 
         [Fact]
@@ -138,7 +116,7 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
             var componentInfo2 = CreateComponentInfo( LicenseKeyProvider.SubscriptionExpirationDate, false );
             var componentInfo3 = CreateComponentInfo( LicenseKeyProvider.SubscriptionExpirationDate.AddDays( 1 ), true );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.SubscriptionExpirationDate, componentInfo1, componentInfo2, componentInfo3 );
-            this.AssertFails( applicationInfo, false, componentInfo1 );
+            this.AssertFails( applicationInfo, componentInfo1 );
         }
 
         [Fact]
@@ -147,7 +125,7 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
             var componentInfo1 = CreateComponentInfo( LicenseKeyProvider.SubscriptionExpirationDate, false );
             var componentInfo2 = CreateComponentInfo( LicenseKeyProvider.SubscriptionExpirationDate.AddDays( 1 ), true );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.SubscriptionExpirationDate.AddDays( 1 ), componentInfo1, componentInfo2 );
-            this.AssertFails( applicationInfo, false, applicationInfo );
+            this.AssertFails( applicationInfo, applicationInfo );
         }
     }
 }

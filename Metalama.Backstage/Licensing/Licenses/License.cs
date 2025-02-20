@@ -4,6 +4,7 @@ using Metalama.Backstage.Application;
 using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
+using Metalama.Backstage.Licensing.Audit;
 using Metalama.Backstage.Licensing.Consumption;
 using Metalama.Backstage.Licensing.Registration;
 using System;
@@ -24,6 +25,8 @@ namespace Metalama.Backstage.Licensing.Licenses
         private readonly ILogger _logger;
         private readonly LicensingAuthority _licensingAuthority;
         private readonly IApplicationInfo _applicationInfo;
+        private readonly ILicenseAuditManager? _licenseAuditManager;
+        private readonly BackstageBackgroundTasksService _backgroundTasksService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="License"/> class.
@@ -37,6 +40,8 @@ namespace Metalama.Backstage.Licensing.Licenses
             this._licensingAuthority = services.GetRequiredBackstageService<LicensingAuthority>();
             this._logger = services.GetLoggerFactory().Licensing();
             this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+            this._licenseAuditManager = services.GetBackstageService<ILicenseAuditManager>();
+            this._backgroundTasksService = services.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         }
 
         private static string CleanLicenseKey( string licenseKey )
@@ -175,17 +180,6 @@ namespace Metalama.Backstage.Licensing.Licenses
                 }
             }
 
-            // VSX requires an active subscription (with a grace period), but only for license keys generated 
-            // after the change in business model. License keys generated before are not affected by the restriction.
-            if ( options.RequireActiveOrGraceSubscription
-                 && licenseKeyData.Generation >= LicenseGeneration.V20251
-                 && subscriptionStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Grace) )
-            {
-                errorMessage = $"the subscription has expired";
-
-                return false;
-            }
-
             switch ( licenseKeyData.Product )
             {
                 case LicensedProduct.MetalamaCommunity:
@@ -270,6 +264,21 @@ namespace Metalama.Backstage.Licensing.Licenses
             licenseProperties = licenseKeyData.ToLicenseRegistrationProperties();
 
             return true;
+        }
+
+        public void OnConsumed()
+        {
+            if ( this._licenseAuditManager != null )
+            {
+                if ( this.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var properties, out _ ) )
+                {
+                    this._backgroundTasksService.Enqueue( () => this._licenseAuditManager.ReportLicense( properties ) );
+                }
+            }
+            else
+            {
+                this._logger.Warning?.Log( $"License audit is skipped because there is no {nameof(ILicenseAuditManager)}." );
+            }
         }
 
         private bool TryGetLicenseKeyData( [MaybeNullWhen( false )] out LicenseKeyData data, [MaybeNullWhen( true )] out string errorMessage )

@@ -44,5 +44,10 @@ namespace Metalama.Backstage.Licensing.Licenses
         bool TryGetRegistrationProperties(
             [MaybeNullWhen( false )] out LicenseRegistrationProperties licenseProperties,
             [MaybeNullWhen( true )] out string errorMessage );
+
+        /// <summary>
+        /// This method must be called once per day when the license is consumed.
+        /// </summary>
+        void OnConsumed();
     }
 }

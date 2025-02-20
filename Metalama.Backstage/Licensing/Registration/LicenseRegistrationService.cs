@@ -69,11 +69,11 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     /// Success is indicated when a new Metalama Community license is registered
     /// as well as when an existing Metalama Community license is registered already.
     /// </returns>
-    public bool TryRegisterCommunityEdition( CommunityLicenseReason reason, [NotNullWhen( false )] out string? errorMessage )
+    public LicenseRegistrationResult RegisterCommunityEdition( CommunityLicenseReason reason )
     {
-        if ( !this.RequireAttendedSession( out errorMessage ) )
+        if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         if ( reason == CommunityLicenseReason.None )
@@ -83,63 +83,55 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         this._logger.Trace?.Log( "Registering Metalama Community." );
 
+        var factory = new UnsignedLicenseFactory( this._serviceProvider );
+        var communityLicense = factory.CreateCommunityLicense();
+
         if ( !this._configurationManager.Update<LicensingConfiguration>(
                 config =>
                 {
-                    var factory = new UnsignedLicenseFactory( this._serviceProvider );
-                    var communityLicense = factory.CreateCommunityLicense();
-
                     return config.SetLicense( communityLicense ) with { CommunityLicenseReason = reason };
                 } ) )
         {
-            errorMessage = "Metalama Community is already registered.";
-
-            return false;
+            return LicenseRegistrationResult.Failure( "Metalama Community is already registered." );
         }
 
-        return true;
+        return LicenseRegistrationResult.Success( communityLicense );
     }
 
     [Obsolete]
-    public bool TryRegisterLegacyFreeEdition( [NotNullWhen( false )] out string? errorMessage )
+    public LicenseRegistrationResult RegisterLegacyFreeEdition()
     {
-        if ( !this.RequireAttendedSession( out errorMessage ) )
+        if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         this._logger.Trace?.Log( "Registering Metalama Free." );
 
-        if ( !this._configurationManager.UpdateIf<LicensingConfiguration>(
-                config => !config.GetRegisteredLicenses().Any( l => l is { Product: LicensedProduct.MetalamaFree } ),
-                config =>
-                {
-                    var factory = new UnsignedLicenseFactory( this._serviceProvider );
-                    var communityLicense = factory.CreateLegacyFreeLicense();
+        var factory = new UnsignedLicenseFactory( this._serviceProvider );
+        var communityLicense = factory.CreateLegacyFreeLicense();
 
-                    return config.SetLicense( communityLicense );
-                } ) )
-        {
-            errorMessage = "Metalama Free is already registered.";
+        this._configurationManager.Update<LicensingConfiguration>(
+            config =>
+            {
+                return config.SetLicense( communityLicense );
+            } );
 
-            return false;
-        }
-
-        return true;
+        return LicenseRegistrationResult.Success( communityLicense );
     }
 
-    public bool TryRegisterTrialEdition( [NotNullWhen( false )] out string? errorMessage )
+    public LicenseRegistrationResult RegisterTrialEdition()
     {
-        if ( !this.RequireAttendedSession( out errorMessage ) )
+        if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         this._logger.Trace?.Log( "Attempting to register an evaluation license." );
 
         if ( !this.CanRegisterTrialEditionCore( out errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         var factory = new UnsignedLicenseFactory( this._serviceProvider );
@@ -148,9 +140,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         this._configurationManager.Update<LicensingConfiguration>(
             config => config.SetLicense( evaluationLicense ) with { LastEvaluationStartDate = this._dateTimeProvider.UtcNow } );
 
-        errorMessage = null;
-
-        return true;
+        return LicenseRegistrationResult.Success( evaluationLicense );
     }
 
     private bool CanRegisterTrialEditionCore( [NotNullWhen( false )] out string? errorMessage )
@@ -181,42 +171,39 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         return true;
     }
 
-    public bool TryRegisterLicense( string licenseString, [NotNullWhen( false )] out string? errorMessage )
-        => this.TryRegisterLicenseCore( licenseString, false, out errorMessage );
-
-    public bool TryValidateLicenseKey( string licenseKey, [NotNullWhen( false )] out string? errorMessage )
-        => this.TryRegisterLicenseCore( licenseKey, true, out errorMessage );
-
-    public bool TryParseLicenseKey(
-        string licenseKey,
-        [NotNullWhen( false )] out string? errorMessage,
-        [NotNullWhen( true )] out LicenseRegistrationProperties? licenseProperties )
+    public LicenseRegistrationResult RegisterLicense( string licenseString )
     {
-        if ( !this.RequireAttendedSession( out errorMessage ) )
-        {
-            licenseProperties = null;
+        return this.RegisterLicenseCore( licenseString, false );
+    }
 
-            return false;
+    public LicenseRegistrationResult ValidateLicenseKey( string licenseKey )
+    {
+        return this.RegisterLicenseCore( licenseKey, true );
+    }
+
+    public LicenseRegistrationResult ParseLicenseKey( string licenseKey )
+    {
+        if ( !this.RequireAttendedSession( out var errorMessage ) )
+        {
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         var factory = new LicenseFactory( this._serviceProvider );
 
         if ( !factory.TryCreate( licenseKey, out var license, out errorMessage )
-             || !license.TryGetRegistrationProperties( out licenseProperties, out errorMessage ) )
+             || !license.TryGetRegistrationProperties( out var licenseProperties, out errorMessage ) )
         {
-            licenseProperties = null;
-
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
-        return true;
+        return LicenseRegistrationResult.Success( licenseProperties );
     }
 
-    private bool TryRegisterLicenseCore( string licenseString, bool dry, [NotNullWhen( false )] out string? errorMessage )
+    private LicenseRegistrationResult RegisterLicenseCore( string licenseString, bool dry )
     {
-        if ( !this.RequireAttendedSession( out errorMessage ) )
+        if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         var factory = new LicenseFactory( this._serviceProvider );
@@ -224,12 +211,12 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         if ( !factory.TryCreate( licenseString, out var license, out errorMessage )
              || !license.TryGetRegistrationProperties( out var properties, out errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         if ( !license.CanBeRegistered( out errorMessage ) )
         {
-            return false;
+            return LicenseRegistrationResult.Failure( errorMessage );
         }
 
         if ( !dry )
@@ -237,7 +224,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
             this._configurationManager.Update<LicensingConfiguration>( config => config.SetLicense( properties ) );
         }
 
-        return true;
+        return LicenseRegistrationResult.Success( properties );
     }
 
     public bool CanRegisterTrialEdition => this.CanRegisterTrialEditionCore( out _ );

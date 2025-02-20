@@ -56,7 +56,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 
         if ( userLicense != null )
         {
-            Assert.True( this.LicenseRegistrationService.TryRegisterLicense( userLicense, out _ ) );
+            Assert.True( this.LicenseRegistrationService.RegisterLicense( userLicense ).IsSuccess );
         }
 
         var service = serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
