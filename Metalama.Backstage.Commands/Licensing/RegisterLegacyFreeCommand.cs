@@ -1,4 +1,6 @@
-﻿using Metalama.Backstage.Extensibility;
+﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
+
+using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Licensing.Registration;
 using System;
 
@@ -15,8 +17,6 @@ internal class RegisterLegacyFreeCommand : BaseCommand<BaseCommandSettings>
         {
             throw new CommandException( errorMessage );
         }
-        
-        // TODO: We should ask for the reason (eligibility).
 
         context.Console.WriteSuccess( "You are now using Metalama Community." );
     }

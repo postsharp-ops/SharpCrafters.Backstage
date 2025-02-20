@@ -69,23 +69,27 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     /// Success is indicated when a new Metalama Community license is registered
     /// as well as when an existing Metalama Community license is registered already.
     /// </returns>
-    public bool TryRegisterCommunityEdition( [NotNullWhen( false )] out string? errorMessage )
+    public bool TryRegisterCommunityEdition( CommunityLicenseReason reason, [NotNullWhen( false )] out string? errorMessage )
     {
         if ( !this.RequireAttendedSession( out errorMessage ) )
         {
             return false;
         }
 
+        if ( reason == CommunityLicenseReason.None )
+        {
+            throw new ArgumentOutOfRangeException( nameof(reason), reason, "The community license reason is invalid." );
+        }
+
         this._logger.Trace?.Log( "Registering Metalama Community." );
 
-        if ( !this._configurationManager.UpdateIf<LicensingConfiguration>(
-                config => !config.GetRegisteredLicenses().Any( l => l is { Product: LicensedProduct.MetalamaCommunity } ),
+        if ( !this._configurationManager.Update<LicensingConfiguration>(
                 config =>
                 {
                     var factory = new UnsignedLicenseFactory( this._serviceProvider );
                     var communityLicense = factory.CreateCommunityLicense();
 
-                    return config.SetLicense( communityLicense );
+                    return config.SetLicense( communityLicense ) with { CommunityLicenseReason = reason };
                 } ) )
         {
             errorMessage = "Metalama Community is already registered.";
@@ -95,7 +99,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         return true;
     }
-    
+
     [Obsolete]
     public bool TryRegisterLegacyFreeEdition( [NotNullWhen( false )] out string? errorMessage )
     {

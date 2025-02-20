@@ -12,8 +12,8 @@ namespace Metalama.Backstage.Licensing.Registration;
 [PublicAPI]
 public interface ILicenseRegistrationService : IBackstageService, INotifyPropertyChanged
 {
-    bool TryRegisterCommunityEdition( [NotNullWhen( false )] out string? errorMessage );
-    
+    bool TryRegisterCommunityEdition( CommunityLicenseReason reason, [NotNullWhen( false )] out string? errorMessage );
+
     [Obsolete]
     bool TryRegisterLegacyFreeEdition( [NotNullWhen( false )] out string? errorMessage );
 

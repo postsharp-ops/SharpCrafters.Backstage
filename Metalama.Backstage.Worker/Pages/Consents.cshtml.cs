@@ -168,7 +168,7 @@ internal class ConsentsPageModel : PageModel
 
             case SelectedAction.Community:
                 {
-                    if ( !this._licenseRegistrationService.TryRegisterCommunityEdition( out var errorMessage ) )
+                    if ( !this._licenseRegistrationService.TryRegisterCommunityEdition( GlobalState.CommunityLicenseReason, out var errorMessage ) )
                     {
                         this.ErrorMessages.Add( errorMessage );
 

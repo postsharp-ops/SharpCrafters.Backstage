@@ -14,16 +14,9 @@ namespace Metalama.Tools.Config.Tests.Commands.Licensing
         [Fact]
         public async Task RegisterCommunityInEmptyEnvironment()
         {
-            await this.TestCommandAsync( "license community" );
+            await this.TestCommandAsync( "license community --reason Individual" );
 
             await this.TestCommandAsync( "license list", "Metalama Community" );
-        }
-
-        [Fact]
-        public async Task RepetitiveFreeRegistrationFails()
-        {
-            await this.TestCommandAsync( "license community" );
-            await this.TestCommandAsync( "license community", expectedExitCode: 1 );
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using Metalama.Backstage.Licensing;
-using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -24,8 +23,8 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         [Fact]
         public void RepeatedCommunityLicenseRegistrationKeepsSingleLicenseRegistered()
         {
-            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( out _ ) );
-            Assert.False( this.LicenseRegistrationService.TryRegisterCommunityEdition( out _ ) );
+            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( CommunityLicenseReason.Individual, out _ ) );
+            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( CommunityLicenseReason.Individual, out _ ) );
             this.AssertSingleCommunityLicenseRegistered();
         }
 
@@ -35,7 +34,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             var gotPropertyChanged = new TaskCompletionSource<bool>();
             this.LicenseRegistrationService.PropertyChanged += ( _, _ ) => gotPropertyChanged.TrySetResult( true );
 
-            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( out _ ) );
+            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( CommunityLicenseReason.Individual, out _ ) );
 
             Assert.Equal( gotPropertyChanged.Task, await Task.WhenAny( gotPropertyChanged.Task, Task.Delay( 30000 ) ) );
         }

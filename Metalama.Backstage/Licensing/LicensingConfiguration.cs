@@ -33,11 +33,14 @@ internal sealed record LicensingConfiguration : ConfigurationFile
     [JsonProperty( "licenses" )]
     public ImmutableArray<string?> Licenses { get; init; } = ImmutableArray<string?>.Empty;
 
+    public CommunityLicenseReason CommunityLicenseReason { get; init; }
+
     public LicensingConfiguration SetLicense( LicenseRegistrationProperties license )
     {
         var clone = this;
-        
+
         // First we should remove previous licenses except if they must co-exist for backward-compatibility reasons.
+#pragma warning disable CS0618 // Type or member is obsolete
         if ( license.Product == LicensedProduct.MetalamaCommunity )
         {
             clone = clone.RemoveAllLicensesExcept( LicensedProduct.MetalamaFree );
@@ -46,11 +49,12 @@ internal sealed record LicensingConfiguration : ConfigurationFile
         {
             clone = clone.RemoveAllLicensesExcept( LicensedProduct.MetalamaCommunity );
         }
+#pragma warning restore CS0618 // Type or member is obsolete
         else
         {
             clone = clone.RemoveAllLicenses();
         }
-        
+
         // Now we can add the new license.
         if ( !license.Product.IsSupportedBeforeMetalama20251() )
         {
@@ -75,7 +79,6 @@ internal sealed record LicensingConfiguration : ConfigurationFile
             return this;
         }
     }
-  
 
     private static LicenseKeyData? GetLicenseKeyData( string? licenseKey, Action<LicensingMessage>? reportMessage = null )
     {

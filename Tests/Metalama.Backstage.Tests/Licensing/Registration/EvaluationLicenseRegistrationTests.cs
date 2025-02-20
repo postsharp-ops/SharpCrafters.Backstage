@@ -1,5 +1,6 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
+using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Licensing.Registration;
 using System;
@@ -164,7 +165,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
             var gotPropertyChanged = new TaskCompletionSource<bool>();
             this.LicenseRegistrationService.PropertyChanged += ( _, _ ) => gotPropertyChanged.TrySetResult( true );
 
-            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( out _ ) );
+            Assert.True( this.LicenseRegistrationService.TryRegisterCommunityEdition( CommunityLicenseReason.Individual, out _ ) );
 
             Assert.Equal( gotPropertyChanged.Task, await Task.WhenAny( gotPropertyChanged.Task, Task.Delay( 30000 ) ) );
         }
