@@ -116,8 +116,8 @@ public sealed class TestLicenseKeyProvider
             {
                 builder.Product = LicensedProduct.MetalamaProfessional;
                 builder.LicenseType = LicenseType.Evaluation;
-                builder.ValidFrom = new DateTime( 2010, 1, 1 );
-                builder.ValidTo = new DateTime( 2050, 1, 1 );
+                builder.ValidFrom = new DateTime( 2060, 1, 1 );
+                builder.ValidTo = new DateTime( 2061, 1, 1 );
                 builder.Generation = LicenseGeneration.Current;
             } );
 

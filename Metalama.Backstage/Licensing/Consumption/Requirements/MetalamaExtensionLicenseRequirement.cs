@@ -22,9 +22,9 @@ public class MetalamaExtensionLicenseRequirement : LicenseRequirement
         {
             case LicensedProduct.MetalamaProfessional:
             case LicensedProduct.PostSharpFramework:
+            case LicensedProduct.PostSharpUltimate:
+
 #pragma warning disable CS0618 // Type or member is obsolete
-            case LicensedProduct.PostSharp30 when context.License.LicenseType != LicenseType.Essentials:
-            case LicensedProduct.PostSharpUltimate when context.License.LicenseType != LicenseType.Essentials:
             case LicensedProduct.MetalamaStarter:
             case LicensedProduct.MetalamaUltimate:
 #pragma warning restore CS0618 // Type or member is obsolete

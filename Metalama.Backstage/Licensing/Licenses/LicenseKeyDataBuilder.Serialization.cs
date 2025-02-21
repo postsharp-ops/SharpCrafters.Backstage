@@ -147,8 +147,8 @@ namespace Metalama.Backstage.Licensing.Licenses
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
                     case LicensedProduct.PostSharp20:
-                    case LicensedProduct.PostSharp30:
 #pragma warning restore CS0618 // Type or member is obsolete
+                    case LicensedProduct.PostSharpUltimate1:
                     case LicensedProduct.PostSharpUltimate:
                     case LicensedProduct.PostSharpFramework:
                     case LicensedProduct.PostSharpDiagnosticsLibrary:

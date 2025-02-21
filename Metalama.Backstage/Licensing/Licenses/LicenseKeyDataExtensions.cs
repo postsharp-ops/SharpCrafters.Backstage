@@ -18,7 +18,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         internal static LicenseType TransformObsoleteLicenseType( this LicenseKeyData licenseKeyData )
         {
 #pragma warning disable CS0618 // Type or member is obsolete
-            if ( licenseKeyData is { Product: LicensedProduct.PostSharp30, LicenseType: LicenseType.Professional } )
+            if ( licenseKeyData is { Product: LicensedProduct.PostSharpUltimate1, LicenseType: LicenseType.Professional } )
 #pragma warning restore CS0618 // Type or member is obsolete
             {
                 return LicenseType.Business;
@@ -31,11 +31,11 @@ namespace Metalama.Backstage.Licensing.Licenses
 
 #pragma warning disable CS0612, CS0618 // Type or member is obsolete
         internal static LicensedProduct TransformObsoleteProduct( this LicenseKeyData licenseKeyData )
-            => licenseKeyData.Product switch
+            => ( licenseKeyData.Product, licenseKeyData.LicenseType ) switch
             {
-                LicensedProduct.PostSharp30 => licenseKeyData.LicenseType == LicenseType.Professional
-                    ? LicensedProduct.PostSharpFramework
-                    : LicensedProduct.PostSharpUltimate,
+                ( LicensedProduct.PostSharpUltimate1, LicenseType.Professional ) =>  LicensedProduct.PostSharpFramework,
+                ( LicensedProduct.PostSharpUltimate1 or LicensedProduct.PostSharpUltimate, LicenseType.Essentials) => LicensedProduct.PostSharpEssentials,
+                ( LicensedProduct.PostSharpUltimate1, _) => LicensedProduct.PostSharpUltimate,
                 _ => licenseKeyData.Product
             };
 #pragma warning restore CS0618
@@ -49,6 +49,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 LicensedProduct.PostSharpModelLibrary => "PostSharp MVVM",
                 LicensedProduct.PostSharpThreadingLibrary => "PostSharp Threading",
                 LicensedProduct.PostSharpCachingLibrary => "PostSharp Caching",
+                LicensedProduct.PostSharpEssentials => "PostSharp Essentials",
                 LicensedProduct.MetalamaProfessional => $"Metalama Professional, {licenseKeyData.LicenseType.GetLicenseTypeName()}",
                 LicensedProduct.MetalamaCommunity => "Metalama Community",
 #pragma warning disable CS0618 // Type or member is obsolete
