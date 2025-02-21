@@ -20,6 +20,6 @@ internal class RegisterLegacyFreeCommand : BaseCommand<BaseCommandSettings>
             throw new CommandException( result.ErrorMessage );
         }
 
-        context.Console.WriteSuccess( "You are now using Metalama Community." );
+        context.Console.WriteSuccess( "You are now using Metalama Free for Metalama 2025.0 and earlier." );
     }
 }

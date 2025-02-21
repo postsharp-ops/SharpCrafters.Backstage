@@ -24,8 +24,6 @@ internal class RegisterCommunityCommand : BaseCommand<RegisterCommunityCommandSe
             throw new CommandException( result.ErrorMessage );
         }
 
-        // TODO: We should ask for the reason (eligibility).
-
-        context.Console.WriteSuccess( "You are now using Metalama Community." );
+        context.Console.WriteSuccess( "You are now using Metalama Community for Metalama 2025.1 and later." );
     }
 }
