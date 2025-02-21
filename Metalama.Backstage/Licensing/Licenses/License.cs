@@ -102,8 +102,10 @@ namespace Metalama.Backstage.Licensing.Licenses
             }
 #pragma warning restore CS0618
 
-            if ( licenseKeyData is { SignatureKeyId: 0, LicenseId: not 0 and < 20 } )
+            if ( licenseKeyData.SignatureKeyId is 0 or 1 
+                 && (licenseKeyData is { LicenseId: not 0 and not 22 and < 100 } || RevokedLicenseKeys.Ids.Contains( licenseKeyData.LicenseId )) )
             {
+                // We use these keys to test the LicensingAuthority.
                 errorMessage = "the license key has been revoked";
 
                 return false;

@@ -10,7 +10,7 @@ public sealed record LicenseConsumptionOptions
     public string? ProjectLicenseKey { get; init; }
 
     public TimeSpan? SubscriptionGracePeriod { get; init; }
-
+    
     public LicenseSourceKind IgnoredLicenseSources { get; init; } = LicenseSourceKind.None;
 
     /// <summary>

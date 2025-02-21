@@ -30,7 +30,7 @@ namespace PostSharp.LicenseKeyReader
             this._propertyGrid.SelectedObject = licenseKeyData;
 
             if ( licenseKeyData is { RequiresSignature: true }
-                 && licenseKeyData.VerifySignature( LicensingAuthority.GetFromId( licenseKeyData.SignatureKeyId!.Value ) ) )
+                 && !licenseKeyData.VerifySignature( LicensingAuthority.GetProductionAuthority() ) )
             {
                 this.ShowError( "Failed to verify the license key signature" );
             }

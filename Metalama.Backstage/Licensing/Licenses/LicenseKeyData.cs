@@ -39,11 +39,11 @@ namespace Metalama.Backstage.Licensing.Licenses
         [Obsolete]
         public bool IsLimitedByNamespace => !string.IsNullOrEmpty( this.Namespace );
 
-        internal LicenseKeyData() : this( ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty ) { }
+        internal LicenseKeyData() : this( LicenseKeyDataSerializer.CurrentVersion, ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty ) { }
 
-        internal LicenseKeyData( ImmutableSortedDictionary<LicenseFieldIndex, LicenseField> fields )
+        internal LicenseKeyData( byte version, ImmutableSortedDictionary<LicenseFieldIndex, LicenseField> fields )
         {
-            this.Version = LicenseKeyDataSerializer.CurrentVersion;
+            this.Version = version;
             this._fields = fields;
         }
 
