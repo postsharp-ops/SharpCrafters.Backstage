@@ -62,7 +62,10 @@ namespace Metalama.Backstage.Licensing.Registration
                 LicenseGuid = Guid.NewGuid(),
                 Product = LicensedProduct.MetalamaCommunity,
                 LicenseType = LicenseType.Community,
-                ValidFrom = start
+                ValidFrom = start,
+                
+                // Must be renewed yearly.
+                ValidTo = start.AddYears( 1 )
             };
 
             var licenseRegistrationData = licenseKeyData.Build().ToLicenseRegistrationProperties( licenseKeyData.Serialize() );

@@ -87,10 +87,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         var communityLicense = factory.CreateCommunityLicense();
 
         if ( !this._configurationManager.Update<LicensingConfiguration>(
-                config =>
-                {
-                    return config.SetLicense( communityLicense ) with { CommunityLicenseReason = reason };
-                } ) )
+                config => config.SetLicense( communityLicense ) with { CommunityLicenseReason = reason } ) )
         {
             return LicenseRegistrationResult.Failure( "Metalama Community is already registered." );
         }
