@@ -15,8 +15,6 @@ namespace Metalama.Backstage.Licensing.Consumption;
 
 internal sealed class LicenseConsumer : ILicenseConsumer
 {
-    public ImmutableArray<LicensingMessage> Messages { get; }
-
     private readonly ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> _licenses;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger _logger;
@@ -26,10 +24,8 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
     private LicenseConsumer(
         IServiceProvider services,
-        ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> licenses,
-        ImmutableArray<LicensingMessage> messages )
+        ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> licenses )
     {
-        this.Messages = messages;
         this._licenses = licenses;
         this._logger = services.GetLoggerFactory().Licensing();
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
@@ -39,10 +35,9 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     public static ILicenseConsumer Create(
         LicenseConsumptionOptions options,
         IServiceProvider services,
-        IEnumerable<ILicenseSource> licenseSources )
+        IEnumerable<ILicenseSource> licenseSources,
+        Action<LicensingMessage>? reportMessage = null )
     {
-        var messagesBuilder = ImmutableArray.CreateBuilder<LicensingMessage>();
-
         var logger = services.GetLoggerFactory().Licensing();
 
         var licenses = licenseSources.OrderBy( s => s.Priority ).SelectMany( s => s.GetLicenses( ReportMessage ).Select( l => (License: l, Source: s) ) );
@@ -83,17 +78,17 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             validLicenses.Add( (license.License, licenseConsumptionData) );
         }
 
-        return new LicenseConsumer( services, validLicenses.ToImmutableArray(), messagesBuilder.ToImmutable() );
+        return new LicenseConsumer( services, validLicenses.ToImmutableArray() );
 
         void ReportMessage( LicensingMessage message )
         {
-            messagesBuilder.Add( message );
+            reportMessage?.Invoke( message );
             logger.Warning?.Log( message.Text );
         }
     }
 
     /// <inheritdoc />
-    public bool TryConsume( LicenseRequirement requirement )
+    public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
     {
         var mustAudit = false;
 
@@ -124,6 +119,14 @@ internal sealed class LicenseConsumer : ILicenseConsumer
                 this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is not eligible" );
             }
         }
+
+        reportMessage?.Invoke(
+            new LicensingMessage( $"The component '{requirement.ComponentName}' is not licensed: it requires {requirement.RequiredLicenseDescription}." )
+            {
+                IsError = true
+            } );
+
+        // TODO: We might open some UI here.
 
         this._logger.Warning?.Log( $"TryConsume({{{requirement}}}: no eligible license found." );
 

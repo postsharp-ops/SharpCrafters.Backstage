@@ -49,4 +49,8 @@ public class MetalamaToolingLicenseRequirement : LicenseRequirement
 
         return true;
     }
+
+    public override string ComponentName => "Visual Studio Tools for Metalama";
+
+    public override string RequiredLicenseDescription => "Metalama Community or Metalama Professional with an active subscription";
 }

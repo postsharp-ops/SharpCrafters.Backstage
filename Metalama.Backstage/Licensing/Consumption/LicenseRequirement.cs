@@ -22,6 +22,9 @@ public abstract class LicenseRequirement
 
         return true;
     }
+    
+    public abstract string ComponentName { get; }
+    public abstract string RequiredLicenseDescription { get; }
 
     public static LicenseRequirement Any => new AnyLicenseRequirement();
 }

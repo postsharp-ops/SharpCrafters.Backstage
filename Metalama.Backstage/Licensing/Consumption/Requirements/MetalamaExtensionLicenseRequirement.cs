@@ -4,9 +4,10 @@ namespace Metalama.Backstage.Licensing.Consumption.Requirements;
 
 public class MetalamaExtensionLicenseRequirement : LicenseRequirement
 {
-    private MetalamaExtensionLicenseRequirement() { }
-
-    public static LicenseRequirement Instance { get; } = new MetalamaExtensionLicenseRequirement();
+    public MetalamaExtensionLicenseRequirement( string componentName )
+    {
+        this.ComponentName = componentName;
+    }
 
     public override bool IsEligible( LicenseConsumptionContext context )
     {
@@ -37,4 +38,8 @@ public class MetalamaExtensionLicenseRequirement : LicenseRequirement
 
         return true;
     }
+
+    public override string ComponentName { get; }
+
+    public override string RequiredLicenseDescription => "a Metalama Professional license";
 }

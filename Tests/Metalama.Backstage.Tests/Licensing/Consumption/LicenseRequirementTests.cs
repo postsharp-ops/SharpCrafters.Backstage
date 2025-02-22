@@ -36,7 +36,7 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( MetalamaExtensionLicenseRequirement.Instance ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement("<ComponentName>") ) );
     }
 
     [Theory]
@@ -64,7 +64,7 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( MetalamaExtensionLicenseRequirement.Instance ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement("<ComponentName>") ) );
     }
 
     [Theory]

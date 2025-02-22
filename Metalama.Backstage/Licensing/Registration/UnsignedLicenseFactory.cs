@@ -63,7 +63,7 @@ namespace Metalama.Backstage.Licensing.Registration
                 Product = LicensedProduct.MetalamaCommunity,
                 LicenseType = LicenseType.Community,
                 ValidFrom = start,
-                
+
                 // Must be renewed yearly.
                 ValidTo = start.AddYears( 1 )
             };
@@ -72,7 +72,7 @@ namespace Metalama.Backstage.Licensing.Registration
 
             return licenseRegistrationData;
         }
-        
+
         /// <summary>
         /// Creates an unsigned legacy Metalama Free license.
         /// </summary>
