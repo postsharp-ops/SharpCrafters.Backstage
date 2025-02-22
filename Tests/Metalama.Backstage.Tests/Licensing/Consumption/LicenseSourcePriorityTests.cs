@@ -29,7 +29,8 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
         bool isUnattendedProcess,
         string? projectLicense,
         string? userLicense,
-        bool isPreview )
+        bool isPreview,
+        Action<LicensingMessage>? reportMessage = null )
     {
         var serviceCollection = this.CloneServiceCollection();
 
@@ -59,15 +60,17 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 
         var service = serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
 
-        return service.CreateConsumer( new LicenseConsumptionOptions { ProjectLicenseKey = projectLicense } );
+        return service.CreateConsumer( new LicenseConsumptionOptions { ProjectLicenseKey = projectLicense }, reportMessage );
     }
 
     [Fact]
     public void NoMessageGivenWithNoLicense()
     {
-        var licenseConsumptionManager = this.CreateLicenseConsumer( false, null, null, false );
-        Assert.False( licenseConsumptionManager.TryConsume( LicenseRequirement.Any ) );
-        Assert.Empty( licenseConsumptionManager.Messages );
+        var hasMessage = false;
+        this.CreateLicenseConsumer( false, null, null, false, _ => hasMessage = true );
+        Assert.False( hasMessage );
+        
+        // Note that trying to consume does report a message in this case.
     }
 
     [Fact]

@@ -6,6 +6,7 @@ using Metalama.Backstage.Licensing.Consumption.Sources;
 using Metalama.Backstage.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Xunit;
@@ -54,10 +55,13 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
             serviceCollection.AddSingleton<IApplicationInfoProvider>( new ApplicationInfoProvider( applicationInfo ) );
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
+            var messages = new List<LicensingMessage>();
+
             var licenseConsumer = LicenseConsumer.Create(
                 LicenseConsumptionOptions.Default with { SubscriptionGracePeriod = _subscriptionGracePeriod },
                 serviceProvider,
-                [new ExplicitLicenseSource( licenseKey, serviceProvider )] );
+                [new ExplicitLicenseSource( licenseKey, serviceProvider )],
+                messages.Add );
 
             var canConsume = licenseConsumer.TryConsume( LicenseRequirement.Any );
 
@@ -66,7 +70,7 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
             if ( infringingComponent != null )
             {
 #pragma warning disable CA1307 // Specify StringComparison for clarity
-                Assert.Contains( infringingComponent.Name, licenseConsumer.Messages.Single().Text );
+                Assert.Contains( infringingComponent.Name, messages.Single().Text );
 #pragma warning restore CA1307 // Specify StringComparison for clarity
             }
         }
