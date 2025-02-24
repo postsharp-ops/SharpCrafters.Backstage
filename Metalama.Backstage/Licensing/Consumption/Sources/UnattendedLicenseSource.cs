@@ -53,7 +53,7 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         [MaybeNullWhen( true )] out string errorMessage )
     {
         licenseConsumptionProperties = new LicenseConsumptionProperties(
-            LicensedProduct.MetalamaProfessional,
+            LicenseProduct.MetalamaProfessional,
             LicenseType.Unattended,
             null,
             "Unattended Process License",

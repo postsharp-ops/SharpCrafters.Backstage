@@ -17,7 +17,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
         {
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.False( string.IsNullOrEmpty( this.LicenseRegistrationService.RegisteredLicenses.Single().UniqueId ) );
-            Assert.Equal( LicensedProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
+            Assert.Equal( LicenseProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
         }
 
         [Fact]

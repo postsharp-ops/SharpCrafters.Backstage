@@ -4,5 +4,5 @@ namespace Metalama.Backstage.Licensing;
 
 internal static class LicensedProductExtensions
 {
-    public static bool IsSupportedBeforeMetalama20251( this LicensedProduct product ) => product is not LicensedProduct.MetalamaCommunity;
+    public static bool IsSupportedBeforeMetalama20251( this LicenseProduct product ) => product is not LicenseProduct.MetalamaCommunity;
 }

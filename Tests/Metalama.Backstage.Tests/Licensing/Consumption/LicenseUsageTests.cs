@@ -40,7 +40,7 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
         var source2 = new TestLicenseSource( "source2", license2 );
 
         var service = this.CreateConsumptionService( source1, source2 );
-        AssertCanConsume( service, new DelegateLicenseRequirement( context => context.License.LicensedProduct == LicensedProduct.MetalamaProfessional ), true );
+        AssertCanConsume( service, new DelegateLicenseRequirement( context => context.License.LicenseProduct == LicenseProduct.MetalamaProfessional ), true );
         Assert.Equal( 0, license1.NumberOfUses );
         Assert.Equal( 1, license2.NumberOfUses );
         Assert.Equal( 1, source1.NumberOfUses );

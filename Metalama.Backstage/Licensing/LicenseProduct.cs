@@ -1,6 +1,5 @@
 // Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
-using Metalama.Backstage.Licensing.Licenses;
 using System;
 
 namespace Metalama.Backstage.Licensing
@@ -8,9 +7,10 @@ namespace Metalama.Backstage.Licensing
     // The names are used in telemetry and changing them can make the telemetry data ambiguous.
 
     /// <summary>
-    /// Enumeration of licensed products.
+    /// Enumeration of products that can be licensed.
+    /// The <see cref="LicenseProduct"/> (and not the <see cref="LicenseType"/>) determines the set of allowed features.
     /// </summary>
-    public enum LicensedProduct : byte
+    public enum LicenseProduct : byte
     {
         /// <summary>
         /// None.
@@ -24,12 +24,13 @@ namespace Metalama.Backstage.Licensing
         PostSharp20 = 1,
 
         /// <summary>
-        /// PostSharp Ultimate.
+        /// Should be normalized to <see cref="PostSharpUltimate"/>.
         /// </summary>
+        [Obsolete( "Use PostSharpUltimate instead." )]
         PostSharpUltimate1 = 2,
 
         /// <summary>
-        /// PostSharp Ultimate or PostSharp Essentials, if <see cref="LicenseType"/> is <c>Essentials</c>.
+        /// PostSharp Ultimate (before normalization, PostSharp Essentials, if <see cref="LicenseType"/> is <c>Essentials</c>).
         /// </summary>
         PostSharpUltimate = 3,
 
@@ -85,7 +86,7 @@ namespace Metalama.Backstage.Licensing
         /// PostSharp Caching Library.
         /// </summary>
         PostSharpCachingLibrary = 15,
-        
+
         /// <summary>
         /// PostSharp Essentials.
         /// </summary>

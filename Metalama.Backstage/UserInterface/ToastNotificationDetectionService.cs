@@ -3,7 +3,7 @@
 using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing.Licenses;
+using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Registration;
 using System;
 
@@ -79,15 +79,26 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
                 }
 
             case { SubscriptionEndDate: not null }
-                when license.LicenseType != LicenseType.Evaluation // We only show license expiration warnings for non-evaluation licenses.
-                     && license.SubscriptionEndDate.Value - LicensingConstants.SubscriptionExpirationWarningPeriod < this._dateTimeProvider.UtcNow:
-                this._toastNotificationService.Show(
-                    new ToastNotification(
-                        ToastNotificationKinds.SubscriptionExpiring,
-                        $"Your Metalama subscription {this.FormatExpiration( license.SubscriptionEndDate.Value )}",
-                        "Renew your subscription and register a new license key to continue benefiting from updates." ) );
+                when license.SubscriptionEndDate.Value - LicensingConstants.SubscriptionExpirationWarningPeriod < this._dateTimeProvider.UtcNow:
 
-                notificationReported = true;
+                if ( license.Product == LicenseProduct.MetalamaCommunity )
+                {
+                    // TODO.
+                }
+                else if ( license.LicenseType == LicenseType.Evaluation )
+                {
+                    // Nothing to do.
+                }
+                else
+                {
+                    this._toastNotificationService.Show(
+                        new ToastNotification(
+                            ToastNotificationKinds.SubscriptionExpiring,
+                            $"Your Metalama subscription {this.FormatExpiration( license.SubscriptionEndDate.Value )}",
+                            "Renew your subscription and register a new license key to continue benefiting from updates." ) );
+
+                    notificationReported = true;
+                }
 
                 break;
         }

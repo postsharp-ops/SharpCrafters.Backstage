@@ -20,7 +20,7 @@ namespace Metalama.Backstage.Licensing.Registration
         int? LicenseId,
         string? Licensee,
         string Description,
-        LicensedProduct Product,
+        LicenseProduct Product,
         LicenseType LicenseType,
         DateTime? ValidFrom,
         DateTime? ValidTo,

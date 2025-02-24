@@ -99,7 +99,7 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
 
             Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
-            Assert.Equal( LicensedProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
+            Assert.Equal( LicenseProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
         }
 
         [Fact]

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Licensing.Registration;
 using System;
 using System.Linq;
@@ -26,10 +25,10 @@ namespace Metalama.Backstage.Tests.Licensing.Registration
 
             var licenseProperties = this.LicenseRegistrationService.RegisteredLicenses.Single();
             Assert.NotNull( licenseProperties );
-            Assert.Equal( LicenseType.Evaluation, licenseProperties!.LicenseType );
-            Assert.Equal( expectedStart, licenseProperties!.ValidFrom!.Value.Date );
-            Assert.Equal( expectedEnd, licenseProperties!.ValidTo!.Value.Date );
-            Assert.Equal( expectedEnd, licenseProperties!.SubscriptionEndDate );
+            Assert.Equal( LicenseType.Evaluation, licenseProperties.LicenseType );
+            Assert.Equal( expectedStart, licenseProperties.ValidFrom!.Value.Date );
+            Assert.Equal( expectedEnd, licenseProperties.ValidTo!.Value.Date );
+            Assert.Equal( expectedEnd, licenseProperties.SubscriptionEndDate );
         }
 
         private void AssertEvaluationNotEligible( string reason )

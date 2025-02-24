@@ -19,7 +19,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 return false;
             }
 
-            if ( !Enum.IsDefined( typeof(LicensedProduct), this.Product ) )
+            if ( !Enum.IsDefined( typeof(LicenseProduct), this.Product ) )
             {
                 errorMessage = "the license key licensed product is unknown";
 
