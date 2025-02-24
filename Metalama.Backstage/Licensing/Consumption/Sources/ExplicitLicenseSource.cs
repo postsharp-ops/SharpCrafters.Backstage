@@ -13,7 +13,7 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
 
     public override string Description => "the MSBuild property or environment variable named MetalamaLicense";
 
-    public override LicenseSourceKind Kind => LicenseSourceKind.Explicit;
+    public override LicenseSourceKind Kind { get; }
 
     protected override IEnumerable<LicenseRegistrationProperties> GetRegisteredLicenses( Action<LicensingMessage> reportMessage )
     {
@@ -25,10 +25,11 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
         return [license!.ToLicenseRegistrationProperties()];
     }
 
-    public ExplicitLicenseSource( string licenseString, IServiceProvider services )
+    public ExplicitLicenseSource( string licenseString, LicenseSourceKind kind, IServiceProvider services )
         : base( services )
     {
         this._licenseString = licenseString;
+        this.Kind = kind;
     }
 
     public override LicenseSourcePriority Priority => LicenseSourcePriority.Explicit;

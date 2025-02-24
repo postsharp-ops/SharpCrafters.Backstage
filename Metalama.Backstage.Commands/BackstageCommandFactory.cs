@@ -4,6 +4,7 @@ using Metalama.Backstage.Commands.Configuration;
 using Metalama.Backstage.Commands.Licensing;
 using Metalama.Backstage.Commands.Maintenance;
 using Metalama.Backstage.Commands.Telemetry;
+using Metalama.Backstage.Commands.UserInterface;
 using Spectre.Console.Cli;
 using System;
 
@@ -45,7 +46,7 @@ public static class BackstageCommandFactory
                         license.AddCommand<RegisterCommunityCommand>( "community" )
                             .WithData( options )
                             .WithDescription( "Switches to Metalama Community." );
-                        
+
 #pragma warning disable CS0612 // Type or member is obsolete
                         license.AddCommand<RegisterLegacyFreeCommand>( "free" )
                             .WithData( options )

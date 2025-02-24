@@ -16,7 +16,7 @@ namespace Metalama.Backstage.Tests.Licensing.LicenseSources
         [Fact]
         public void OneLicenseStringPasses()
         {
-            ExplicitLicenseSource source = new( LicenseKeyProvider.MetalamaProfessionalBusiness, this.ServiceProvider );
+            ExplicitLicenseSource source = new( LicenseKeyProvider.MetalamaProfessionalBusiness, LicenseSourceKind.Test, this.ServiceProvider );
 
             var license = source.GetLicenses( _ => { } ).Single();
             Assert.NotNull( license );

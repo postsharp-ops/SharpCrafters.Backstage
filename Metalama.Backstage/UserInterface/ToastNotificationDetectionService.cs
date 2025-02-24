@@ -104,7 +104,7 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
         }
     }
 
-    private void DetectImpl( ToastNotificationDetectionOptions options )
+    private void DetectImpl()
     {
         // Avoid too frequent detections for performance reasons. The threshold (here 15 seconds) should be lower
         // than the lowest auto-snooze period of a toast notification.
@@ -131,7 +131,8 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
 
         this._logger.Trace?.Log( "Detecting relevant toast notifications." );
 
-        if ( this._licenseRegistrationService != null && !options.HasValidLicense )
+        // Validate registered licenses, but do not complain about the lack of licenses.
+        if ( this._licenseRegistrationService != null )
         {
             foreach ( var license in this._licenseRegistrationService.RegisteredLicenses )
             {
@@ -139,14 +140,12 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
             }
         }
 
-        // TODO: Show a toast notification suggesting to subscribe the newsletter. (34701)
-
+        // Suggest to install Visual Studio Tools for Metalama.
         if ( !notificationReported && this._ideExtensionStatusService?.ShouldRecommendToInstallVisualStudioExtension == true )
         {
             this._toastNotificationService.Show( new ToastNotification( ToastNotificationKinds.VsxNotInstalled ) );
         }
     }
 
-    public void Detect( ToastNotificationDetectionOptions? options )
-        => this._backgroundTasksService.Enqueue( () => this.DetectImpl( options ?? new ToastNotificationDetectionOptions() ) );
+    public void Detect() => this._backgroundTasksService.Enqueue( this.DetectImpl );
 }
