@@ -3,7 +3,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing.Licenses
+namespace Metalama.Backstage.Licensing
 {
     /// <summary>
     /// Types of licenses.

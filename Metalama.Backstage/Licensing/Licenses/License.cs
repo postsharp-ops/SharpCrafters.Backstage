@@ -184,19 +184,18 @@ namespace Metalama.Backstage.Licensing.Licenses
 
             switch ( licenseKeyData.Product )
             {
-                case LicensedProduct.MetalamaCommunity:
-                case LicensedProduct.MetalamaProfessional:
-                case LicensedProduct.PostSharpFramework:
-                case LicensedProduct.PostSharpUltimate:
-                case LicensedProduct.PostSharpUltimate1:
+                case LicenseProduct.MetalamaCommunity:
+                case LicenseProduct.MetalamaProfessional:
+                case LicenseProduct.PostSharpFramework:
+                case LicenseProduct.PostSharpUltimate:
                     break;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
                 // No longer issued but existing keys are fully supported.
-                case LicensedProduct.MetalamaUltimate:
-                case LicensedProduct.MetalamaStarter:
-                case LicensedProduct.MetalamaFree:
+                case LicenseProduct.MetalamaUltimate:
+                case LicenseProduct.MetalamaStarter:
+                case LicenseProduct.MetalamaFree:
 #pragma warning restore CS0618 // Type or member is obsolete
                     break;
 
@@ -217,8 +216,8 @@ namespace Metalama.Backstage.Licensing.Licenses
 
             errorMessage = null;
 
-            var licenseType = licenseKeyData.TransformObsoleteLicenseType();
-            var product = licenseKeyData.TransformObsoleteProduct();
+            var licenseType = licenseKeyData.NormalizeLicenseType();
+            var product = licenseKeyData.NormalizeProduct();
 #pragma warning disable CS0618 // Type or member is obsolete
             var isRedistributable = licenseType is LicenseType.OpenSourceRedistribution or LicenseType.CommercialRedistribution;
 #pragma warning restore CS0618 // Type or member is obsolete

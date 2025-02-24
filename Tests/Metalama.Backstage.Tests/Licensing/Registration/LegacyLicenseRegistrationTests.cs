@@ -23,8 +23,8 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
 
         var registeredLicenses = this.LicenseRegistrationService.RegisteredLicenses.ToList();
         Assert.Equal( 2, registeredLicenses.Count );
-        Assert.Contains( registeredLicenses, l => l.Product == LicensedProduct.MetalamaFree );
-        Assert.Contains( registeredLicenses, l => l.Product == LicensedProduct.MetalamaCommunity );
+        Assert.Contains( registeredLicenses, l => l.Product == LicenseProduct.MetalamaFree );
+        Assert.Contains( registeredLicenses, l => l.Product == LicenseProduct.MetalamaCommunity );
     }
 
     [Fact]
@@ -36,8 +36,8 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
 
         var registeredLicenses = this.LicenseRegistrationService.RegisteredLicenses.ToList();
         Assert.Equal( 2, registeredLicenses.Count );
-        Assert.Contains( registeredLicenses, l => l.Product == LicensedProduct.MetalamaFree );
-        Assert.Contains( registeredLicenses, l => l.Product == LicensedProduct.MetalamaCommunity );
+        Assert.Contains( registeredLicenses, l => l.Product == LicenseProduct.MetalamaFree );
+        Assert.Contains( registeredLicenses, l => l.Product == LicenseProduct.MetalamaCommunity );
     }
 
     [Fact]

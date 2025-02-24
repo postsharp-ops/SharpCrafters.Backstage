@@ -2,9 +2,9 @@
 
 using Metalama.Backstage.Application;
 using Metalama.Backstage.Extensibility;
+using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Consumption;
 using Metalama.Backstage.Licensing.Consumption.Sources;
-using Metalama.Backstage.Licensing.Licenses;
 using Metalama.Backstage.Testing;
 using Metalama.Backstage.Tests.Extensibility;
 using Microsoft.Extensions.DependencyInjection;

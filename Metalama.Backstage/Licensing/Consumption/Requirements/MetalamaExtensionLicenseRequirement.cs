@@ -17,21 +17,21 @@ public class MetalamaExtensionLicenseRequirement : LicenseRequirement
         }
 
         // Check that the product is eligible.
-        switch ( context.License.LicensedProduct )
+        switch ( context.License.LicenseProduct )
         {
-            case LicensedProduct.MetalamaProfessional:
-            case LicensedProduct.PostSharpFramework:
-            case LicensedProduct.PostSharpUltimate:
+            case LicenseProduct.MetalamaProfessional:
+            case LicenseProduct.PostSharpFramework:
+            case LicenseProduct.PostSharpUltimate:
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            case LicensedProduct.MetalamaStarter:
-            case LicensedProduct.MetalamaUltimate:
+            case LicenseProduct.MetalamaStarter:
+            case LicenseProduct.MetalamaUltimate:
 #pragma warning restore CS0618 // Type or member is obsolete
                 break;
 
             default:
                 context.Logger.Warning?.Log(
-                    $"License '{context.License.DisplayName}' not eligible: the product {context.License.LicensedProduct} is not eligible." );
+                    $"License '{context.License.DisplayName}' not eligible: the product {context.License.LicenseProduct} is not eligible." );
 
                 return false;
         }

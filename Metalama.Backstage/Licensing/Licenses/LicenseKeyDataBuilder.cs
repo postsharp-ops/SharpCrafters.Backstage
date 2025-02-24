@@ -138,7 +138,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     /// <summary>
     /// Gets or sets the licensed product.
     /// </summary>
-    public LicensedProduct Product { get; set; }
+    public LicenseProduct Product { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the current license.

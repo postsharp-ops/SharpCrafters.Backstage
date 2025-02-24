@@ -41,13 +41,13 @@ internal sealed record LicensingConfiguration : ConfigurationFile
 
         // First we should remove previous licenses except if they must co-exist for backward-compatibility reasons.
 #pragma warning disable CS0618 // Type or member is obsolete
-        if ( license.Product == LicensedProduct.MetalamaCommunity )
+        if ( license.Product == LicenseProduct.MetalamaCommunity )
         {
-            clone = clone.RemoveAllLicensesExcept( LicensedProduct.MetalamaFree );
+            clone = clone.RemoveAllLicensesExcept( LicenseProduct.MetalamaFree );
         }
-        else if ( license.Product == LicensedProduct.MetalamaFree )
+        else if ( license.Product == LicenseProduct.MetalamaFree )
         {
-            clone = clone.RemoveAllLicensesExcept( LicensedProduct.MetalamaCommunity );
+            clone = clone.RemoveAllLicensesExcept( LicenseProduct.MetalamaCommunity );
         }
 #pragma warning restore CS0618 // Type or member is obsolete
         else
@@ -68,7 +68,7 @@ internal sealed record LicensingConfiguration : ConfigurationFile
 
     public LicensingConfiguration RemoveAllLicenses() => this with { LegacyLicense = null, Licenses = ImmutableArray<string?>.Empty };
 
-    private LicensingConfiguration RemoveAllLicensesExcept( LicensedProduct product )
+    private LicensingConfiguration RemoveAllLicensesExcept( LicenseProduct product )
     {
         if ( this.LegacyLicense != null && GetLicenseKeyData( this.LegacyLicense )?.Product != product )
         {

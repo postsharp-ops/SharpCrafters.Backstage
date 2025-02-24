@@ -22,7 +22,7 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// <summary>
         /// Gets the product licensed by the license.
         /// </summary>
-        public LicensedProduct LicensedProduct { get; }
+        public LicenseProduct LicenseProduct { get; }
 
         /// <summary>
         /// Gets the type of the license.
@@ -68,7 +68,7 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// <summary>
         /// Initializes a new instance of the <see cref="LicenseConsumptionProperties"/> class.
         /// </summary>
-        /// <param name="licensedProduct">The product licensed by the license.</param>
+        /// <param name="licenseProduct">The product licensed by the license.</param>
         /// <param name="licenseType">The type of the license.</param>
         /// <param name="licensedRequirement">Requirement available by the license.</param>
         /// <param name="licensedNamespace">Namespace constraint of the license. <c>null</c> if there is no namespace constraint.</param>
@@ -78,7 +78,7 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// <param name="isRedistributable">Indicates whether the license is redistributable.</param>
         /// <param name="maxAspectsCount">The number of aspects allowed to be used.</param>
         public LicenseConsumptionProperties(
-            LicensedProduct licensedProduct,
+            LicenseProduct licenseProduct,
             LicenseType licenseType,
             string? licensedNamespace,
             string displayName,
@@ -90,7 +90,7 @@ namespace Metalama.Backstage.Licensing.Consumption
             SubscriptionStatus subscriptionStatus,
             LicenseGeneration generation )
         {
-            this.LicensedProduct = licensedProduct;
+            this.LicenseProduct = licenseProduct;
             this.LicenseType = licenseType;
             this.DisplayName = displayName;
             this.LicenseString = licenseString;
