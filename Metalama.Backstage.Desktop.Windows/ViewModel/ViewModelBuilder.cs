@@ -22,9 +22,9 @@ internal static class ViewModelBuilder
         {
             viewModel = new NotificationViewModel(
                 settings.Kind,
-                "Activate Metalama",
+                "Metalama Professional",
                 """
-                Use Metalama Community, or register a license key.
+                This project uses a premium Metalama feature. Try Metalama Professional for 45 days or register a license key.
                 """,
                 new CommandActionViewModel( "Options", activationArguments.Setup ) );
 
