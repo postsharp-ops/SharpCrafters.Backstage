@@ -9,7 +9,6 @@ public enum SelectedAction
 {
     None,
     OpenSource,
-    Community,
     Trial,
     Register,
     Skip

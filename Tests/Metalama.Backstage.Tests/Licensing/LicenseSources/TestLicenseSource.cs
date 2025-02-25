@@ -15,7 +15,7 @@ namespace Metalama.Backstage.Tests.Licensing.LicenseSources
 
         public string Description => "test license source";
 
-        public LicenseSourceKind Kind => LicenseSourceKind.None;
+        public LicenseSourceKind Kind => LicenseSourceKind.Test;
 
         [UsedImplicitly]
         public string Id { get; }

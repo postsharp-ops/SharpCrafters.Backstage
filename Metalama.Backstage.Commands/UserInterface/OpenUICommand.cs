@@ -4,7 +4,7 @@ using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.UserInterface;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Commands;
+namespace Metalama.Backstage.Commands.UserInterface;
 
 // ReSharper disable once InconsistentNaming
 public class OpenUICommand : BaseAsyncCommand<BaseCommandSettings>

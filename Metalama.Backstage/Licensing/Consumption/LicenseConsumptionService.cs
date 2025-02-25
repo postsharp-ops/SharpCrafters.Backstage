@@ -40,7 +40,7 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         if ( !string.IsNullOrEmpty( options.ProjectLicenseKey ) )
         {
             // ReSharper disable once RedundantSuppressNullableWarningExpression
-            sources.Add( new ExplicitLicenseSource( options.ProjectLicenseKey!, this._services ) );
+            sources.Add( new ExplicitLicenseSource( options.ProjectLicenseKey!, LicenseSourceKind.Project, this._services ) );
         }
 
         return LicenseConsumer.Create( options, this._services, sources, reportMessage );

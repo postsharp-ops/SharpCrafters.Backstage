@@ -6,6 +6,7 @@ using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
 using Metalama.Backstage.Licensing.Consumption.Sources;
 using Metalama.Backstage.Licensing.Licenses;
+using Metalama.Backstage.UserInterface;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -19,6 +20,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger _logger;
     private readonly IApplicationInfo _applicationInfo;
+    private readonly IUserInterfaceService? _userInterfaceService;
 
     private DateTime _lastAuditTime = DateTime.MinValue;
 
@@ -30,6 +32,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         this._logger = services.GetLoggerFactory().Licensing();
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
         this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        this._userInterfaceService = services.GetBackstageService<IUserInterfaceService>();
     }
 
     public static ILicenseConsumer Create(
@@ -88,7 +91,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     }
 
     /// <inheritdoc />
-    public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
+    public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage, bool showsToastNotification )
     {
         var mustAudit = false;
 
@@ -120,15 +123,22 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             }
         }
 
-        reportMessage?.Invoke(
-            new LicensingMessage( $"The component '{requirement.ComponentName}' is not licensed: it requires {requirement.RequiredLicenseDescription}." )
-            {
-                IsError = true
-            } );
-
-        // TODO: We might open some UI here.
-
         this._logger.Warning?.Log( $"TryConsume({{{requirement}}}: no eligible license found." );
+
+        var messageText = $"The component '{requirement.ComponentName}' is not licensed: it requires {requirement.RequiredLicenseDescription}.";
+
+        // Report a licensing message (this is typically reported as a compiler diagnostic).
+        reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true } );
+
+        // Show a toast notification, unless the application provides its own UI.
+        if ( showsToastNotification )
+        {
+            this._userInterfaceService?.ShowToastNotification(
+                new ToastNotification(
+                    ToastNotificationKinds.RequiresLicense,
+                    "Metalama Professional",
+                    messageText + "Open to start a trial or register a license key." ) );
+        }
 
         return false;
     }

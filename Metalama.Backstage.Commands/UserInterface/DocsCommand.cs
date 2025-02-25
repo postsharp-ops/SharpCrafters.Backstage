@@ -3,7 +3,7 @@
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.UserInterface;
 
-namespace Metalama.Backstage.Commands;
+namespace Metalama.Backstage.Commands.UserInterface;
 
 public class DocsCommand : BaseCommand<BaseCommandSettings>
 {

@@ -43,6 +43,9 @@ public abstract class LicenseConsumptionServiceTestsBase : LicensingTestsBase
         return manager;
     }
 
+    private protected ILicenseConsumptionService CreateConsumptionService( string licenseKey )
+        => this.CreateConsumptionService( this.CreateInstrumentedLicenseWrapper( licenseKey ) );
+
     private protected ILicenseConsumptionService CreateConsumptionService( params ILicenseSource[] licenseSources )
     {
         return new LicenseConsumptionService( this.ServiceProvider, licenseSources );

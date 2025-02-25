@@ -60,7 +60,7 @@ namespace Metalama.Backstage.Tests.Licensing.Consumption
             var licenseConsumer = LicenseConsumer.Create(
                 LicenseConsumptionOptions.Default with { SubscriptionGracePeriod = _subscriptionGracePeriod },
                 serviceProvider,
-                [new ExplicitLicenseSource( licenseKey, serviceProvider )],
+                [new ExplicitLicenseSource( licenseKey, LicenseSourceKind.Test, serviceProvider )],
                 messages.Add );
 
             var canConsume = licenseConsumer.TryConsume( LicenseRequirement.Any );

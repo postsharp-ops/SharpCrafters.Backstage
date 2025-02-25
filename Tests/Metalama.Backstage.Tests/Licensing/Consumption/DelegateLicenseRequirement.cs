@@ -16,7 +16,7 @@ internal sealed class DelegateLicenseRequirement : LicenseRequirement
 
     public override bool IsEligible( LicenseConsumptionContext context ) => this._predicate( context );
 
-    public override string ComponentName => throw new NotImplementedException();
+    public override string ComponentName => "<Component>";
 
-    public override string RequiredLicenseDescription => throw new NotImplementedException();
+    public override string RequiredLicenseDescription => "<Required License>";
 }
