@@ -52,7 +52,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             if ( !license.License.TryGetConsumptionProperties( options, out var licenseConsumptionData, out var errorMessage ) )
             {
                 _ = license.License.TryGetRegistrationProperties( out var registrationData, out _ );
-                var message = $"Cannot use the license '{registrationData?.Description}': {errorMessage}";
+                var message = $"Cannot use the license '{registrationData?.Description}': {errorMessage}".TrimEnd( '.' ) + ".";
 
                 if ( registrationData is { IsSelfCreated: false } )
                 {
