@@ -35,7 +35,7 @@ namespace Metalama.Backstage.Infrastructure
 
             this._serviceProvider = serviceProvider;
 
-            var logger = serviceProvider.GetBackstageService<ILoggerFactory>()?.GetLogger( nameof( StandardDirectories ) );
+            var logger = serviceProvider.GetBackstageService<EarlyLoggerFactory>()?.GetLogger( nameof( StandardDirectories ) );
 
             static string GetApplicationDataDirectory( Environment.SpecialFolder applicationDataDirectory, string metalamaDirectoryName )
             {
