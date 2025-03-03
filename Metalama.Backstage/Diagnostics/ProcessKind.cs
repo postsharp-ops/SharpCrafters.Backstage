@@ -84,5 +84,10 @@ public enum ProcessKind
     /// <summary>
     /// Language server used by VS Code C# Dev Kit.
     /// </summary>
-    LanguageServer
+    LanguageServer,
+    
+    /// <summary>
+    /// An MSBuild node process.
+    /// </summary>
+    MsBuild
 }

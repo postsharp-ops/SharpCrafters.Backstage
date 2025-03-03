@@ -5,7 +5,7 @@ using Metalama.Backstage.Licensing.Consumption.Sources;
 using Metalama.Backstage.Licensing.Licenses;
 using System;
 
-namespace Metalama.Backstage.Licensing.Consumption;
+namespace Metalama.Backstage.Licensing;
 
 [PublicAPI]
 public record LicensingInitializationOptions

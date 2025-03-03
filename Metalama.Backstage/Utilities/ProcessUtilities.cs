@@ -74,6 +74,9 @@ public static class ProcessUtilities
             case "microsoft.codeanalysis.languageserver":
             case "microsoft.visualstudio.code.languageserver":
                 return ProcessKind.LanguageServer;
+            
+            case "msbuild":
+                return ProcessKind.MsBuild;
 
             case "testhost":
                 return ProcessKind.TestHost;
@@ -103,6 +106,10 @@ public static class ProcessUtilities
                     else if ( commandLine.Contains( "resharpertestrunner.dll" ) )
                     {
                         return ProcessKind.ResharperTestRunner;
+                    }
+                    else if ( commandLine.Contains( "msbuild.dll" ) )
+                    {
+                        return ProcessKind.MsBuild;
                     }
                     else
                     {
