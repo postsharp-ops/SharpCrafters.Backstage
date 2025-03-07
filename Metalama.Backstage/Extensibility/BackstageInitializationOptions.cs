@@ -3,7 +3,7 @@
 using JetBrains.Annotations;
 using Metalama.Backstage.Application;
 using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Licensing.Consumption;
+using Metalama.Backstage.Licensing;
 using Metalama.Backstage.UserInterface;
 using System;
 
