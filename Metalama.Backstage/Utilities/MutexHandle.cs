@@ -49,14 +49,12 @@ internal sealed class MutexHandle : IDisposable
         }
     }
 
-#pragma warning disable CA1821
-#if DEBUG
     ~MutexHandle()
     {
         this.Dispose( false );
-
+        
+#if DEBUG
         throw new InvalidOperationException( "The mutex was not disposed. It was acquired here: " + Environment.NewLine + this._stackTrace );
-    }
 #endif
-#pragma warning restore CA1821
+    }
 }
