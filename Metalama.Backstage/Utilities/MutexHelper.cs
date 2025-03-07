@@ -107,7 +107,9 @@ public static class MutexHelper
                     // Otherwise we will try to create the mutex.
                     try
                     {
-                        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+                        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) &&
+                             (RuntimeInformation.FrameworkDescription.StartsWith( ".NET Framework", StringComparison.Ordinal ) ||
+                              (RuntimeInformation.FrameworkDescription.StartsWith( ".NET", StringComparison.Ordinal ) && Environment.Version.Major >= 8)) )
                         {
                             // Based on https://stackoverflow.com/a/19717341/41071.
                             // As I understand it, creating a mutex without security descriptor uses default security, which could be different on different systems.
