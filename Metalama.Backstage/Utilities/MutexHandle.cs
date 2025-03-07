@@ -12,11 +12,14 @@ internal sealed class MutexHandle : IDisposable
     private readonly Mutex _mutex;
     private readonly string _name;
     private readonly ILogger? _logger;
+    private readonly object _disposingSync = new object();
 
 #if DEBUG
     private readonly StackTrace _stackTrace = new();
 #endif
-
+    
+    private bool _disposed;
+    
     public MutexHandle( Mutex mutex, string name, ILogger? logger )
     {
         this._mutex = mutex;
@@ -35,8 +38,15 @@ internal sealed class MutexHandle : IDisposable
 
     private void Dispose( bool disposing )
     {
-        this._mutex.ReleaseMutex();
-        this._mutex.Dispose();
+        lock ( this._disposingSync )
+        {
+            if ( !this._disposed )
+            {
+                this._mutex.ReleaseMutex();
+                this._mutex.Dispose();
+                this._disposed = true;
+            }
+        }
     }
 
 #pragma warning disable CA1821
