@@ -17,6 +17,7 @@ namespace Metalama.Backstage.Licensing.Consumption;
 internal sealed class LicenseConsumer : ILicenseConsumer
 {
     private readonly ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> _licenses;
+    private readonly LicenseConsumptionOptions _options;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger _logger;
     private readonly IApplicationInfo _applicationInfo;
@@ -26,9 +27,11 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
     private LicenseConsumer(
         IServiceProvider services,
-        ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> licenses )
+        ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> licenses,
+        LicenseConsumptionOptions options )
     {
         this._licenses = licenses;
+        this._options = options;
         this._logger = services.GetLoggerFactory().Licensing();
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
         this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
@@ -69,19 +72,10 @@ internal sealed class LicenseConsumer : ILicenseConsumer
                 continue;
             }
 
-#pragma warning disable CS0612 // Type or member is obsolete
-            if ( !string.IsNullOrEmpty( licenseConsumptionData.LicensedNamespace ) )
-            {
-                logger.Warning?.Log( $"The license '{licenseConsumptionData.LicenseString}' has a namespace constraint, which is no longer supported." );
-
-                continue;
-            }
-#pragma warning restore CS0612 // Type or member is obsolete
-
             validLicenses.Add( (license.License, licenseConsumptionData) );
         }
 
-        return new LicenseConsumer( services, validLicenses.ToImmutableArray() );
+        return new LicenseConsumer( services, validLicenses.ToImmutableArray(), options );
 
         void ReportMessage( LicensingMessage message )
         {
@@ -105,10 +99,29 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
         foreach ( var license in this._licenses )
         {
+            // Check project-bound license keys.
+            if ( !string.IsNullOrEmpty( license.Properties.LicensedNamespace )
+                 && (string.IsNullOrEmpty( this._options.ProjectName ) || !this._options.ProjectName!.StartsWith(
+                     license.Properties.LicensedNamespace!,
+                     StringComparison.OrdinalIgnoreCase )) )
+            {
+                reportMessage?.Invoke(
+                    new LicensingMessage(
+                        $"The license key '{license.Properties.DisplayName}' is bound to the " +
+                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{this._options.ProjectName}'." ) );
+
+                this._logger.Warning?.Log(
+                    $"TryConsume({{{requirement}}}: license key '{license.Properties.DisplayName}' ignored because it is bound to the namespace" +
+                    $" '{license.Properties.LicensedNamespace}' it does not match the current project name '{this._options.ProjectName}'." );
+
+                continue;
+            }
+
+            // Check eligibility.
             if ( requirement.IsEligible(
                     new LicenseConsumptionContext( license.Properties, this._applicationInfo, this._dateTimeProvider.UtcNow, this._logger ) ) )
             {
-                this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is eligible" );
+                this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is eligible." );
 
                 if ( mustAudit )
                 {
@@ -119,13 +132,23 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             }
             else
             {
-                this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is not eligible" );
+                this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is not eligible." );
             }
         }
 
         this._logger.Warning?.Log( $"TryConsume({{{requirement}}}: no eligible license found." );
 
         var messageText = $"The component '{requirement.ComponentName}' is not licensed: it requires {requirement.RequiredLicenseDescription}.";
+        
+        if ( this._licenses.IsEmpty )
+        {
+            messageText += " No license key was found.";   
+        }
+        else
+        {
+            messageText +=
+                $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.LicenseString ) )}.";
+        }
 
         // Report a licensing message (this is typically reported as a compiler diagnostic).
         reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true } );

@@ -148,7 +148,6 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     /// <summary>
     /// Gets or sets the licensed namespace.
     /// </summary>
-    [Obsolete( "Redistribution keys are no longer supported." )]
     public string? Namespace
     {
         get => (string?) this.GetFieldValue( LicenseFieldIndex.Namespace );

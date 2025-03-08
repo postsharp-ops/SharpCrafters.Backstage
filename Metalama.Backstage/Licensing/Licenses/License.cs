@@ -227,7 +227,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 product,
                 licenseType,
                 licenseKeyData.Namespace,
-                $"{licenseKeyData.GetProductName()}, Id={licenseKeyData.LicenseUniqueId}",
+                $"{licenseKeyData.GetDisplayName()}, Id={licenseKeyData.LicenseUniqueId}",
                 licenseKeyData.GetMinPostSharpVersion(),
                 licenseKeyData.LicenseString,
                 isRedistributable,

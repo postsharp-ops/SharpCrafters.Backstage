@@ -19,6 +19,8 @@ public sealed class TestLicenseKeyProvider
     private readonly ConcurrentDictionary<string, string> _cachedLicenses = new();
 
     public LicensingAuthority Authority { get; } = LicensingAuthority.GetTestAuthority();
+    
+    public const string NamespaceConstraint = "TestNamespace";
 
     private string GenerateLicenseKey( int id, Action<LicenseKeyDataBuilder> action, bool sign = true, bool endSubscription = true )
     {
@@ -152,6 +154,18 @@ public sealed class TestLicenseKeyProvider
                 builder.Product = LicenseProduct.MetalamaProfessional;
                 builder.LicenseType = LicenseType.Business;
                 builder.SubscriptionEndDate = this.ExpiredSubscriptionEndDate;
+            } );
+    
+    public string MetalamaProfessionalEvaluationNamespaceConstrained
+        => this.GenerateLicenseKey(
+            9,
+            key =>
+            {
+                key.Product = LicenseProduct.MetalamaProfessional;
+                key.LicenseType = LicenseType.Evaluation;
+                key.Auditable = false;
+                key.Generation = LicenseGeneration.Current;
+                key.Namespace = NamespaceConstraint;
             } );
 
     [Obsolete]

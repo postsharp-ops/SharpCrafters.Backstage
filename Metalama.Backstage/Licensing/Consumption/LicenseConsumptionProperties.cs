@@ -16,7 +16,6 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// Gets the namespace constraint of the license.
         /// Gets <c>null</c> if there is no namespace constraint.
         /// </summary>
-        [Obsolete]
         public string? LicensedNamespace { get; }
 
         /// <summary>
@@ -98,9 +97,9 @@ namespace Metalama.Backstage.Licensing.Consumption
             this.SubscriptionEndDate = subscriptionEndDate;
             this.SubscriptionStatus = subscriptionStatus;
             this.Generation = generation;
+            this.LicensedNamespace = licensedNamespace;
 
 #pragma warning disable CS0612 // Type or member is obsolete
-            this.LicensedNamespace = licensedNamespace;
             this.IsRedistributable = isRedistributable;
             this.MinPostSharpVersion = minPostSharpVersion;
 #pragma warning restore CS0612 // Type or member is obsolete

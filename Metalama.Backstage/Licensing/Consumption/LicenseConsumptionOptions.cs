@@ -1,13 +1,17 @@
 // Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
+using JetBrains.Annotations;
 using Metalama.Backstage.Licensing.Consumption.Sources;
 using System;
 
 namespace Metalama.Backstage.Licensing.Consumption;
 
+[PublicAPI]
 public sealed record LicenseConsumptionOptions
 {
     public string? ProjectLicenseKey { get; init; }
+    
+    public string? ProjectName { get; init; }
 
     public TimeSpan? SubscriptionGracePeriod { get; init; }
     

@@ -40,7 +40,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             };
 #pragma warning restore CS0618
 
-        internal static string GetProductName( this LicenseKeyData licenseKeyData )
+        internal static string GetDisplayName( this LicenseKeyData licenseKeyData )
             => NormalizeProduct( licenseKeyData ) switch
             {
                 LicenseProduct.PostSharpFramework => "PostSharp Framework",
@@ -102,7 +102,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// </summary>
         public static LicenseRegistrationProperties ToLicenseRegistrationProperties( this LicenseKeyData licenseKeyData, string? licenseString = null )
         {
-            var description = licenseKeyData.GetProductName();
+            var description = licenseKeyData.GetDisplayName();
 
             bool licenseServerEligible;
 
