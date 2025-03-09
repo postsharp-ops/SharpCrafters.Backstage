@@ -2,7 +2,9 @@
 
 using Metalama.Backstage.Diagnostics;
 using System;
+#if DEBUG
 using System.Diagnostics;
+#endif
 using System.Threading;
 
 namespace Metalama.Backstage.Utilities;
