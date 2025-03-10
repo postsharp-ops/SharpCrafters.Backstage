@@ -65,7 +65,7 @@
         </ItemGroup>
     </Target>
 
-    <Import Project="../../eng/DeterministicZip.tasks"/>
+    <Import Project="../../../eng/DeterministicZip.tasks"/>
 
     <Target Name="Zip" Inputs="@(ZipInputFiles)" Outputs="$(OutputZipFile)" AfterTargets="Build" DependsOnTargets="ResolveZipInputFiles" Condition="'$(IsCrossTargetingBuild)'!='true'">
 
