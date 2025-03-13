@@ -291,7 +291,7 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
     public ServicingPhase ServicingPhase
     {
         get
-            => this.GetFieldValue( LicenseFieldIndex.SupportLevel ) switch
+            => this.GetFieldValue( LicenseFieldIndex.ServicingPhase ) switch
             {
                 null => ServicingPhase.Default,
                 byte supportLevel => (ServicingPhase) supportLevel,
@@ -302,11 +302,11 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
         {
             if ( value != ServicingPhase.Default )
             {
-                this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SupportLevel, (byte) value );
+                this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.ServicingPhase, (byte) value );
             }
             else
             {
-                this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.SupportLevel, null );
+                this.SetFieldValue<LicenseFieldByte>( LicenseFieldIndex.ServicingPhase, null );
             }
         }
     }

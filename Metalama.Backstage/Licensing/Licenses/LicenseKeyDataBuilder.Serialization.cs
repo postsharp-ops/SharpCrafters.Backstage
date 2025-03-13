@@ -44,7 +44,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                     case LicenseFieldIndex.GraceDays:
                     case LicenseFieldIndex.GracePercent:
                     case LicenseFieldIndex.DevicesPerUser:
-                    case LicenseFieldIndex.SupportLevel:
+                    case LicenseFieldIndex.ServicingPhase:
                     case LicenseFieldIndex.Generation:
                         licenseField = new LicenseFieldByte();
 

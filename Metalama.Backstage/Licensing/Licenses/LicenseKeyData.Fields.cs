@@ -123,7 +123,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         public string? OriginVersion => (string?) this.GetFieldValue( LicenseFieldIndex.OriginVersion );
 
         public ServicingPhase? SupportLevel
-            => this.GetFieldValue( LicenseFieldIndex.SupportLevel ) switch
+            => this.GetFieldValue( LicenseFieldIndex.ServicingPhase ) switch
             {
                 null => null,
                 byte supportLevel => (ServicingPhase) supportLevel,
