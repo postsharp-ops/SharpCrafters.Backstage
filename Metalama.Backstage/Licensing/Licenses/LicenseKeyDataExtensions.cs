@@ -2,7 +2,6 @@
 
 using Metalama.Backstage.Licensing.Registration;
 using System;
-using System.Globalization;
 
 namespace Metalama.Backstage.Licensing.Licenses
 {

@@ -8,15 +8,3 @@ public enum ServicingPhase : byte
     Extended = 1,
     LongTerm = 2
 }
-
-public static class ServicingPhaseExtensions
-{
-    public static string GetDisplayName( this ServicingPhase servicingPhase )
-        => servicingPhase switch
-        {
-            ServicingPhase.Default => "Mainstream",
-            ServicingPhase.Extended => "Extended",
-            ServicingPhase.LongTerm => "Long Term",
-            _ => servicingPhase.ToString()
-        };
-}

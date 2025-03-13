@@ -1,6 +1,5 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
-using System;
 using System.Collections.Generic;
 
 namespace Metalama.Backstage.Licensing.Consumption.Requirements;
@@ -18,7 +17,9 @@ public class MetalamaExtensionLicenseRequirement : LicenseRequirement
             LicenseProduct.MetalamaEnterprise,
             LicenseProduct.PostSharpFramework,
             LicenseProduct.PostSharpUltimate,
+#pragma warning disable CS0618 // Type or member is obsolete
             LicenseProduct.MetalamaStarter,
             LicenseProduct.MetalamaUltimate
+#pragma warning restore CS0618 // Type or member is obsolete
         ];
 }

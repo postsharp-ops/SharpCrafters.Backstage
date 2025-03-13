@@ -19,9 +19,11 @@ internal static class LicenseProductExtensions
             LicenseProduct.PostSharpDiagnosticsLibrary => "PostSharp Logging",
             LicenseProduct.PostSharpModelLibrary => "PostSharp MVVM",
             LicenseProduct.PostSharpThreadingLibrary => "PostSharp Threading",
+#pragma warning disable CS0618 // Type or member is obsolete
             LicenseProduct.MetalamaFree => "Metalama Free (legacy)",
             LicenseProduct.MetalamaStarter => "Metalama Starter (legacy)",
             LicenseProduct.MetalamaUltimate => "Metalama Ultimate (legacy)",
+#pragma warning restore CS0618 // Type or member is obsolete
 
             _ => product.ToString()
         };
