@@ -2,7 +2,7 @@
 
 namespace Metalama.Backstage.Licensing;
 
-public static class ServicingPhaseExtensions
+internal static class ServicingPhaseExtensions
 {
     public static string GetDisplayName( this ServicingPhase servicingPhase )
         => servicingPhase switch
