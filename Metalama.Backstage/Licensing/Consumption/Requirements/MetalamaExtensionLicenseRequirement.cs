@@ -1,13 +1,14 @@
 ﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
+using System;
+
 namespace Metalama.Backstage.Licensing.Consumption.Requirements;
 
 public class MetalamaExtensionLicenseRequirement : LicenseRequirement
 {
-    public MetalamaExtensionLicenseRequirement( string componentName )
-    {
-        this.ComponentName = componentName;
-    }
+    public MetalamaExtensionLicenseRequirement( string componentName, ServicingPhase requiredServicingPhase = ServicingPhase.Default ) : base(
+        componentName,
+        requiredServicingPhase ) { }
 
     public override bool IsEligible( LicenseConsumptionContext context )
     {
@@ -20,6 +21,7 @@ public class MetalamaExtensionLicenseRequirement : LicenseRequirement
         switch ( context.License.LicenseProduct )
         {
             case LicenseProduct.MetalamaProfessional:
+            case LicenseProduct.MetalamaEnterprise:
             case LicenseProduct.PostSharpFramework:
             case LicenseProduct.PostSharpUltimate:
 
@@ -39,7 +41,12 @@ public class MetalamaExtensionLicenseRequirement : LicenseRequirement
         return true;
     }
 
-    public override string ComponentName { get; }
-
-    public override string RequiredLicenseDescription => "a Metalama Professional license";
+    public override string RequiredLicenseDescription
+        => this.ServicingPhase switch
+        {
+            ServicingPhase.Default or ServicingPhase.Extended =>
+                "a Metalama Professional, Metalama Enterprise, PostSharp Framework or PostSharp Ultimate license",
+            ServicingPhase.LongTerm => "a Metalama Enterprise license or a PostSharp Framework or PostSharp Ultimate license with long-term support",
+            _ => throw new ArgumentOutOfRangeException()
+        };
 }

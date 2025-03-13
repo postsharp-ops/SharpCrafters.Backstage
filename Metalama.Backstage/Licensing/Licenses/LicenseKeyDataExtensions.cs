@@ -40,6 +40,19 @@ namespace Metalama.Backstage.Licensing.Licenses
             };
 #pragma warning restore CS0618
 
+        internal static ServicingPhase NormalizeSupportLevel( this LicenseKeyData licenseKeyData )
+            => licenseKeyData.Generation.GetValueOrDefault() == LicenseGeneration.None
+                ? ServicingPhase.LongTerm
+                : licenseKeyData.SupportLevel ?? licenseKeyData.Product switch
+                {
+                    // Note that Metalama Enterprise is Metalama Professional with a ServicingPhase field set to LongTerm.
+                    LicenseProduct.MetalamaProfessional => ServicingPhase.Extended,
+                    LicenseProduct.MetalamaEnterprise => ServicingPhase.LongTerm,
+                    LicenseProduct.PostSharpFramework => ServicingPhase.Extended,
+                    LicenseProduct.PostSharpUltimate => ServicingPhase.Extended,
+                    _ => ServicingPhase.Default
+                };
+
         internal static string GetDisplayName( this LicenseKeyData licenseKeyData )
             => NormalizeProduct( licenseKeyData ) switch
             {
@@ -51,6 +64,7 @@ namespace Metalama.Backstage.Licensing.Licenses
                 LicenseProduct.PostSharpCachingLibrary => "PostSharp Caching",
                 LicenseProduct.PostSharpEssentials => "PostSharp Essentials",
                 LicenseProduct.MetalamaProfessional => $"Metalama Professional, {licenseKeyData.LicenseType.GetLicenseTypeName()}",
+                LicenseProduct.MetalamaEnterprise => $"Metalama Enterprise",
                 LicenseProduct.MetalamaCommunity => "Metalama Community",
 #pragma warning disable CS0618 // Type or member is obsolete
                 LicenseProduct.MetalamaUltimate => $"Metalama Ultimate, {licenseKeyData.LicenseType.GetLicenseTypeName()}",
@@ -143,7 +157,8 @@ namespace Metalama.Backstage.Licensing.Licenses
                 auditable,
                 licenseServerEligible,
                 licenseKeyData.GetMinPostSharpVersion(),
-                licenseKeyData.Generation );
+                licenseKeyData.Generation.GetValueOrDefault(),
+                licenseKeyData.NormalizeSupportLevel() );
 
             return data;
         }
