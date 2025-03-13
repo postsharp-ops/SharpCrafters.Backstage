@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Licensing.Consumption;
 using System;
 
@@ -11,14 +12,12 @@ internal sealed class DelegateLicenseRequirement : LicenseRequirement
 {
     private readonly Predicate<LicenseConsumptionContext> _predicate;
 
-    public DelegateLicenseRequirement( Predicate<LicenseConsumptionContext> predicate )
+    public DelegateLicenseRequirement( Predicate<LicenseConsumptionContext> predicate ) : base( "<Component>", ServicingPhase.Default )
     {
         this._predicate = predicate;
     }
 
     public override bool IsEligible( LicenseConsumptionContext context ) => this._predicate( context );
-
-    public override string ComponentName => "<Component>";
 
     public override string RequiredLicenseDescription => "<Required License>";
 }

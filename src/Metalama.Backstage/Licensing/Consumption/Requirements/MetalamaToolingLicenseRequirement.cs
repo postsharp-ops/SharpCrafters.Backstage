@@ -2,15 +2,15 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Licensing.Licenses;
+using System.Collections.Generic;
 
 namespace Metalama.Backstage.Licensing.Consumption.Requirements;
 
 public class MetalamaToolingLicenseRequirement : LicenseRequirement
 {
-    private MetalamaToolingLicenseRequirement() { }
-
-    public static LicenseRequirement Instance { get; } = new MetalamaToolingLicenseRequirement();
+    public MetalamaToolingLicenseRequirement( ServicingPhase requiredServicingPhase = ServicingPhase.Default ) : base(
+        "Visual Studio Tools for Metalama",
+        requiredServicingPhase ) { }
 
     public override bool IsEligible( LicenseConsumptionContext context )
     {
@@ -24,6 +24,7 @@ public class MetalamaToolingLicenseRequirement : LicenseRequirement
         {
             case LicenseProduct.MetalamaCommunity:
             case LicenseProduct.MetalamaProfessional:
+            case LicenseProduct.MetalamaEnterprise:
             case LicenseProduct.PostSharpFramework:
             case LicenseProduct.PostSharpUltimate:
 
@@ -40,19 +41,20 @@ public class MetalamaToolingLicenseRequirement : LicenseRequirement
                 return false;
         }
 
-        // Check that the subscription is still active or grace.
-        if ( context.License is
-            { Generation: >= LicenseGeneration.V20251, SubscriptionStatus: SubscriptionStatus.Expired } )
-        {
-            context.Logger.Warning?.Log( $"License '{context.License.DisplayName}' not eligible: subscription has expired." );
-
-            return false;
-        }
-
         return true;
     }
 
-    public override string ComponentName => "Visual Studio Tools for Metalama";
-
-    public override string RequiredLicenseDescription => "Metalama Community or Metalama Professional with an active subscription";
+    protected override IReadOnlyList<LicenseProduct> GetEligibleProducts()
+        =>
+        [
+            LicenseProduct.MetalamaCommunity,
+            LicenseProduct.MetalamaProfessional,
+            LicenseProduct.MetalamaEnterprise,
+            LicenseProduct.PostSharpFramework,
+            LicenseProduct.PostSharpUltimate,
+#pragma warning disable CS0618 // Type or member is obsolete
+            LicenseProduct.MetalamaStarter,
+            LicenseProduct.MetalamaUltimate
+#pragma warning restore CS0618 // Type or member is obsolete
+        ];
 }

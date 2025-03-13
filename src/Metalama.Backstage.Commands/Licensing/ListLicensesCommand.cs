@@ -37,7 +37,7 @@ namespace Metalama.Backstage.Commands.Licensing
                     table.AddColumn( "Field" );
                     table.AddColumn( "Value" );
 
-                    void Write( string description, string? value )
+                    void AddRow( string description, string? value )
                     {
                         if ( value != null )
                         {
@@ -47,35 +47,33 @@ namespace Metalama.Backstage.Commands.Licensing
 
                     var data = license;
 
-                    Write( "License ID", data.LicenseId?.ToString( CultureInfo.InvariantCulture ) );
+                    AddRow( "License ID", data.LicenseId?.ToString( CultureInfo.InvariantCulture ) );
 
-                    if ( data == null || data.LicenseId != null )
+                    if ( data.LicenseId != null )
                     {
-                        Write( "License Key", license.LicenseString );
+                        AddRow( "License Key", license.LicenseString );
                     }
 
-                    if ( data != null )
+                    AddRow( "Description", data.Description );
+                    AddRow( "Licensee", data.Licensee );
+
+                    string? expiration = null;
+
+                    if ( data.Perpetual != null )
                     {
-                        Write( "Description", data.Description );
-                        Write( "Licensee", data.Licensee );
-
-                        string? expiration = null;
-
-                        if ( data.Perpetual != null )
+                        if ( data.Perpetual.Value )
                         {
-                            if ( data.Perpetual.Value )
-                            {
-                                expiration = "Never (perpetual license)";
-                            }
-                            else
-                            {
-                                expiration = Format( data.ValidTo );
-                            }
+                            expiration = "Never (perpetual license)";
                         }
-
-                        Write( "License Expiration", expiration );
-                        Write( "Maintenance Expiration", Format( data.SubscriptionEndDate ) );
+                        else
+                        {
+                            expiration = Format( data.ValidTo );
+                        }
                     }
+
+                    AddRow( "License Expiration", expiration );
+                    AddRow( "Maintenance Expiration", Format( data.SubscriptionEndDate ) );
+                    AddRow( "Support Level", data.ServicingPhase.ToString() );
 
                     context.Console.Out.Write( table );
                 }

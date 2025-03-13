@@ -21,7 +21,7 @@ public sealed class TestLicenseKeyProvider
     private readonly ConcurrentDictionary<string, string> _cachedLicenses = new();
 
     public LicensingAuthority Authority { get; } = LicensingAuthority.GetTestAuthority();
-    
+
     public const string NamespaceConstraint = "TestNamespace";
 
     private string GenerateLicenseKey( int id, Action<LicenseKeyDataBuilder> action, bool sign = true, bool endSubscription = true )
@@ -59,6 +59,7 @@ public sealed class TestLicenseKeyProvider
         LicenseProduct product,
         LicenseType type = LicenseType.Business,
         LicenseGeneration generation = LicenseGeneration.Current,
+        ServicingPhase servicing = ServicingPhase.Default,
         bool sign = true,
         bool endSubscription = true )
         => this.GenerateLicenseKey(
@@ -72,6 +73,11 @@ public sealed class TestLicenseKeyProvider
                 {
                     license.Generation = generation;
                 }
+
+                if ( servicing != ServicingPhase.Default )
+                {
+                    license.ServicingPhase = servicing;
+                }
             },
             sign,
             endSubscription );
@@ -82,13 +88,20 @@ public sealed class TestLicenseKeyProvider
 
     public string PostSharpUltimate => this.GenerateLicenseKey( 3, LicenseProduct.PostSharpUltimate );
 
+    public string PostSharpUltimateWithLongTermSupport => this.GenerateLicenseKey( 3, LicenseProduct.PostSharpUltimate, servicing: ServicingPhase.LongTerm );
+
     public const string PostSharpUltimateOpenSourceRedistributionNamespace = "Oss";
 
     public string MetalamaProfessionalPersonal => this.GenerateLicenseKey( 4, LicenseProduct.MetalamaProfessional, LicenseType.Personal );
 
     public string MetalamaProfessionalBusiness => this.GenerateLicenseKey( 5, LicenseProduct.MetalamaProfessional );
 
+    public string MetalamaProfessionalBusinessNoGeneration
+        => this.GenerateLicenseKey( 5, LicenseProduct.MetalamaProfessional, generation: LicenseGeneration.None );
+
     public string MetalamaProfessionalBusinessUnsigned => this.GenerateLicenseKey( 5, LicenseProduct.MetalamaProfessional, sign: false );
+
+    public string MetalamaEnterprise => this.GenerateLicenseKey( 5, LicenseProduct.MetalamaEnterprise, servicing: ServicingPhase.LongTerm );
 
 #pragma warning disable CA1822
     public string InvalidLicenseKey => "001-invalid";
@@ -97,10 +110,10 @@ public sealed class TestLicenseKeyProvider
     public string MetalamaCommunity => this.GenerateLicenseKey( 6, LicenseProduct.MetalamaCommunity, LicenseType.Community, endSubscription: false );
 
     [Obsolete]
-    public string MetalamaUltimatePersonal => this.GenerateLicenseKey( 7, LicenseProduct.MetalamaUltimate, LicenseType.Personal );
+    public string MetalamaUltimatePersonal => this.GenerateLicenseKey( 7, LicenseProduct.MetalamaUltimate, LicenseType.Personal, LicenseGeneration.None );
 
     [Obsolete]
-    public string MetalamaUltimateBusiness => this.GenerateLicenseKey( 8, LicenseProduct.MetalamaUltimate );
+    public string MetalamaUltimateBusiness => this.GenerateLicenseKey( 8, LicenseProduct.MetalamaUltimate, generation: LicenseGeneration.None );
 
     public string MetalamaProfessionalBusinessNotAuditable
         => this.GenerateLicenseKey(
@@ -157,7 +170,7 @@ public sealed class TestLicenseKeyProvider
                 builder.LicenseType = LicenseType.Business;
                 builder.SubscriptionEndDate = this.ExpiredSubscriptionEndDate;
             } );
-    
+
     public string MetalamaProfessionalEvaluationNamespaceConstrained
         => this.GenerateLicenseKey(
             9,
@@ -171,10 +184,10 @@ public sealed class TestLicenseKeyProvider
             } );
 
     [Obsolete]
-    public string MetalamaStarter => this.GenerateLicenseKey( 12, LicenseProduct.MetalamaStarter );
+    public string MetalamaStarter => this.GenerateLicenseKey( 12, LicenseProduct.MetalamaStarter, generation: LicenseGeneration.None );
 
     [Obsolete]
-    public string MetalamaFree => this.GenerateLicenseKey( 13, LicenseProduct.MetalamaFree );
+    public string MetalamaFree => this.GenerateLicenseKey( 13, LicenseProduct.MetalamaFree, generation: LicenseGeneration.None );
 
     public DateTime ExpiredSubscriptionEndDate { get; } = new( 2025, 1, 1, 0, 0, 0, DateTimeKind.Utc );
 
