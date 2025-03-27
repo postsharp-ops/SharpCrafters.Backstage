@@ -134,9 +134,10 @@ namespace Metalama.Backstage.Licensing.Licenses
                 return false;
             }
 
-            if ( licenseKeyData.ValidTo == null && licenseKeyData.SubscriptionEndDate == null && licenseKeyData.RequiresSignature() )
+            if ( licenseKeyData.ValidTo == null && licenseKeyData.SubscriptionEndDate == null && licenseKeyData.RequiresSignature()
+                 && string.IsNullOrEmpty( licenseKeyData.Namespace ) && licenseKeyData.PublicKeyToken == null )
             {
-                errorMessage = "the license key has neither a validity end date nor a subscription end date";
+                errorMessage = "the license key has neither a validity end date, nor a subscription end date, nor a namespace constraint";
 
                 return false;
             }

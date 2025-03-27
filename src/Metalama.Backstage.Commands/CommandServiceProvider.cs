@@ -37,7 +37,7 @@ namespace Metalama.Backstage.Commands
             {
                 AddLicensing = true,
                 AddSupportServices = true,
-                CreateLoggingFactory = _ => loggerFactory,
+                DiagnosticsOptions = new DiagnosticsInitializationOptions { CreateLoggingFactory = _ => loggerFactory },
                 IsDevelopmentEnvironment = args.Settings.IsDevelopmentEnvironment,
                 AddUserInterface = args.Settings.AddUserInterface,
                 AddToolsExtractor = b => b.AddTools()

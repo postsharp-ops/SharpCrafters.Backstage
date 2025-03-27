@@ -12,6 +12,7 @@ using Metalama.Backstage.UserInterface;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 
 namespace Metalama.Backstage.Licensing.Consumption;
@@ -57,13 +58,8 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             if ( !license.License.TryGetConsumptionProperties( options, out var licenseConsumptionData, out var errorMessage ) )
             {
                 _ = license.License.TryGetRegistrationProperties( out var registrationData, out _ );
-                var message = $"Cannot use the license '{registrationData?.Description}': {errorMessage}".TrimEnd( '.' ) + ".";
-
-                if ( registrationData is { IsSelfCreated: false } )
-                {
-                    message += $" License key ID: '{registrationData.LicenseId}'.";
-                }
-
+                var message = $"Cannot use the license '{registrationData?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationData?.Description}': {errorMessage}".TrimEnd( '.' ) + ".";
+                
                 if ( license.Source.GetType() != typeof(UserProfileLicenseSource) )
                 {
                     message += $" The license key originates from {license.Source.Description}.";
@@ -147,7 +143,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
         if ( this._licenses.IsEmpty )
         {
-            messageText += " No license key was found.";
+            messageText += " Could not find any valid registered license.";
         }
         else
         {

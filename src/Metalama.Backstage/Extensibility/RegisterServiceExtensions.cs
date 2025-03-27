@@ -50,9 +50,10 @@ public static class RegisterServiceExtensions
         return serviceProviderBuilder;
     }
 
-    internal static ServiceProviderBuilder AddDiagnostics(
+    internal static void AddDiagnostics(
         this ServiceProviderBuilder serviceProviderBuilder,
-        ProcessKind processKind )
+        ProcessKind processKind,
+        DiagnosticsInitializationOptions options )
     {
         serviceProviderBuilder.AddSingleton<ILoggerFactory>(
             serviceProvider =>
@@ -72,6 +73,10 @@ public static class RegisterServiceExtensions
                 {
                     var traceCategories = consoleTracing.Split( ' ', ',', ';' ).ToImmutableHashSet();
                     loggerFactory = new ConsoleLoggerFactory( Console.Out, traceCategories );
+                }
+                else if ( options.TraceAction != null )
+                {
+                    loggerFactory = new DelegateLoggerFactory( options.TraceAction, ImmutableHashSet.Create( "*" ) );
                 }
                 else
                 {
@@ -101,8 +106,6 @@ public static class RegisterServiceExtensions
             } );
 
         serviceProviderBuilder.AddSingleton<IProfilingService>( serviceProvider => new ProfilingService( serviceProvider ) );
-
-        return serviceProviderBuilder;
     }
 
     /// <summary>
@@ -149,7 +152,7 @@ public static class RegisterServiceExtensions
         serviceProviderBuilder.AddSingleton<ILicenseRegistrationService>( serviceProvider => new LicenseRegistrationService( serviceProvider ) );
     }
 
-    public static ServiceProviderBuilder AddBackstageServices( this ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
+    public static void AddBackstageServices( this ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
     {
         // Add base services.
         var applicationInfo = options.ApplicationInfo;
@@ -159,16 +162,16 @@ public static class RegisterServiceExtensions
         // Add diagnostics.
         if ( options.AddSupportServices )
         {
-            if ( options.CreateLoggingFactory == null )
+            if ( options.DiagnosticsOptions.CreateLoggingFactory == null )
             {
-                serviceProviderBuilder.AddDiagnostics( applicationInfo.ProcessKind );
+                serviceProviderBuilder.AddDiagnostics( applicationInfo.ProcessKind, options.DiagnosticsOptions );
             }
             else
             {
                 serviceProviderBuilder.AddSingleton<ILoggerFactory>(
                     serviceProvider =>
                     {
-                        var loggerFactory = options.CreateLoggingFactory( serviceProvider );
+                        var loggerFactory = options.DiagnosticsOptions.CreateLoggingFactory( serviceProvider );
                         serviceProvider.GetBackstageService<EarlyLoggerFactory>()?.Replace( loggerFactory );
 
                         return loggerFactory;
@@ -260,8 +263,6 @@ public static class RegisterServiceExtensions
 
         // Add initialization services.
         serviceProviderBuilder.AddSingleton( serviceProvider => new BackstageServicesInitializer( serviceProvider ) );
-
-        return serviceProviderBuilder;
     }
 
     internal static void AddTelemetryServices( this ServiceProviderBuilder serviceProviderBuilder )

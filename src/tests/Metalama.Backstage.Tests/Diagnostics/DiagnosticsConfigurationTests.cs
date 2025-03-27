@@ -42,7 +42,7 @@ public sealed class DiagnosticsConfigurationTests : TestsBase
 
             var serviceProviderBuilder = new ServiceCollectionBuilder( serviceCollection );
 
-            serviceProviderBuilder.AddDiagnostics( ProcessKind.Other );
+            serviceProviderBuilder.AddDiagnostics( ProcessKind.Other, new DiagnosticsInitializationOptions() );
 
             return (serviceCollection.BuildServiceProvider(), configurationManager.GetFilePath( typeof(DiagnosticsConfiguration) ));
         }
