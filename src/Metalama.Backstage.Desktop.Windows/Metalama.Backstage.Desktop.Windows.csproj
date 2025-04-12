@@ -11,6 +11,7 @@
         <ProductName>Metalama</ProductName>
         <OutputZipFile>bin\$(MSBuildProjectName).zip</OutputZipFile>
         <EnableWindowsTargeting>True</EnableWindowsTargeting>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <!-- It seems the WinRT source generator runs when it shouldn't and causes bogus warnings, see https://github.com/dotnet/sdk/issues/44026, so we disable it. -->

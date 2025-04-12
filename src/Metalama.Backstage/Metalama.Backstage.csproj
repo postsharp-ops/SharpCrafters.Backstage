@@ -7,7 +7,7 @@
         <TargetFrameworks>netframework4.7.2;net6.0;net8.0;netstandard2.0</TargetFrameworks>
 		<!-- Packaging -->
 		<PackageDescription>A Metalama package providing licensing, telemetry and other configuration settings for projects using Metalama.</PackageDescription>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        
         <MetalamaBackstageDirectory Condition="'$(MetalamaBackstageDirectory)'==''">$(MSBuildProjectDirectory)</MetalamaBackstageDirectory>
 
     </PropertyGroup>
