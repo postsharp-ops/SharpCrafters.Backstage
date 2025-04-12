@@ -17,7 +17,7 @@ namespace Metalama.Backstage.Infrastructure
     /// Provides access to file system.
     /// </summary>
     [PublicAPI]
-    internal interface IFileSystem : IBackstageService
+    public interface IFileSystem : IBackstageService
     {
         /// <summary>
         /// Gets prefix for synchronization objects (mutexes) related to objects of the current file system.
