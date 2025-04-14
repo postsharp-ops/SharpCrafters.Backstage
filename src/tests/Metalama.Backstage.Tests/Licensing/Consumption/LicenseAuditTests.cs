@@ -34,8 +34,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             .AddSingleton<IUsageReporter>( new NullUsageReporter() )
             .AddSingleton<ILicenseAuditManager>( serviceProvider => new LicenseAuditManager( serviceProvider ) )
             .AddSingleton<TelemetryReportUploader>( serviceProvider => new TelemetryReportUploader( serviceProvider ) )
-            .AddSingleton( serviceProvider => new MatomoAuditUploader( serviceProvider ) )
-            .AddSingleton( serviceProvider => new BackstageServicesInitializer( serviceProvider ) );
+            .AddSingleton( serviceProvider => new MatomoAuditUploader( serviceProvider ) );
     }
 
     private InstrumentedLicenseWrapper CreateAndConsumeLicense( string licenseKey )
