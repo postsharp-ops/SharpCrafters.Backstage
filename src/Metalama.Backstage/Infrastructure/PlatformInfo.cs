@@ -12,29 +12,33 @@ namespace Metalama.Backstage.Infrastructure
 {
     internal sealed class PlatformInfo : IPlatformInfo
     {
+        private const string _dotNetSdkDirectoryEnvironmentVariableName = "MSBuildExtensionsPath";
+
+        private readonly IServiceProvider _serviceProvider;
+        private readonly Lazy<string> _dotNetExePath;
+
         public string? DotNetSdkDirectory { get; }
 
-        public string DotNetExePath { get; }
+        public string DotNetExePath => this._dotNetExePath.Value;
 
         public string? DotNetSdkVersion { get; }
 
         public PlatformInfo( IServiceProvider serviceProvider, string? dotNetSdkDirectory )
         {
+            this._serviceProvider = serviceProvider;
             var environmentVariableProvider = serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>();
 
             this.DotNetSdkDirectory = dotNetSdkDirectory
                                       ?? environmentVariableProvider.GetEnvironmentVariable( _dotNetSdkDirectoryEnvironmentVariableName );
 
-            var logger = serviceProvider.GetBackstageService<EarlyLoggerFactory>()?.GetLogger( "PlatformInfo" );
-
             this.DotNetSdkVersion = Path.GetFileName( this.DotNetSdkDirectory );
-            this.DotNetExePath = GetDotNetPath( logger, this.DotNetSdkDirectory );
+            this._dotNetExePath = new Lazy<string>( this.GetDotNetPath );
         }
 
-        private const string _dotNetSdkDirectoryEnvironmentVariableName = "MSBuildExtensionsPath";
-
-        private static string GetDotNetPath( ILogger? logger, string? dotNetSdkDirectory = null )
+        private string GetDotNetPath()
         {
+            var logger = this._serviceProvider.GetBackstageService<EarlyLoggerFactory>()?.GetLogger( "PlatformInfo" );
+
             var dotnetFileName = RuntimeInformation.IsOSPlatform( OSPlatform.Windows )
                 ? "dotnet.exe"
                 : "dotnet";
@@ -45,7 +49,7 @@ namespace Metalama.Backstage.Infrastructure
             // instance of dotnet.exe does not have an SDK installed. So, it is better to ignore the current process as a hint.
 
             // Look in the DotNetSdkDirectory, if we know it.
-            dotNetSdkDirectory ??= Environment.GetEnvironmentVariable( _dotNetSdkDirectoryEnvironmentVariableName );
+            var dotNetSdkDirectory = this.DotNetSdkDirectory;
 
             if ( !string.IsNullOrEmpty( dotNetSdkDirectory ) )
             {
