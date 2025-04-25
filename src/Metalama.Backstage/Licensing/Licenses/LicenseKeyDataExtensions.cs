@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using JetBrains.Annotations;
 using Metalama.Backstage.Licensing.Registration;
 using System;
 
@@ -10,7 +11,7 @@ namespace Metalama.Backstage.Licensing.Licenses
     /// <summary>
     /// Provides extension methods for processing license key data for license consumption, registration and audit.
     /// </summary>
-    internal static class LicenseKeyDataExtensions
+    public static class LicenseKeyDataExtensions
     {
         /// <summary>
         /// If the <paramref name="licenseKeyData"/> contains an obsolete license type, it gets transformed to a respective non-obsolete one.
@@ -109,6 +110,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <summary>
         /// Creates a new object of <see cref="LicenseRegistrationProperties"/> based on the given <see cref="LicenseKeyData"/>.
         /// </summary>
+        [PublicAPI("Used by BusinessSystems.LicenseAuditLoader")]
         public static LicenseRegistrationProperties ToLicenseRegistrationProperties( this LicenseKeyData licenseKeyData, string? licenseString = null )
         {
             var description = licenseKeyData.GetDisplayName();

@@ -122,8 +122,6 @@ namespace Metalama.Backstage.Licensing.Licenses
 
         public bool? LicenseServerEligible => (bool?) this.GetFieldValue( LicenseFieldIndex.LicenseServerEligible );
 
-        public string? OriginVersion => (string?) this.GetFieldValue( LicenseFieldIndex.OriginVersion );
-
         public ServicingPhase? ServicingPhase
             => this.GetFieldValue( LicenseFieldIndex.ServicingPhase ) switch
             {

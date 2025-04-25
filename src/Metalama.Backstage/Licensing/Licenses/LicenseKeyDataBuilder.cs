@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using Metalama.Backstage.Licensing.Licenses.LicenseFields;
-using Metalama.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

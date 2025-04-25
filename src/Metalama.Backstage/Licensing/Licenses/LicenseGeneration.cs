@@ -6,7 +6,15 @@ namespace Metalama.Backstage.Licensing.Licenses;
 
 public enum LicenseGeneration : byte
 {
+    /// <summary>
+    /// Licenses before generations were introduced.
+    /// </summary>
     None = 0,
-    V20251 = 1,
-    Current = V20251,
+
+    /// <summary>
+    /// License generation defined in 2025-Q2 (version 2025.1 onward).
+    /// </summary>
+    V2025Q2 = 1,
+
+    Current = V2025Q2,
 }
