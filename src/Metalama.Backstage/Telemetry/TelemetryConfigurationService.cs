@@ -7,6 +7,7 @@ using Metalama.Backstage.Configuration;
 using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
+using Metalama.Backstage.Utilities;
 using System;
 
 namespace Metalama.Backstage.Telemetry;
@@ -137,7 +138,9 @@ internal sealed class TelemetryConfigurationService : ITelemetryConfigurationSer
                 LastSaltChangeTime = this._dateTimeProvider.UtcNow
             } );
 
-        var firstOfMonth = new DateTime( this._dateTimeProvider.UtcNow.Year, this._dateTimeProvider.UtcNow.Month, 1 );
+        // We rotate telemetry ids and salt on the first Monday of the month to make sure that
+        // weekly aggregates are correct because they are the most important.
+        var firstOfMonth = this._dateTimeProvider.UtcNow.Date.GetFirstMondayOfMonth();
 
         this._configurationManager.UpdateIf<TelemetryConfiguration>(
             c => c.Salt == null || c.LastSaltChangeTime == null || c.LastSaltChangeTime.Value < firstOfMonth,
