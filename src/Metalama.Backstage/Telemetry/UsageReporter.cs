@@ -18,8 +18,7 @@ internal sealed class UsageReporter : IUsageReporter
     private readonly IDateTimeProvider _time;
     private readonly ILogger _logger;
 
-    public bool IsUsageReportingEnabled
-        => this._telemetryConfigurationService.IsEnabled( TelemetryScenario.Usage );
+    public bool IsUsageReportingEnabled => this._telemetryConfigurationService.IsEnabled( TelemetryScenario.Usage );
 
     public UsageReporter( IServiceProvider serviceProvider )
     {
@@ -30,7 +29,7 @@ internal sealed class UsageReporter : IUsageReporter
         this._logger = serviceProvider.GetLoggerFactory().Telemetry();
     }
 
-    public bool ShouldReportSession( string projectName )
+    private bool ShouldReportSession( string projectName )
     {
         var now = this._time.UtcNow;
 
@@ -72,13 +71,24 @@ internal sealed class UsageReporter : IUsageReporter
             } );
     }
 
-    public IUsageSession? StartSession( string kind )
+    public IUsageSession? StartSession( string kind, string? projectName = null )
     {
         if ( !this.IsUsageReportingEnabled )
         {
             return null;
         }
 
-        return new UsageSession( this._serviceProvider, kind );
+        // If the project name is not provided, we use the kind as the key
+        // to determine if the session should be reported.
+        projectName ??= $"<{kind}>";
+
+        if ( this.ShouldReportSession( projectName ) )
+        {
+            return new UsageSession( this._serviceProvider, kind );
+        }
+        else
+        {
+            return null;
+        }
     }
 }

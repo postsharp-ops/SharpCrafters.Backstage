@@ -47,7 +47,6 @@ namespace Metalama.Backstage.Licensing.Consumption
         /// <summary>
         /// Gets a value indicating whether the license is redistributable.
         /// </summary>
-        [Obsolete]
         public bool IsRedistributable { get; }
 
         /// <summary>

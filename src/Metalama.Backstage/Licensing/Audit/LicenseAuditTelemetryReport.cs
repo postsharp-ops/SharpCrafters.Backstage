@@ -47,7 +47,7 @@ internal sealed class LicenseAuditTelemetryReport : TelemetryReport
 
     public LicenseAuditTelemetryReport(
         IServiceProvider serviceProvider,
-        LicenseConsumptionProperties license )
+        LicenseConsumptionProperties license ) : base( new MetricCollection() )
     {
         this.License = license;
         this.Date = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>().UtcNow;

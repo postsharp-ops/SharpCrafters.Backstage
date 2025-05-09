@@ -6,6 +6,6 @@ namespace Metalama.Backstage.Tests.Licensing
 {
     internal interface IUsable
     {
-        int NumberOfUses { get; }
+        int NumberOfAuditReports { get; }
     }
 }

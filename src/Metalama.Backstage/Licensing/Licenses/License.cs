@@ -3,10 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Metalama.Backstage.Application;
-using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Extensibility;
 using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing.Audit;
 using Metalama.Backstage.Licensing.Consumption;
 using Metalama.Backstage.Licensing.Registration;
 using System;
@@ -19,31 +17,25 @@ namespace Metalama.Backstage.Licensing.Licenses
     /// <summary>
     /// Represents a license serialized in a license key.
     /// </summary>
-    internal sealed class License : ILicense
+    internal sealed class License : AuditableLicense
     {
         private readonly string _licenseKey;
 
         private readonly IDateTimeProvider _dateTimeProvider;
-        private readonly ILogger _logger;
         private readonly LicensingAuthority _licensingAuthority;
         private readonly IApplicationInfo _applicationInfo;
-        private readonly ILicenseAuditManager? _licenseAuditManager;
-        private readonly BackstageBackgroundTasksService _backgroundTasksService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="License"/> class.
         /// </summary>
         /// <param name="licenseKey">The license key.</param>
         /// <param name="services">Services.</param>
-        internal License( string licenseKey, IServiceProvider services )
+        internal License( string licenseKey, IServiceProvider services ) : base( services )
         {
             this._licenseKey = CleanLicenseKey( licenseKey );
             this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
             this._licensingAuthority = services.GetRequiredBackstageService<LicensingAuthority>();
-            this._logger = services.GetLoggerFactory().Licensing();
             this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
-            this._licenseAuditManager = services.GetBackstageService<ILicenseAuditManager>();
-            this._backgroundTasksService = services.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         }
 
         private static string CleanLicenseKey( string licenseKey )
@@ -62,7 +54,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             return stringBuilder.ToString().ToUpperInvariant();
         }
 
-        public bool CanBeRegistered( [MaybeNullWhen( true )] out string errorMessage )
+        public override bool CanBeRegistered( [MaybeNullWhen( true )] out string errorMessage )
         {
             // Validates that the key can be consumed.
             if ( !this.TryGetConsumptionProperties( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out errorMessage ) )
@@ -83,7 +75,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         }
 
         /// <inheritdoc />
-        public bool TryGetConsumptionProperties(
+        public override bool TryGetConsumptionProperties(
             LicenseConsumptionOptions options,
             [MaybeNullWhen( false )] out LicenseConsumptionProperties licenseConsumptionProperties,
             [MaybeNullWhen( true )] out string errorMessage )
@@ -245,7 +237,7 @@ namespace Metalama.Backstage.Licensing.Licenses
         }
 
         /// <inheritdoc />
-        public bool TryGetRegistrationProperties(
+        public override bool TryGetRegistrationProperties(
             [MaybeNullWhen( false )] out LicenseRegistrationProperties licenseProperties,
             [MaybeNullWhen( true )] out string errorMessage )
         {
@@ -259,7 +251,7 @@ namespace Metalama.Backstage.Licensing.Licenses
             if ( licenseKeyData.RequiresSignature() && !licenseKeyData.VerifySignature( this._licensingAuthority ) )
             {
                 errorMessage = $"The license key {licenseKeyData.LicenseUniqueId} has an invalid signature.";
-                this._logger.Warning?.Log( errorMessage );
+                this.Logger.Warning?.Log( errorMessage );
                 licenseProperties = null;
 
                 return false;
@@ -270,36 +262,21 @@ namespace Metalama.Backstage.Licensing.Licenses
             return true;
         }
 
-        public void OnConsumed()
-        {
-            if ( this._licenseAuditManager != null )
-            {
-                if ( this.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var properties, out _ ) )
-                {
-                    this._backgroundTasksService.Enqueue( () => this._licenseAuditManager.ReportLicense( properties ) );
-                }
-            }
-            else
-            {
-                this._logger.Warning?.Log( $"License audit is skipped because there is no {nameof(ILicenseAuditManager)}." );
-            }
-        }
-
         private bool TryGetLicenseKeyData( [MaybeNullWhen( false )] out LicenseKeyData data, [MaybeNullWhen( true )] out string errorMessage )
         {
-            this._logger.Trace?.Log( $"Deserializing license '{this._licenseKey}'." );
+            this.Logger.Trace?.Log( $"Deserializing license '{this._licenseKey}'." );
 
             if ( !LicenseKeyData.TryDeserialize( this._licenseKey, out data, out errorMessage ) || !data.ValidateFields( out errorMessage ) )
             {
                 errorMessage = $"Cannot parse the license key '{this._licenseKey}': {errorMessage}.";
 
-                this._logger.Error?.Log( errorMessage );
+                this.Logger.Error?.Log( errorMessage );
 
                 return false;
             }
             else
             {
-                this._logger.Trace?.Log( $"Deserialized license: {data}" );
+                this.Logger.Trace?.Log( $"Deserialized license: {data}" );
 
                 return true;
             }

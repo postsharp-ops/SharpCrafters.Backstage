@@ -50,6 +50,6 @@ namespace Metalama.Backstage.Licensing.Licenses
         /// <summary>
         /// This method must be called once per day when the license is consumed.
         /// </summary>
-        void OnConsumed();
+        void ReportUse();
     }
 }

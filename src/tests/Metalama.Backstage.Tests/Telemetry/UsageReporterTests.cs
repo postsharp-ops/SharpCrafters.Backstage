@@ -48,7 +48,7 @@ public sealed class UsageReporterTests : TestsBase
 
         session.Dispose();
 
-        Assert.Throws<InvalidOperationException>( () => session.Metrics );
+        Assert.True( session.Metrics.IsReadOnly );
         Assert.Single( this.FileSystem.Mock.AllFiles, f => Path.GetFileName( f ).StartsWith( "Usage-", StringComparison.Ordinal ) );
         Assert.Single( this.FileSystem.Mock.AllFiles, f => Path.GetFileName( f ).StartsWith( "Telemetry-", StringComparison.Ordinal ) );
         Assert.Equal( 2, this.FileSystem.Mock.AllFiles.Count() );
@@ -59,9 +59,8 @@ public sealed class UsageReporterTests : TestsBase
         // We can't use the reporter from the constructor, because it's been created with the wrong configuration.
         var reporter = new UsageReporter( this.ServiceProvider );
 
-        Assert.False( reporter.ShouldReportSession( "TestProject" ) );
-
-        Assert.Null( reporter.StartSession( "TestSession" ) );
+        var session = reporter.StartSession( "TestSession", "TestProject" );
+        Assert.Null( session );
         Assert.Empty( this.FileSystem.Mock.AllFiles );
     }
 
@@ -69,11 +68,11 @@ public sealed class UsageReporterTests : TestsBase
     [InlineData( ReportingAction.Yes, true )]
     [InlineData( ReportingAction.No, false )]
     [InlineData( ReportingAction.Default, true )]
-    public void UsageIsReportedAsConfiguredWhenTelemetryIsEnabled( ReportingAction usageReportingAction, bool shoudlReport )
+    public void UsageIsReportedAsConfiguredWhenTelemetryIsEnabled( ReportingAction usageReportingAction, bool shouldReport )
     {
         this.ConfigurationManager!.Update<TelemetryConfiguration>( c => c with { UsageReportingAction = usageReportingAction } );
 
-        if ( shoudlReport )
+        if ( shouldReport )
         {
             this.ReportSession();
         }
@@ -105,24 +104,18 @@ public sealed class UsageReporterTests : TestsBase
         this.AssertReportingDisabled();
     }
 
-    [Fact]
-    public void UsageRepostingCanBeRepeatedWithoutShouldReportSessionCheck()
-    {
-        this.ReportSession();
-        this.FileSystem.Mock.AllFiles.ToList().ForEach( this.FileSystem.DeleteFile );
-        this.ReportSession();
-    }
-
     private void AssertSessionShouldBeReported( string projectName = "TestProject" )
     {
         var reporter = new UsageReporter( this.ServiceProvider );
-        Assert.True( reporter.ShouldReportSession( projectName ) );
+        var session = reporter.StartSession( "Usage", projectName );
+        Assert.NotNull( session );
     }
 
     private void AssertSessionShouldNotBeReported( string projectName = "TestProject" )
     {
         var reporter = new UsageReporter( this.ServiceProvider );
-        Assert.False( reporter.ShouldReportSession( projectName ) );
+        var session = reporter.StartSession( "Usage", projectName );
+        Assert.Null( session );
     }
 
     [Fact]
@@ -188,7 +181,7 @@ public sealed class UsageReporterTests : TestsBase
         async Task<IDisposable> StartSession( string projectName, SemaphoreSlim e )
         {
             var reporter = new UsageReporter( this.ServiceProvider );
-            var session = reporter.StartSession( "TestSession" );
+            var session = reporter.StartSession( "TestSession", projectName );
             Assert.NotNull( session );
             session.Metrics.Add( new StringMetric( "ProjectName", projectName ) );
 

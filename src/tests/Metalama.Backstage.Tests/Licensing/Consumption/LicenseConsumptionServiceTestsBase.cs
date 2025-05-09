@@ -58,7 +58,8 @@ public abstract class LicenseConsumptionServiceTestsBase : LicensingTestsBase
         LicenseRequirement requirement,
         bool expectedCanConsume )
     {
-        var actualCanConsume = service.CreateConsumer().TryConsume( requirement );
+        var consumer = service.CreateConsumer();
+        var actualCanConsume = consumer.TryConsume( requirement );
         Assert.Equal( expectedCanConsume, actualCanConsume );
     }
 }

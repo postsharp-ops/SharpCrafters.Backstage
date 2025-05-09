@@ -9,7 +9,7 @@ using System;
 namespace Metalama.Backstage.Licensing.Consumption
 {
     /// <summary>
-    /// Exposes a service to verify the current license and consume features from iut.
+    /// Exposes a service to verify the current license and consume features from it.
     /// </summary>
     [PublicAPI]
     public interface ILicenseConsumptionService : IBackstageService

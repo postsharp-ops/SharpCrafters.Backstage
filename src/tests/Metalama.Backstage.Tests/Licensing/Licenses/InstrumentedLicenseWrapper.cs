@@ -15,7 +15,7 @@ namespace Metalama.Backstage.Tests.Licensing.Licenses
     {
         public ILicense License { get; }
 
-        public int NumberOfUses { get; private set; }
+        public int NumberOfAuditReports { get; private set; }
 
         public InstrumentedLicenseWrapper( ILicense license )
         {
@@ -39,15 +39,15 @@ namespace Metalama.Backstage.Tests.Licensing.Licenses
             out string errorMessage )
             => this.License.TryGetRegistrationProperties( out licenseProperties!, out errorMessage! );
 
-        public void OnConsumed()
+        public void ReportUse()
         {
-            this.NumberOfUses++;
-            this.License.OnConsumed();
+            this.NumberOfAuditReports++;
+            this.License.ReportUse();
         }
 
-        public void ResetUsage()
+        public void ResetNumberOfAuditReports()
         {
-            this.NumberOfUses = 0;
+            this.NumberOfAuditReports = 0;
         }
 
         public override bool Equals( object? obj )

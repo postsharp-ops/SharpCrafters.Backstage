@@ -10,7 +10,5 @@ namespace Metalama.Backstage.Telemetry;
 [PublicAPI]
 public interface IUsageSession : IDisposable
 {
-    string Kind { get; }
-
     MetricCollection Metrics { get; }
 }

@@ -8,5 +8,10 @@ internal abstract class TelemetryReport
 {
     public abstract string Kind { get; }
 
-    public MetricCollection Metrics { get; } = [];
+    public MetricCollection Metrics { get; }
+
+    protected TelemetryReport( MetricCollection metrics )
+    {
+        this.Metrics = metrics;
+    }
 }

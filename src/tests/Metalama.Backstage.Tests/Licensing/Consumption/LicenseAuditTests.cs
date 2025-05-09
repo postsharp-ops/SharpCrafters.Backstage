@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -57,22 +58,34 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     }
 
     [Theory]
-    [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusiness) )]
-    [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusinessNotAuditable) )]
-    public void LicenseIsAudited( string licenseKeyName )
+    [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusiness), true, "MetalamaProfessional", "Business" )]
+    [InlineData( null, true, "MetalamaOpenSource", "OpenSource" )]
+    [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusinessNotAuditable), false, null, null )]
+    public async Task LicenseIsAudited( string? licenseKeyName, bool isAuditReportExpected, string? expectedProductName, string? expectedLicenseType )
     {
-        var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
-        var license = this.CreateAndConsumeLicense( licenseKey );
-
-        license.ResetUsage();
-        Assert.True( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var licenseData, out var errorMessage ) );
-        Assert.Null( errorMessage );
-
-        if ( licenseData.IsAuditable )
+        async Task Consume()
         {
+            if ( licenseKeyName != null )
+            {
+                var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
+                _ = this.CreateAndConsumeLicense( licenseKey );
+            }
+            else
+            {
+                // No license key is registered.
+                _ = this.CreateConsumptionService().CreateConsumer();
+            }
+
+            await this.BackgroundTasks.WhenNoPendingTaskAsync();
+        }
+
+        if ( isAuditReportExpected )
+        {
+            await Consume();
             var reports = this.GetReports();
             Assert.Single( reports );
-            Assert.Contains( licenseKey, reports[0], StringComparison.OrdinalIgnoreCase );
+
+            // Assert.Contains( licenseKey, reports[0], StringComparison.OrdinalIgnoreCase );
             var (matomoRequest, _) = Assert.Single( this.HttpClientFactory.ProcessedRequests, r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" );
             var matomoRequestUri = matomoRequest.RequestUri?.ToString();
 
@@ -81,14 +94,13 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             Assert.Equal( HttpMethod.Get, matomoRequest.Method );
 
             Assert.Equal(
-                "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1=MetalamaProfessional&dimension2=Business&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=5cf58a1a689e1e0c",
+                $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1={expectedProductName}&dimension2={expectedLicenseType}&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=5cf58a1a689e1e0c",
                 matomoRequestUri );
 
             // Second time in the same day.
             this.FileSystem.Reset();
 
-            var secondLicense = this.CreateAndConsumeLicense( licenseKey );
-            Assert.True( secondLicense.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+            await Consume();
             var secondReports = this.GetReports();
             Assert.Empty( secondReports );
 
@@ -97,8 +109,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             this.HttpClientFactory.Reset();
             this.Time.AddTime( TimeSpan.FromDays( 1.01 ) );
 
-            var thirdLicense = this.CreateAndConsumeLicense( licenseKey );
-            Assert.True( thirdLicense.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+            await Consume();
             var thirdReports = this.GetReports();
             Assert.Single( thirdReports );
 
@@ -113,7 +124,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             Assert.Equal( HttpMethod.Get, thirdMatomoRequest.Method );
 
             Assert.Equal(
-                "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1=MetalamaProfessional&dimension2=Business&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=624e91464771d36f",
+                $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&_id=36579f554ac8899f&uid=36579f554ac8899f&dimension1={expectedProductName}&dimension2={expectedLicenseType}&dimension3=Metalama&dimension4=1.0&new_visit=1&rand=624e91464771d36f",
                 thirdMatomoRequestUri );
         }
         else

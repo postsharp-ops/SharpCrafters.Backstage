@@ -46,14 +46,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
 
             return;
         }
-
-        if ( string.IsNullOrEmpty( license.LicenseString ) )
-        {
-            this._logger.Trace?.Log( $"License audit disabled because the license string is empty." );
-
-            return;
-        }
-
+        
         if ( this._applicationInfo.IsUnattendedProcess( this._loggerFactory ) )
         {
             this._logger.Trace?.Log( "License audit disabled because the current process is unattended." );
