@@ -78,7 +78,7 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         [MaybeNullWhen( true )] out string errorMessage )
         => throw new NotSupportedException( "Unattended license source doesn't support license registration." );
 
-    public void OnConsumed() { }
+    public void ReportUse() { }
 
     event Action? ILicenseSource.Changed { add { } remove { } }
 

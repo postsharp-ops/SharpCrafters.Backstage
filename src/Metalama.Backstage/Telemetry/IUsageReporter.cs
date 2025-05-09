@@ -12,7 +12,5 @@ public interface IUsageReporter : IBackstageService
 {
     bool IsUsageReportingEnabled { get; }
 
-    bool ShouldReportSession( string projectName );
-
-    IUsageSession? StartSession( string kind );
+    IUsageSession StartSession( string kind, string? projectName = null );
 }

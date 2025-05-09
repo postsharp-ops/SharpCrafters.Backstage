@@ -26,8 +26,6 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     private readonly IApplicationInfo _applicationInfo;
     private readonly IUserInterfaceService? _userInterfaceService;
 
-    private DateTime _lastAuditTime = DateTime.MinValue;
-
     private LicenseConsumer(
         IServiceProvider services,
         ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> licenses,
@@ -49,6 +47,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     {
         var logger = services.GetLoggerFactory().Licensing();
 
+        // Gather valid licenses.
         var licenses = licenseSources.OrderBy( s => s.Priority ).SelectMany( s => s.GetLicenses( ReportMessage ).Select( l => (License: l, Source: s) ) );
 
         var validLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
@@ -58,8 +57,11 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             if ( !license.License.TryGetConsumptionProperties( options, out var licenseConsumptionData, out var errorMessage ) )
             {
                 _ = license.License.TryGetRegistrationProperties( out var registrationData, out _ );
-                var message = $"Cannot use the license '{registrationData?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationData?.Description}': {errorMessage}".TrimEnd( '.' ) + ".";
-                
+
+                var message =
+                    $"Cannot use the license '{registrationData?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationData?.Description}': {errorMessage}"
+                        .TrimEnd( '.' ) + ".";
+
                 if ( license.Source.GetType() != typeof(UserProfileLicenseSource) )
                 {
                     message += $" The license key originates from {license.Source.Description}.";
@@ -73,6 +75,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             validLicenses.Add( (license.License, licenseConsumptionData) );
         }
 
+        // Return the LicenseConsumer.
         return new LicenseConsumer( services, validLicenses.ToImmutableArray(), options );
 
         void ReportMessage( LicensingMessage message )
@@ -85,15 +88,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     /// <inheritdoc />
     public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage, bool showsToastNotification )
     {
-        var mustAudit = false;
-
         this._logger.Trace?.Log( $"TryConsume({{{requirement}}}" );
-
-        if ( this._lastAuditTime.AddDays( 1 ) < this._dateTimeProvider.UtcNow )
-        {
-            this._lastAuditTime = this._dateTimeProvider.UtcNow;
-            mustAudit = true;
-        }
 
         foreach ( var license in this._licenses )
         {
@@ -121,10 +116,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             {
                 this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is eligible." );
 
-                if ( mustAudit )
-                {
-                    license.License.OnConsumed();
-                }
+                license.License.ReportUse();
 
                 return true;
             }

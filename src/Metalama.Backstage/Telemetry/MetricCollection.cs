@@ -13,10 +13,53 @@ namespace Metalama.Backstage.Telemetry
     [Serializable]
     public sealed class MetricCollection : KeyedCollection<string, Metric>
     {
+        public MetricCollection( bool isReadOnly = false )
+        {
+            this.IsReadOnly = isReadOnly;
+        }
+
+        public static MetricCollection EmptyReadOnly { get; } = new( true );
+
+        public bool IsReadOnly { get; private set; }
+
+        public void Freeze() => this.IsReadOnly = true;
+
         /// <inheritdoc />
         protected override string GetKeyForItem( Metric item )
         {
             return item.Name;
+        }
+
+        private void CheckNotReadOnly()
+        {
+            if ( this.IsReadOnly )
+            {
+                throw new InvalidOperationException();
+            }
+        }
+
+        protected override void ClearItems()
+        {
+            this.CheckNotReadOnly();
+            base.ClearItems();
+        }
+
+        protected override void InsertItem( int index, Metric item )
+        {
+            this.CheckNotReadOnly();
+            base.InsertItem( index, item );
+        }
+
+        protected override void SetItem( int index, Metric item )
+        {
+            this.CheckNotReadOnly();
+            base.SetItem( index, item );
+        }
+
+        protected override void RemoveItem( int index )
+        {
+            this.CheckNotReadOnly();
+            base.RemoveItem( index );
         }
     }
 }

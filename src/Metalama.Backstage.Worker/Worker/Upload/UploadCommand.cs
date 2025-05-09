@@ -26,7 +26,7 @@ namespace Metalama.Backstage.Worker.Upload
             {
                 var logger = serviceProvider.GetLoggerFactory().GetLogger( "Worker" );
                 logger.Trace?.Log( "Job started." );
-                
+
                 var usageReporter = serviceProvider.GetBackstageService<IUsageReporter>();
                 usageReportingSession = usageReporter?.StartSession( "CompilerUsage" );
 

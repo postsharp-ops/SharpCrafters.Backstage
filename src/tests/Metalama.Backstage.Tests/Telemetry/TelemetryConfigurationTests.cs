@@ -4,6 +4,7 @@
 
 using Metalama.Backstage.Telemetry;
 using Metalama.Backstage.Testing;
+using System;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -46,5 +47,24 @@ public sealed class TelemetryConfigurationTests : TestsBase
 
         this.TelemetryConfigurationService.SetStatus( true );
         Assert.Equal( isEnabled, this.TelemetryConfigurationService.IsEnabled( TelemetryScenario.Usage ) );
+    }
+
+    [Fact]
+    public void SaltRotation()
+    {
+        this.Time.Set( new DateTime( 2025, 4, 10, 0, 0, 0, DateTimeKind.Utc ) );
+        this.TelemetryConfigurationService.Initialize();
+        var initialSalt = this.TelemetryConfigurationService.Salt;
+
+        // There should be no change on April 30th or even on May the 4th because the first Monday is the 5th.
+        this.Time.Set( new DateTime( 2025, 4, 30, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.Equal( initialSalt, this.TelemetryConfigurationService.Salt );
+
+        this.Time.Set( new DateTime( 2025, 5, 4, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.Equal( initialSalt, this.TelemetryConfigurationService.Salt );
+
+        // Now there should be a change.
+        this.Time.Set( new DateTime( 2025, 5, 5, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.NotEqual( initialSalt, this.TelemetryConfigurationService.Salt );
     }
 }

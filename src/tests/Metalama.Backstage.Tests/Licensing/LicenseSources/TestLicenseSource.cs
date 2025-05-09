@@ -22,7 +22,7 @@ namespace Metalama.Backstage.Tests.Licensing.LicenseSources
         [UsedImplicitly]
         public string Id { get; }
 
-        public int NumberOfUses { get; private set; }
+        public int NumberOfAuditReports { get; private set; }
 
         public TestLicenseSource( string id, ILicense? license )
         {
@@ -32,7 +32,7 @@ namespace Metalama.Backstage.Tests.Licensing.LicenseSources
 
         public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
         {
-            this.NumberOfUses++;
+            this.NumberOfAuditReports++;
 
             if ( this._license == null )
             {

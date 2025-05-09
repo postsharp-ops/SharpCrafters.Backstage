@@ -26,10 +26,10 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
 
         var service = this.CreateConsumptionService( source1, source2 );
         AssertCanConsume( service, LicenseRequirement.Any, true );
-        Assert.Equal( 1, license1.NumberOfUses );
-        Assert.Equal( 0, license2.NumberOfUses );
-        Assert.Equal( 1, source1.NumberOfUses );
-        Assert.Equal( 1, source2.NumberOfUses );
+        Assert.Equal( 1, license1.NumberOfAuditReports );
+        Assert.Equal( 0, license2.NumberOfAuditReports );
+        Assert.Equal( 1, source1.NumberOfAuditReports );
+        Assert.Equal( 1, source2.NumberOfAuditReports );
     }
 
     [Fact]
@@ -43,9 +43,9 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
 
         var service = this.CreateConsumptionService( source1, source2 );
         AssertCanConsume( service, new DelegateLicenseRequirement( context => context.License.LicenseProduct == LicenseProduct.MetalamaProfessional ), true );
-        Assert.Equal( 0, license1.NumberOfUses );
-        Assert.Equal( 1, license2.NumberOfUses );
-        Assert.Equal( 1, source1.NumberOfUses );
-        Assert.Equal( 1, source2.NumberOfUses );
+        Assert.Equal( 0, license1.NumberOfAuditReports );
+        Assert.Equal( 1, license2.NumberOfAuditReports );
+        Assert.Equal( 1, source1.NumberOfAuditReports );
+        Assert.Equal( 1, source2.NumberOfAuditReports );
     }
 }
