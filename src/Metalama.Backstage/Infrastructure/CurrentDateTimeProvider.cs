@@ -27,7 +27,7 @@ namespace Metalama.Backstage.Infrastructure
             var timeUntilMidnight = nextMidnight - now;
 
             this._timer.Interval = timeUntilMidnight.TotalMilliseconds;
-            this._timer.AutoReset = false; // Ensure it fires only once
+            this._timer.AutoReset = false;
             this._timer.Start();
         }
 
