@@ -236,7 +236,7 @@ public sealed class UsageReporterTests : TestsBase
                 this.Logger.WriteLine( matomoRequestUri );
 
                 Assert.Equal(
-                    $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&action_name=usage&_id=412522694e2c0786&uid=412522694e2c0786&dimension3=Metalama&dimension4=0.0&new_visit=1&rand={random}",
+                    $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&action_name=usage&_id=412522694e2c0786&uid=412522694e2c0786&dimension3=Metalama&dimension4=0.0&dimension5=LessThan1&new_visit=1&rand={random}",
                     matomoRequestUri );
             }
             else

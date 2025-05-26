@@ -34,7 +34,7 @@ namespace Metalama.Backstage.Testing
 
         private readonly ConcurrentDictionary<string, (ManualResetEventSlim Callee, ManualResetEventSlim Caller)> _blockedWrites =
             new();
-        
+
         private readonly ConcurrentDictionary<string, Action> _events = new();
 
         private readonly List<string> _failedAccesses = [];
@@ -50,10 +50,12 @@ namespace Metalama.Backstage.Testing
         public IReadOnlyList<string> FailedFileAccesses => this._failedAccesses;
 
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<WatcherHandle, Action<FileSystemEventArgs>>> _changeWatchers = new();
+        private readonly DateTime _initializationTime;
 
         public TestFileSystem( IServiceProvider serviceProvider )
         {
             this._time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
+            this._initializationTime = this._time.UtcNow;
             this._directory = new DirectoryWrapper( this );
             this._file = new FileWrapper( this );
         }
@@ -125,11 +127,11 @@ namespace Metalama.Backstage.Testing
         }
 
         private static string GetOperationKey( string operation, string path ) => $"{operation}({path})";
-        
+
         public void SetEvent( string operation, string path, Action action )
         {
             var key = GetOperationKey( operation, path );
-            
+
             if ( !this._events.TryAdd( key, action ) )
             {
                 throw new InvalidOperationException();
@@ -139,7 +141,7 @@ namespace Metalama.Backstage.Testing
         public void ResetEvent( string operation, string path )
         {
             var key = GetOperationKey( operation, path );
-            
+
             if ( !this._events.TryRemove( key, out _ ) )
             {
                 throw new InvalidOperationException();
@@ -149,7 +151,7 @@ namespace Metalama.Backstage.Testing
         private void RaiseEvent( string path, string operation )
         {
             var key = GetOperationKey( operation, path );
-            
+
             if ( this._events.TryGetValue( key, out var action ) )
             {
                 action();
@@ -172,6 +174,13 @@ namespace Metalama.Backstage.Testing
                 } );
 
         public DateTime GetDirectoryLastWriteTime( string path ) => this._directory.Execute( ExecutionKind.Manage, 0, path, d => d.GetLastWriteTime( path ) );
+
+        public DateTime GetDirectoryCreationTime( string path )
+        {
+            var date = this._directory.Execute( ExecutionKind.Manage, 0, path, d => d.GetCreationTime( path ) );
+
+            return date.Year < 1815 ? this._initializationTime : date;
+        }
 
         public void SetDirectoryLastWriteTime( string path, DateTime lastWriteTime )
             => this._directory.Execute(
@@ -243,7 +252,7 @@ namespace Metalama.Backstage.Testing
 
         public Stream CreateFile( string path, int bufferSize, FileOptions options )
             => this._file.Execute( ExecutionKind.Write, WatcherChangeTypes.Created, path, f => f.Create( path, bufferSize, options ) );
-        
+
         public StreamWriter CreateTextFile( string path )
             => this._file.Execute( ExecutionKind.Write, WatcherChangeTypes.Created, path, f => f.CreateText( path ) );
 
@@ -294,7 +303,7 @@ namespace Metalama.Backstage.Testing
 
         public void WriteAllText( string path, string? content )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.WriteAllText( path, content ) );
-        
+
         public void WriteAllText( string path, string? contents, Encoding encoding )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.WriteAllText( path, contents, encoding ) );
 
@@ -308,13 +317,13 @@ namespace Metalama.Backstage.Testing
 
         public void AppendAllLines( string path, IEnumerable<string> contents )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.AppendAllLines( path, contents ) );
-        
+
         public void AppendAllLines( string path, IEnumerable<string> contents, Encoding encoding )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.AppendAllLines( path, contents, encoding ) );
-        
+
         public void AppendAllText( string path, string? contents )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.AppendAllText( path, contents ) );
-        
+
         public void AppendAllText( string path, string? contents, Encoding encoding )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.AppendAllText( path, contents, encoding ) );
 

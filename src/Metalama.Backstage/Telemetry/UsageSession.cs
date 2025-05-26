@@ -47,6 +47,7 @@ internal sealed class UsageSession : IUsageSession
         this._time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
 
+        // Initialize the Metrics collection.
         if ( shouldCollectMetrics )
         {
             this.Metrics = new MetricCollection();
