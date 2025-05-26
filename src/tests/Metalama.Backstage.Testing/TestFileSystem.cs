@@ -175,11 +175,13 @@ namespace Metalama.Backstage.Testing
 
         public DateTime GetDirectoryLastWriteTime( string path ) => this._directory.Execute( ExecutionKind.Manage, 0, path, d => d.GetLastWriteTime( path ) );
 
+        private const int HistoricalYearThreshold = 1815; // Threshold year to handle invalid or default dates.
+
         public DateTime GetDirectoryCreationTime( string path )
         {
             var date = this._directory.Execute( ExecutionKind.Manage, 0, path, d => d.GetCreationTime( path ) );
 
-            return date.Year < 1815 ? this._initializationTime : date;
+            return date.Year < HistoricalYearThreshold ? this._initializationTime : date;
         }
 
         public void SetDirectoryLastWriteTime( string path, DateTime lastWriteTime )
