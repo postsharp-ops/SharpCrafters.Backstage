@@ -218,7 +218,7 @@ public sealed class UsageReporterTests : TestsBase
     [Fact]
     public async Task SessionReportedToMatomoAsync()
     {
-        async Task StartSessionAndAssert( string projectName, bool isReportingExpected, string? random )
+        async Task StartSessionAndAssert( string projectName, bool isReportingExpected, string? random, DeviceAgeBucket expectedDeviceAge )
         {
             var reporter = new UsageReporter( this.ServiceProvider );
 
@@ -236,7 +236,7 @@ public sealed class UsageReporterTests : TestsBase
                 this.Logger.WriteLine( matomoRequestUri );
 
                 Assert.Equal(
-                    $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&action_name=usage&_id=412522694e2c0786&uid=412522694e2c0786&dimension3=Metalama&dimension4=0.0&dimension5=LessThan1&new_visit=1&rand={random}",
+                    $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&action_name=usage&_id=412522694e2c0786&uid=412522694e2c0786&dimension3=Metalama&dimension4=0.0&dimension5={expectedDeviceAge}&new_visit=1&rand={random}",
                     matomoRequestUri );
             }
             else
@@ -246,15 +246,15 @@ public sealed class UsageReporterTests : TestsBase
         }
 
         // First session must cause audit.
-        await StartSessionAndAssert( "Project1", true, "56addf3428448b3b" );
+        await StartSessionAndAssert( "Project1", true, "56addf3428448b3b", DeviceAgeBucket.LessThan1 );
 
         // Second session (even with different project) must not cause audit.
-        await StartSessionAndAssert( "Project1", false, null );
-        await StartSessionAndAssert( "Project2", false, null );
+        await StartSessionAndAssert( "Project1", false, null, DeviceAgeBucket.LessThan1 );
+        await StartSessionAndAssert( "Project2", false, null, DeviceAgeBucket.LessThan1 );
 
         // Third session the next day must cause audit.
-        this.Time.AddTime( TimeSpan.FromDays( 1 ) );
-        await StartSessionAndAssert( "Project1", true, "689070376c8cf5f8" );
-        await StartSessionAndAssert( "Project2", false, null );
+        this.Time.AddTime( TimeSpan.FromDays( 1.1 ) );
+        await StartSessionAndAssert( "Project1", true, "689070376c8cf5f8", DeviceAgeBucket.From1To30 );
+        await StartSessionAndAssert( "Project2", false, null, DeviceAgeBucket.From1To30 );
     }
 }
