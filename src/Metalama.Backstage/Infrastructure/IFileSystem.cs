@@ -55,6 +55,8 @@ namespace Metalama.Backstage.Infrastructure
         /// </returns>
         DateTime GetDirectoryLastWriteTime( string path );
 
+        DateTime GetDirectoryCreationTime( string path );
+
         /// <summary>
         /// Sets the date and time a directory was last written to.
         /// </summary>

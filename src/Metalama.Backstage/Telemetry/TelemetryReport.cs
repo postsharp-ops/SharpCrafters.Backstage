@@ -4,6 +4,7 @@
 
 using Metalama.Backstage.Application;
 using Metalama.Backstage.Extensibility;
+using Metalama.Backstage.Infrastructure;
 using Metalama.Backstage.Licensing;
 using Metalama.Backstage.Utilities;
 using System;
@@ -32,7 +33,23 @@ internal abstract class TelemetryReport
             .GetRequiredBackstageService<IApplicationInfoProvider>()
             .CurrentApplication
             .GetLatestComponentMadeByPostSharp();
+
+        // Gets the first-use date.
+        var applicationDataDirectory = serviceProvider.GetRequiredBackstageService<IStandardDirectories>().ApplicationDataDirectory;
+        var fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
+        var firstUseDate = fileSystem.GetDirectoryCreationTime( applicationDataDirectory );
+        var today = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>().UtcNow;
+
+        this.DeviceAgeBucket =
+            (today - firstUseDate).TotalDays switch
+            {
+                < 1 => DeviceAgeBucket.LessThan1,
+                <= 30 => DeviceAgeBucket.From1To30,
+                _ => DeviceAgeBucket.MoreThan30
+            };
     }
+
+    public DeviceAgeBucket DeviceAgeBucket { get; }
 
     public Version? AssemblyVersion => this.ReportedComponent.AssemblyVersion;
 
@@ -43,5 +60,6 @@ internal abstract class TelemetryReport
 #pragma warning restore CA1822
 
     // DeviceId is already rotated monthly, so there is no need to salt it.
-    public long DeviceHash => HashUtilities.ComputeInt64Hmac( this._telemetryConfigurationService.DeviceId.ToString(), this._telemetryConfigurationService.Salt );
+    public long DeviceHash
+        => HashUtilities.ComputeInt64Hmac( this._telemetryConfigurationService.DeviceId.ToString(), this._telemetryConfigurationService.Salt );
 }

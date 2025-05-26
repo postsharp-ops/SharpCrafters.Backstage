@@ -40,6 +40,7 @@ internal sealed class MatomoUploader : IBackstageService
             + $"&uid={report.DeviceHash:x}"
             + $"&dimension3=Metalama"
             + $"&dimension4={reportedVersion}"
+            + $"&dimension5={report.DeviceAgeBucket}"
             + $"&new_visit=1"
             + $"&rand={this._randomNumberGenerator.NextInt64():x}";
 #pragma warning restore CA1307
@@ -77,6 +78,7 @@ internal sealed class MatomoUploader : IBackstageService
             + $"&dimension2={licenseType}"
             + $"&dimension3=Metalama"
             + $"&dimension4={reportedVersion}"
+            + $"&dimension5={report.DeviceAgeBucket}"
             + $"&new_visit=0"
             + $"&rand={this._randomNumberGenerator.NextInt64():x}";
 #pragma warning restore CA1307

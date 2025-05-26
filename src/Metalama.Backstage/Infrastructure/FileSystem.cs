@@ -39,6 +39,12 @@ namespace Metalama.Backstage.Infrastructure
         }
 
         /// <inheritdoc />
+        public DateTime GetDirectoryCreationTime( string path )
+        {
+            return Directory.GetCreationTime( path );
+        }
+
+        /// <inheritdoc />
         public void SetDirectoryLastWriteTime( string path, DateTime lastWriteTime )
         {
             Directory.SetLastWriteTime( path, lastWriteTime );
