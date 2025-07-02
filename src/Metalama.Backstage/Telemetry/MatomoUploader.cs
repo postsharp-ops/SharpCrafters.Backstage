@@ -103,7 +103,7 @@ internal sealed class MatomoUploader : IBackstageService
         }
         catch ( Exception e )
         {
-            this._logger.Error?.Log( $"Cannot audit to Matomo: {e.Message}" );
+            this._logger.LogException( e, "Cannot audit to Matomo" );
         }
     }
 }

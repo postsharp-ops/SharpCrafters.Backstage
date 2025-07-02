@@ -23,15 +23,16 @@ public abstract class BaseCommand<T> : Command<T>
         try
         {
             var result = this.Execute( new ExtendedCommandContext( context, serviceProvider, logger ), settings );
-            
+
             return result;
         }
         catch ( Exception e )
         {
             try
             {
-                logger.Error?.Log( e.ToString() );
-                serviceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( e );
+                var classifiedException = ExceptionClassifier.Classify( e );
+                logger.LogException( classifiedException );
+                serviceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( classifiedException );
             }
             catch ( Exception reporterException )
             {

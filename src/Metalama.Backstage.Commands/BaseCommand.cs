@@ -35,7 +35,7 @@ namespace Metalama.Backstage.Commands
                 // We don't report usage of commands.
 
                 this.Execute( extendedContext, settings );
-                
+
                 return 0;
             }
             catch ( CommandException e )
@@ -48,8 +48,9 @@ namespace Metalama.Backstage.Commands
             {
                 try
                 {
-                    logger.Error?.Log( e.ToString() );
-                    extendedContext.ServiceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( e );
+                    var classifiedException = ExceptionClassifier.Classify( e );
+                    logger.LogException( classifiedException );
+                    extendedContext.ServiceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( classifiedException );
                 }
                 catch ( Exception reporterException )
                 {

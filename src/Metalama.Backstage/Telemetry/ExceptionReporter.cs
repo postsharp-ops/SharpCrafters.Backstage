@@ -13,9 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Net;
-using System.Security;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -56,38 +53,6 @@ internal sealed class ExceptionReporter : IExceptionReporter
         {
             yield return match?.Value;
         }
-    }
-
-    public bool ShouldReportException( Exception exception )
-    {
-        switch ( exception )
-        {
-            case IOException _:
-            case SecurityException _:
-            case UnauthorizedAccessException _:
-            case WebException _:
-            case OperationCanceledException _:
-                this._logger.Trace?.Log( $"The exception '{exception.GetType().Name}' should not be reported because the exception type shows a user reason." );
-
-                return false;
-        }
-
-        if ( exception.InnerException != null && !this.ShouldReportException( exception.InnerException ) )
-        {
-            this._logger.Trace?.Log( $"The exception '{exception.GetType().Name}' should not be reported because the inner exception should not be reported." );
-
-            return false;
-        }
-
-        if ( exception is AggregateException aggregateException && aggregateException.InnerExceptions.Any( e => !this.ShouldReportException( e ) ) )
-        {
-            this._logger.Trace?.Log(
-                $"The exception '{exception.GetType().Name}' should not be reported because some inner exception should not be reported." );
-
-            return false;
-        }
-
-        return true;
     }
 
     private string ComputeExceptionHash( string? version, string exceptionTypeName, IEnumerable<string?> stackTraces )
@@ -222,25 +187,32 @@ internal sealed class ExceptionReporter : IExceptionReporter
     }
 
     public void ReportException(
-        Exception reportedException,
+        Exception exception,
+        ExceptionReportingKind exceptionReportingKind = ExceptionReportingKind.Exception,
+        string? localReportPath = null,
+        IExceptionAdapter? adapter = null )
+        => this.ReportException( ExceptionClassifier.Classify( exception ), exceptionReportingKind, localReportPath, adapter );
+
+    public void ReportException(
+        ClassifiedException classifiedException,
         ExceptionReportingKind exceptionReportingKind = ExceptionReportingKind.Exception,
         string? localReportPath = null,
         IExceptionAdapter? adapter = null )
     {
         try
         {
-            if ( !this.ShouldReportException( reportedException ) )
+            if ( !classifiedException.IsError )
             {
                 return;
             }
 
-            this._logger.Trace?.Log( $"Attempting to report an exception of type '{reportedException.GetType().Name}' of kind '{exceptionReportingKind}'." );
+            this._logger.Trace?.Log( $"Attempting to report an exception of type '{classifiedException.GetType().Name}' of kind '{exceptionReportingKind}'." );
 
             if ( exceptionReportingKind == ExceptionReportingKind.Exception )
             {
                 this._logger.Trace?.Log( $"Reporting the exception locally." );
 
-                this._localExceptionReporter?.ReportException( reportedException, localReportPath );
+                this._localExceptionReporter?.ReportException( classifiedException.Exception, localReportPath );
             }
 
             if ( !this._telemetryConfigurationService.IsEnabled(
@@ -258,12 +230,12 @@ internal sealed class ExceptionReporter : IExceptionReporter
 
             // Get stack traces.
             var stackTraces = new List<string?>();
-            PopulateStackTraces( stackTraces, reportedException, adapter );
+            PopulateStackTraces( stackTraces, classifiedException.Exception, adapter );
 
             // Compute a signature for this exception.
             var hash = this.ComputeExceptionHash(
                 applicationInfo.PackageVersion,
-                adapter.GetTypeFullName( reportedException )!,
+                adapter.GetTypeFullName( classifiedException.Exception )!,
                 stackTraces );
 
             // Check if this exception has already been reported.
@@ -314,7 +286,7 @@ internal sealed class ExceptionReporter : IExceptionReporter
 
             xmlWriter.WriteStartElement( "Exception" );
 
-            adapter.WriteException( xmlWriter, reportedException );
+            adapter.WriteException( xmlWriter, classifiedException.Exception );
 
             xmlWriter.WriteEndElement();
 

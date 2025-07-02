@@ -123,7 +123,7 @@ internal sealed class MiniDumper : IMiniDumper
             }
             catch ( Exception e )
             {
-                this._logger.Error?.Log( e.ToString() );
+                this._logger.LogException( e );
 
                 return null;
             }

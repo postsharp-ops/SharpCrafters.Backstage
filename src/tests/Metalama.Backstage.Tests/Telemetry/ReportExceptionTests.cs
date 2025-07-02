@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Metalama.Backstage.Configuration;
+using Metalama.Backstage.Diagnostics;
 using Metalama.Backstage.Telemetry;
 using Metalama.Backstage.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -89,15 +90,14 @@ public sealed class ReportExceptionTests : TestsBase
     [Fact]
     public void ShouldReportException()
     {
-        var reporter = new ExceptionReporter( new TelemetryQueue( this.ServiceProvider ), this.ServiceProvider );
-        Assert.False( reporter.ShouldReportException( new TaskCanceledException() ) );
-        Assert.False( reporter.ShouldReportException( new OperationCanceledException() ) );
-        Assert.False( reporter.ShouldReportException( new IOException() ) );
-        Assert.False( reporter.ShouldReportException( new UnauthorizedAccessException() ) );
-        Assert.False( reporter.ShouldReportException( new WebException() ) );
-        Assert.False( reporter.ShouldReportException( new AggregateException( new IOException() ) ) );
-        Assert.False( reporter.ShouldReportException( new InvalidOperationException( "", new IOException() ) ) );
-        Assert.True( reporter.ShouldReportException( new InvalidOperationException( "" ) ) );
+        Assert.False( ExceptionClassifier.Classify( new TaskCanceledException() ).IsError );
+        Assert.False( ExceptionClassifier.Classify( new OperationCanceledException() ).IsError );
+        Assert.False( ExceptionClassifier.Classify( new IOException() ).IsError );
+        Assert.False( ExceptionClassifier.Classify( new UnauthorizedAccessException() ).IsError );
+        Assert.False( ExceptionClassifier.Classify( new WebException() ).IsError );
+        Assert.False( ExceptionClassifier.Classify( new AggregateException( new IOException() ) ).IsError );
+        Assert.False( ExceptionClassifier.Classify( new InvalidOperationException( "", new IOException() ) ).IsError );
+        Assert.True( ExceptionClassifier.Classify( new InvalidOperationException( "" ) ).IsError );
     }
 
     private void ReportException(

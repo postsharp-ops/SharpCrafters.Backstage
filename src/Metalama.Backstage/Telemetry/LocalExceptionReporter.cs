@@ -36,7 +36,14 @@ internal sealed class LocalExceptionReporter : IBackstageService
 
     public void ReportException( Exception exception, string? localReportPath )
     {
-        this._logger.Error?.Log( exception.ToString() );
+        var classifiedException = ExceptionClassifier.Classify( exception );
+
+        this._logger.LogException( classifiedException );
+
+        if ( !classifiedException.IsError )
+        {
+            return;
+        }
 
         // The app may crash after reporting the exception, so we flush the logs first.
         this._loggerFactory.Flush();
@@ -109,7 +116,7 @@ internal sealed class LocalExceptionReporter : IBackstageService
         }
         catch ( Exception e )
         {
-            this._logger.Error?.Log( e.ToString() );
+            this._logger.LogException( e );
         }
     }
 }

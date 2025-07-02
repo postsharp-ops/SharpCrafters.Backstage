@@ -43,15 +43,16 @@ public abstract class BaseAsyncCommand<T> : AsyncCommand<T>
         catch ( CommandException e )
         {
             logger.Error?.Log( e.Message );
-            
+
             return e.ReturnCode;
         }
         catch ( Exception e )
         {
             try
             {
-                logger.Error?.Log( e.ToString() );
-                extendedContext.ServiceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( e );
+                var classifiedException = ExceptionClassifier.Classify( e );
+                logger.LogException( classifiedException );
+                extendedContext.ServiceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( classifiedException );
             }
             catch ( Exception reporterException )
             {

@@ -24,15 +24,16 @@ public abstract class BaseAsyncCommand<T> : AsyncCommand<T>
         try
         {
             var result = await this.ExecuteAsync( new ExtendedCommandContext( context, serviceProvider, logger ), settings );
-            
+
             return result;
         }
         catch ( Exception e )
         {
             try
             {
-                logger.Error?.Log( e.ToString() );
-                serviceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( e );
+                var classifiedException = ExceptionClassifier.Classify( e );
+                logger.LogException( classifiedException );
+                serviceProvider.GetBackstageService<IExceptionReporter>()?.ReportException( classifiedException );
             }
             catch ( Exception reporterException )
             {
