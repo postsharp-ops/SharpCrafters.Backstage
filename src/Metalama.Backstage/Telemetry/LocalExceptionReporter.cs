@@ -86,7 +86,7 @@ internal sealed class LocalExceptionReporter : IBackstageService
                     ()
                         => $"Id={Thread.CurrentThread.ManagedThreadId}, Name='{Thread.CurrentThread.Name}', IsBackground={Thread.CurrentThread.IsBackground}, IsPooled={Thread.CurrentThread.IsThreadPoolThread}" );
 
-                AppendLineSafe( "Execution context", () => $"{Thread.CurrentThread.ExecutionContext}" );
+                AppendLineSafe( "Synchronization context", () => $"{SynchronizationContext.Current}" );
                 AppendLineSafe( "Exception type", () => $"{exception.GetType()}" );
                 AppendLineSafe( "Exception message", () => $"{exception.Message}" );
 
