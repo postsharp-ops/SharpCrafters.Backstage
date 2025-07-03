@@ -248,7 +248,7 @@ public static class ToolInvocationHelper
                     }
                     catch ( Exception e )
                     {
-                        logger.Error?.Log( e.ToString() );
+                        logger.LogException( e );
                     }
                 };
 
@@ -269,7 +269,7 @@ public static class ToolInvocationHelper
                     }
                     catch ( Exception e )
                     {
-                        logger.Error?.Log( e.ToString() );
+                        logger.LogException( e );
                     }
                 };
 

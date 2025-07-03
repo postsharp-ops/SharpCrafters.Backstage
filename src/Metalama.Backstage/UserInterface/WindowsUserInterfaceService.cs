@@ -7,6 +7,7 @@ using Metalama.Backstage.Tools;
 using System;
 
 #if NETFRAMEWORK || NETCOREAPP
+using Metalama.Backstage.Diagnostics;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -136,7 +137,7 @@ internal sealed class WindowsUserInterfaceService : UserInterfaceService
         }
         catch ( Exception exception )
         {
-            this.Logger.Error?.Log( exception.ToString() );
+            this.Logger.LogException( exception );
             path = null;
 
             return false;

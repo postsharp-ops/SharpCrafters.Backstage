@@ -69,9 +69,8 @@ namespace Metalama.Backstage.Configuration
             this.Logger.Trace?.Log( $"File has changed: '{e.FullPath}'." );
             var fileName = e.FullPath;
 
-            var isAffected = this._instances.Values.Any(
-                s =>
-                    string.Equals( this.GetFilePath( s.GetType() ), fileName, StringComparison.OrdinalIgnoreCase ) );
+            var isAffected = this._instances.Values.Any( s =>
+                                                             string.Equals( this.GetFilePath( s.GetType() ), fileName, StringComparison.OrdinalIgnoreCase ) );
 
             if ( isAffected &&
                  this._fileChanges.TryAdd( e.FullPath, e.FullPath ) &&
@@ -97,9 +96,11 @@ namespace Metalama.Backstage.Configuration
                         {
                             foreach ( var fileName in this._fileChanges.Keys )
                             {
-                                var oldSettings = this._instances.Values.Where(
-                                    s =>
-                                        string.Equals( this.GetFilePath( s.GetType() ), fileName, StringComparison.OrdinalIgnoreCase ) );
+                                var oldSettings = this._instances.Values.Where( s =>
+                                                                                    string.Equals(
+                                                                                        this.GetFilePath( s.GetType() ),
+                                                                                        fileName,
+                                                                                        StringComparison.OrdinalIgnoreCase ) );
 
                                 foreach ( var oldSetting in oldSettings )
                                 {
@@ -128,7 +129,7 @@ namespace Metalama.Backstage.Configuration
             {
                 // When we have an exception we may miss events in case of race.
 
-                this.Logger.Error?.Log( e.ToString() );
+                this.Logger.LogException( e );
                 this._fileChangeProcessingTaskStatus = 0;
             }
         }
@@ -321,7 +322,7 @@ namespace Metalama.Backstage.Configuration
             }
             catch ( Exception e )
             {
-                this.Logger.Error?.Log( $"Error reading file '{fileName}': " + e );
+                this.Logger.LogException( e, $"Error reading file '{fileName}'" );
             }
 
             // Could not be loaded.
@@ -346,8 +347,8 @@ namespace Metalama.Backstage.Configuration
             try
             {
                 var jsonSettings = new JsonSerializerSettings();
-                
-#if TRACE_JSON 
+
+#if TRACE_JSON
                 jsonSettings.TraceWriter = new JsonTraceWriter( fileName, this.Logger.WithPrefix( "Json" ) );
 #endif
 
@@ -369,7 +370,7 @@ namespace Metalama.Backstage.Configuration
             }
             catch ( Exception e )
             {
-                this.Logger.Error?.Log( $"Error reading file '{fileName}': " + e.Message );
+                this.Logger.LogException( e, $"Error reading file '{fileName}'" );
 
                 // In case of error, we need to return an empty instance of the configuration object,
                 // with the LastModified property properly set. If instead we return false, the caller
@@ -404,18 +405,17 @@ namespace Metalama.Backstage.Configuration
 
             var stopwatch = Stopwatch.StartNew();
 
-            return new DisposableAction(
-                () =>
+            return new DisposableAction( () =>
+            {
+                this.Logger.Trace?.Log( $"Releasing configuration mutex. It was held for {stopwatch.ElapsedMilliseconds} ms." );
+
+                if ( stopwatch.ElapsedMilliseconds > 1000 )
                 {
-                    this.Logger.Trace?.Log( $"Releasing configuration mutex. It was held for {stopwatch.ElapsedMilliseconds} ms." );
+                    this.Logger.Warning?.Log( $"The configuration mutex was held for a long time: {stopwatch.Elapsed}." );
+                }
 
-                    if ( stopwatch.ElapsedMilliseconds > 1000 )
-                    {
-                        this.Logger.Warning?.Log( $"The configuration mutex was held for a long time: {stopwatch.Elapsed}." );
-                    }
-
-                    this._mutex.ReleaseMutex();
-                } );
+                this._mutex.ReleaseMutex();
+            } );
         }
 
         public void Dispose()

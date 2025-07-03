@@ -11,5 +11,25 @@ namespace Metalama.Backstage.Diagnostics
     {
         public static ILoggerFactory GetLoggerFactory( this IServiceProvider services )
             => services.GetBackstageService<ILoggerFactory>() ?? NullLogger.Instance;
+
+        public static void LogException( this ILogger? logger, in ClassifiedException classifiedException, string? caption = null )
+        {
+            if ( logger == null )
+            {
+                return;
+            }
+
+            var writer = classifiedException.IsError ? logger.Error : logger.Warning;
+
+            if ( writer != null )
+            {
+                var exceptionString = classifiedException.Exception.ToString();
+                var message = string.IsNullOrEmpty( caption ) ? exceptionString : caption + ": " + exceptionString;
+                writer.Log( message );
+            }
+        }
+
+        public static void LogException( this ILogger? logger, Exception exception, string? caption = null )
+            => logger.LogException( ExceptionClassifier.Classify( exception ), caption );
     }
 }

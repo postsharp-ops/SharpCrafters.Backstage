@@ -215,7 +215,7 @@ namespace Metalama.Backstage.Telemetry
                     }
                     catch ( Exception e )
                     {
-                        this._logger.Error?.Log( $"Cannot pack file '{file}': {e.Message}" );
+                        this._logger.LogException( e, $"Cannot pack file '{file}'" );
                         this._failedFiles.Add( (file, e) );
                     }
                 }
@@ -371,7 +371,7 @@ namespace Metalama.Backstage.Telemetry
             }
             catch ( Exception exception )
             {
-                this._logger.Error?.Log( exception.ToString() );
+                this._logger.LogException( exception );
                 this._telemetryLogger.WriteLine( $"Upload failure: {exception.Message}" );
 
                 throw;

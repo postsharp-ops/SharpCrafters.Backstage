@@ -11,6 +11,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace Metalama.Backstage.Telemetry;
 
@@ -35,7 +36,14 @@ internal sealed class LocalExceptionReporter : IBackstageService
 
     public void ReportException( Exception exception, string? localReportPath )
     {
-        this._logger.Error?.Log( exception.ToString() );
+        var classifiedException = ExceptionClassifier.Classify( exception );
+
+        this._logger.LogException( classifiedException );
+
+        if ( !classifiedException.IsError )
+        {
+            return;
+        }
 
         // The app may crash after reporting the exception, so we flush the logs first.
         this._loggerFactory.Flush();
@@ -50,14 +58,37 @@ internal sealed class LocalExceptionReporter : IBackstageService
                 var exceptionText = new StringBuilder();
 
 #pragma warning disable CA1305
-                exceptionText.AppendLine( $"Metalama Application: {this._applicationInfoProvider.CurrentApplication.Name}" );
-                exceptionText.AppendLine( $"Metalama Version: {this._applicationInfoProvider.CurrentApplication.PackageVersion}" );
-                exceptionText.AppendLine( $"Runtime: {RuntimeInformation.FrameworkDescription}" );
-                exceptionText.AppendLine( $"Processor Architecture: {RuntimeInformation.ProcessArchitecture}" );
-                exceptionText.AppendLine( $"OS Description: {RuntimeInformation.OSDescription}" );
-                exceptionText.AppendLine( $"OS Architecture: {RuntimeInformation.OSArchitecture}" );
-                exceptionText.AppendLine( $"Exception type: {exception.GetType()}" );
-                exceptionText.AppendLine( $"Exception message: {exception.Message}" );
+                void AppendLineSafe( string name, Func<string> getValue )
+                {
+                    string value;
+
+                    try
+                    {
+                        value = getValue();
+                    }
+                    catch ( Exception e )
+                    {
+                        value = e.Message;
+                    }
+
+                    exceptionText.AppendLine( $"{name}: {value}" );
+                }
+
+                AppendLineSafe( "Metalama Application", () => $"{this._applicationInfoProvider.CurrentApplication.Name}" );
+                AppendLineSafe( "Metalama Version", () => $"{this._applicationInfoProvider.CurrentApplication.PackageVersion}" );
+                AppendLineSafe( ".NET Runtime", () => $"{RuntimeInformation.FrameworkDescription}" );
+                AppendLineSafe( "Processor Architecture", () => $" {RuntimeInformation.ProcessArchitecture}" );
+                AppendLineSafe( "OS Description", () => $"{RuntimeInformation.OSDescription}" );
+                AppendLineSafe( "OS Architecture", () => $"{RuntimeInformation.OSArchitecture}" );
+
+                AppendLineSafe(
+                    "Managed thread",
+                    ()
+                        => $"Id={Thread.CurrentThread.ManagedThreadId}, Name='{Thread.CurrentThread.Name}', IsBackground={Thread.CurrentThread.IsBackground}, IsPooled={Thread.CurrentThread.IsThreadPoolThread}" );
+
+                AppendLineSafe( "Synchronization context", () => $"{SynchronizationContext.Current}" );
+                AppendLineSafe( "Exception type", () => $"{exception.GetType()}" );
+                AppendLineSafe( "Exception message", () => $"{exception.Message}" );
 
                 try
                 {
@@ -85,7 +116,7 @@ internal sealed class LocalExceptionReporter : IBackstageService
         }
         catch ( Exception e )
         {
-            this._logger.Error?.Log( e.ToString() );
+            this._logger.LogException( e );
         }
     }
 }

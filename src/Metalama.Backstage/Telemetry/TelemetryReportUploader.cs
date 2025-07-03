@@ -43,7 +43,7 @@ internal sealed class TelemetryReportUploader : IBackstageService
         }
         catch ( Exception e )
         {
-            this._logger.Error?.Log( e.ToString() );
+            this._logger.LogException( e );
 
             return;
         }
