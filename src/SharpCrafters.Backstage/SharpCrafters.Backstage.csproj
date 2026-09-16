@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
         <PackageDescription>The product-independent services of Metalama.Backstage: dependency injection, diagnostics, configuration, telemetry, licensing and user interface. This package should only be installed as a dependency.</PackageDescription>
-        <RootNamespace>Metalama.Backstage</RootNamespace>
+        <RootNamespace>SharpCrafters.Backstage</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
         <!-- The files under Threading/ and the process kind files under Diagnostics/ are also compiled into
@@ -12,10 +12,10 @@
              that takes part in dependency injection. -->
         <DefineConstants>$(DefineConstants);METALAMA_BACKSTAGE</DefineConstants>
 
-        <!-- Marks a copy of those files that can reference Metalama.Testing.Hooks, and therefore has the test
+        <!-- Marks a copy of those files that can reference SharpCrafters.Common, and therefore has the test
              synchronization points. This is deliberately a separate symbol, because whether an assembly is part of
              the Backstage services and whether it has the hooks are two independent questions: any project that
-             compiles these files and gains a reference to Metalama.Testing.Hooks should define this one too. -->
+             compiles these files and gains a reference to SharpCrafters.Common should define this one too. -->
         <DefineConstants>$(DefineConstants);HAS_METALAMA_TESTING_HOOKS</DefineConstants>
     </PropertyGroup>
 
@@ -31,7 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Metalama.Testing.Hooks\Metalama.Testing.Hooks.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Common\SharpCrafters.Common.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,8 +51,8 @@
     <ItemGroup>
         <!-- The Metalama composition and the test projects need the internal types. -->
         <InternalsVisibleTo Include="Metalama.Backstage" />
-        <InternalsVisibleTo Include="Metalama.Backstage.Tests" />
-        <InternalsVisibleTo Include="Metalama.Backstage.Testing" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>
 
 </Project>

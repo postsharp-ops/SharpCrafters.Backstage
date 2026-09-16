@@ -5,8 +5,8 @@
     <Import Project="MainVersion.props" />
 
     <PropertyGroup>
-        <FoundationsVersion>$(MainVersion)$(PackageVersionSuffix)</FoundationsVersion>
-        <FoundationsAssemblyVersion>$(MainVersion)</FoundationsAssemblyVersion>
+        <BackstageVersion>$(MainVersion)$(PackageVersionSuffix)</BackstageVersion>
+        <BackstageAssemblyVersion>$(MainVersion)</BackstageAssemblyVersion>
     </PropertyGroup>
 
     <!-- Set the default versions of auto-updated dependencies -->
@@ -16,8 +16,8 @@
     <Import Project="Versions.g.props" Condition="Exists('Versions.g.props')" />
 
     <PropertyGroup>
-        <AssemblyVersion>$(FoundationsAssemblyVersion)</AssemblyVersion>
-        <Version>$(FoundationsVersion)</Version>
+        <AssemblyVersion>$(BackstageAssemblyVersion)</AssemblyVersion>
+        <Version>$(BackstageVersion)</Version>
     </PropertyGroup>
 
     <!-- Versions of other dependencies are set in Directory.Packages.props. -->

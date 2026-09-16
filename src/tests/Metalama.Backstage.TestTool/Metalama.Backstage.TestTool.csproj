@@ -5,7 +5,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Metalama.Backstage.DotNetTool</RootNamespace>
+        <RootNamespace>Metalama.Backstage.TestTool</RootNamespace>
         <PackAsTool>true</PackAsTool>
         <DebugType>portable</DebugType>
         <!--
@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Metalama.Backstage.Commands\Metalama.Backstage.Commands.csproj" />
+      <ProjectReference Include="..\..\SharpCrafters.Backstage.Commands\SharpCrafters.Backstage.Commands.csproj" />
     </ItemGroup>
 
 </Project>

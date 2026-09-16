@@ -6,8 +6,9 @@
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
         <EnableWindowsTargeting>True</EnableWindowsTargeting>
-        <RootNamespace>Metalama.Backstage.Desktop.Windows</RootNamespace>
-        <PackageDescription>The desktop notifier of Metalama.Backstage for Windows as a library: the toast notifications and the browser window. A product hosts it in a small executable. This package should only be installed as a dependency.</PackageDescription>
+        <RootNamespace>SharpCrafters.Backstage.Windows</RootNamespace>
+        <!-- The library is consumed by the product executables of this repository only, so it is not packed. -->
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <!-- It seems the WinRT source generator runs when it shouldn't and causes bogus warnings, see https://github.com/dotnet/sdk/issues/44026, so we disable it. -->
@@ -20,7 +21,6 @@
     </Target>
 
     <ItemGroup>
-        <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <ItemGroup>
@@ -32,7 +32,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Metalama.Backstage.Core\Metalama.Backstage.Core.csproj"/>
+        <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj"/>
     </ItemGroup>
 
     <!-- The logos of every product family are shipped with the library and copied next to the executable of the

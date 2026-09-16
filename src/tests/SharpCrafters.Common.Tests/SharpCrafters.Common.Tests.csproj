@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFrameworks>netframework4.7.2;net10.0</TargetFrameworks>
         <IsPackable>false</IsPackable>
-        <RootNamespace>Metalama.Testing.Hooks.Tests</RootNamespace>
+        <RootNamespace>SharpCrafters.Common.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Metalama.Testing.Hooks\Metalama.Testing.Hooks.csproj" />
+        <ProjectReference Include="..\..\SharpCrafters.Common\SharpCrafters.Common.csproj" />
     </ItemGroup>
 
 </Project>

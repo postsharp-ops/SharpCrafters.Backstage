@@ -35,7 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="Metalama.Backstage.Commands.Tests" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Commands.Tests" />
     </ItemGroup>
 
 

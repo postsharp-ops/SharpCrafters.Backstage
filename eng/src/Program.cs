@@ -4,21 +4,21 @@ using PostSharp.Engineering.BuildTools;
 using PostSharp.Engineering.BuildTools.Build.Model;
 using PostSharp.Engineering.BuildTools.Build.Solutions;
 using PostSharp.Engineering.BuildTools.Docker;
-using FoundationsDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.FoundationsDependencies.V2027_0;
+using BackstageDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.BackstageDependencies.V2027_0;
 
 // The .NET 11 SDK, which global.json names as the main SDK of the product and which the build container installs.
 // The version is a literal instead of a member of the product family, because the .NET 11 SDK is a prerelease and
 // PostSharp.Engineering names only released feature bands. Keep it equal to the constant of the same name in the
 // Metalama repository, which consumes the packages of this repository, and move both to
-// FoundationsDependencies.V2027_0.Family.PreferredVersions.DotNetSdk once the .NET 11 SDK is released.
+// BackstageDependencies.V2027_0.Family.PreferredVersions.DotNetSdk once the .NET 11 SDK is released.
 const string dotNet11SdkVersion = "11.0.100-rc.1.26425.128";
 
 // The .NET 10 SDK, which stays installed beside the .NET 11 one, because the build tool of this repository targets
 // net10.0 and the .NET 11 SDK carries no .NET 10 runtime. The version comes from the product family, so that every
 // product of the family requests the same feature band and the container layers are shared.
-var dotNet10SdkVersion = FoundationsDependencies.Family.PreferredVersions.DotNetSdk.V_10_0;
+var dotNet10SdkVersion = BackstageDependencies.Family.PreferredVersions.DotNetSdk.V_10_0;
 
-var product = new Product( FoundationsDependencies.Foundations )
+var product = new Product( BackstageDependencies.Backstage )
 {
     OverriddenBuildAgentRequirements = new ContainerRequirements( ContainerHostKind.Windows )
     {
@@ -31,18 +31,17 @@ var product = new Product( FoundationsDependencies.Foundations )
     GenerateNuGetConfig = true,
     DotNetSdkVersion = new DotNetSdkVersion( dotNet11SdkVersion ) { AllowPrerelease = true },
 
-    Solutions = [new DotNetSolution( "SharpCrafters.Foundations.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
+    Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
 
-    // The packages keep their historical names until the projects are renamed to SharpCrafters.Foundations.
+    // Only the packages that a public package of a product depends on are public. SharpCrafters.Backstage.Testing
+    // is consumed by test projects only, and the worker and Windows libraries are project references of the
+    // product executables, so they are not packed at all.
     PublicArtifacts = Pattern.Create(
-        "Metalama.Backstage.$(PackageVersion).nupkg",
-        "Metalama.Backstage.Core.$(PackageVersion).nupkg",
-        "Metalama.Backstage.Core.Worker.$(PackageVersion).nupkg",
-        "Metalama.Backstage.Core.Desktop.Windows.$(PackageVersion).nupkg",
-        "Metalama.Backstage.Commands.$(PackageVersion).nupkg", // Required by SourceLink in Metalama.Framework.
-        "Metalama.Backstage.Testing.$(PackageVersion).nupkg",  // Required by SourceLink in Metalama.Framework.
-        "Metalama.Backstage.Tools.$(PackageVersion).nupkg",    // Required by Metalama.Testing.AspectTesting via Metalama.Framework.Engine.
-        "Metalama.Testing.Hooks.$(PackageVersion).nupkg" )     // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
+        "SharpCrafters.Backstage.$(PackageVersion).nupkg",
+        "SharpCrafters.Backstage.Commands.$(PackageVersion).nupkg", // Required by Metalama.Tool.
+        "SharpCrafters.Common.$(PackageVersion).nupkg",             // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
+        "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
+        "Metalama.Backstage.Tools.$(PackageVersion).nupkg" )        // Required by Metalama.Framework.Engine and Metalama.Vsx.
 };
 
 return new EngineeringApp( product ).Run( args );

@@ -15,7 +15,7 @@
     </PropertyGroup>
 
     <!-- This project is the executable of the desktop notifier of Metalama. The notifier itself is the
-         Metalama.Backstage.Core.Desktop.Windows library; this project binds it to the Metalama product, gives it the
+         SharpCrafters.Backstage.Windows library; this project binds it to the Metalama product, gives it the
          Metalama icon, and packages it as the zip archive that Metalama.Backstage.Tools embeds. -->
 
     <!-- It seems the WinRT source generator runs when it shouldn't and causes bogus warnings, see https://github.com/dotnet/sdk/issues/44026, so we disable it. -->
@@ -29,7 +29,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Metalama.Backstage\Metalama.Backstage.csproj"/>
-        <ProjectReference Include="..\Metalama.Backstage.Core.Desktop.Windows\Metalama.Backstage.Core.Desktop.Windows.csproj"/>
+        <ProjectReference Include="..\SharpCrafters.Backstage.Windows\SharpCrafters.Backstage.Windows.csproj"/>
 
         <!-- We need the Worker project to be built first because we invoke it as an executable. -->
         <ProjectReference Include="..\Metalama.Backstage.Worker\Metalama.Backstage.Worker.csproj"

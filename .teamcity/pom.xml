@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
-  <name>Foundations_Foundations20270 Config DSL Script</name>
-  <groupId>Foundations_Foundations20270</groupId>
-  <artifactId>Foundations_Foundations20270_dsl</artifactId>
+  <name>Backstage_Backstage20270 Config DSL Script</name>
+  <groupId>Backstage_Backstage20270</groupId>
+  <artifactId>Backstage_Backstage20270_dsl</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <parent>

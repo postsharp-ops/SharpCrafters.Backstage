@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Metalama.Backstage.Core\Metalama.Backstage.Core.csproj" />
+      <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Newtonsoft.Json" VersionOverride="$(NewtonsoftJsonMinVersion)" NoWarn="NU1903" />
     </ItemGroup>
@@ -30,9 +30,9 @@
                           SkipGetTargetFrameworkProperties="true"
                           PrivateAssets="all" />
 
-        <EmbeddedResource Include="..\Metalama.Backstage.Desktop.Windows\bin\Metalama.Backstage.Desktop.Windows.zip" />
+        <EmbeddedResource Include="..\Metalama.Backstage.Windows\bin\Metalama.Backstage.Windows.zip" />
         
-        <ProjectReference Include="..\Metalama.Backstage.Desktop.Windows\Metalama.Backstage.Desktop.Windows.csproj"
+        <ProjectReference Include="..\Metalama.Backstage.Windows\Metalama.Backstage.Windows.csproj"
                           ReferenceOutputAssembly="false"
                           SkipGetTargetFrameworkProperties="true"
                           PrivateAssets="all" />
@@ -40,8 +40,8 @@
     </ItemGroup>
     
     <ItemGroup>
-        <InternalsVisibleTo Include="Metalama.Backstage.Testing" />
-        <InternalsVisibleTo Include="Metalama.Backstage.Tests" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
     </ItemGroup>
 
 </Project>

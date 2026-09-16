@@ -4,7 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <Nullable>enable</Nullable>
-        <RootNamespace>Metalama.Backstage.Worker.Tests</RootNamespace>
+        <RootNamespace>SharpCrafters.Backstage.Worker.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,8 +26,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Metalama.Backstage.Core.Worker\Metalama.Backstage.Core.Worker.csproj" />
-        <ProjectReference Include="..\Metalama.Backstage.Testing\Metalama.Backstage.Testing.csproj" />
+        <ProjectReference Include="..\..\SharpCrafters.Backstage.Worker\SharpCrafters.Backstage.Worker.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage.Testing\SharpCrafters.Backstage.Testing.csproj" />
     </ItemGroup>
 
     <ItemGroup>

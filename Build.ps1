@@ -23,7 +23,7 @@ if ($PSVersionTable.PSVersion -lt [Version]'7.4')
 ####
 # These settings are replaced by the generate-scripts command.
 $EngPath = 'eng'
-$ProductName = 'Foundations'
+$ProductName = 'Backstage'
 ####
 
 if ($StartVsmon)

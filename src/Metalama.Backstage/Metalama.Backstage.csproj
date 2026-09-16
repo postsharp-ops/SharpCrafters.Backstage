@@ -10,14 +10,14 @@
     </PropertyGroup>
 
     <!-- This project is the Metalama composition of the Backstage services: it holds the Metalama-specific values and
-         implementations and the umbrella initialization API over Metalama.Backstage.Core. -->
+         implementations and the umbrella initialization API over SharpCrafters.Backstage. -->
 
     <ItemGroup>
         <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Metalama.Backstage.Core\Metalama.Backstage.Core.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -41,9 +41,9 @@
 
     <ItemGroup>
         <!-- The Backstage packages form one family and share their internal types; the test projects need them too. -->
-        <InternalsVisibleTo Include="Metalama.Backstage.Core" />
-        <InternalsVisibleTo Include="Metalama.Backstage.Tests" />
-        <InternalsVisibleTo Include="Metalama.Backstage.Testing" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>
 
 </Project>

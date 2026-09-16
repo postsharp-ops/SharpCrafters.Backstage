@@ -5,7 +5,7 @@
     <!-- Properties of NuGet packages -->
     <PropertyGroup>
         <Authors>PostSharp Technologies</Authors>
-        <PackageProjectUrl>https://github.com/postsharp-ops/SharpCrafters.Foundations</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/postsharp-ops/SharpCrafters.Backstage</PackageProjectUrl>
         <PackageTags></PackageTags>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <PackageIcon>postsharp.png</PackageIcon>

@@ -23,7 +23,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\Metalama.Backstage\Metalama.Backstage.csproj" />
-        <ProjectReference Include="..\Metalama.Backstage.Testing\Metalama.Backstage.Testing.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage.Testing\SharpCrafters.Backstage.Testing.csproj" />
     </ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)'=='netframework4.7.2'">

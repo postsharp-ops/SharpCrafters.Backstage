@@ -6,7 +6,7 @@
         
         <IsTestProject>False</IsTestProject>
         <IsPackable>True</IsPackable>
-        <RootNamespace>Metalama.Backstage.Testing</RootNamespace>
+        <RootNamespace>SharpCrafters.Backstage.Testing</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
