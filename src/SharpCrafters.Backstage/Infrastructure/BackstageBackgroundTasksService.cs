@@ -3,13 +3,13 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 // BackstageBackgroundTasksService is intentionally not disposable, relying instead on GC, because Metalama's
 // service provider disposal implementation would dispose all backstage services for all tests, and a few

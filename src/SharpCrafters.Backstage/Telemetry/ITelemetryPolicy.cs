@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// Answers the telemetry enablement question for an <see cref="ITelemetryContext"/>. A context obtained from

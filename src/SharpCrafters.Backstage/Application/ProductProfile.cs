@@ -3,9 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 
-namespace Metalama.Backstage.Application;
+namespace SharpCrafters.Backstage.Application;
 
 /// <summary>
 /// Describes the product family that hosts the Backstage services: its name, its vendor, and the names it uses on the

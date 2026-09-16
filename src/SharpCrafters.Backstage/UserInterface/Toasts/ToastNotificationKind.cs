@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.UserInterface.Toasts;
+namespace SharpCrafters.Backstage.UserInterface.Toasts;
 
 [PublicAPI]
 public sealed record ToastNotificationKind( string Name )

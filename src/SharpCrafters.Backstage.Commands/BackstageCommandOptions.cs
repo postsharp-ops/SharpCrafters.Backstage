@@ -3,19 +3,20 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Commands.Configuration;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.UserInterface.Rss;
-using Metalama.Backstage.UserInterface.Toasts;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Commands.Configuration;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.UserInterface.Rss;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Metalama.Backstage.Commands;
+namespace SharpCrafters.Backstage.Commands;
 
 public sealed class BackstageCommandOptions
 {

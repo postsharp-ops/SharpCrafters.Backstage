@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Diagnostics;
 
-namespace Metalama.Backstage.Testing
+namespace SharpCrafters.Backstage.Testing
 {
     [PublicAPI]
     public class TestDateTimeProvider : IDateTimeProvider

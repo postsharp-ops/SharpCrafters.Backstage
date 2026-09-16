@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Threading;
 
-namespace Metalama.Backstage.Threading;
+namespace SharpCrafters.Backstage.Threading;
 
 /// <summary>
 /// Composes the names of the locks used by Metalama, and offers the shorthands for the components that acquire a

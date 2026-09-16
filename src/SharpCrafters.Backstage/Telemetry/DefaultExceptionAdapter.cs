@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.Xml;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <exclude />
 public sealed class DefaultExceptionAdapter : IExceptionAdapter

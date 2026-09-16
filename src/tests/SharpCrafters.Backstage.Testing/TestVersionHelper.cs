@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 internal static class TestVersionHelper
 {

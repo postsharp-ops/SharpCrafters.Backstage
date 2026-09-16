@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Licensing.Licenses.LicenseFields
+namespace SharpCrafters.Backstage.Licensing.Licenses.LicenseFields
 {
     internal static class LicenseFieldsExtensions
     {

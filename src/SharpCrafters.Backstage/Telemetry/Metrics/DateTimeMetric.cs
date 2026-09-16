@@ -5,7 +5,7 @@
 using System;
 using System.Xml;
 
-namespace Metalama.Backstage.Telemetry.Metrics
+namespace SharpCrafters.Backstage.Telemetry.Metrics
 {
     /// <summary>
     /// A <see cref="Metric"/> storing a <see cref="DateTime"/> value.

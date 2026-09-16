@@ -4,7 +4,7 @@
 
 using System.Security.Cryptography;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 // Allow weak cryptography
 #pragma warning disable CA5384, CA5350, CA5351

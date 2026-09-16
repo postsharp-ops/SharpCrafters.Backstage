@@ -3,12 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 [PublicAPI]
 public interface IProcessExecutor : IBackstageService

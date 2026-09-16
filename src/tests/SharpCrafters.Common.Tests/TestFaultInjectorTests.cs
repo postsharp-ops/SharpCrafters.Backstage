@@ -5,7 +5,7 @@
 using System;
 using Xunit;
 
-namespace Metalama.Testing.Hooks.Tests;
+namespace SharpCrafters.Common.Tests;
 
 /// <summary>
 /// Tests <see cref="TestFaultInjector"/>: that an injection point that has not been armed is a no-op, that an armed

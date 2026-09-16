@@ -3,13 +3,13 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
 using Microsoft.Extensions.Logging;
+using SharpCrafters.Backstage.Diagnostics;
 using System;
 using IDotNetLogger = Microsoft.Extensions.Logging.ILogger;
-using IMetalamaLogger = Metalama.Backstage.Diagnostics.ILogger;
+using IMetalamaLogger = SharpCrafters.Backstage.Diagnostics.ILogger;
 
-namespace Metalama.Backstage.Worker.Logger;
+namespace SharpCrafters.Backstage.Worker.Logger;
 
 [PublicAPI]
 public class DotNetLoggerProvider : ILoggerProvider, IDotNetLogger

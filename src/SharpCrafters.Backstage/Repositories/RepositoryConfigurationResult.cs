@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Repositories;
+namespace SharpCrafters.Backstage.Repositories;
 
 /// <summary>
 /// The result of resolving the <c>metalama.json</c> for a given directory: the effective <see cref="Configuration"/>

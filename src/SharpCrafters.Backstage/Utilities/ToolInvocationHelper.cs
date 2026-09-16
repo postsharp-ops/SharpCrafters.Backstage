@@ -3,7 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Diagnostics;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -14,7 +14,7 @@ using System.Threading;
 
 // ReSharper disable AccessToDisposedClosure
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 [PublicAPI]
 public static class ToolInvocationHelper

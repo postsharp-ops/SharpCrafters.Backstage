@@ -2,14 +2,14 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Concurrent;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 /// <summary>
-/// A logger factory that buffers all log records and can then replay them on another <see cref="ILoggerFactory"/> by calling the <see cref="Replay(Metalama.Backstage.Diagnostics.ILoggerFactory)"/> method.
+/// A logger factory that buffers all log records and can then replay them on another <see cref="ILoggerFactory"/> by calling the <see cref="Replay(SharpCrafters.Backstage.Diagnostics.ILoggerFactory)"/> method.
 /// This class is used when the principal <see cref="ILoggerFactory"/> is not yet initialized.
 /// </summary>
 internal sealed class BufferingLoggerFactory : ILoggerFactory

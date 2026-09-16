@@ -3,14 +3,14 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.UserInterface;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.UserInterface;
 using System;
 
-namespace Metalama.Backstage.Welcome;
+namespace SharpCrafters.Backstage.Welcome;
 
 /// <summary>
 /// Opens the welcome web page the first time telemetry is activated, when the host has requested it through

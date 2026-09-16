@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 
-namespace Metalama.Backstage.Extensibility;
+namespace SharpCrafters.Backstage.Extensibility;
 
 /// <summary>
 /// A <see cref="ServiceProviderBuilder"/> backed by a minimal service provider of singletons. The provider is

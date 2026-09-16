@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.UserInterface.Rss;
-using Metalama.Backstage.UserInterface.Toasts;
-using Metalama.Backstage.Welcome;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.UserInterface.Rss;
+using SharpCrafters.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Welcome;
 using System.Runtime.InteropServices;
 
-namespace Metalama.Backstage.UserInterface;
+namespace SharpCrafters.Backstage.UserInterface;
 
 /// <summary>
 /// Extension methods that register the user interface services in a <see cref="ServiceProviderBuilder"/>.

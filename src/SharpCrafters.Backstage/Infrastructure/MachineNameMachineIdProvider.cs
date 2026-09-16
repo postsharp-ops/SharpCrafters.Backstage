@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 /// <summary>
 /// Reports <see cref="Environment.MachineName"/> as the identifier of the machine. This implementation serves the

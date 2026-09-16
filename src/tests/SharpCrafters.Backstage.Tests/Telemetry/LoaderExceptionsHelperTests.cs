@@ -2,7 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Telemetry;
+using SharpCrafters.Backstage.Telemetry;
 using System;
 using System.IO;
 using System.Linq;
@@ -12,7 +12,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Xunit;
 
-namespace Metalama.Backstage.Tests.Telemetry
+namespace SharpCrafters.Backstage.Tests.Telemetry
 {
     /// <summary>
     /// Unit tests for <see cref="LoaderExceptionsHelper"/> and for the <c>LoaderExceptions</c> element it feeds in

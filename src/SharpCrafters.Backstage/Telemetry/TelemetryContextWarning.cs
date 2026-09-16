@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// A warning produced while resolving the repository configuration of a telemetry context (for example, a misplaced or

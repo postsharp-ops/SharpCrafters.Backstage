@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Telemetry
+namespace SharpCrafters.Backstage.Telemetry
 {
     internal sealed class UsageTelemetryReport : TelemetryReport
     {

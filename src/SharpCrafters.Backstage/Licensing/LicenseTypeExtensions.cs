@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Licensing
+namespace SharpCrafters.Backstage.Licensing
 {
     /// <summary>
     /// Provides extensions to <see cref="LicenseType" />.

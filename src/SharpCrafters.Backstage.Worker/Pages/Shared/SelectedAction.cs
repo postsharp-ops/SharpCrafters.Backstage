@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Pages.Shared;
+namespace SharpCrafters.Backstage.Worker.Pages.Shared;
 
 [PublicAPI]
 public enum SelectedAction

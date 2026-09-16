@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Telemetry
+namespace SharpCrafters.Backstage.Telemetry
 {
     /// <summary>
     /// Encapsulates a metric, i.e. anything that can be measured.

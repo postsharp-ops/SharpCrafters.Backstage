@@ -3,14 +3,14 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 [PublicAPI]
 public class TestUserInterfaceService : IUserInterfaceService

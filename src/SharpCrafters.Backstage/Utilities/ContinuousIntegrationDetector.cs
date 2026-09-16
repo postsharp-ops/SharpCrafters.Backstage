@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 /// <summary>
 /// Recognizes the continuous integration server on which the current process runs.

@@ -3,15 +3,15 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
 using Spectre.Console.Cli;
 using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace Metalama.Backstage.Commands
+namespace SharpCrafters.Backstage.Commands
 {
     [PublicAPI]
     [UsedImplicitly( ImplicitUseTargetFlags.WithInheritors )]

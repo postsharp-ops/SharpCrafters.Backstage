@@ -3,14 +3,14 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Desktop.Windows.ViewModel;
-using Metalama.Backstage.Extensibility;
 using Microsoft.Toolkit.Uwp.Notifications;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Windows.ViewModel;
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 [UsedImplicitly( ImplicitUseTargetFlags.WithMembers )]
 public sealed class NotifyCommand : BaseCommand<NotifyCommandSettings>

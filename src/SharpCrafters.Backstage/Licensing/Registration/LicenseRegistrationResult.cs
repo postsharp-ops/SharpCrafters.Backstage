@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing.Registration;
+namespace SharpCrafters.Backstage.Licensing.Registration;
 
 [PublicAPI]
 public readonly struct LicenseRegistrationResult

@@ -5,7 +5,7 @@
 using System;
 using System.Linq;
 
-namespace Metalama.Backstage.Application
+namespace SharpCrafters.Backstage.Application
 {
     /// <summary>
     /// Extension methods of <see cref="IApplicationInfo"/> that licensing uses to identify the components that the

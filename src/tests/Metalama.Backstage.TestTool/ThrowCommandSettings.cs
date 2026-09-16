@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Commands;
+using SharpCrafters.Backstage.Commands;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace Metalama.Backstage.DotNetTool;
+namespace Metalama.Backstage.TestTool;
 
 /// <summary>
 /// The distinct exceptions that <see cref="ThrowCommand"/> can throw. Each one is thrown from a different method, so

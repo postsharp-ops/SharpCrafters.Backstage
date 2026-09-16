@@ -2,16 +2,16 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Serialization;
-using Metalama.Backstage.Testing;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Testing;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.ConfigurationManager;
+namespace SharpCrafters.Backstage.Tests.ConfigurationManager;
 
 public sealed class ConfigurationManagerTests : TestsBase
 {

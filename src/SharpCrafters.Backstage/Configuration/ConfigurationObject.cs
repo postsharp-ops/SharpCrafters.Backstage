@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Metalama.Backstage.Configuration;
+namespace SharpCrafters.Backstage.Configuration;
 
 /// <summary>
 /// The base record of every object that is serialized into a configuration file, that is, of the root object of the

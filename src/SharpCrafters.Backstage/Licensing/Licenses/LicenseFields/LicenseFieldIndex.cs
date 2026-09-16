@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Licensing.Licenses.LicenseFields
+namespace SharpCrafters.Backstage.Licensing.Licenses.LicenseFields
 {
     /// <summary>
     /// Identifies a field in a license key. It is given as the first byte of a field binary data.

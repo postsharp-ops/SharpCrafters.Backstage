@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.UserInterface.Toasts;
+namespace SharpCrafters.Backstage.UserInterface.Toasts;
 
 // This service is used in Metalama.Framework.Engine: SourceTransformer's compiler service provider calls DetectAsync()
 // once the backstage services and a telemetry context are available for a Metalama-enabled compilation.

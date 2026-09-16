@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 internal static class RevokedLicenseKeys
 {

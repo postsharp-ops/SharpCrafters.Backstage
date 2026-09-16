@@ -4,7 +4,7 @@
 
 using System.Net.Http;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 internal sealed class HttpClientFactory : IHttpClientFactory
 {

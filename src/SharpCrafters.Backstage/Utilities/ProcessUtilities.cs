@@ -3,8 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 public static class ProcessUtilities
 {

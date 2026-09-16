@@ -7,7 +7,7 @@ using System.IO;
 using System.IO.Abstractions;
 using System.Runtime.CompilerServices;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 public partial class TestFileSystem
 {

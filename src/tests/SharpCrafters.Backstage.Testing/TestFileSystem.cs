@@ -3,8 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,9 +15,9 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using Infrastructure_IFileSystem = Metalama.Backstage.Infrastructure.IFileSystem;
+using Infrastructure_IFileSystem = SharpCrafters.Backstage.Infrastructure.IFileSystem;
 
-namespace Metalama.Backstage.Testing
+namespace SharpCrafters.Backstage.Testing
 {
     // Resharper disable UnusedMember.Global
 

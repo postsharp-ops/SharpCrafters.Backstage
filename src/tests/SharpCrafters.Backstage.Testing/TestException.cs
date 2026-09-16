@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 [PublicAPI]
 public class TestException : Exception

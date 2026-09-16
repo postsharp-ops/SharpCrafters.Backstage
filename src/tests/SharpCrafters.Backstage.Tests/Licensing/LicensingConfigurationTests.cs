@@ -2,16 +2,16 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Serialization;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Serialization;
 using System;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Licensing
+namespace SharpCrafters.Backstage.Tests.Licensing
 {
     /// <summary>
     /// Regression tests for the <c>default</c> (uninitialized) <see cref="System.Collections.Immutable.ImmutableArray{T}"/>
@@ -29,7 +29,7 @@ namespace Metalama.Backstage.Tests.Licensing
         public LicensingConfigurationTests( ITestOutputHelper logger )
             : base( logger ) { }
 
-        private Metalama.Backstage.Configuration.ConfigurationManager CreateConfigurationManager()
+        private SharpCrafters.Backstage.Configuration.ConfigurationManager CreateConfigurationManager()
             => new( this.ServiceProvider );
 
         [Fact]

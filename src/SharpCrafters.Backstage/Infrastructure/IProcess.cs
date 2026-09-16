@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 [PublicAPI]
 public interface IProcess : IDisposable

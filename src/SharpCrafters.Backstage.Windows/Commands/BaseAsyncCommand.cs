@@ -3,14 +3,14 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Telemetry;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Telemetry;
 using Spectre.Console.Cli;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 [PublicAPI]
 public abstract class BaseAsyncCommand<T> : AsyncCommand<T>

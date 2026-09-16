@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 [PublicAPI]
 public readonly struct ClassifiedException

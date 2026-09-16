@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// Represents either a product use or a license use. The <see cref="Metrics"/> collection allows

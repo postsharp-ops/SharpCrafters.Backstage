@@ -20,7 +20,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 [PublicAPI]
 public sealed class LockingProcessDetector : ILockingProcessDetector

@@ -11,7 +11,7 @@ using System;
 // ResourceExtractor loads Metalama.Backstage into the process that already contains
 // Metalama.Framework.CompilerExtensions.
 #if METALAMA_BACKSTAGE
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 #else
 namespace Metalama.Framework.CompilerExtensions;
 #endif
@@ -23,7 +23,7 @@ namespace Metalama.Framework.CompilerExtensions;
 /// <para>
 /// The classification is a pure function of the two parameters, so that a test can exercise every arm of the table
 /// without the corresponding process existing. The callers cache the result for the current process:
-/// <c>Metalama.Backstage.Utilities.ProcessUtilities.ProcessKind</c> and
+/// <c>SharpCrafters.Backstage.Utilities.ProcessUtilities.ProcessKind</c> and
 /// <c>Metalama.Framework.CompilerExtensions.ProcessKindHelper.CurrentProcessKind</c> are both computed once, in a
 /// static property initializer.
 /// </para>

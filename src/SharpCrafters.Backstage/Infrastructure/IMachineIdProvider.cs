@@ -3,9 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 /// <summary>
 /// Provides the identifier of the machine on which the current process runs.

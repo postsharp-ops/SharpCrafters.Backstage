@@ -3,8 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 [PublicAPI]
 public class TestLoggerFactory : ILoggerFactory

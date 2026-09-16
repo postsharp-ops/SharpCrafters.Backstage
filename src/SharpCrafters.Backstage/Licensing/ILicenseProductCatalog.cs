@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Licensing;
+namespace SharpCrafters.Backstage.Licensing;
 
 /// <summary>
 /// Describes the products that a product family sells and the business rules attached to them: display names, default

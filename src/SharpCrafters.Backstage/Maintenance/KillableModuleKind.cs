@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Maintenance;
+namespace SharpCrafters.Backstage.Maintenance;
 
 [Flags]
 internal enum KillableModuleKind

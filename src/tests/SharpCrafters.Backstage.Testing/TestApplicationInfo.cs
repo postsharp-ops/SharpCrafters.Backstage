@@ -3,13 +3,13 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Testing
+namespace SharpCrafters.Backstage.Testing
 {
     // This object must be immutable because implementations except any IApplicationInfo to be immutable.
     [PublicAPI]

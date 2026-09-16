@@ -2,12 +2,12 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 /// <summary>
 /// Base implementation of <see cref="ILicensingAuthorityProvider"/>. It creates the authority of a key, and therefore

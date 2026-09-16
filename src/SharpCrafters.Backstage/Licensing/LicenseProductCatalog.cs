@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Licensing;
+namespace SharpCrafters.Backstage.Licensing;
 
 /// <summary>
 /// The catalog of the products of PostSharp Technologies: the members that are common to the Metalama and PostSharp

@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System.Text.RegularExpressions;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 [PublicAPI]
 public record ReplacePattern( Regex Regex, MatchEvaluator GetReplacement );

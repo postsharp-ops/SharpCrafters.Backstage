@@ -3,9 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 
-namespace Metalama.Backstage.Licensing.Consumption;
+namespace SharpCrafters.Backstage.Licensing.Consumption;
 
 /// <summary>
 /// The event published by the licensing services when a component required a license and no registered license

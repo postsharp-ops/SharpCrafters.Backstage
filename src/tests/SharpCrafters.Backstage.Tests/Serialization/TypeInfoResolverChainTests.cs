@@ -3,9 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Serialization;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -15,7 +15,7 @@ using System.Text.Json.Serialization.Metadata;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Serialization;
+namespace SharpCrafters.Backstage.Tests.Serialization;
 
 /// <summary>
 /// Tests for the TypeInfoResolverChain mechanism that allows combining multiple JsonSerializerContext instances.

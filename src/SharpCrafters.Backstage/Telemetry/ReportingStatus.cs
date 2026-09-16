@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 [PublicAPI]
 public enum ReportingStatus

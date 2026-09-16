@@ -3,15 +3,15 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace Metalama.Backstage.UserInterface;
+namespace SharpCrafters.Backstage.UserInterface;
 
 /// <summary>
 /// Implements the per-session authentication token of the Backstage setup web server: the protocol by which the
@@ -33,7 +33,7 @@ namespace Metalama.Backstage.UserInterface;
 /// </para>
 /// <para>
 /// This type is public because the two ends of the protocol live in two different assemblies: the process that starts
-/// the server is in <c>Metalama.Backstage</c>, whereas the server itself is in <c>Metalama.Backstage.Worker</c>.
+/// the server is in <c>Metalama.Backstage</c>, whereas the server itself is in <c>SharpCrafters.Backstage.Worker</c>.
 /// </para>
 /// </remarks>
 [PublicAPI]

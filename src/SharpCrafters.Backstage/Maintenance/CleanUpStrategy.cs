@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Maintenance;
+namespace SharpCrafters.Backstage.Maintenance;
 
 [PublicAPI]
 public enum CleanUpStrategy

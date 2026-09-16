@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Commands;
+namespace SharpCrafters.Backstage.Commands;
 
 [PublicAPI]
 public sealed class CommandException : Exception

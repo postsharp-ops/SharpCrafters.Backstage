@@ -3,10 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.UserInterface;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.IO;
 
@@ -17,9 +18,9 @@ namespace Metalama.Backstage;
 /// links, the telemetry endpoints and the news feeds.
 /// </summary>
 /// <remarks>
-/// This class is the default of the corresponding properties of <see cref="Extensibility.BackstageInitializationOptions"/>.
-/// It belongs to the Metalama host and not to the product-neutral services, and it is defined in this assembly only
-/// until the services are extracted into their own packages. A host of another product supplies its own values.
+/// This class is the default of the corresponding properties of <see cref="BackstageInitializationOptions"/>.
+/// It belongs to the Metalama product package and not to the product-neutral services. A host of another product
+/// supplies its own values.
 /// </remarks>
 [PublicAPI]
 public static class MetalamaProduct

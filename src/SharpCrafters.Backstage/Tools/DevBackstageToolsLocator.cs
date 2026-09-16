@@ -2,14 +2,14 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Metalama.Backstage.Tools;
+namespace SharpCrafters.Backstage.Tools;
 
 /// <summary>
 /// The implementation of <see cref="IBackstageToolsLocator"/> of a development environment, which finds the worker in
@@ -27,7 +27,7 @@ internal sealed class DevBackstageToolsLocator : IBackstageToolsLocator
     /// The name of the repository that builds the tools. A product repository that runs from source is checked out beside
     /// it, under the same parent directory.
     /// </summary>
-    private const string _foundationsRepositoryName = "SharpCrafters.Foundations";
+    private const string _backstageRepositoryName = "SharpCrafters.Backstage";
 
     private static readonly string _rootDirectory = FindRootDirectory();
 
@@ -68,7 +68,7 @@ internal sealed class DevBackstageToolsLocator : IBackstageToolsLocator
 
         string[] repositoryDirectories = parentDirectory == null
             ? [_rootDirectory]
-            : [_rootDirectory, Path.Combine( parentDirectory, _foundationsRepositoryName )];
+            : [_rootDirectory, Path.Combine( parentDirectory, _backstageRepositoryName )];
 
         foreach ( var repositoryDirectory in repositoryDirectories )
         {

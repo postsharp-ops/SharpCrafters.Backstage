@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace Metalama.Backstage.Utilities
+namespace SharpCrafters.Backstage.Utilities
 {
     internal static class Base32
     {

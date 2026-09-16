@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// The reporting action configured for a telemetry scenario (see <see cref="TelemetryScenario"/>). Its meaning depends

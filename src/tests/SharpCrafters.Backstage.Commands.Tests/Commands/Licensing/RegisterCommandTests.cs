@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Tools.Config.Tests.Commands.Licensing
+namespace SharpCrafters.Backstage.Commands.Tests.Commands.Licensing
 {
     public sealed class RegisterCommandTests : LicensingCommandsTestsBase
     {

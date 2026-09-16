@@ -2,20 +2,20 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Maintenance;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.Tests.Extensibility;
 using Microsoft.Extensions.DependencyInjection;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Tests.Extensibility;
 using System;
 using System.Collections.Immutable;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Diagnostics;
+namespace SharpCrafters.Backstage.Tests.Diagnostics;
 
 /// <summary>
 /// This tests class works with predefined default configuration set in constructor.

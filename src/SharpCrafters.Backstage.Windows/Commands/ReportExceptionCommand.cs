@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 /// <summary>
 /// Sends a captured exception report straight away, without opening the review page. Activated by the Report button of

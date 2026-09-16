@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 
-namespace Metalama.Backstage.Licensing.Registration
+namespace SharpCrafters.Backstage.Licensing.Registration
 {
     /// <summary>
     /// Information about a license relevant to license registration.

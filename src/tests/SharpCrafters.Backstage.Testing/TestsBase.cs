@@ -3,36 +3,38 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Consumption.Sources;
-using Metalama.Backstage.Licensing.Licenses;
-using Metalama.Backstage.Licensing.Registration;
-using Metalama.Backstage.Maintenance;
-using Metalama.Backstage.Repositories;
-using Metalama.Backstage.Serialization;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Threading;
+using Metalama.Backstage;
 using Metalama.Backstage.Tools;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Rss;
-using Metalama.Backstage.UserInterface.Toasts;
-using Metalama.Backstage.Welcome;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.Repositories;
+using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Threading;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Rss;
+using SharpCrafters.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Welcome;
 using System;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
-using ILoggerFactory = Metalama.Backstage.Diagnostics.ILoggerFactory;
+using ILoggerFactory = SharpCrafters.Backstage.Diagnostics.ILoggerFactory;
 
-namespace Metalama.Backstage.Testing
+namespace SharpCrafters.Backstage.Testing
 {
     [PublicAPI]
     public abstract class TestsBase

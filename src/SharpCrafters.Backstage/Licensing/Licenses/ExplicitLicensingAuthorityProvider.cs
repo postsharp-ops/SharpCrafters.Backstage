@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 /// <summary>
 /// Provides the authorities of a set of keys given in their XML representation.

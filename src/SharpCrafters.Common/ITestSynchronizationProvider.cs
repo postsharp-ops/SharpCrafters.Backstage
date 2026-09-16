@@ -5,7 +5,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Testing.Hooks;
+namespace SharpCrafters.Common;
 
 /// <summary>
 /// Provides synchronization points, so that a test can drive concurrent code into a specific interleaving instead of

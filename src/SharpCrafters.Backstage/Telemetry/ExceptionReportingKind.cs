@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Telemetry
+namespace SharpCrafters.Backstage.Telemetry
 {
     /// <summary>
     /// Represents what kind of issue is being reported.

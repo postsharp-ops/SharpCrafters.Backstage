@@ -5,7 +5,7 @@
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace Metalama.Backstage.Commands.Configuration;
+namespace SharpCrafters.Backstage.Commands.Configuration;
 
 #pragma warning disable CS8618
 

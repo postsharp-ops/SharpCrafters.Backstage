@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.UserInterface.Toasts;
+namespace SharpCrafters.Backstage.UserInterface.Toasts;
 
 /// <summary>
 /// Categories of toast notifications, for <see cref="IToastNotificationDetectionService"/>.

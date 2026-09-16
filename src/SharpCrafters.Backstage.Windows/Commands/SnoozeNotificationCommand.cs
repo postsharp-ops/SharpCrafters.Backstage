@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 [UsedImplicitly( ImplicitUseTargetFlags.WithMembers )]
 internal class SnoozeNotificationCommand : BaseCommand<MuteNotificationCommandSettings>

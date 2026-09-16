@@ -4,7 +4,7 @@
 
 using System.Linq;
 
-namespace Metalama.Backstage.Commands.Configuration;
+namespace SharpCrafters.Backstage.Commands.Configuration;
 
 internal abstract class BaseConfigurationCommand : BaseCommand<ConfigurationCommandSettings>
 {

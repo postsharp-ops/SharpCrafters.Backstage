@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 [UsedImplicitly( ImplicitUseTargetFlags.WithMembers )]
 internal class OpenWorkerRssOptionsCommand : OpenWorkerWebPageCommand

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Extensibility
+namespace SharpCrafters.Backstage.Extensibility
 {
     public static class ServiceProviderExtensions
     {

@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Rss;
-using Metalama.Backstage.UserInterface.Toasts;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.UserInterface.Rss;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.UserInterface;
+namespace SharpCrafters.Backstage.Tests.UserInterface;
 
 /// <summary>
 /// Tests for the RssClient class, which fetches RSS feeds (briefs and posts) from metalama.net

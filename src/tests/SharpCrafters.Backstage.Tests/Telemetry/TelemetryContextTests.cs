@@ -2,17 +2,18 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Immutable;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Telemetry;
+namespace SharpCrafters.Backstage.Tests.Telemetry;
 
 // Covers the combinations of the repository's metalama.json and the user's (global) telemetry.json, as resolved by
 // ITelemetryService.OpenContext. The critical guarantee is that a repository-wide opt-out performs and activates no

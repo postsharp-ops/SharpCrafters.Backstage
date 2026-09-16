@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Extensibility;
+namespace SharpCrafters.Backstage.Extensibility;
 
 /// <summary>
 /// Observes the failures of the <see cref="IEventDispatcher"/>: a subscriber that threw, and a publication that no

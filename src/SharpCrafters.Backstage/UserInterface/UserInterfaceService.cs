@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Tools;
-using Metalama.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -17,7 +17,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.UserInterface;
+namespace SharpCrafters.Backstage.UserInterface;
 
 [PublicAPI]
 public abstract class UserInterfaceService : IUserInterfaceService

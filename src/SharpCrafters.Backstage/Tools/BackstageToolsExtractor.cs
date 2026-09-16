@@ -2,17 +2,17 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Threading;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Threading;
 using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 
-namespace Metalama.Backstage.Tools;
+namespace SharpCrafters.Backstage.Tools;
 
 /// <summary>
 /// The implementation of <see cref="IBackstageToolsExtractor"/> that extracts the tool applications from the zip

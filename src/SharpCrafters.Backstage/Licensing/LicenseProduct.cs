@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Licensing
+namespace SharpCrafters.Backstage.Licensing
 {
     // The names are used in telemetry and changing them can make the telemetry data ambiguous.
 

@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
+using SharpCrafters.Backstage.Application;
 using Uri = System.Uri;
 
-namespace Metalama.Backstage.Desktop.Windows;
+namespace SharpCrafters.Backstage.Windows;
 
 /// <summary>
 /// A window that hosts a web browser, titled after the product.

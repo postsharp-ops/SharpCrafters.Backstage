@@ -2,15 +2,15 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Testing;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Infrastructure;
+namespace SharpCrafters.Backstage.Tests.Infrastructure;
 
 public sealed class BackstageBackgroundTasksServiceTests
 {

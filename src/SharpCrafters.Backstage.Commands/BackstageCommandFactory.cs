@@ -2,17 +2,17 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Commands.Configuration;
-using Metalama.Backstage.Commands.Licensing;
-using Metalama.Backstage.Commands.Maintenance;
-using Metalama.Backstage.Commands.Misc;
-using Metalama.Backstage.Commands.Rss;
-using Metalama.Backstage.Commands.Telemetry;
-using Metalama.Backstage.Commands.UserInterface;
+using SharpCrafters.Backstage.Commands.Configuration;
+using SharpCrafters.Backstage.Commands.Licensing;
+using SharpCrafters.Backstage.Commands.Maintenance;
+using SharpCrafters.Backstage.Commands.Misc;
+using SharpCrafters.Backstage.Commands.Rss;
+using SharpCrafters.Backstage.Commands.Telemetry;
+using SharpCrafters.Backstage.Commands.UserInterface;
 using Spectre.Console.Cli;
 using System;
 
-namespace Metalama.Backstage.Commands;
+namespace SharpCrafters.Backstage.Commands;
 
 public static class BackstageCommandFactory
 {

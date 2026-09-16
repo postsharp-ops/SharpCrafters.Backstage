@@ -2,21 +2,22 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Consumption.Requirements;
-using Metalama.Backstage.Licensing.Registration;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Tests.Licensing;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Toasts;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Requirements;
+using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Tests.Licensing;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.UserInterface;
+namespace SharpCrafters.Backstage.Tests.UserInterface;
 
 public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
 {

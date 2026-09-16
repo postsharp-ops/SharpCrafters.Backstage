@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using System;
 
-namespace Metalama.Backstage.Licensing.Consumption;
+namespace SharpCrafters.Backstage.Licensing.Consumption;
 
 [PublicAPI]
 public sealed record LicenseConsumptionOptions

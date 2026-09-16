@@ -2,10 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Serialization;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -13,7 +13,7 @@ using System.Text.Json.Nodes;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Serialization;
+namespace SharpCrafters.Backstage.Tests.Serialization;
 
 /// <summary>
 /// Tests that a type serialized into a configuration file keeps the JSON members that the running version does not

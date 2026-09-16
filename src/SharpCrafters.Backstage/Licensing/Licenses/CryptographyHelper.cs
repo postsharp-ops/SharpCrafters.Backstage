@@ -10,7 +10,7 @@ using System.Xml;
 
 #pragma warning disable CA5350, CA5350, CA5384, CA5351 // Do Not Use Weak Cryptographic Algorithms (TODO - but this means upgrading all license keys)
 
-namespace Metalama.Backstage.Licensing.Licenses
+namespace SharpCrafters.Backstage.Licensing.Licenses
 {
     internal static class CryptographyHelper
     {

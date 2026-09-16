@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing
+namespace SharpCrafters.Backstage.Licensing
 {
     /// <summary>
     /// Types of licenses.

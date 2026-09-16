@@ -2,17 +2,17 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Licensing.Registration;
-using Metalama.Backstage.Pages.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Worker.Pages.Shared;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace Metalama.Backstage.Pages;
+namespace SharpCrafters.Backstage.Worker.Pages;
 
 #pragma warning disable SA1649
 public class LicenseKeyPageModel : PageModel

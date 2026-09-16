@@ -5,7 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace Metalama.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker;
 
 /// <summary>
 /// The data that the commands of the worker receive.

@@ -5,7 +5,7 @@
 using System;
 using System.Threading;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 internal sealed class LogWriter : ILogWriter
 {

@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Diagnostics;
 using System;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// A telemetry context, obtained from <see cref="ITelemetryService.OpenContext"/> for a directory (a project, solution
@@ -46,7 +46,7 @@ public interface ITelemetryContext
         bool writeLocalReport = true,
         IExceptionAdapter? exceptionAdapter = null );
 
-    /// <inheritdoc cref="ReportException(System.Exception,Metalama.Backstage.Telemetry.ExceptionReportingKind,bool,Metalama.Backstage.Telemetry.IExceptionAdapter?)"/>
+    /// <inheritdoc cref="ReportException(System.Exception,SharpCrafters.Backstage.Telemetry.ExceptionReportingKind,bool,SharpCrafters.Backstage.Telemetry.IExceptionAdapter?)"/>
     void ReportException(
         ClassifiedException classifiedException,
         ExceptionReportingKind exceptionReportingKind = ExceptionReportingKind.Exception,

@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System.Text.Json.Serialization;
 
-namespace Metalama.Backstage.Tests.ConfigurationManager;
+namespace SharpCrafters.Backstage.Tests.ConfigurationManager;
 
 /// <summary>
 /// JSON serialization context for test configuration types.

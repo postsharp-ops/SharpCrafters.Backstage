@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Desktop.Windows;
+namespace SharpCrafters.Backstage.Windows;
 
 /// <summary>
 /// The entry point of the desktop notifier, which the executable of a product calls from its <c>Main</c> method. The

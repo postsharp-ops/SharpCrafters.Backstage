@@ -13,7 +13,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
 /// Builds the JSON documents that carry members which the running version does not declare, and asserts that those

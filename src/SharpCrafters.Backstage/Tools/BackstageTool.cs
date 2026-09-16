@@ -2,10 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
+using SharpCrafters.Backstage.Application;
 using System.Diagnostics;
 
-namespace Metalama.Backstage.Tools;
+namespace SharpCrafters.Backstage.Tools;
 
 /// <summary>
 /// Describes one of the tool applications that the product starts as a separate process. The assembly name of a tool
@@ -31,7 +31,7 @@ public sealed class BackstageTool
     /// <summary>
     /// Gets the desktop notifier of Windows, which shows the toast notifications.
     /// </summary>
-    public static BackstageTool DesktopWindows { get; } = new( "Desktop.Windows", true, ProcessWindowStyle.Normal, true );
+    public static BackstageTool DesktopWindows { get; } = new( "Windows", true, ProcessWindowStyle.Normal, true );
 
     /// <summary>
     /// Gets the suffix of the assembly name of the tool, for instance <c>Worker</c>.
@@ -40,7 +40,7 @@ public sealed class BackstageTool
 
     /// <summary>
     /// Gets the assembly name of the tool for a product, which is <see cref="ProductProfile.ToolAssemblyNamePrefix"/>
-    /// followed by <see cref="Suffix"/>, for instance <c>Metalama.Backstage.Worker</c>. It names the executable file,
+    /// followed by <see cref="Suffix"/>, for instance <c>SharpCrafters.Backstage.Worker</c>. It names the executable file,
     /// the embedded resource that holds it, and the directory to which it is extracted.
     /// </summary>
     public string GetAssemblyName( ProductProfile productProfile ) => $"{productProfile.ToolAssemblyNamePrefix}.{this.Suffix}";

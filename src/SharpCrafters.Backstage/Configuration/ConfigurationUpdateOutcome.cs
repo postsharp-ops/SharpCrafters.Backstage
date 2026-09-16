@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Configuration;
+namespace SharpCrafters.Backstage.Configuration;
 
 /// <summary>
 /// The result of an attempt to update a configuration file.

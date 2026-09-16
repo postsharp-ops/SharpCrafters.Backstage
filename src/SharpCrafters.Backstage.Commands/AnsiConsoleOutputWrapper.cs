@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Metalama.Backstage.Commands
+namespace SharpCrafters.Backstage.Commands
 {
     internal sealed class AnsiConsoleOutputWrapper : IAnsiConsoleOutput
     {

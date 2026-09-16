@@ -3,15 +3,15 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Metalama.Backstage.Extensibility;
+namespace SharpCrafters.Backstage.Extensibility;
 
 /// <summary>
 /// The options of <see cref="RegisterServiceExtensions.AddBackstageServices"/>.

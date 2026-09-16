@@ -4,7 +4,7 @@
 
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-using Metalama.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Licenses;
 
 namespace PostSharp.LicenseKeyGenerator
 {

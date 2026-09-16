@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 /// <summary>
 /// Signs a license key with a single key of the licensing authority, and verifies a signature created with that key.

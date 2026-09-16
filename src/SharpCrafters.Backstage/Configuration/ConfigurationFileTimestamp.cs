@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.Globalization;
 
-namespace Metalama.Backstage.Configuration;
+namespace SharpCrafters.Backstage.Configuration;
 
 [PublicAPI]
 public readonly struct ConfigurationFileTimestamp : IEquatable<ConfigurationFileTimestamp>

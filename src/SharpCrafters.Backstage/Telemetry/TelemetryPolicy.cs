@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// The default <see cref="ITelemetryPolicy"/>, built by <see cref="ITelemetryService.GetPolicy"/> for a directory. It

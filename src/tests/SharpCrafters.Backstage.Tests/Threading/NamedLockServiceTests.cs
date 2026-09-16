@@ -2,8 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Threading;
-using Metalama.Testing.Hooks;
+using SharpCrafters.Backstage.Threading;
+using SharpCrafters.Common;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Threading;
+namespace SharpCrafters.Backstage.Tests.Threading;
 
 /// <summary>
 /// Tests <see cref="NamedLockService"/> against the real synchronization objects of the operating system.

@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Utilities;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Utilities;
+namespace SharpCrafters.Backstage.Tests.Utilities;
 
 public sealed class ProcessUtilitiesTests : TestsBase
 {

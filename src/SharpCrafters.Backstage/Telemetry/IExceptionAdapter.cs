@@ -5,7 +5,7 @@
 using System;
 using System.Xml;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <exclude />
 public interface IExceptionAdapter

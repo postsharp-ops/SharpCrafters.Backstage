@@ -2,17 +2,17 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace Metalama.Backstage.Licensing.Licenses
+namespace SharpCrafters.Backstage.Licensing.Licenses
 {
     /// <summary>
     /// Represents a license serialized in a license key.

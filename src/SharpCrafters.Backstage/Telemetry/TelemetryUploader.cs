@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Testing.Hooks;
-using Metalama.Backstage.Tools;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.Utilities;
+using SharpCrafters.Common;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,10 +20,10 @@ using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using IHttpClientFactory = Metalama.Backstage.Infrastructure.IHttpClientFactory;
-using RandomNumberGenerator = Metalama.Backstage.Infrastructure.RandomNumberGenerator;
+using IHttpClientFactory = SharpCrafters.Backstage.Infrastructure.IHttpClientFactory;
+using RandomNumberGenerator = SharpCrafters.Backstage.Infrastructure.RandomNumberGenerator;
 
-namespace Metalama.Backstage.Telemetry
+namespace SharpCrafters.Backstage.Telemetry
 {
     internal sealed class TelemetryUploader : ITelemetryUploader
     {

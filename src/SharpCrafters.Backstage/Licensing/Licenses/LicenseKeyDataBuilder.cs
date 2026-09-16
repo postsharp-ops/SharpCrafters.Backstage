@@ -3,12 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Licenses.LicenseFields;
+using SharpCrafters.Backstage.Licensing.Licenses.LicenseFields;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 [PublicAPI( "Used by the license generator web page and service." )]
 public partial class LicenseKeyDataBuilder : ILicenseKeyData

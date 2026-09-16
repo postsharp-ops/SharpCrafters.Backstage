@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing.Consumption;
+namespace SharpCrafters.Backstage.Licensing.Consumption;
 
 [PublicAPI]
 public interface ILicenseConsumer

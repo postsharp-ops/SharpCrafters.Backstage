@@ -5,15 +5,15 @@
 // ReSharper disable StringLiteralTypo
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Licensing.Licenses;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Concurrent;
 
 #pragma warning disable SA1203
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 [PublicAPI]
 public sealed class TestLicenseKeyProvider

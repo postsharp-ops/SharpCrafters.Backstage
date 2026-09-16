@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Metalama.Backstage.Licensing.Licenses.LicenseFields
+namespace SharpCrafters.Backstage.Licensing.Licenses.LicenseFields
 {
     [Serializable]
     internal sealed class LicenseFieldString : LicenseField

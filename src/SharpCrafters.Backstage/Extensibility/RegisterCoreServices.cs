@@ -2,22 +2,22 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Maintenance;
-using Metalama.Backstage.Serialization;
-using Metalama.Backstage.Threading;
-using Metalama.Backstage.Tools;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Threading;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Metalama.Backstage.Extensibility;
+namespace SharpCrafters.Backstage.Extensibility;
 
 /// <summary>
 /// Extension methods that register the core services in a <see cref="ServiceProviderBuilder"/>.

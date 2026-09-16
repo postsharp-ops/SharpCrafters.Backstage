@@ -7,7 +7,7 @@ using System;
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
 
-namespace Metalama.Backstage.Testing
+namespace SharpCrafters.Backstage.Testing
 {
     [PublicAPI]
     public class MockFileDataEx : MockFileData

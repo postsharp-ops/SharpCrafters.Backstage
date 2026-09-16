@@ -2,15 +2,15 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.UserInterface;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Metalama.Backstage.Worker.WebServer;
+namespace SharpCrafters.Backstage.Worker.WebServer;
 
 /// <summary>
 /// Middleware requiring the per-session token of <see cref="SetupWebServerToken"/> on every request of the local

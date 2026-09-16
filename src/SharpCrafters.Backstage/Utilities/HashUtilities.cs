@@ -6,7 +6,7 @@ using System.IO.Hashing;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Metalama.Backstage.Utilities
+namespace SharpCrafters.Backstage.Utilities
 {
     internal static class HashUtilities
     {

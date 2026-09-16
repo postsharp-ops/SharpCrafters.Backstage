@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Maintenance;
+namespace SharpCrafters.Backstage.Maintenance;
 
 /// <summary>
 /// The implementation of <see cref="IProcessManager"/> for Windows. It enumerates the modules of a process through

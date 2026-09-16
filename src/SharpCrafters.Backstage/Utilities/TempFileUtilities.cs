@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 /// <summary>
 /// Creates temporary files in a given directory.

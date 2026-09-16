@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Metalama.Backstage.Serialization;
+namespace SharpCrafters.Backstage.Serialization;
 
 /// <summary>
 /// A generic JSON converter factory for <see cref="ImmutableDictionary{TKey, TValue}"/> with string keys

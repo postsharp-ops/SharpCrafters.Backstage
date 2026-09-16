@@ -6,7 +6,7 @@ using System;
 using System.Globalization;
 using System.Xml;
 
-namespace Metalama.Backstage.Telemetry.Metrics
+namespace SharpCrafters.Backstage.Telemetry.Metrics
 {
     /// <summary>
     /// A <see cref="Metric"/> storing an <see cref="int"/> value.

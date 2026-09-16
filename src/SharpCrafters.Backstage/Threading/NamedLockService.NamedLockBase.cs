@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
-namespace Metalama.Backstage.Threading
+namespace SharpCrafters.Backstage.Threading
 {
 #if METALAMA_BACKSTAGE
     public

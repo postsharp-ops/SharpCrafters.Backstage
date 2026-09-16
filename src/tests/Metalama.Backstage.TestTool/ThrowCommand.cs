@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Commands;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Commands;
+using SharpCrafters.Backstage.Extensibility;
 
-namespace Metalama.Backstage.DotNetTool;
+namespace Metalama.Backstage.TestTool;
 
 /// <summary>
 /// Throws an exception so that the exception-reporting pipeline can be exercised end to end: the report is captured, the

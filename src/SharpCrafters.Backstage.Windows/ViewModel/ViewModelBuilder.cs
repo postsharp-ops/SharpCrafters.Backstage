@@ -2,16 +2,16 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Desktop.Windows.Commands;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Toasts;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Utilities;
+using SharpCrafters.Backstage.Windows.Commands;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Metalama.Backstage.Desktop.Windows.ViewModel;
+namespace SharpCrafters.Backstage.Windows.ViewModel;
 
 internal static class ViewModelBuilder
 {

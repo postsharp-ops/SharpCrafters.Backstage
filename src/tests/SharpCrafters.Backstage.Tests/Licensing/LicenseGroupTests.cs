@@ -2,14 +2,14 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Consumption.Sources;
-using Metalama.Backstage.Licensing.Licenses;
-using Metalama.Backstage.Licensing.Registration;
-using Metalama.Backstage.Serialization;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Serialization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -17,7 +17,7 @@ using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Licensing;
+namespace SharpCrafters.Backstage.Tests.Licensing;
 
 /// <summary>
 /// Tests that the registered license keys are grouped by the minimal version of Metalama that can consume them, so

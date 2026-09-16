@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 
-namespace Metalama.Backstage.Configuration
+namespace SharpCrafters.Backstage.Configuration
 {
     [PublicAPI]
     public interface IConfigurationManager : IDisposable, IBackstageService

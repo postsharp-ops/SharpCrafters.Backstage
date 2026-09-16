@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Metalama.Testing.Hooks.Tests;
+namespace SharpCrafters.Common.Tests;
 
 #pragma warning disable VSTHRD200 // Use "Async" suffix - test naming convention prefers descriptive names.
 

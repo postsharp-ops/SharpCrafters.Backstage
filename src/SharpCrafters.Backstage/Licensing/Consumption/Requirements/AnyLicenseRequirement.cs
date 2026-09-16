@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 // ReSharper disable RedundantLinebreak
 
-namespace Metalama.Backstage.Licensing.Consumption.Requirements;
+namespace SharpCrafters.Backstage.Licensing.Consumption.Requirements;
 
 internal sealed class AnyLicenseRequirement : LicenseRequirement
 {

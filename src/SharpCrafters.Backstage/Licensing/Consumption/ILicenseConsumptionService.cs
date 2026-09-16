@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 
-namespace Metalama.Backstage.Licensing.Consumption
+namespace SharpCrafters.Backstage.Licensing.Consumption
 {
     /// <summary>
     /// Exposes a service to verify the current license and consume features from it.

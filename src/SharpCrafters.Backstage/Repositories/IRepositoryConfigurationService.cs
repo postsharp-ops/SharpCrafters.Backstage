@@ -2,9 +2,9 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 
-namespace Metalama.Backstage.Repositories;
+namespace SharpCrafters.Backstage.Repositories;
 
 /// <summary>
 /// Resolves the repository-scoped <c>metalama.json</c> configuration for a directory by walking up the directory tree

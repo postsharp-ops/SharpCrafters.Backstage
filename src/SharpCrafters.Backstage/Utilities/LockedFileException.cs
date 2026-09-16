@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 /// <summary>
 /// An exception thrown by <see cref="RetryHelper"/> when an operation failed and a process is detected that locks a file.

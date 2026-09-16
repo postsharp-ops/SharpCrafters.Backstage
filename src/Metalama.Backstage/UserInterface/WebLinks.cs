@@ -3,8 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.UserInterface;
 
-namespace Metalama.Backstage.UserInterface;
+namespace Metalama.Backstage;
 
 #pragma warning disable CA1822
 

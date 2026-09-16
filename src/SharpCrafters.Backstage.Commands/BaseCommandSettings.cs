@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace Metalama.Backstage.Commands;
+namespace SharpCrafters.Backstage.Commands;
 
 [UsedImplicitly( ImplicitUseTargetFlags.WithInheritors | ImplicitUseTargetFlags.WithMembers )]
 public class BaseCommandSettings : CommandSettings

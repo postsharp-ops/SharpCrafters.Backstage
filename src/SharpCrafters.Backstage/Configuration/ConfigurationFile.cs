@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.Text.Json.Serialization;
 
-namespace Metalama.Backstage.Configuration;
+namespace SharpCrafters.Backstage.Configuration;
 
 [PublicAPI]
 public abstract record ConfigurationFile : ConfigurationObject

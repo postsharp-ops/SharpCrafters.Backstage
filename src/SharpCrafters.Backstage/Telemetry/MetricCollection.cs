@@ -5,7 +5,7 @@
 using System;
 using System.Collections.ObjectModel;
 
-namespace Metalama.Backstage.Telemetry
+namespace SharpCrafters.Backstage.Telemetry
 {
     /// <summary>
     /// Collection of metrics (<see cref="Metric"/>).

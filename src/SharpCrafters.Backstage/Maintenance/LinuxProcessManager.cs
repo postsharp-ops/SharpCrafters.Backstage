@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
-namespace Metalama.Backstage.Maintenance;
+namespace SharpCrafters.Backstage.Maintenance;
 
 /// <summary>
 /// The implementation of <see cref="IProcessManager"/> for Linux.

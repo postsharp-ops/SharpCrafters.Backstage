@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Utilities;
 using System;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 public sealed class NullLogger : ILogger, ILoggerFactory
 {

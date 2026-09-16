@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.UserInterface.Toasts;
+namespace SharpCrafters.Backstage.UserInterface.Toasts;
 
 public static class ToastNotificationKinds
 {

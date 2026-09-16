@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Diagnostics;
 using System.Reflection;
 
-namespace Metalama.Backstage.Desktop.Windows;
+namespace SharpCrafters.Backstage.Windows;
 
 /// <summary>
 /// The description of the desktop notifier process of a product. The executable of the product derives a class from

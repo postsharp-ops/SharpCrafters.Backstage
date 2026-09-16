@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Threading;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 internal abstract class SimpleLoggerFactory : ILoggerFactory
 {

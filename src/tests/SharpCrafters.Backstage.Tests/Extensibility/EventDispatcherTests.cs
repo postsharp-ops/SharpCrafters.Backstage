@@ -2,8 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Testing;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Extensibility;
+namespace SharpCrafters.Backstage.Tests.Extensibility;
 
 /// <summary>
 /// Tests of <see cref="EventDispatcher"/>: ordered asynchronous delivery, isolation of the subscribers, and the

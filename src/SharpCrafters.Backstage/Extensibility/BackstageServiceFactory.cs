@@ -3,13 +3,13 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using System;
 
-namespace Metalama.Backstage.Extensibility;
+namespace SharpCrafters.Backstage.Extensibility;
 
 [PublicAPI]
 public static class BackstageServiceFactory

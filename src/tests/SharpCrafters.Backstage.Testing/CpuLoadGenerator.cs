@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
 /// Saturates the processors of the machine for as long as it is not disposed, so that a load test runs against a

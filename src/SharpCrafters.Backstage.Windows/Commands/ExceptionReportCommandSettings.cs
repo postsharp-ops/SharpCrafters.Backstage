@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using Spectre.Console.Cli;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 [UsedImplicitly( ImplicitUseTargetFlags.WithMembers )]
 public class ExceptionReportCommandSettings : BaseSettings

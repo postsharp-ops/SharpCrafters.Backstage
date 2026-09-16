@@ -4,12 +4,12 @@
 
 using JetBrains.Annotations;
 #if METALAMA_BACKSTAGE
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 #endif
 using System;
 using System.Threading;
 
-namespace Metalama.Backstage.Threading;
+namespace SharpCrafters.Backstage.Threading;
 
 /// <summary>
 /// Creates locks that are identified by a name and that, when the operating system permits it, are shared by all
@@ -18,7 +18,7 @@ namespace Metalama.Backstage.Threading;
 /// <remarks>
 /// <para>
 /// This service abstracts inter-process synchronization for the same reason as
-/// <c>Metalama.Backstage.Infrastructure.IFileSystem</c> abstracts the file system: so that a test can substitute
+/// <c>SharpCrafters.Backstage.Infrastructure.IFileSystem</c> abstracts the file system: so that a test can substitute
 /// an implementation that is isolated from the rest of the machine, that is deterministic, and that verifies the
 /// locking discipline of the code under test. The production implementation, <see cref="NamedLockService"/>, is
 /// backed by a named <see cref="System.Threading.Mutex"/>.

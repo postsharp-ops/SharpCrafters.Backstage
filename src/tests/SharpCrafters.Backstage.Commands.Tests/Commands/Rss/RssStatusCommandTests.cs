@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.UserInterface.Rss;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.UserInterface.Rss;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Tools.Config.Tests.Commands.Rss
+namespace SharpCrafters.Backstage.Commands.Tests.Commands.Rss
 {
     public sealed class RssStatusCommandTests : CommandsTestsBase
     {

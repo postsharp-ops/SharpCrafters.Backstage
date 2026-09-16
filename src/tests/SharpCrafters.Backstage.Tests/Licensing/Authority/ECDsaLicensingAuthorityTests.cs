@@ -2,12 +2,12 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Security.Cryptography;
 using Xunit;
 
-namespace Metalama.Backstage.Tests.Licensing.Authority;
+namespace SharpCrafters.Backstage.Tests.Licensing.Authority;
 
 /// <summary>
 /// Tests the licensing authority that signs and verifies with Elliptic Curve DSA over the <c>nistP256</c> curve.

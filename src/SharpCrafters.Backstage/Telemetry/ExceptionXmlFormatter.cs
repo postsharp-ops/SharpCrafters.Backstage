@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using JetBrains.Annotations;
 using System;
 using System.Collections;
 using System.Reflection;
 using System.Xml;
-using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Telemetry
+namespace SharpCrafters.Backstage.Telemetry
 {
     // Warning: this file is linked to UserInterface solution. We need to serialize
     // exceptions from debugging server in the same way as ExceptionPackager does without

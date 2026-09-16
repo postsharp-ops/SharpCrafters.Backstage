@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 #pragma warning disable SA1649
 
-namespace Metalama.Backstage.Pages
+namespace SharpCrafters.Backstage.Worker.Pages
 {
     [ResponseCache( Duration = 0, Location = ResponseCacheLocation.None, NoStore = true )]
     [IgnoreAntiforgeryToken]

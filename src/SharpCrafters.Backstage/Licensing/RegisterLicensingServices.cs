@@ -2,15 +2,15 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing.Audit;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Licenses;
-using Metalama.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.Audit;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 
-namespace Metalama.Backstage.Licensing;
+namespace SharpCrafters.Backstage.Licensing;
 
 /// <summary>
 /// Extension methods that register the licensing services in a <see cref="ServiceProviderBuilder"/>.

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Application;
+namespace SharpCrafters.Backstage.Application;
 
 internal static class VersionHelper
 {

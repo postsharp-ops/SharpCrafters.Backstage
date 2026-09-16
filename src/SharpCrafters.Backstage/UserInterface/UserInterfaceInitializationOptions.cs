@@ -3,9 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 
-namespace Metalama.Backstage.UserInterface;
+namespace SharpCrafters.Backstage.UserInterface;
 
 /// <summary>
 /// The addresses that the user interface services use. The host product supplies them, because they belong to the

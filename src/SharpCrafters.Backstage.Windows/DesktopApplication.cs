@@ -2,11 +2,11 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Desktop.Windows.Commands;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
 using Microsoft.Toolkit.Uwp.Notifications;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Windows.Commands;
 using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace Metalama.Backstage.Desktop.Windows;
+namespace SharpCrafters.Backstage.Windows;
 
 /// <summary>
 /// The WPF application of the notifier. It runs the command given on the command line, or the command carried by

@@ -2,11 +2,11 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Maintenance;
-using Metalama.Backstage.Testing;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Immutable;
 using System.Globalization;
@@ -15,9 +15,9 @@ using System.Linq;
 using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
-using LoggerFactory = Metalama.Backstage.Diagnostics.LoggerFactory;
+using LoggerFactory = SharpCrafters.Backstage.Diagnostics.LoggerFactory;
 
-namespace Metalama.Backstage.Tests.Diagnostics;
+namespace SharpCrafters.Backstage.Tests.Diagnostics;
 
 public sealed class LoggerFactoryTests : TestsBase
 {

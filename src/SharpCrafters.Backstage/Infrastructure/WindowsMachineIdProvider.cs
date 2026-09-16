@@ -5,7 +5,7 @@
 using Microsoft.Win32;
 using System;
 
-namespace Metalama.Backstage.Infrastructure;
+namespace SharpCrafters.Backstage.Infrastructure;
 
 /// <summary>
 /// Reads the identifier of the machine on Windows.

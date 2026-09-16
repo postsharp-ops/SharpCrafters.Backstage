@@ -5,7 +5,7 @@
 using Spectre.Console;
 using System.Linq;
 
-namespace Metalama.Backstage.Commands.Configuration;
+namespace SharpCrafters.Backstage.Commands.Configuration;
 
 internal class ListConfigurationsCommand : BaseCommand<BaseCommandSettings>
 {

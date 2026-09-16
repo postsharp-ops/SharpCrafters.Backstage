@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Configuration
+namespace SharpCrafters.Backstage.Configuration
 {
     [PublicAPI]
     public static class ConfigurationManagerExtensions

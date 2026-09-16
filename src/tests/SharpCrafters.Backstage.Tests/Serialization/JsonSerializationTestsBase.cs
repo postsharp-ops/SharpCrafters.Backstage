@@ -3,14 +3,14 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Serialization;
+using SharpCrafters.Backstage.Serialization;
 using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Serialization;
+namespace SharpCrafters.Backstage.Tests.Serialization;
 
 /// <summary>
 /// Base class for JSON serialization tests providing helper methods for round-trip testing.

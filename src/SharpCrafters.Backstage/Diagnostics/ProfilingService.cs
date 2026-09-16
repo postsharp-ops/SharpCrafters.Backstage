@@ -6,20 +6,20 @@
 #define PROFILING_ENABLED
 #endif
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 
 #if PROFILING_ENABLED
 using JetBrains.Profiler.Api;
 using JetBrains.Profiler.SelfApi;
-using Metalama.Backstage.Maintenance;
+using SharpCrafters.Backstage.Maintenance;
 using System.Runtime.CompilerServices;
 using System.Threading;
 #endif
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 internal sealed class ProfilingService : IProfilingService
 {

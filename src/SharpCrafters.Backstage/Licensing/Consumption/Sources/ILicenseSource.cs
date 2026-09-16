@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
 
-namespace Metalama.Backstage.Licensing.Consumption.Sources
+namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
 {
     /// <summary>
     /// Source of licenses for consumption.

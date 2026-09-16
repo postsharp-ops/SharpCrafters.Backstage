@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
 /// Enumerates the types that a <see cref="JsonSerializerContext"/> serializes, and reports those that do not

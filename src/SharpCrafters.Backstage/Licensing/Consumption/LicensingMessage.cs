@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace Metalama.Backstage.Licensing.Consumption;
+namespace SharpCrafters.Backstage.Licensing.Consumption;
 
 [PublicAPI]
 public sealed record LicensingMessage( string Text )

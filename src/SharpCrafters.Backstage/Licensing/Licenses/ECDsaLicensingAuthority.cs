@@ -5,7 +5,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace Metalama.Backstage.Licensing.Licenses;
+namespace SharpCrafters.Backstage.Licensing.Licenses;
 
 /// <summary>
 /// Signs a license key with an Elliptic Curve DSA key of the <c>nistP256</c> curve and SHA-256, and verifies a

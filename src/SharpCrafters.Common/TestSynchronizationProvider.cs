@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Testing.Hooks;
+namespace SharpCrafters.Common;
 
 /// <summary>
 /// The default implementation of <see cref="ITestSynchronizationProvider"/>. It lets a test hold the code under test

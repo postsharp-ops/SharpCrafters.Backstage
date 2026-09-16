@@ -3,19 +3,19 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Worker.Upload;
-using Metalama.Backstage.Worker.WebServer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Worker.Upload;
+using SharpCrafters.Backstage.Worker.WebServer;
 using Spectre.Console.Cli;
 using System;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker;
 
 /// <summary>
 /// The entry point of the worker application, which the executable of a product calls from its <c>Main</c> method.

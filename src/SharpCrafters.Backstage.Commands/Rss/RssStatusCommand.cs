@@ -2,15 +2,15 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.UserInterface.Rss;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.UserInterface.Rss;
 using Spectre.Console;
 using System.Globalization;
-using IConfigurationManager = Metalama.Backstage.Configuration.IConfigurationManager;
+using IConfigurationManager = SharpCrafters.Backstage.Configuration.IConfigurationManager;
 
-namespace Metalama.Backstage.Commands.Rss;
+namespace SharpCrafters.Backstage.Commands.Rss;
 
 public class RssStatusCommand : RssCommand
 {

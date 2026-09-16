@@ -2,14 +2,15 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.UserInterface.Toasts;
+using Metalama.Backstage;
 using Microsoft.Extensions.DependencyInjection;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -21,7 +22,7 @@ using System.Xml.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Telemetry;
+namespace SharpCrafters.Backstage.Tests.Telemetry;
 
 public sealed class ReportExceptionTests : TestsBase
 {
@@ -38,7 +39,7 @@ public sealed class ReportExceptionTests : TestsBase
     }
 
     private static string CreateStackFrame( string methodName, int lineNumber )
-        => $"   at Metalama.Backstage.Tests.Telemetry.ReportExceptionTests.{methodName}() in C:\\src\\Metalama.Backstage\\Tests\\Metalama.Backstage.Tests\\Telemetry\\ReportExceptionTests.cs:line {lineNumber}";
+        => $"   at SharpCrafters.Backstage.Tests.Telemetry.ReportExceptionTests.{methodName}() in C:\\src\\Metalama.Backstage\\Tests\\SharpCrafters.Backstage.Tests\\Telemetry\\ReportExceptionTests.cs:line {lineNumber}";
 
     private static string CreateStackTrace( IEnumerable<(string MethodName, int LineNumber)> methods )
         => string.Join( Environment.NewLine, methods.Select( m => CreateStackFrame( m.MethodName, m.LineNumber ) ) );

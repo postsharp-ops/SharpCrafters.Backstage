@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Extensibility
+namespace SharpCrafters.Backstage.Extensibility
 {
     /// <summary>
     /// Wraps a service provider factory or service collection, so that this project can

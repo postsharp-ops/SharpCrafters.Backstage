@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Desktop.Windows.ViewModel;
+namespace SharpCrafters.Backstage.Windows.ViewModel;
 
 internal sealed record UriActionViewModel( string Text, Uri Uri ) : NotificationActionViewModel( Text )
 {

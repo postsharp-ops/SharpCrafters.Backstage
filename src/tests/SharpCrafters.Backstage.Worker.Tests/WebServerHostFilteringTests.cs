@@ -2,11 +2,11 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.Worker.WebServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Worker.WebServer;
 using System;
 using System.IO;
 using System.Net;
@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Worker.Tests;
+namespace SharpCrafters.Backstage.Worker.Tests;
 
 public sealed class WebServerHostFilteringTests : TestsBase
 {
@@ -39,7 +39,7 @@ public sealed class WebServerHostFilteringTests : TestsBase
 
             // The pages are compiled into the library, which the test process loads as its application.
             var builder = WebApplication.CreateBuilder(
-                new WebApplicationOptions() { ApplicationName = "Metalama.Backstage.Core.Worker", ContentRootPath = contentRoot } );
+                new WebApplicationOptions() { ApplicationName = "SharpCrafters.Backstage.Worker", ContentRootPath = contentRoot } );
 
             builder.WebHost.UseTestServer();
 

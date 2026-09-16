@@ -2,21 +2,23 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Licensing.Audit;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
+using Metalama.Backstage;
 using Metalama.Backstage.Tools;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Toasts;
 using Microsoft.Extensions.DependencyInjection;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Licensing.Audit;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using Xunit;
 
-namespace Metalama.Backstage.Tests.Extensibility;
+namespace SharpCrafters.Backstage.Tests.Extensibility;
 
 public sealed class RegisterServiceExtensionsTests
 {

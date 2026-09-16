@@ -2,17 +2,17 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.UserInterface;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.UserInterface;
+namespace SharpCrafters.Backstage.Tests.UserInterface;
 
 // The command-line compiler scenario: OpenWelcomePage is enabled, so the welcome page opens the first time telemetry
 // is activated (not at process init, and never on an opted-out machine). See #1701.

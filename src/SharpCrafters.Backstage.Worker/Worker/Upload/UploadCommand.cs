@@ -3,16 +3,16 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Maintenance;
-using Metalama.Backstage.Telemetry;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.Telemetry;
 using Spectre.Console.Cli;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Worker.Upload
+namespace SharpCrafters.Backstage.Worker.Upload
 {
     [UsedImplicitly]
     internal class UploadCommand : AsyncCommand<UploadCommandSettings>

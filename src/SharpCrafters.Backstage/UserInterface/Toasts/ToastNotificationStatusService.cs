@@ -3,15 +3,15 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Linq;
 
-namespace Metalama.Backstage.UserInterface.Toasts;
+namespace SharpCrafters.Backstage.UserInterface.Toasts;
 
 /// <summary>
 /// The production implementation of <see cref="IToastNotificationStatusService"/>. 

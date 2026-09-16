@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing.Licenses
+namespace SharpCrafters.Backstage.Licensing.Licenses
 {
     /// <summary>
     /// Exception thrown when an invalid license is provided.

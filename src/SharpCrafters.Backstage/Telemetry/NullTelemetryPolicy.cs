@@ -4,7 +4,7 @@
 
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// The "everything off" <see cref="ITelemetryPolicy"/>: every scenario resolves to <see cref="TelemetryConsent.No"/>.

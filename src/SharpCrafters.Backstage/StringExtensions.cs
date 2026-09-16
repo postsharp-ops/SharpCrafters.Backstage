@@ -6,7 +6,7 @@
 using System;
 #endif
 
-namespace Metalama.Backstage;
+namespace SharpCrafters.Backstage;
 
 internal static class StringExtensions
 {

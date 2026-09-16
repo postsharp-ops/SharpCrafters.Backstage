@@ -2,14 +2,14 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.UserInterface.Rss;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.UserInterface.Rss;
 using System.ComponentModel;
-using IConfigurationManager = Metalama.Backstage.Configuration.IConfigurationManager;
+using IConfigurationManager = SharpCrafters.Backstage.Configuration.IConfigurationManager;
 
-namespace Metalama.Backstage.Pages;
+namespace SharpCrafters.Backstage.Worker.Pages;
 
 #pragma warning disable SA1649
 

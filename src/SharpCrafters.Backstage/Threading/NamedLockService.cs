@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 #if HAS_METALAMA_TESTING_HOOKS
-using Metalama.Testing.Hooks;
+using SharpCrafters.Common;
 #endif
 using System;
 using System.Collections.Concurrent;
@@ -14,7 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 
-namespace Metalama.Backstage.Threading;
+namespace SharpCrafters.Backstage.Threading;
 
 /// <summary>
 /// The implementation of <see cref="INamedLockService"/> backed by the named synchronization objects of the
@@ -131,7 +131,7 @@ internal
     /// <see langword="null"/> in production, where nothing is registered for them anyway.
     /// </param>
     /// <remarks>
-    /// This constructor exists only in the copies of this class that can reference <c>Metalama.Testing.Hooks</c>.
+    /// This constructor exists only in the copies of this class that can reference <c>SharpCrafters.Common</c>.
     /// The copies compiled into the projects that run before <c>Metalama.Backstage</c> has been extracted cannot
     /// reference it, and use the implicit parameterless constructor instead.
     /// </remarks>
@@ -220,7 +220,7 @@ internal
     /// <param name="cancellationToken">A token that releases a thread pinned at the point.</param>
     /// <remarks>
     /// The synchronization points exist only in the copies of this class that can reference
-    /// <c>Metalama.Testing.Hooks</c>. The call sites are removed from the other copies by
+    /// <c>SharpCrafters.Common</c>. The call sites are removed from the other copies by
     /// <see cref="ConditionalAttribute"/>, so they cost nothing there, not even the composition of the name.
     /// </remarks>
     // CA1822: the method accesses instance data only in the copies that have the hooks. In the other copies the
@@ -246,7 +246,7 @@ internal
     /// <param name="name">The name of the lock.</param>
     /// <remarks>
     /// Like the synchronization points, the injection points exist only in the copies of this class that can
-    /// reference <c>Metalama.Testing.Hooks</c>, and the call sites are removed from the other copies by
+    /// reference <c>SharpCrafters.Common</c>, and the call sites are removed from the other copies by
     /// <see cref="ConditionalAttribute"/>.
     /// </remarks>
     // CA1822: see the remark on SyncPoint above.

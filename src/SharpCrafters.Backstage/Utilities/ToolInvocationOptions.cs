@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 
-namespace Metalama.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Utilities;
 
 [PublicAPI]
 public sealed record ToolInvocationOptions(

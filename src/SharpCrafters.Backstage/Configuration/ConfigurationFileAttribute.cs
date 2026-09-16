@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Configuration;
+namespace SharpCrafters.Backstage.Configuration;
 
 [AttributeUsage( AttributeTargets.Class )]
 [PublicAPI]

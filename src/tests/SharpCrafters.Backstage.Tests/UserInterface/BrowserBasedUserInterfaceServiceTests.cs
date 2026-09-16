@@ -2,14 +2,14 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.UserInterface;
+namespace SharpCrafters.Backstage.Tests.UserInterface;
 
 /// <summary>
 /// Verifies that a failure to display a toast notification does not propagate to the caller. On a continuous

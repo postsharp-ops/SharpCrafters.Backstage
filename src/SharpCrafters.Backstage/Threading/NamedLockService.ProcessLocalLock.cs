@@ -5,7 +5,7 @@
 using System;
 using System.Threading;
 
-namespace Metalama.Backstage.Threading
+namespace SharpCrafters.Backstage.Threading
 {
 #if METALAMA_BACKSTAGE
     public

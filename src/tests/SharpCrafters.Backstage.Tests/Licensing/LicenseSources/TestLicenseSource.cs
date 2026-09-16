@@ -3,13 +3,13 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Licensing.Consumption.Sources;
-using Metalama.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
 
-namespace Metalama.Backstage.Tests.Licensing.LicenseSources
+namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
 {
     internal sealed class TestLicenseSource : ILicenseSource, IUsable
     {

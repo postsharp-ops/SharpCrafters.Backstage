@@ -9,7 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 
-namespace Metalama.Backstage.Commands
+namespace SharpCrafters.Backstage.Commands
 {
     [PublicAPI]
     public class ConsoleWriter

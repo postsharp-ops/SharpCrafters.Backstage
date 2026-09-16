@@ -5,7 +5,7 @@
 using System;
 using System.Timers;
 
-namespace Metalama.Backstage.Infrastructure
+namespace SharpCrafters.Backstage.Infrastructure
 {
     /// <summary>
     /// Provides current date and time using <see cref="DateTime.UtcNow" />.

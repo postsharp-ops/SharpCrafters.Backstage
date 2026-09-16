@@ -5,7 +5,7 @@
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace Metalama.Backstage.Commands.Telemetry;
+namespace SharpCrafters.Backstage.Commands.Telemetry;
 
 internal class SetTelemetryCommandSettings : BaseCommandSettings
 {

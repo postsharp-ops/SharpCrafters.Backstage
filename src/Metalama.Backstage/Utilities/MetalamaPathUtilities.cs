@@ -5,12 +5,13 @@
 // There is a copy of this code in Metalama.Compiler.Shared and partially in Metalama ResourceExtractor.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.IO;
 
-namespace Metalama.Backstage.Utilities;
+namespace Metalama.Backstage;
 
 [PublicAPI]
 public static class MetalamaPathUtilities

@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Metalama.Backstage.Utilities
+namespace SharpCrafters.Backstage.Utilities
 {
     [PublicAPI]
     public sealed class ProcessInfo

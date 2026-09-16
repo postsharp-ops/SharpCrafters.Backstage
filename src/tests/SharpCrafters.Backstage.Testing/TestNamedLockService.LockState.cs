@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Testing
+namespace SharpCrafters.Backstage.Testing
 {
     public sealed partial class TestNamedLockService
     {
@@ -61,7 +61,7 @@ namespace Metalama.Backstage.Testing
 
             /// <summary>
             /// Gets or sets the number of times the lock has been created by
-            /// <see cref="Metalama.Backstage.Threading.INamedLockService"/>.
+            /// <see cref="SharpCrafters.Backstage.Threading.INamedLockService"/>.
             /// </summary>
             public int CreationCount { get; set; }
         }

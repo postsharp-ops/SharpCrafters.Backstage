@@ -3,7 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
+using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -11,7 +11,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 
-namespace Metalama.Backstage.Infrastructure
+namespace SharpCrafters.Backstage.Infrastructure
 {
     /// <summary>
     /// Provides access to file system.

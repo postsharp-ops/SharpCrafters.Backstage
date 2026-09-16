@@ -3,9 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Infrastructure;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
 /// Reports a machine identifier chosen by the test instead of the identifier of the machine that runs the test, so

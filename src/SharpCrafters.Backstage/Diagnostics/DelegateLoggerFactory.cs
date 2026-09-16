@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 internal sealed class DelegateLoggerFactory : SimpleLoggerFactory
 {

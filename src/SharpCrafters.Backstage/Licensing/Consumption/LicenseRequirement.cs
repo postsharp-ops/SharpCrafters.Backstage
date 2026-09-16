@@ -3,12 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Licensing.Consumption.Requirements;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Licensing.Consumption.Requirements;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Metalama.Backstage.Licensing.Consumption;
+namespace SharpCrafters.Backstage.Licensing.Consumption;
 
 [PublicAPI]
 public abstract class LicenseRequirement

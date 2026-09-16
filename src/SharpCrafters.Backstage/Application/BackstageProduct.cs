@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.UserInterface;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.UserInterface;
 
-namespace Metalama.Backstage.Application;
+namespace SharpCrafters.Backstage.Application;
 
 /// <summary>
 /// The values that bind the Backstage services to a product family: the profile, the web links, the telemetry

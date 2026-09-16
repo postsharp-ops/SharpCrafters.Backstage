@@ -4,7 +4,7 @@
 
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Metalama.Backstage.Pages;
+namespace SharpCrafters.Backstage.Worker.Pages;
 
 #pragma warning disable SA1649
 

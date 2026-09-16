@@ -5,7 +5,7 @@
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace Metalama.Backstage.Commands.Maintenance;
+namespace SharpCrafters.Backstage.Commands.Maintenance;
 
 internal class CleanUpCommandSettings : BaseCommandSettings
 {

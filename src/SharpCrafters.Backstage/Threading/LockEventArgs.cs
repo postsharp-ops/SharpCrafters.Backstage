@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Threading;
+namespace SharpCrafters.Backstage.Threading;
 
 /// <summary>
 /// Describes something that happened to a named lock, reported through

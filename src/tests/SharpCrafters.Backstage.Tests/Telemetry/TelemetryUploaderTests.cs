@@ -2,14 +2,14 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
 using Metalama.Backstage.Tools;
-using Metalama.Testing.Hooks;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Common;
 using System;
 using System.IO;
 using System.Linq;
@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Telemetry;
+namespace SharpCrafters.Backstage.Tests.Telemetry;
 
 public sealed class TelemetryUploaderTests : TestsBase, IDisposable
 {

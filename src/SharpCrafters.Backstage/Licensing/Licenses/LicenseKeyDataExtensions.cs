@@ -3,10 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 
-namespace Metalama.Backstage.Licensing.Licenses
+namespace SharpCrafters.Backstage.Licensing.Licenses
 {
     /// <summary>
     /// Provides extension methods for processing license key data for license consumption, registration and audit.

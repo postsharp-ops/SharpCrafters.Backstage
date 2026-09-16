@@ -3,12 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.UserInterface;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Desktop.Windows.Commands;
+namespace SharpCrafters.Backstage.Windows.Commands;
 
 // Opens the exception-report review page (formatted report + Report button + per-category auto-report checkbox) using
 // the worker-process web server. Activated when the user clicks the exception toast. See #1674.

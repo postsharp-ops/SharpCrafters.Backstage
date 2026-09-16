@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Diagnostics;
 using System.Reflection;
 
-namespace Metalama.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker;
 
 /// <summary>
 /// The description of the worker process of a product. The executable of the product derives a class from it that

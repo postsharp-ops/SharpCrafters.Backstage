@@ -3,7 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Threading;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Threading;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,7 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
 /// An implementation of <see cref="INamedLockService"/> that uses no operating system object, that reports what

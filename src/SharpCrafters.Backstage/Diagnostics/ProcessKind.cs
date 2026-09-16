@@ -7,7 +7,7 @@
 // two assemblies do not declare a type of the same full name: ResourceExtractor extracts Metalama.Backstage and
 // loads it into the process that already contains Metalama.Framework.CompilerExtensions.
 #if METALAMA_BACKSTAGE
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 #else
 namespace Metalama.Framework.CompilerExtensions;
 #endif
@@ -58,12 +58,12 @@ public enum ProcessKind
     VisualStudioMac,
 
     /// <summary>
-    /// <c>Metalama.Backstage.Worker</c>.
+    /// <c>SharpCrafters.Backstage.Worker</c>.
     /// </summary>
     BackstageWorker,
 
     /// <summary>
-    /// <c>Metalama.Backstage.Desktop.Windows</c>.
+    /// <c>SharpCrafters.Backstage.Windows</c>.
     /// </summary>
     BackstageDesktopWindows,
 

@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 
-namespace Metalama.Backstage.Testing;
+namespace SharpCrafters.Backstage.Testing;
 
 // https://github.com/Testably/Testably.Abstractions/blob/main/Source/Testably.Abstractions.Compression/Internal/ZipUtilities.cs
 internal static class TestFileSystemZipUtilities

@@ -4,7 +4,7 @@
 
 using System.IO;
 
-namespace Metalama.Backstage.Licensing.Licenses.LicenseFields
+namespace SharpCrafters.Backstage.Licensing.Licenses.LicenseFields
 {
     internal abstract class LicenseField
     {

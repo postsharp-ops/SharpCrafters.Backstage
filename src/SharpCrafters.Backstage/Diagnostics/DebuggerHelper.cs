@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-namespace Metalama.Backstage.Diagnostics
+namespace SharpCrafters.Backstage.Diagnostics
 {
     internal static class DebuggerHelper
     {

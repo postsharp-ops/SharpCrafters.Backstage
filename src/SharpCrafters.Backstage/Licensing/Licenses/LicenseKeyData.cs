@@ -3,7 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Licensing.Licenses.LicenseFields;
+using SharpCrafters.Backstage.Licensing.Licenses.LicenseFields;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
@@ -11,7 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
-namespace Metalama.Backstage.Licensing.Licenses
+namespace SharpCrafters.Backstage.Licensing.Licenses
 {
     /// <summary>
     /// Provides serialization, cryptography and validation for license keys.

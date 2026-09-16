@@ -3,17 +3,17 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Tools;
-using Metalama.Backstage.UserInterface;
-using Metalama.Backstage.Worker.Logger;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.Worker.Logger;
 using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage.Worker.WebServer;
+namespace SharpCrafters.Backstage.Worker.WebServer;
 
 [UsedImplicitly]
 internal class WebServerCommand : AsyncCommand<WebServerCommandSettings>

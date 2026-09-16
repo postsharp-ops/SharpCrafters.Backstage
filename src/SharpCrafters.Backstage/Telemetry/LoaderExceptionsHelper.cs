@@ -10,7 +10,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 
-namespace Metalama.Backstage.Telemetry;
+namespace SharpCrafters.Backstage.Telemetry;
 
 /// <summary>
 /// Extracts the <see cref="ReflectionTypeLoadException.LoaderExceptions"/> of any <see cref="ReflectionTypeLoadException"/>

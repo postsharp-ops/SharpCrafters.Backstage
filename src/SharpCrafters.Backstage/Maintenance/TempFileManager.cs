@@ -2,21 +2,21 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Application;
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Infrastructure;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Threading;
-using Metalama.Backstage.Utilities;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Threading;
+using SharpCrafters.Backstage.Utilities;
 using System;
-using System.Text.Json;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
-namespace Metalama.Backstage.Maintenance;
+namespace SharpCrafters.Backstage.Maintenance;
 
 public sealed class TempFileManager : ITempFileManager
 {

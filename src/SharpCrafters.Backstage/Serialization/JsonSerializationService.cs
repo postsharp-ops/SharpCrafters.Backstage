@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Metalama.Backstage.Serialization;
+namespace SharpCrafters.Backstage.Serialization;
 
 /// <summary>
 /// Implementation of <see cref="IJsonSerializationService"/> that uses source-generated JSON contexts

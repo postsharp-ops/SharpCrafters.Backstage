@@ -8,7 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Security;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 public static class ExceptionClassifier
 {

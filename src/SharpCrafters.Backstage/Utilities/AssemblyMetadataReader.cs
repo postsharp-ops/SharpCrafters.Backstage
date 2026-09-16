@@ -11,7 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace Metalama.Backstage.Utilities
+namespace SharpCrafters.Backstage.Utilities
 {
     /// <summary>
     /// Reads the <see cref="AssemblyMetadataAttribute"/> defined by the build pipeline.

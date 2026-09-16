@@ -3,9 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage.Commands;
-using Metalama.Backstage.Diagnostics;
-using Metalama.Backstage.Testing;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Testing;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System;
@@ -14,7 +13,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Tools.Config.Tests.Commands
+namespace SharpCrafters.Backstage.Commands.Tests.Commands
 {
     [PublicAPI]
     public abstract class CommandsTestsBase : TestsBase, ICommandServiceProviderProvider

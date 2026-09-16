@@ -2,15 +2,16 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Extensibility;
-using Metalama.Backstage.Licensing.Audit;
-using Metalama.Backstage.Licensing.Consumption;
-using Metalama.Backstage.Serialization;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.Testing;
-using Metalama.Backstage.Tests.Licensing.Licenses;
-using Metalama.Backstage.Utilities;
+using Metalama.Backstage;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.Audit;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Tests.Licensing.Licenses;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,7 +25,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Metalama.Backstage.Tests.Licensing.Consumption;
+namespace SharpCrafters.Backstage.Tests.Licensing.Consumption;
 
 public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
 {

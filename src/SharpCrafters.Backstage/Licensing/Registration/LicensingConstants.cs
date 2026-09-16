@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Licensing.Registration;
+namespace SharpCrafters.Backstage.Licensing.Registration;
 
 internal static class LicensingConstants
 {

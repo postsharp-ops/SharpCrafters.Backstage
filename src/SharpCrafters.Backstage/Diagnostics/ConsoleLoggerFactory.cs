@@ -5,7 +5,7 @@
 using System.Collections.Immutable;
 using System.IO;
 
-namespace Metalama.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Diagnostics;
 
 internal sealed class ConsoleLoggerFactory : SimpleLoggerFactory
 {

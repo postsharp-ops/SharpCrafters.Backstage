@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Metalama.Backstage.Application;
+namespace SharpCrafters.Backstage.Application;
 
 /// <summary>
 /// Exposes information about the components, or plug-ins, of an application. This information

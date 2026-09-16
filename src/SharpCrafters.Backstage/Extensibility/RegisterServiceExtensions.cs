@@ -2,16 +2,17 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Configuration;
-using Metalama.Backstage.Licensing;
-using Metalama.Backstage.Serialization;
-using Metalama.Backstage.Telemetry;
-using Metalama.Backstage.UserInterface;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Metalama.Backstage.Extensibility;
+namespace SharpCrafters.Backstage.Extensibility;
 
 /// <summary>
 /// Extension methods for setting up the Backstage services in a <see cref="ServiceProviderBuilder" />. This is the

@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace Metalama.Backstage.Licensing.Consumption.Sources;
+namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 
 [PublicAPI]
 [Flags]
