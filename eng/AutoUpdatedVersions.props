@@ -1,0 +1,7 @@
+<Project>
+
+    <!-- The version of the last published build. The bump and publish commands write it. -->
+    <PropertyGroup>
+    </PropertyGroup>
+
+</Project>

@@ -1,43 +1,34 @@
 <Project>
 
-    <Import Project="..\Directory.Build.props" />
+    <PropertyGroup>
+        <RepoDirectory>$(MSBuildThisFileDirectory)</RepoDirectory>
+        <RepoKind>GitHub</RepoKind> <!-- Valid values: AzureRepos | GitHub -->
+    </PropertyGroup>
+
+    <Import Project="eng\Versions.props"/>
+    <Import Project="eng\Packaging.props"/>
+    <Import Sdk="PostSharp.Engineering.Sdk" Project="EmbeddedSystemTypes.props"/>
+    <Import Sdk="PostSharp.Engineering.Sdk" Project="BuildOptions.props"/>
+    <Import Sdk="PostSharp.Engineering.Sdk" Project="StrongName.props"/>
+    <Import Sdk="PostSharp.Engineering.Sdk" Project="SourceLink.props"/>
 
     <PropertyGroup>
-        <RepoDirectory>$(MSBuildThisFileDirectory)../</RepoDirectory>
-        <RepoKind>GitHub</RepoKind>
+        <SuppressNETCoreSdkPreviewMessage>True</SuppressNETCoreSdkPreviewMessage>
+
+        <!-- CS8002: the Spectre.Console assemblies are not strong-named.
+             IDE0028: collection initialization can be simplified. The findings are not resolved yet.
+             IDE0031 and IDE0032: features of the C# 14 compiler that are disabled while the SDK is not stable. -->
+        <NoWarn>$(NoWarn);SA0001;CS8002;IDE0028;IDE0031;IDE0032</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
-    <PropertyGroup>
-
-              
-        <!--        
-CSC : warning CS8002: Referenced assembly 'Spectre.Console, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' does not have a strong name. [C:\src\Metalama.Backstage\Metalama.Backstage.Commands\Metalama.Backstage.Commands.csproj]
-CSC : warning CS8002: Referenced assembly 'Spectre.Console.Cli, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null' does not have a strong name. [C:\src\Metalama.Backstage\Metalama.Backstage.Commands\Metalama.Backstage.Commands.csproj]
-
-// TODO: Fix the IDE0028 warnings in 2024.2.
-warning IDE0028: Collection initialization can be simplified (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0028)
-        -->
-        
-        <NoWarn>$(NoWarn);CS8002;IDE0028</NoWarn>
-
-    </PropertyGroup>
-
     <ItemGroup>
-        <!-- We can't use the default PackageVersion metadata attribute because we are IL-merging all Metalama
-             assemblies in Metalama.Vsx and we can no longer distinguish between attributes of different assemblies. -->
+        <!-- The default PackageVersion metadata attribute cannot be used, because Metalama.Vsx merges all Metalama
+             assemblies into one and the attributes of the different assemblies can then no longer be distinguished. -->
         <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
             <_Parameter1>BackstagePackageVersion</_Parameter1>
             <_Parameter2>$(Version)</_Parameter2>
         </AssemblyAttribute>
     </ItemGroup>
-
-    <Import Project="..\eng\Versions.props"/>
-    <Import Project="..\eng\StrongName.props"/>
-    <Import Project="..\eng\Packaging.props"/>
-    
-    <Import Sdk="PostSharp.Engineering.Sdk" Project="EmbeddedSystemTypes.props" />
-    <Import Sdk="PostSharp.Engineering.Sdk" Project="BuildOptions.props"/>
-    <Import Sdk="PostSharp.Engineering.Sdk" Project="SourceLink.props"/>
 
 </Project>
