@@ -1,11 +1,13 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Metalama.Backstage.Application;
 using Metalama.Backstage.Extensibility;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Metalama.Backstage.Tools;
 
@@ -20,6 +22,12 @@ internal sealed class DevBackstageToolsLocator : IBackstageToolsLocator
 #else
     private const string _buildConfiguration = "Release";
 #endif
+
+    /// <summary>
+    /// The name of the repository that builds the tools. A product repository that runs from source is checked out beside
+    /// it, under the same parent directory.
+    /// </summary>
+    private const string _foundationsRepositoryName = "SharpCrafters.Foundations";
 
     private static readonly string _rootDirectory = FindRootDirectory();
 
@@ -49,26 +57,39 @@ internal sealed class DevBackstageToolsLocator : IBackstageToolsLocator
         throw new FileNotFoundException( "Cannot find the repo directory." );
     }
 
+    /// <summary>
+    /// Gets the build output directories in which a tool may be found, in the order in which they are tried: first the
+    /// repository from which the program runs, for the case where that repository is the one that builds the tools, then
+    /// the checkout of that repository beside it, for the case where a product repository runs from source.
+    /// </summary>
+    private static IEnumerable<string> GetCandidateToolDirectories( string assemblyName, string outputSubdirectory )
+    {
+        var parentDirectory = Path.GetDirectoryName( _rootDirectory );
+
+        string[] repositoryDirectories = parentDirectory == null
+            ? [_rootDirectory]
+            : [_rootDirectory, Path.Combine( parentDirectory, _foundationsRepositoryName )];
+
+        foreach ( var repositoryDirectory in repositoryDirectories )
+        {
+            yield return Path.Combine( repositoryDirectory, "src", assemblyName, "bin", _buildConfiguration, "net10.0", outputSubdirectory );
+        }
+    }
+
     public bool ToolsMustBeExtracted => false;
 
     public string GetToolDirectory( BackstageTool tool )
     {
-        if ( tool == BackstageTool.Worker )
-        {
-            // The published output of the worker project, which contains the static web assets.
-            return Path.Combine(
-                _rootDirectory,
-                "Metalama.Backstage",
-                "src",
-                tool.GetAssemblyName( this._productProfile ),
-                "bin",
-                _buildConfiguration,
-                "net10.0",
-                "Packed" );
-        }
-        else
+        if ( tool != BackstageTool.Worker )
         {
             throw new ArgumentOutOfRangeException( nameof(tool), $"The tool '{tool}' is not available in the development environment." );
         }
+
+        // The published output of the worker project, which contains the static web assets.
+        var candidates = GetCandidateToolDirectories( tool.GetAssemblyName( this._productProfile ), "Packed" ).ToList();
+
+        return candidates.FirstOrDefault( Directory.Exists )
+               ?? throw new DirectoryNotFoundException(
+                   $"The tool '{tool}' has not been built. None of these directories exists: {string.Join( ", ", candidates )}." );
     }
 }
