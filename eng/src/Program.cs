@@ -1,4 +1,4 @@
-// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
+﻿// Copyright (c) SharpCrafters s.r.o. See the LICENSE.md file in the root directory of this repository root for details.
 
 using PostSharp.Engineering.BuildTools;
 using PostSharp.Engineering.BuildTools.Build.Model;
@@ -31,10 +31,18 @@ var product = new Product( FoundationsDependencies.Foundations )
     GenerateNuGetConfig = true,
     DotNetSdkVersion = new DotNetSdkVersion( dotNet11SdkVersion ) { AllowPrerelease = true },
 
-    Solutions = [new DotNetSolution( "SharpCrafters.Foundations.sln" ) { CanFormatCode = true }]
+    Solutions = [new DotNetSolution( "SharpCrafters.Foundations.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
 
-    // The solution contains no project yet, so the build produces no package and there is nothing to publish.
-    // Add the package names to PublicArtifacts when the first project is added.
+    // The packages keep their historical names until the projects are renamed to SharpCrafters.Foundations.
+    PublicArtifacts = Pattern.Create(
+        "Metalama.Backstage.$(PackageVersion).nupkg",
+        "Metalama.Backstage.Core.$(PackageVersion).nupkg",
+        "Metalama.Backstage.Core.Worker.$(PackageVersion).nupkg",
+        "Metalama.Backstage.Core.Desktop.Windows.$(PackageVersion).nupkg",
+        "Metalama.Backstage.Commands.$(PackageVersion).nupkg", // Required by SourceLink in Metalama.Framework.
+        "Metalama.Backstage.Testing.$(PackageVersion).nupkg",  // Required by SourceLink in Metalama.Framework.
+        "Metalama.Backstage.Tools.$(PackageVersion).nupkg",    // Required by Metalama.Testing.AspectTesting via Metalama.Framework.Engine.
+        "Metalama.Testing.Hooks.$(PackageVersion).nupkg" )     // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
 };
 
 return new EngineeringApp( product ).Run( args );

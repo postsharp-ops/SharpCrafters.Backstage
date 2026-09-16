@@ -44,11 +44,11 @@
         </ItemGroup>
     </Target>
 
-    <Import Project="../../../eng/DeterministicZip.tasks"/>
+    <Import Project="../../eng/DeterministicZip.tasks"/>
 
     <Target Name="Zip" Inputs="@(ZipInputFiles)" Outputs="$(OutputZipFile)" AfterTargets="Build" DependsOnTargets="ResolveZipInputFiles" Condition="'$(IsCrossTargetingBuild)'!='true'">
 
-        <CreateDeterministicZip SourceDirectory="$(OutDir)" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(MetalamaBuildDate)"/>
+        <CreateDeterministicZip SourceDirectory="$(OutDir)" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(BuildDate)"/>
         <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High"/>
     </Target>
 

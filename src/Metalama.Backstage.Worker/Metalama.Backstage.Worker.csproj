@@ -41,7 +41,7 @@
         <None Remove="Properties\launchSettings.json" />
     </ItemGroup>
 
-    <Import Project="../../../eng/DeterministicZip.tasks"/>
+    <Import Project="../../eng/DeterministicZip.tasks"/>
 
     <Target Name="PackAndZip" AfterTargets="Build">
 
@@ -54,7 +54,7 @@
             <ZipInputFiles Include="$(OutputPath)Packed\**\*" />
         </ItemGroup>
 
-        <CreateDeterministicZip SourceDirectory="$(OutputPath)Packed" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(MetalamaBuildDate)" />
+        <CreateDeterministicZip SourceDirectory="$(OutputPath)Packed" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(BuildDate)" />
         <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High" />
     </Target>
 
