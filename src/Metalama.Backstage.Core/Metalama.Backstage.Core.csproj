@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
@@ -21,6 +21,13 @@
 
     <ItemGroup>
         <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The shared source files travel in the package under the shared directory, so that the projects of the
+             consuming products that compile them by link find them in the package instead of in this repository. -->
+        <None Include="Threading\*.cs" Pack="true" PackagePath="shared\Threading\" />
+        <None Include="Diagnostics\ProcessKind.cs;Diagnostics\ProcessKindDetector.cs" Pack="true" PackagePath="shared\Diagnostics\" />
     </ItemGroup>
 
     <ItemGroup>
