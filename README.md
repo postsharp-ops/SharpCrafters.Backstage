@@ -1,10 +1,11 @@
-# SharpCrafters.Foundations
+# SharpCrafters.Backstage
 
-Foundation libraries shared by the Metalama and PostSharp products. The repository produces the
-`SharpCrafters.Foundations` NuGet packages.
+Infrastructure services shared by the Metalama and PostSharp products: configuration, diagnostics, telemetry,
+licensing and user interface, with a customization package per product.
 
-The product name inside the build system and on TeamCity is `Foundations`; the repository and the packages are named
-`SharpCrafters.Foundations`.
+The product name inside the build system and on TeamCity is `Backstage`. The repository is named
+`SharpCrafters.Backstage`, the neutral packages `SharpCrafters.Backstage*` and `SharpCrafters.Common`, and the product
+customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 
 ## Building
 

@@ -1,3 +1,3 @@
 ![Metalama by PostSharp](https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg)
 
-The `Metalama.Backstage.DotNetTool` tool contains a limited set of Metalama commands for internal use and testing only.
+The `metalama-backstage` tool hosts the Backstage commands with the Metalama product, so that the commands can be exercised without building the Metalama repository. It is for internal testing only and is not published.

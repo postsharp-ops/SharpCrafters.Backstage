@@ -12,7 +12,7 @@
         <PackageType>DotNetCliTool</PackageType>
         -->
         <ToolCommandName>metalama-backstage</ToolCommandName>
-        <PackageDescription>A limited set of Metalama commands for internal use and testing only.</PackageDescription>
+        <PackageDescription>A test tool that hosts the Backstage commands with the Metalama product, for internal testing only.</PackageDescription>
         
         <RollForward>Major</RollForward>
     </PropertyGroup>

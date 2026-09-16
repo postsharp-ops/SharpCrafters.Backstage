@@ -12,7 +12,7 @@ For the user-facing description, see `content/conceptual/configuration/telemetry
 | `TelemetryScenario.Exception` | An anonymized exception report | Review-first by default |
 | `TelemetryScenario.Performance` | The same report shape, for a performance degradation | Review-first by default |
 
-The **license audit** (`Metalama.Backstage.Licensing.Audit`) is not one of these. It deliberately ignores every telemetry setting, so it must never be routed through `ITelemetryPolicy`.
+The **license audit** (`SharpCrafters.Backstage.Licensing.Audit`) is not one of these. It deliberately ignores every telemetry setting, so it must never be routed through `ITelemetryPolicy`.
 
 ## Consent
 
@@ -193,4 +193,4 @@ metalama telemetry status
 
 `metalama throw` turns on the user-interface services itself; other commands only add them with the hidden `--with-ui` flag, and without them a report is captured with no notification at all.
 
-Unit tests live in `Metalama.Backstage.Tests/Telemetry` (capture, decisions, prompting), `Metalama.Backstage.Tests/UserInterface` (notification state) and `Metalama.Backstage.Worker.Tests` (the review page). Use `TestDateTimeProvider.AddTime` to cross the retry period; never use a real delay.
+Unit tests live in `SharpCrafters.Backstage.Tests/Telemetry` (capture, decisions, prompting), `SharpCrafters.Backstage.Tests/UserInterface` (notification state) and `SharpCrafters.Backstage.Worker.Tests` (the review page). Use `TestDateTimeProvider.AddTime` to cross the retry period; never use a real delay.

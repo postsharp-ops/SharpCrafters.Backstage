@@ -1,5 +1,3 @@
-![Metalama by PostSharp](https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg)
+The `SharpCrafters.Backstage.Commands` package is not meant to be referenced in user projects.
 
-The `Metalama.Backstage.Commands` package is not meant to be referenced in user projects.
-
-It's used internally by Metalama to process telemetry and provide a user interface.
+It contains the command line commands of Backstage: configuration, licensing, telemetry and user interface. The command line tool of a product hosts them, for instance [Metalama.Tool](https://www.nuget.org/packages/Metalama.Tool).

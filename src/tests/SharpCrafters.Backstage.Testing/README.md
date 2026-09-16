@@ -1,5 +1,3 @@
-![Metalama by PostSharp](https://raw.githubusercontent.com/metalama/.github/HEAD/images/metalama.svg)
+The `SharpCrafters.Backstage.Testing` package is not published and is not meant to be referenced in user projects.
 
-The `Metalama.Backstage.Testing` package is not meant to be referenced in user projects.
-
-It's used internally by Metalama to test telemetry and user interface.
+It contains the test helpers for the Backstage services: a test base class with an in-memory file system, environment, clock and configuration, and a provider of test license keys. The test projects of the Metalama and PostSharp products use it.
