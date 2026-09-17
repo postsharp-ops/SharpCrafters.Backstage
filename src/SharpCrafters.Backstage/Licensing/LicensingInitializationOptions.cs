@@ -32,6 +32,25 @@ public record LicensingInitializationOptions
     public static LicensingInitializationOptions ForTest( Action<LicenseKeyDataBuilder> buildTestLicenseAction )
         => new() { UseTestAuthority = true, IgnoredLicenseSources = LicenseSourceKind.All, BuildTestLicenseAction = buildTestLicenseAction };
 
+    /// <summary>
+    /// Gets the time after which a request to a license server is abandoned. The default is ten seconds.
+    /// </summary>
+    /// <remarks>
+    /// A lease is acquired while a compilation waits for it, so the timeout has to be short. PostSharp used the
+    /// hundred-second default of <c>WebClient</c>, which stalls a build for far too long when a server is down.
+    /// </remarks>
+    public TimeSpan LicenseServerTimeout { get; init; } = TimeSpan.FromSeconds( 10 );
+
+    /// <summary>
+    /// Gets a value indicating whether a request to a license server authenticates with the credentials of the user
+    /// who runs the current process, that is, with Windows integrated authentication. The default is <c>true</c>.
+    /// </summary>
+    /// <remarks>
+    /// An on-premises license server is typically published by IIS with Windows authentication and answers 401 to an
+    /// anonymous request. PostSharp sent the default network credentials for that reason.
+    /// </remarks>
+    public bool LicenseServerUsesDefaultCredentials { get; init; } = true;
+
     internal LicenseSourceKind IgnoredLicenseSources { get; init; } = LicenseSourceKind.None;
 
     /// <summary>

@@ -8,5 +8,21 @@ namespace SharpCrafters.Backstage.Infrastructure;
 
 internal sealed class HttpClientFactory : IHttpClientFactory
 {
-    public HttpClient Create() => new();
+    public HttpClient Create() => this.Create( HttpClientOptions.Default );
+
+    public HttpClient Create( HttpClientOptions options )
+    {
+        // A handler is only built when an option requires one, so that the common case keeps the default handler,
+        // which HttpClient disposes of with itself.
+        var client = options.UseDefaultCredentials
+            ? new HttpClient( new HttpClientHandler { UseDefaultCredentials = true } )
+            : new HttpClient();
+
+        if ( options.Timeout != null )
+        {
+            client.Timeout = options.Timeout.Value;
+        }
+
+        return client;
+    }
 }

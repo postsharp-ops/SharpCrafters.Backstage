@@ -77,6 +77,17 @@ public interface ILicenseProductCatalog : IBackstageService
     LicenseProduct EvaluationProduct { get; }
 
     /// <summary>
+    /// Gets the product that a license server is asked to allocate a lease from, which names the pool of licences on
+    /// the server, or <c>null</c> to let the server choose among every pool it holds.
+    /// </summary>
+    /// <remarks>
+    /// One license server can hold the licences of several products, so naming the product lets it allocate from the
+    /// right pool. A server that predates this argument ignores it and allocates from any pool, which is what the
+    /// clients of PostSharp, which never sent it, rely on.
+    /// </remarks>
+    LicenseProduct? LicenseServerProduct { get; }
+
+    /// <summary>
     /// Gets the product for which a community license is issued, or <c>null</c> when the family has no community
     /// edition.
     /// </summary>

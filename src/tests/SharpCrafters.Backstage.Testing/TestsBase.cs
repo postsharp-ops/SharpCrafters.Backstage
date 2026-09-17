@@ -15,6 +15,7 @@ using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Maintenance;
@@ -74,6 +75,12 @@ namespace SharpCrafters.Backstage.Testing
         /// identifier of the machine that runs the test.
         /// </summary>
         protected TestMachineIdProvider MachineIdProvider { get; } = new();
+
+        /// <summary>
+        /// Gets the substitute for the user and machine names, so that a test observes pinned values instead of those
+        /// of the machine that runs the test.
+        /// </summary>
+        protected TestUserIdentityProvider UserIdentity { get; } = new();
 
         protected TestUserInterfaceService UserInterface => this._defaultTestContext.Value.UserInterface;
 
@@ -154,6 +161,7 @@ namespace SharpCrafters.Backstage.Testing
         }
 
         private TestFileSystem? _uniqueFileSystem;
+        private TestHttpClientFactory? _uniqueHttpClientFactory;
 
         protected IServiceCollection CloneServiceCollection()
         {
@@ -306,9 +314,12 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<IProcessExecutor>( this.ProcessExecutor )
                 .AddSingleton<IRuntimeInformation>( _ => new TestRuntimeInformation() )
                 .AddSingleton<IMachineIdProvider>( this.MachineIdProvider )
+                .AddSingleton<IUserIdentityProvider>( this.UserIdentity )
                 .AddSingleton<IPlatformInfo>( serviceProvider => new PlatformInfo( serviceProvider ) )
                 .AddSingleton( this.BackgroundTasks )
-                .AddSingleton<IHttpClientFactory>( serviceProvider => new TestHttpClientFactory( serviceProvider ) )
+                // As for the file system, there must be a single instance even when CloneServiceCollection is used:
+                // one instance stands for one network, so a hook registered by the test is seen by every provider.
+                .AddSingleton<IHttpClientFactory>( serviceProvider => this._uniqueHttpClientFactory ??= new TestHttpClientFactory( serviceProvider ) )
                 .AddSingleton( options.Product.Profile )
                 .AddSingleton<IWebLinks>( options.Product.WebLinks )
                 .AddSingleton( _ => new RandomNumberGenerator( 0 ) )
@@ -323,6 +334,8 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<IConfigurationManager>( serviceProvider => new InMemoryConfigurationManager( serviceProvider ) )
                 .AddSingleton<ITempFileManager>( serviceProvider => new TempFileManager( serviceProvider ) )
                 .AddSingleton<ILicenseProductCatalog>( options.LicensingOptions.ProductCatalog ?? options.Product.LicenseProductCatalog )
+                .AddSingleton( serviceProvider => new LicenseLeaseStore( serviceProvider ) )
+                .AddSingleton( serviceProvider => new LicenseServerClient( serviceProvider, options.LicensingOptions ) )
                 .AddSingleton<ILicenseRegistrationService>( serviceProvider => new LicenseRegistrationService( serviceProvider ) )
                 .AddSingleton<ILicenseConsumptionService>(
                     serviceProvider => LicenseConsumptionServiceFactory.Create(

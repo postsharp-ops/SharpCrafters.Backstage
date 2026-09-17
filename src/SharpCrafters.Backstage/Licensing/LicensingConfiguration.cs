@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
@@ -112,8 +113,13 @@ internal sealed record LicensingConfiguration : ConfigurationFile
         // that co-exist are consumed by every released version and therefore never reach a group.
         var clone = this.LicensesByMinimalVersion == null ? this : this with { LicensesByMinimalVersion = null };
 
+        // A license server URL is removed whatever the products that co-exist: it is not a license key of any product,
+        // so the co-existence rules of the catalog cannot apply to it. It is spelled out rather than left to fall into
+        // the branch for a string that does not parse, so that the reason is visible.
         if ( clone.LegacyLicense != null
-             && (GetLicenseKeyData( clone.LegacyLicense ) is not { } legacyLicense || !products.Contains( legacyLicense.Product )) )
+             && (LicenseServerUrl.IsLicenseServerUrl( clone.LegacyLicense )
+                 || GetLicenseKeyData( clone.LegacyLicense ) is not { } legacyLicense
+                 || !products.Contains( legacyLicense.Product )) )
         {
             return clone with { LegacyLicense = null };
         }
@@ -183,12 +189,15 @@ internal sealed record LicensingConfiguration : ConfigurationFile
     /// <returns>The license key data of the license keys that the running version supports.</returns>
     public IEnumerable<LicenseKeyData> GetRegisteredLicenses( Version currentVersion, Action<LicensingMessage>? reportMessage = null )
     {
-        var licenses = new[] { this.LegacyLicense }
-            .Concat( this.Licenses )
-            .Concat( this.GetLicenseGroups().Where( group => group.MinimalVersion <= currentVersion ).SelectMany( group => group.Licenses ) );
-
-        foreach ( var license in licenses )
+        foreach ( var license in this.EnumerateLicenseStrings( currentVersion ) )
         {
+            // A license server URL is not a license key and is skipped silently, because reporting it as unparsable
+            // would tell the user that what they registered is broken when it is not.
+            if ( LicenseServerUrl.IsLicenseServerUrl( license ) )
+            {
+                continue;
+            }
+
             var licenseKeyData = GetLicenseKeyData( license, reportMessage );
 
             if ( licenseKeyData != null )
@@ -197,4 +206,52 @@ internal sealed record LicensingConfiguration : ConfigurationFile
             }
         }
     }
+
+    /// <summary>
+    /// Gets the license strings that the running version supports, which are the license keys that parse and the
+    /// license server URLs, with the URLs last.
+    /// </summary>
+    /// <param name="currentVersion">The version of the running product.</param>
+    /// <param name="reportMessage">A delegate that receives the message reported by a license key that does not parse.</param>
+    /// <returns>The license strings that the running version supports.</returns>
+    /// <remarks>
+    /// <para>
+    /// A URL is yielded verbatim and is never deserialized as a license key. This is what lets a license server reach
+    /// <see cref="LicenseFactory"/>, which is the only place that decides what a license string is.
+    /// </para>
+    /// <para>
+    /// The URLs come last so that a registered license key is always considered before a lease is acquired, which is
+    /// the order PostSharp resolved them in: a key costs nothing, whereas a lease may cost a request and a seat.
+    /// </para>
+    /// </remarks>
+    public IEnumerable<string> GetRegisteredLicenseStrings( Version currentVersion, Action<LicensingMessage>? reportMessage = null )
+    {
+        var urls = new List<string>();
+
+        foreach ( var license in this.EnumerateLicenseStrings( currentVersion ) )
+        {
+            if ( LicenseServerUrl.IsLicenseServerUrl( license ) )
+            {
+                urls.Add( license! );
+            }
+            else if ( GetLicenseKeyData( license, reportMessage ) != null )
+            {
+                yield return license!;
+            }
+        }
+
+        foreach ( var url in urls )
+        {
+            yield return url;
+        }
+    }
+
+    /// <summary>
+    /// Enumerates the license strings of every bucket that the running version reads, in the order in which the
+    /// buckets were introduced, without parsing any of them.
+    /// </summary>
+    private IEnumerable<string?> EnumerateLicenseStrings( Version currentVersion )
+        => new[] { this.LegacyLicense }
+            .Concat( this.Licenses )
+            .Concat( this.GetLicenseGroups().Where( group => group.MinimalVersion <= currentVersion ).SelectMany( group => group.Licenses ) );
 }

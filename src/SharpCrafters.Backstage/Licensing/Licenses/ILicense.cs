@@ -3,49 +3,42 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Licensing.Consumption;
-using SharpCrafters.Backstage.Licensing.Registration;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Licenses
 {
     /// <summary>
     /// A license providing licensed features.
     /// </summary>
+    /// <remarks>
+    /// The members are asynchronous because a licence leased from a license server is fetched over HTTP. A licence
+    /// that is a key completes synchronously, which is why they return <see cref="ValueTask{TResult}"/>: the common
+    /// case then allocates nothing.
+    /// </remarks>
     internal interface ILicense
     {
         /// <summary>
-        /// Gets a value indicating whether the license can be registered. If not, returns the reason.
+        /// Gets the reason why the licence cannot be registered, or <see langword="null"/> when it can be.
         /// </summary>
-        /// <param name="errorMessage"></param>
-        /// <returns></returns>
-        bool CanBeRegistered( [MaybeNullWhen( true )] out string errorMessage );
+        /// <param name="cancellationToken">A cancellation token.</param>
+        ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default );
 
         /// <summary>
-        /// Tries to retrieves or deserialize and validate license data relevant to license consumption.
-        /// The data is either deserialized (e.g. from a license key) or retrieved from a license provider (e.g. license server.)
+        /// Retrieves, or deserializes and validates, the licence data relevant to licence consumption. The data is
+        /// either deserialized, from a licence key, or retrieved from a licence provider, such as a license server.
         /// </summary>
-        /// <param name="options"></param>
-        /// <param name="licenseConsumptionProperties">The license data relevant to license consumption.</param>
-        /// <param name="errorMessage">Description of a failure when the return value is <c>false</c>.</param>
-        /// <returns>
-        /// <c>true</c> if the object represents or retrieves a consistent and valid license.
-        /// </returns>
-        bool TryGetConsumptionProperties(
+        /// <param name="options">The options of the consumption.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(
             LicenseConsumptionOptions options,
-            [MaybeNullWhen( false )] out LicenseConsumptionProperties licenseConsumptionProperties,
-            [MaybeNullWhen( true )] out string errorMessage );
+            CancellationToken cancellationToken = default );
 
         /// <summary>
-        /// Tries to deserialize data relevant to license registration but does not attempt to validate all properties.
+        /// Retrieves the data relevant to licence registration, without validating every property.
         /// </summary>
-        /// <param name="licenseProperties">The license data relevant to license registration.</param>
-        /// <param name="errorMessage">Description of a failure when the return value is <c>false</c>.</param>
-        /// <returns>
-        /// <c>true</c> if the object represents a consistent license.
-        /// </returns>
-        bool TryGetRegistrationProperties(
-            [MaybeNullWhen( false )] out LicenseRegistrationProperties licenseProperties,
-            [MaybeNullWhen( true )] out string errorMessage );
+        /// <param name="cancellationToken">A cancellation token.</param>
+        ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default );
 
         /// <summary>
         /// This method must be called once per day when the license is consumed.

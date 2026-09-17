@@ -5,6 +5,8 @@
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -54,17 +56,17 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         }
 
         [Fact]
-        public void InvalidLicenseStringCreatesInvalidLicense()
+        public async Task InvalidLicenseStringCreatesInvalidLicense()
         {
             const string invalidLicenseString = "SomeInvalidLicenseString";
             Assert.True( this.LicenseFactory.TryCreate( invalidLicenseString, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
-            Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+            Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
         }
 
         [Fact]
-        public void RevokedLicenseStringCreatesInvalidLicense()
+        public async Task RevokedLicenseStringCreatesInvalidLicense()
         {
             // ReSharper disable StringLiteralTypo
             const string revokedLicenseString =
@@ -75,29 +77,52 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
             Assert.True( this.LicenseFactory.TryCreate( revokedLicenseString, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
-            Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+            Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
         }
 
         [Fact]
-        public void ValidLicenseKeyCreatesValidLicense()
+        public async Task ValidLicenseKeyCreatesValidLicense()
         {
             Assert.True( this.LicenseFactory.TryCreate( LicenseKeyProvider.PostSharpUltimate, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
-            Assert.True( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var licenseData, out errorMessage ) );
-            Assert.NotNull( licenseData );
-            Assert.Null( errorMessage );
+            var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
+            Assert.True( consumptionResult.IsSuccess );
+            Assert.NotNull( consumptionResult.Properties );
+            Assert.Null( consumptionResult.ErrorMessage );
         }
 
-        [Fact]
-        public void UrlCreatesLicenseLease()
+        /// <summary>
+        /// Tests that a well-formed license server URL is turned into a leased license and not into a license key, and
+        /// that the factory contacts nothing while doing so: the server is reached when the license is consumed or
+        /// registered, not when it is created, because this method is called wherever a license string is met.
+        /// </summary>
+        [Theory]
+        [InlineData( "http://license.test" )]
+        [InlineData( "https://license.test" )]
+        [InlineData( "https://license.test:8443/postsharp" )]
+        public void UrlCreatesLeasedLicense( string url )
         {
-            // LicenseConsumptionOptions.Default
+            Assert.True( this.LicenseFactory.TryCreate( url, out var license, out var errorMessage ) );
+            Assert.Null( errorMessage );
+            Assert.IsType<LeasedLicense>( license );
+            Assert.Empty( this.HttpClientFactory.ProcessedRequests );
+        }
 
-            // Assert.True( this._licenseFactory.TryCreate( "http://hello.world", out var license ) );
-            // Assert.True( license is LicenseLease );
-
-            Assert.False( this.LicenseFactory.TryCreate( "http://hello.world", out _, out _ ) );
+        /// <summary>
+        /// Tests that a URL which cannot be a license server is refused with the reason, rather than being left to
+        /// fail later as an unparsable license key.
+        /// </summary>
+        [Theory]
+        [InlineData( "https://license.test?user=x", "query string" )]
+        [InlineData( "ftp://license.test", "HTTP and HTTPS" )]
+        [InlineData( "file:///c:/licenses", "HTTP and HTTPS" )]
+        [InlineData( "https://alice:secret@license.test", "user name" )]
+        public void MalformedUrlIsRefusedWithItsReason( string url, string expectedMessageSubstring )
+        {
+            Assert.False( this.LicenseFactory.TryCreate( url, out var license, out var errorMessage ) );
+            Assert.Null( license );
+            Assert.Contains( expectedMessageSubstring, errorMessage, StringComparison.Ordinal );
         }
 
         /// <summary>
@@ -108,7 +133,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [Theory]
         [InlineData( TestLicensingAuthorityProvider.DsaTestKeyId )]
         [InlineData( TestLicensingAuthorityProvider.ECDsaTestKeyId )]
-        public void LicenseKeyWithInvalidSignatureFails( byte signatureKeyId )
+        public async Task LicenseKeyWithInvalidSignatureFails( byte signatureKeyId )
         {
             var licenseKey = new LicenseKeyDataBuilder
             {
@@ -119,9 +144,10 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
             Assert.Null( errorMessage );
             Assert.True( license is License );
 
-            Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var data, out errorMessage ) );
-            Assert.Null( data );
-            Assert.NotEmpty( errorMessage );
+            var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
+            Assert.False( consumptionResult.IsSuccess );
+            Assert.Null( consumptionResult.Properties );
+            Assert.NotEmpty( consumptionResult.ErrorMessage );
         }
     }
 }

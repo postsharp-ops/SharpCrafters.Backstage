@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Audit;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.Repositories;
 using SharpCrafters.Backstage.Telemetry;
@@ -38,6 +39,8 @@ namespace SharpCrafters.Backstage.Serialization;
 [JsonSerializable( typeof(IdeExtensionsStatusConfiguration) )]
 [JsonSerializable( typeof(RssClientConfiguration) )]
 [JsonSerializable( typeof(LicenseAuditConfiguration) )]
+[JsonSerializable( typeof(LicenseServerConfiguration) )]
+[JsonSerializable( typeof(LeaseConfiguration) )]
 [JsonSerializable( typeof(TelemetryConsent) )]
 [JsonSerializable( typeof(ReportingStatus) )]
 [JsonSerializable( typeof(RssFeed) )]
@@ -45,6 +48,7 @@ namespace SharpCrafters.Backstage.Serialization;
 [JsonSerializable( typeof(ImmutableDictionary<string, DateTime>) )]
 [JsonSerializable( typeof(ImmutableDictionary<string, ReportingStatus>) )]
 [JsonSerializable( typeof(ImmutableDictionary<string, ToastNotificationConfiguration>) )]
+[JsonSerializable( typeof(ImmutableDictionary<string, LeaseConfiguration>) )]
 [JsonSerializable( typeof(ImmutableDictionary<long, DateTime>) )]
 [JsonSerializable( typeof(ImmutableDictionary<string, ImmutableArray<string?>>) )]
 [JsonSerializable( typeof(ImmutableArray<string>) )]
@@ -55,6 +59,7 @@ namespace SharpCrafters.Backstage.Serialization;
 [JsonSerializable( typeof(Dictionary<string, DateTime>) )]
 [JsonSerializable( typeof(Dictionary<string, ReportingStatus>) )]
 [JsonSerializable( typeof(Dictionary<string, ToastNotificationConfiguration>) )]
+[JsonSerializable( typeof(Dictionary<string, LeaseConfiguration>) )]
 [JsonSerializable( typeof(Dictionary<long, DateTime>) )]
 [JsonSerializable( typeof(Dictionary<string, ImmutableArray<string?>>) )]
 

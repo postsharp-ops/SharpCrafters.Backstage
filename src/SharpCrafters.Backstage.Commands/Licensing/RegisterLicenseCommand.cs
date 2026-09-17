@@ -4,25 +4,36 @@
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Registration;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Commands.Licensing;
 
-internal class RegisterLicenseCommand : BaseCommand<RegisterLicenseCommandSettings>
+/// <summary>
+/// Registers a license string, which is either a license key or the URL of a license server.
+/// </summary>
+/// <remarks>
+/// The command is asynchronous because registering the URL of a license server contacts it, so that the user learns
+/// at once whether the server answers and has a licence for them.
+/// </remarks>
+internal class RegisterLicenseCommand : BaseAsyncCommand<RegisterLicenseCommandSettings>
 {
     // We no longer collect license activations reports.
     // We only collect license usage reports.
 
-    protected override void Execute( ExtendedCommandContext context, RegisterLicenseCommandSettings settings )
+    protected override async Task ExecuteAsync( ExtendedCommandContext context, RegisterLicenseCommandSettings settings )
     {
         var service = context.ServiceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
 
-        var result = service.RegisterLicense( settings.License );
+        var result = await service.RegisterLicenseAsync( settings.License );
 
         if ( !result.IsSuccess )
         {
             throw new CommandException( result.ErrorMessage );
         }
 
-        context.Console.WriteSuccess( $"The license key '{settings.License}' has been registered." );
+        context.Console.WriteSuccess(
+            result.RegisteredLicense.LicenseServerUrl == null
+                ? $"The license key '{settings.License}' has been registered."
+                : $"The license server '{result.RegisteredLicense.LicenseServerUrl}' has been registered." );
     }
 }

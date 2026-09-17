@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tests.Licensing.Licenses;
 using SharpCrafters.Backstage.Tests.Licensing.LicenseSources;
 using System;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -53,13 +54,13 @@ public abstract class LicenseConsumptionServiceTestsBase : LicensingTestsBase
         return new LicenseConsumptionService( this.ServiceProvider, licenseSources );
     }
 
-    private protected static void AssertCanConsume(
+    private protected static async Task AssertCanConsumeAsync(
         ILicenseConsumptionService service,
         LicenseRequirement requirement,
         bool expectedCanConsume )
     {
-        var consumer = service.CreateConsumer();
-        var actualCanConsume = consumer.TryConsume( requirement );
+        var consumer = await service.CreateConsumerAsync();
+        var actualCanConsume = await consumer.TryConsumeAsync( requirement );
         Assert.Equal( expectedCanConsume, actualCanConsume );
     }
 }

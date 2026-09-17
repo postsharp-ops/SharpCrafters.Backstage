@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
 {
@@ -22,11 +23,16 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         LicenseSourceKind Kind { get; }
 
         /// <summary>
-        /// Gets a license, if available and valid. <paramref name="reportMessage"/> is called when the license key is invalid.
+        /// Gets the licenses of the source, if any. <paramref name="reportMessage"/> is called for each one that is
+        /// present but unusable.
         /// </summary>
-        /// <param name="reportMessage">Action to be called when the license is invalid.</param>
-        /// <returns>The license or <c>null</c>.</returns>
-        IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage );
+        /// <param name="reportMessage">Action to be called when a license is invalid.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>The licenses of the source, which may be none.</returns>
+        /// <remarks>
+        /// The sequence is asynchronous because a license server is contacted over HTTP while it is enumerated.
+        /// </remarks>
+        IAsyncEnumerable<ILicense> GetLicensesAsync( Action<LicensingMessage> reportMessage, CancellationToken cancellationToken = default );
 
         /// <summary>
         /// Event raised when the current source has changed.
@@ -36,8 +42,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         LicenseSourcePriority Priority { get; }
 
         /// <summary>
-        /// Determines whether the <see cref="ILicense.CanBeRegistered"/> and <see cref="ILicense.TryGetRegistrationProperties"/>
-        /// methods are supported.
+        /// Determines whether the <see cref="ILicense.GetRegistrationBlockerAsync"/> and
+        /// <see cref="ILicense.GetRegistrationPropertiesAsync"/> methods are supported.
         /// </summary>
         bool SupportsRegistration { get; }
     }

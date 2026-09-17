@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -38,15 +39,15 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Consumption
                 buildDate,
                 isThirdParty ? "The Corp" : "PostSharp Technologies" );
 
-        private void AssertPasses( IApplicationInfo applicationInfo, string? licenseKey = null ) => this.TestCore( applicationInfo, true, null, licenseKey );
+        private Task AssertPassesAsync( IApplicationInfo applicationInfo, string? licenseKey = null ) => this.TestCore( applicationInfo, true, null, licenseKey );
 
-        private void AssertFails(
+        private Task AssertFailsAsync(
             IApplicationInfo applicationInfo,
             IComponentInfo? infringingComponent = null,
             string? licenseKey = null )
             => this.TestCore( applicationInfo, false, infringingComponent, licenseKey );
 
-        private void TestCore(
+        private async Task TestCore(
             IApplicationInfo applicationInfo,
             bool mustSucceed,
             IComponentInfo? infringingComponent,
@@ -63,11 +64,11 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Consumption
                 serviceProvider,
                 [new ExplicitLicenseSource( licenseKey, LicenseSourceKind.Test, serviceProvider )] );
 
-            var licenseConsumer = licenseConsumingService.CreateConsumer(
+            var licenseConsumer = await licenseConsumingService.CreateConsumerAsync(
                 LicenseConsumptionOptions.Default with { SubscriptionGracePeriod = _subscriptionGracePeriod },
                 messages.Add );
 
-            var canConsume = licenseConsumer.TryConsume( LicenseRequirement.Any );
+            var canConsume = await licenseConsumer.TryConsumeAsync( LicenseRequirement.Any );
 
             Assert.Equal( mustSucceed, canConsume );
 
@@ -80,60 +81,60 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Consumption
         }
 
         [Fact]
-        public void PassesWithValidSubscription()
+        public async Task PassesWithValidSubscription()
         {
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate );
-            this.AssertPasses( applicationInfo );
+            await this.AssertPassesAsync( applicationInfo );
         }
 
         [Fact]
-        public void FailsWithInvalidSubscription()
+        public async Task FailsWithInvalidSubscription()
         {
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ) );
-            this.AssertFails( applicationInfo, applicationInfo );
+            await this.AssertFailsAsync( applicationInfo, applicationInfo );
         }
 
         [Fact]
-        public void PassesWithValidSubscriptionForComponentRequiringSubscription()
+        public async Task PassesWithValidSubscriptionForComponentRequiringSubscription()
         {
             var componentInfo = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, false );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, componentInfo );
-            this.AssertPasses( applicationInfo );
+            await this.AssertPassesAsync( applicationInfo );
         }
 
         [Fact]
-        public void FailsWithInvalidSubscriptionForComponentRequiringSubscription()
+        public async Task FailsWithInvalidSubscriptionForComponentRequiringSubscription()
         {
             var componentInfo = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ), false );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, componentInfo );
-            this.AssertFails( applicationInfo, componentInfo );
+            await this.AssertFailsAsync( applicationInfo, componentInfo );
         }
 
         [Fact]
-        public void PassesWithInvalidSubscriptionForComponentNotRequiringSubscription()
+        public async Task PassesWithInvalidSubscriptionForComponentNotRequiringSubscription()
         {
             var componentInfo = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ), true );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, componentInfo );
-            this.AssertPasses( applicationInfo );
+            await this.AssertPassesAsync( applicationInfo );
         }
 
         [Fact]
-        public void FailsWithMultipleComponentsAndValidApplication()
+        public async Task FailsWithMultipleComponentsAndValidApplication()
         {
             var componentInfo1 = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ), false );
             var componentInfo2 = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, false );
             var componentInfo3 = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ), true );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, componentInfo1, componentInfo2, componentInfo3 );
-            this.AssertFails( applicationInfo, componentInfo1 );
+            await this.AssertFailsAsync( applicationInfo, componentInfo1 );
         }
 
         [Fact]
-        public void FailsWithMultipleComponentsAndInvalidApplication()
+        public async Task FailsWithMultipleComponentsAndInvalidApplication()
         {
             var componentInfo1 = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate, false );
             var componentInfo2 = CreateComponentInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ), true );
             var applicationInfo = CreateApplicationInfo( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ), componentInfo1, componentInfo2 );
-            this.AssertFails( applicationInfo, applicationInfo );
+            await this.AssertFailsAsync( applicationInfo, applicationInfo );
         }
     }
 }

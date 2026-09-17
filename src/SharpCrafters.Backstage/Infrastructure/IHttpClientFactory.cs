@@ -15,8 +15,15 @@ namespace SharpCrafters.Backstage.Infrastructure;
 public interface IHttpClientFactory : IBackstageService
 {
     /// <summary>
-    /// Creates a new instance of <see cref="HttpClient"/>.
+    /// Creates a new instance of <see cref="HttpClient"/> with <see cref="HttpClientOptions.Default"/>.
     /// </summary>
     /// <returns>The new object of <see cref="HttpClient"/>.</returns>
     HttpClient Create();
+
+    /// <summary>
+    /// Creates a new instance of <see cref="HttpClient"/> with the given options.
+    /// </summary>
+    /// <param name="options">The options of the client, such as whether it authenticates with the credentials of the current user.</param>
+    /// <returns>The new object of <see cref="HttpClient"/>.</returns>
+    HttpClient Create( HttpClientOptions options );
 }

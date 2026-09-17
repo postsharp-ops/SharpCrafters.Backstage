@@ -91,6 +91,13 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public abstract LicenseProduct EvaluationProduct { get; }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The default is <see cref="EvaluationProduct"/>, which is the premium product of the family and therefore the
+    /// pool that a license server of this product family holds.
+    /// </remarks>
+    public virtual LicenseProduct? LicenseServerProduct => this.EvaluationProduct;
+
+    /// <inheritdoc />
     public abstract LicenseProduct? CommunityProduct { get; }
 
     /// <inheritdoc />

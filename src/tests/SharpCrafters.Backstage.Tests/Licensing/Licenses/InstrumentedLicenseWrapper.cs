@@ -4,10 +4,10 @@
 
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
-using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
 {
@@ -22,22 +22,16 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
             this._license = license;
         }
 
-        // MaybeNullWhenAttribute cannot be used here since the Metalama.Backstage assembly shares internals with this assembly.
-        // That causes CS0433 error. (Same type defined in two referenced assemblies.)
-        public bool CanBeRegistered( [MaybeNullWhen( true )] out string errorMessage ) => throw new NotImplementedException();
+        public ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
+            => throw new NotImplementedException();
 
-        public bool TryGetConsumptionProperties( /* [MaybeNullWhenAttribute( false )] */
+        public ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(
             LicenseConsumptionOptions options,
-            out LicenseConsumptionProperties licenseProperties,
-            out string errorMessage )
-            => this._license.TryGetConsumptionProperties( options, out licenseProperties!, out errorMessage! );
+            CancellationToken cancellationToken = default )
+            => this._license.GetConsumptionPropertiesAsync( options, cancellationToken );
 
-        // MaybeNullWhenAttribute cannot be used here since the Metalama.Backstage assembly shares internals with this assembly.
-        // That causes CS0433 error. (Same type defined in two referenced assemblies.)
-        public bool TryGetRegistrationProperties( /* [MaybeNullWhenAttribute( false )] */
-            out LicenseRegistrationProperties licenseProperties,
-            out string errorMessage )
-            => this._license.TryGetRegistrationProperties( out licenseProperties!, out errorMessage! );
+        public ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default )
+            => this._license.GetRegistrationPropertiesAsync( cancellationToken );
 
         public void ReportUse()
         {

@@ -40,8 +40,8 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         if ( requireLicense )
         {
             var licensing = this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
-            var consumer = licensing.CreateConsumer();
-            consumer.TryConsume( new AnyLicenseRequirement() );
+            var consumer = await licensing.CreateConsumerAsync();
+            await consumer.TryConsumeAsync( new AnyLicenseRequirement() );
         }
 
         // The telemetry notification is linked to the first activation of telemetry, from
@@ -152,7 +152,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         this.UserDeviceDetection.IsInteractiveDevice = true;
 
         // Register a license key.
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
 
         // Move the clock.
         this.Time.Set( LicenseKeyProvider.DefaultSubscriptionExpirationDate - TimeSpan.FromDays( daysBeforeExpiration ) );

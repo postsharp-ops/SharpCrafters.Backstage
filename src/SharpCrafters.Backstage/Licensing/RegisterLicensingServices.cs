@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
@@ -43,6 +44,9 @@ public static class RegisterLicensingServices
         {
             serviceProviderBuilder.AddSingleton<ILicenseAuditManager>( serviceProvider => new LicenseAuditManager( serviceProvider ) );
         }
+
+        serviceProviderBuilder.AddSingleton( serviceProvider => new LicenseLeaseStore( serviceProvider ) );
+        serviceProviderBuilder.AddSingleton( serviceProvider => new LicenseServerClient( serviceProvider, options ) );
 
         serviceProviderBuilder.AddSingleton( serviceProvider => LicenseConsumptionServiceFactory.Create( serviceProvider, options ) );
         serviceProviderBuilder.AddSingleton<ILicenseRegistrationService>( serviceProvider => new LicenseRegistrationService( serviceProvider ) );

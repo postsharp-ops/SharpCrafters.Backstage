@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Tests.Licensing.LicenseSources;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,7 +17,7 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
         : base( logger ) { }
 
     [Fact]
-    public void FirstOfDifferentLicensesFromMultipleSourcesUsedForAllowedFeature()
+    public async Task FirstOfDifferentLicensesFromMultipleSourcesUsedForAllowedFeature()
     {
         var license1 = this.CreateInstrumentedLicenseWrapper( LicenseKeyProvider.MetalamaCommunity );
         var source1 = new TestLicenseSource( "source1", license1 );
@@ -25,7 +26,7 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
         var source2 = new TestLicenseSource( "source2", license2 );
 
         var service = this.CreateConsumptionService( source1, source2 );
-        AssertCanConsume( service, LicenseRequirement.Any, true );
+        await AssertCanConsumeAsync( service, LicenseRequirement.Any, true );
         Assert.Equal( 1, license1.NumberOfAuditReports );
         Assert.Equal( 0, license2.NumberOfAuditReports );
         Assert.Equal( 1, source1.NumberOfAuditReports );
@@ -33,7 +34,7 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
     }
 
     [Fact]
-    public void OneOfDifferentLicensesFromMultipleSourcesUsedForForbiddenFeature()
+    public async Task OneOfDifferentLicensesFromMultipleSourcesUsedForForbiddenFeature()
     {
         var license1 = this.CreateInstrumentedLicenseWrapper( LicenseKeyProvider.PostSharpEssentials );
         var source1 = new TestLicenseSource( "source1", license1 );
@@ -42,7 +43,7 @@ public sealed class LicenseUsageTests : LicenseConsumptionServiceTestsBase
         var source2 = new TestLicenseSource( "source2", license2 );
 
         var service = this.CreateConsumptionService( source1, source2 );
-        AssertCanConsume( service, new DelegateLicenseRequirement( context => context.License.LicenseProduct == LicenseProduct.MetalamaProfessional ), true );
+        await AssertCanConsumeAsync( service, new DelegateLicenseRequirement( context => context.License.LicenseProduct == LicenseProduct.MetalamaProfessional ), true );
         Assert.Equal( 0, license1.NumberOfAuditReports );
         Assert.Equal( 1, license2.NumberOfAuditReports );
         Assert.Equal( 1, source1.NumberOfAuditReports );

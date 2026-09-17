@@ -39,11 +39,15 @@ public static class BackstageCommandFactory
 
                         license.AddCommand<RegisterLicenseCommand>( "register" )
                             .WithData( options )
-                            .WithDescription( "Registers a new license key." );
+                            .WithDescription( "Registers a new license key or license server URL." );
 
                         license.AddCommand<UnregisterCommand>( "unregister" )
                             .WithData( options )
-                            .WithDescription( "Unregisters all license keys." );
+                            .WithDescription( "Unregisters all license keys and license servers." );
+
+                        license.AddCommand<TestLicenseServerCommand>( "test-server" )
+                            .WithData( options )
+                            .WithDescription( "Contacts a license server and prints the license it leases, without registering it." );
 
                         license.AddCommand<RegisterTrialCommand>( "try" )
                             .WithData( options )

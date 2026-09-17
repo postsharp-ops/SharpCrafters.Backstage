@@ -6,10 +6,10 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Licenses;
-using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 
@@ -30,53 +30,49 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
     }
 
-    public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
+#pragma warning disable CS1998 // The method has no await: the decision costs no I/O, but the interface is asynchronous
+                              // because another source fetches its licences from a license server.
+    public async IAsyncEnumerable<ILicense> GetLicensesAsync(
+        Action<LicensingMessage> reportMessage,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default )
+#pragma warning restore CS1998
     {
         if ( this._applicationInfo.IsUnattendedProcess( this._serviceProvider.GetLoggerFactory() ) )
         {
             this._logger.Trace?.Log( "Providing an unattended process license." );
 
-            return [this];
+            yield return this;
         }
         else
         {
             this._logger.Trace?.Log( "The process is attended. Not providing an unattended process license." );
-
-            return [];
         }
     }
 
-    public bool CanBeRegistered( [MaybeNullWhen( true )] out string errorMessage )
+    public ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
         => throw new NotSupportedException( "Unattended license source doesn't support license registration." );
 
-    bool ILicense.TryGetConsumptionProperties(
+    ValueTask<LicenseConsumptionResult> ILicense.GetConsumptionPropertiesAsync(
         LicenseConsumptionOptions options,
-        [MaybeNullWhen( false )] out LicenseConsumptionProperties licenseConsumptionProperties,
-        [MaybeNullWhen( true )] out string errorMessage )
-    {
-        licenseConsumptionProperties = new LicenseConsumptionProperties(
-            LicenseProduct.MetalamaProfessional,
-            LicenseType.Unattended,
-            null,
-            "Unattended Process License",
-            new Version( 0, 0 ),
-            null,
-            false,
-            false,
-            null,
-            null,
-            SubscriptionStatus.None,
-            LicenseGeneration.Current,
-            ServicingPhase.LongTerm );
+        CancellationToken cancellationToken )
+        => new(
+            LicenseConsumptionResult.Success(
+                new LicenseConsumptionProperties(
+                    LicenseProduct.MetalamaProfessional,
+                    LicenseType.Unattended,
+                    null,
+                    "Unattended Process License",
+                    new Version( 0, 0 ),
+                    null,
+                    false,
+                    false,
+                    null,
+                    null,
+                    SubscriptionStatus.None,
+                    LicenseGeneration.Current,
+                    ServicingPhase.LongTerm ) ) );
 
-        errorMessage = null;
-
-        return true;
-    }
-
-    bool ILicense.TryGetRegistrationProperties(
-        [MaybeNullWhen( false )] out LicenseRegistrationProperties licenseProperties,
-        [MaybeNullWhen( true )] out string errorMessage )
+    ValueTask<LicenseRegistrationPropertiesResult> ILicense.GetRegistrationPropertiesAsync( CancellationToken cancellationToken )
         => throw new NotSupportedException( "Unattended license source doesn't support license registration." );
 
     public void ReportUse() { }

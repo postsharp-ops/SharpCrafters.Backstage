@@ -4,9 +4,10 @@
 
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,16 +19,17 @@ namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
             : base( logger ) { }
 
         [Fact]
-        public void OneLicenseStringPasses()
+        public async Task OneLicenseStringPasses()
         {
             ExplicitLicenseSource source = new( LicenseKeyProvider.MetalamaProfessionalBusiness, LicenseSourceKind.Test, this.ServiceProvider );
 
-            var license = source.GetLicenses( _ => { } ).Single();
+            var license = await source.GetLicensesAsync( _ => { } ).DrainSingleAsync();
             Assert.NotNull( license );
 
-            var dataParsed = license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var data, out var errorMessage );
-            Assert.True( dataParsed );
-            Assert.Null( errorMessage );
+            var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
+            Assert.True( consumptionResult.IsSuccess );
+            Assert.Null( consumptionResult.ErrorMessage );
+            var data = consumptionResult.Properties;
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalBusiness, data!.LicenseString );
         }
 
@@ -37,12 +39,12 @@ namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
         /// likely mistake and must be reported as such. See issue #1859.
         /// </summary>
         [Fact]
-        public void MalformedLicenseStringIsReportedAsInvalid()
+        public async Task MalformedLicenseStringIsReportedAsInvalid()
         {
             ExplicitLicenseSource source = new( "NOT-A-REAL-KEY", LicenseSourceKind.Test, this.ServiceProvider );
 
             var messages = new List<LicensingMessage>();
-            var licenses = source.GetLicenses( messages.Add ).ToList();
+            var licenses = await source.GetLicensesAsync( messages.Add ).DrainAsync();
 
             Assert.Empty( licenses );
 

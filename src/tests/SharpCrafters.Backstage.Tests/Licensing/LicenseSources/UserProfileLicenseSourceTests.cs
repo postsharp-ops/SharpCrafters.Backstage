@@ -3,7 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.Testing;
 using System.IO.Abstractions.TestingHelpers;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,21 +19,21 @@ namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
             : base( logger ) { }
 
         [Fact]
-        public void NonexistentFileIsReported()
+        public async Task NonexistentFileIsReported()
         {
             UserProfileLicenseSource source = new( this.ServiceProvider );
 
-            Assert.Empty( source.GetLicenses( _ => { } ) );
+            Assert.Empty( await source.GetLicensesAsync( _ => { } ).DrainAsync() );
         }
 
         [Fact]
-        public void EmptyFilePasses()
+        public async Task EmptyFilePasses()
         {
             this.FileSystem.Mock.AddFile( _licenseFilePath, new MockFileData( "" ) );
 
             UserProfileLicenseSource source = new( this.ServiceProvider );
 
-            Assert.Empty( source.GetLicenses( _ => { } ) );
+            Assert.Empty( await source.GetLicensesAsync( _ => { } ).DrainAsync() );
         }
     }
 }

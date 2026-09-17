@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -46,10 +47,23 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 return false;
             }
 
-            if ( Uri.IsWellFormedUriString( licenseString, UriKind.Absolute ) )
+            // ReSharper disable once RedundantSuppressNullableWarningExpression
+            if ( LicenseServerUrl.IsLicenseServerUrl( licenseString!, out var urlErrorMessage ) )
             {
-                // TODO License Server Support
-                errorMessage = "License server is not yet supported.";
+                // The lease is not acquired here: this method is called wherever a license string is turned into a
+                // license, including where no network call is acceptable, so the server is contacted only when the
+                // license is consumed or registered.
+                // ReSharper disable once RedundantSuppressNullableWarningExpression
+                license = new LeasedLicense( licenseString!, this._services );
+                errorMessage = null;
+
+                return true;
+            }
+            else if ( Uri.IsWellFormedUriString( licenseString, UriKind.Absolute ) )
+            {
+                // A well-formed absolute URL is not a license key either, so the reason it is not a valid license
+                // server URL is more useful to the user than letting it fail later as an unparsable key.
+                errorMessage = urlErrorMessage;
                 this._logger.Error?.Log( errorMessage );
                 license = null;
 

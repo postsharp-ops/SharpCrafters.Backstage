@@ -1,0 +1,262 @@
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
+// Refer to LICENSE.md in the repository root for complete details.
+
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
+using SharpCrafters.Backstage.Licensing.Registration;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SharpCrafters.Backstage.Licensing.Licenses;
+
+/// <summary>
+/// A licence leased from a license server for a limited period, as opposed to a <see cref="License"/>, which is a
+/// licence key registered once and valid until it expires.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Everything that a licence key means — its signature, its revocation, its validity dates, its subscription, its
+/// product — is decided by an inner <see cref="License"/> built from the leased key, so none of those rules is stated
+/// twice. What this class adds is the lease itself, the rule that a leased key must be eligible for a license server,
+/// and the policy on an insecure server.
+/// </para>
+/// <para>
+/// The lease is resolved at most once per instance. The consumption service asks a licence that failed for its
+/// registration properties in order to name it in the message, so without the memo a failed acquisition would contact
+/// the server twice for one consumer.
+/// </para>
+/// </remarks>
+internal sealed class LeasedLicense : AuditableLicense
+{
+    private readonly IServiceProvider _services;
+    private readonly LicenseServerClient _client;
+    private readonly IEnvironmentVariableProvider _environmentVariableProvider;
+    private readonly ProductProfile _productProfile;
+    private readonly ILicenseProductCatalog _catalog;
+
+    /// <summary>
+    /// What resolving the lease produced, computed on the first call and reused afterwards.
+    /// </summary>
+    private LicenseLeaseResult? _resolution;
+
+    /// <summary>
+    /// The reason the server must not be contacted at all, once one has been found.
+    /// </summary>
+    /// <remarks>
+    /// The policy on an insecure server is decided while the licence is consumed, but the consumption service then
+    /// asks a licence that failed for its registration properties in order to name it in the message. Without this,
+    /// that second call would contact the very server the policy just refused, and the user name and the machine name
+    /// would travel in cleartext anyway.
+    /// </remarks>
+    private string? _blocker;
+
+    private License? _innerLicense;
+
+    internal LeasedLicense( string licenseServerUrl, IServiceProvider services ) : base( services )
+    {
+        this.LicenseServerUrl = licenseServerUrl;
+        this._services = services;
+        this._client = services.GetRequiredBackstageService<LicenseServerClient>();
+        this._environmentVariableProvider = services.GetRequiredBackstageService<IEnvironmentVariableProvider>();
+        this._productProfile = services.GetRequiredBackstageService<ProductProfile>();
+        this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
+    }
+
+    /// <summary>
+    /// Gets the URL of the license server that leases this licence.
+    /// </summary>
+    public string LicenseServerUrl { get; }
+
+    /// <inheritdoc />
+    public override async ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(
+        LicenseConsumptionOptions options,
+        CancellationToken cancellationToken = default )
+    {
+        // The policy on an insecure server is applied before the lease is acquired, so that an administrator who
+        // forbids cleartext never has the user name and the machine name sent over one.
+        if ( this.GetInsecureServerBlocker( options ) is { } insecureServerBlocker )
+        {
+            this._blocker = insecureServerBlocker;
+
+            return LicenseConsumptionResult.Failure( insecureServerBlocker );
+        }
+
+        var leaseResult = await this.ResolveAsync( false, cancellationToken );
+
+        if ( !leaseResult.IsSuccess )
+        {
+            return LicenseConsumptionResult.Failure( leaseResult.ErrorMessage! );
+        }
+
+        var innerResult = await this.GetInnerLicense( leaseResult.Lease! ).GetConsumptionPropertiesAsync( options, cancellationToken );
+
+        if ( !innerResult.IsSuccess )
+        {
+            return innerResult;
+        }
+
+        if ( !this.IsLicenseServerEligible( leaseResult.Lease! ) )
+        {
+            // The equivalent of PostSharp's PS0149. It is reported as a message and not raised, so that another
+            // licence can still satisfy the requirement.
+            return LicenseConsumptionResult.Failure(
+                $"the license key leased from '{this.LicenseServerUrl}' is not eligible for a license server" );
+        }
+
+        return innerResult;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Registration contacts the server rather than reading the stored lease, so that registering a URL tells the user
+    /// at once whether the server answers and has a licence for them. This is PostSharp's <c>TestLicenseServer</c>.
+    /// </remarks>
+    public override async ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default )
+    {
+        var leaseResult = await this.ResolveAsync( true, cancellationToken );
+
+        if ( !leaseResult.IsSuccess )
+        {
+            return LicenseRegistrationPropertiesResult.Failure( leaseResult.ErrorMessage! );
+        }
+
+        var innerResult = await this.GetInnerLicense( leaseResult.Lease! ).GetRegistrationPropertiesAsync( cancellationToken );
+
+        if ( !innerResult.IsSuccess )
+        {
+            return innerResult;
+        }
+
+        return LicenseRegistrationPropertiesResult.Success( ToLicenseServerProperties( innerResult.Properties!, this.LicenseServerUrl, leaseResult.Lease! ) );
+    }
+
+    /// <inheritdoc />
+    public override async ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
+    {
+        var consumptionResult = await this.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.ForRegistration, cancellationToken );
+
+        if ( !consumptionResult.IsSuccess )
+        {
+            return consumptionResult.ErrorMessage;
+        }
+
+#pragma warning disable CS0612 // Type or member is obsolete
+        if ( consumptionResult.Properties!.IsRedistributable )
+#pragma warning restore CS0612
+        {
+            return "this is a redistribution license key";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Turns the registration properties of the leased licence key into those of the license server, so that what is
+    /// registered and listed is the server and not the key that it happens to lease today.
+    /// </summary>
+    internal static LicenseRegistrationProperties ToLicenseServerProperties(
+        LicenseRegistrationProperties leasedKeyProperties,
+        string licenseServerUrl,
+        LicenseLease lease )
+        => leasedKeyProperties with
+        {
+            LicenseString = licenseServerUrl,
+            LicenseServerUrl = licenseServerUrl,
+            Lease = new LicenseLeaseProperties( lease.StartTime, lease.EndTime, lease.RenewTime ),
+
+            // A registered URL is stored in the group of the first version that understands a license server, whatever
+            // the product of the licence leased today, which the server may change tomorrow.
+            MinMetalamaVersion = LicensingConstants.MinimalLicenseServerVersion
+        };
+
+    private async ValueTask<LicenseLeaseResult> ResolveAsync( bool forceDownload, CancellationToken cancellationToken )
+    {
+        if ( this._blocker is { } blocker )
+        {
+            return LicenseLeaseResult.Failure( blocker );
+        }
+
+        if ( this._resolution is { } resolution )
+        {
+            return resolution;
+        }
+
+        var product = this._catalog.LicenseServerProduct;
+
+        var result = forceDownload
+            ? await this._client.DownloadLeaseAsync( this.LicenseServerUrl, product, cancellationToken )
+            : await this._client.GetLeaseAsync( this.LicenseServerUrl, product, cancellationToken );
+
+        this._resolution = result;
+
+        return result;
+    }
+
+    private License GetInnerLicense( LicenseLease lease ) => this._innerLicense ??= new License( lease.LicenseKey, this._services );
+
+    /// <summary>
+    /// Determines whether the leased licence key may be leased at all.
+    /// </summary>
+    /// <remarks>
+    /// The rule is that of the licence key itself, which
+    /// <see cref="LicenseKeyDataExtensions.ToLicenseRegistrationProperties"/> computes: the explicit field of the key
+    /// if it has one, otherwise a per-usage key is refused, otherwise an identifier in the range issued before 5.0.
+    /// </remarks>
+    private bool IsLicenseServerEligible( LicenseLease lease )
+        => LicenseKeyData.TryDeserialize( lease.LicenseKey, out var keyData, out _ )
+           && keyData.ToLicenseRegistrationProperties( this._catalog, lease.LicenseKey ).LicenseServerEligible;
+
+    /// <summary>
+    /// Gets the reason the licence must not be used because its server is reached over an insecure URL, or
+    /// <see langword="null"/> when it may be used.
+    /// </summary>
+    /// <remarks>
+    /// A warning is reported through the logger rather than through the result, because the result is what makes the
+    /// licence unusable and a warning must not. The consumption service logs the message of a licence it rejects; a
+    /// licence it accepts reports nothing, so the warning is logged here.
+    /// </remarks>
+    private string? GetInsecureServerBlocker( LicenseConsumptionOptions options )
+    {
+        if ( !InsecureLicenseServerHandlingParser.IsInsecure( this.LicenseServerUrl ) )
+        {
+            return null;
+        }
+
+        var handling = options.InsecureLicenseServerHandling
+                       ?? InsecureLicenseServerHandlingParser.Parse(
+                           this._environmentVariableProvider.GetEnvironmentVariable(
+                               this._productProfile.GetEnvironmentVariableName( InsecureLicenseServerHandlingParser.SettingName ) ) );
+
+        var message =
+            $"the license server '{this.LicenseServerUrl}' is reached over HTTP, so the name of the user and the name of the machine are transmitted in cleartext. Use an HTTPS URL, or set {this._productProfile.GetEnvironmentVariableName( InsecureLicenseServerHandlingParser.SettingName )} to Allow";
+
+        switch ( handling )
+        {
+            case InsecureLicenseServerHandling.Allow:
+                return null;
+
+            case InsecureLicenseServerHandling.Error:
+                return message;
+
+            default:
+                this.Logger.Warning?.Log( message );
+
+                return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public override bool Equals( object? obj )
+        => obj is LeasedLicense other && string.Equals( this.LicenseServerUrl, other.LicenseServerUrl, StringComparison.OrdinalIgnoreCase );
+
+    /// <inheritdoc />
+    public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode( this.LicenseServerUrl );
+
+    /// <inheritdoc />
+    public override string ToString() => this.LicenseServerUrl;
+}

@@ -10,10 +10,12 @@ using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -87,11 +89,11 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// Reads the license keys of the user profile, which is the path that a compilation takes.
     /// </summary>
     /// <returns>The license keys that the running version consumes, and the messages that reading them reported.</returns>
-    private (List<ILicense> Licenses, List<LicensingMessage> Messages) GetLicensesFromUserProfile()
+    private async Task<(List<ILicense> Licenses, List<LicensingMessage> Messages)> GetLicensesFromUserProfileAsync()
     {
         var messages = new List<LicensingMessage>();
         var source = new UserProfileLicenseSource( this.ServiceProvider );
-        var licenses = source.GetLicenses( messages.Add ).ToList();
+        var licenses = await source.GetLicensesAsync( messages.Add ).DrainAsync();
 
         foreach ( var message in messages )
         {
@@ -130,11 +132,11 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// Attempts to consume a license from the user profile.
     /// </summary>
     /// <returns>Whether a license was granted, and the messages that the consumption reported.</returns>
-    private (bool CanConsume, List<LicensingMessage> Messages) TryConsumeFromUserProfile()
+    private async Task<(bool CanConsume, List<LicensingMessage> Messages)> TryConsumeFromUserProfileAsync()
     {
         var messages = new List<LicensingMessage>();
         var service = new LicenseConsumptionService( this.ServiceProvider, [new UserProfileLicenseSource( this.ServiceProvider )] );
-        var canConsume = service.CreateConsumer( LicenseConsumptionOptions.Default, messages.Add ).TryConsume( LicenseRequirement.Any );
+        var canConsume = await (await service.CreateConsumerAsync( LicenseConsumptionOptions.Default, messages.Add )).TryConsumeAsync( LicenseRequirement.Any );
 
         foreach ( var message in messages )
         {
@@ -149,7 +151,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// consumed exactly as a license key of the <c>licenses</c> array is consumed.
     /// </summary>
     [Fact]
-    public void LicenseKeyOfSupportedGroupIsConsumed()
+    public async Task LicenseKeyOfSupportedGroupIsConsumed()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -158,7 +160,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (licenses, messages) = this.GetLicensesFromUserProfile();
+        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
 
         Assert.Single( licenses );
         Assert.Empty( messages );
@@ -173,7 +175,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// deserialized, reports no message and throws no exception.
     /// </summary>
     [Fact]
-    public void LicenseKeyOfUnsupportedGroupIsIgnored()
+    public async Task LicenseKeyOfUnsupportedGroupIsIgnored()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -182,7 +184,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (licenses, messages) = this.GetLicensesFromUserProfile();
+        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
 
         Assert.Empty( licenses );
         Assert.Empty( messages );
@@ -194,7 +196,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// are read together, and that an unsupported group beside them changes nothing.
     /// </summary>
     [Fact]
-    public void SupportedGroupsAreReadBesideTheLegacyProperties()
+    public async Task SupportedGroupsAreReadBesideTheLegacyProperties()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -208,7 +210,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (licenses, messages) = this.GetLicensesFromUserProfile();
+        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
 
         Assert.Equal( 3, licenses.Count );
         Assert.Empty( messages );
@@ -225,7 +227,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// running product does not know, and that the license keys of the supported groups are still consumed.
     /// </summary>
     [Fact]
-    public void UnknownFutureGroupDoesNotPreventConsumption()
+    public async Task UnknownFutureGroupDoesNotPreventConsumption()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -237,7 +239,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
 
         this.EnsureServicesInitialized();
 
-        var (licenses, messages) = this.GetLicensesFromUserProfile();
+        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
 
         Assert.Single( licenses );
         Assert.Empty( messages );
@@ -277,9 +279,9 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// as it produces today, which means the legacy property and no group.
     /// </summary>
     [Fact]
-    public void RegisteringOrdinaryLicenseKeyCreatesNoGroup()
+    public async Task RegisteringOrdinaryLicenseKeyCreatesNoGroup()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
 
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 
@@ -296,11 +298,11 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// <c>licenses</c> array, which every released version reads.
     /// </summary>
     [Fact]
-    public void RegisteringLicenseKeyOfNewAuthorityCreatesGroup()
+    public async Task RegisteringLicenseKeyOfNewAuthorityCreatesGroup()
     {
         var licenseKey = CreateLicenseKeySignedByECDsaAuthority();
 
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( licenseKey ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( licenseKey )).IsSuccess );
 
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 
@@ -324,7 +326,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// that requires a version later than its own.
     /// </remarks>
     [Fact]
-    public void LicenseKeyOfUnsupportedGroupGrantsNoLicenseAndReportsNoMessage()
+    public async Task LicenseKeyOfUnsupportedGroupGrantsNoLicenseAndReportsNoMessage()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -333,7 +335,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (canConsume, messages) = this.TryConsumeFromUserProfile();
+        var (canConsume, messages) = await this.TryConsumeFromUserProfileAsync();
 
         Assert.False( canConsume );
         Assert.Empty( messages );
@@ -350,7 +352,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// running version can consume.
     /// </summary>
     [Fact]
-    public void UnsupportedGroupDoesNotPreventTheLegacyLicenseFromBeingConsumed()
+    public async Task UnsupportedGroupDoesNotPreventTheLegacyLicenseFromBeingConsumed()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -360,7 +362,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (canConsume, messages) = this.TryConsumeFromUserProfile();
+        var (canConsume, messages) = await this.TryConsumeFromUserProfileAsync();
 
         Assert.True( canConsume );
         Assert.Empty( messages );
@@ -380,7 +382,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// null license key.
     /// </remarks>
     [Fact]
-    public void MalformedGroupsAreIgnored()
+    public async Task MalformedGroupsAreIgnored()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -393,7 +395,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (canConsume, messages) = this.TryConsumeFromUserProfile();
+        var (canConsume, messages) = await this.TryConsumeFromUserProfileAsync();
 
         Assert.True( canConsume );
         Assert.Empty( messages );
@@ -413,7 +415,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// Metalama in order to consume a license key that does not exist.
     /// </remarks>
     [Fact]
-    public void GroupOfBlankLicenseKeysIsNotReportedAsRequiringLaterVersion()
+    public async Task GroupOfBlankLicenseKeysIsNotReportedAsRequiringLaterVersion()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -423,7 +425,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (canConsume, messages) = this.TryConsumeFromUserProfile();
+        var (canConsume, messages) = await this.TryConsumeFromUserProfileAsync();
 
         Assert.True( canConsume );
         Assert.Empty( messages );
@@ -439,12 +441,12 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// binds to it displays a stale value unless the change is notified.
     /// </remarks>
     [Fact]
-    public void ChangingTheConfigurationNotifiesTheUnsupportedVersions()
+    public async Task ChangingTheConfigurationNotifiesTheUnsupportedVersions()
     {
         var notifiedProperties = new List<string?>();
         this.LicenseRegistrationService.PropertyChanged += ( _, args ) => notifiedProperties.Add( args.PropertyName );
 
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
 
         Assert.Contains( nameof(ILicenseRegistrationService.UnsupportedRegisteredLicenseVersions), notifiedProperties );
     }
@@ -454,7 +456,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// running version does not support, as it removes the license keys of the legacy properties.
     /// </summary>
     [Fact]
-    public void RegisteringLicenseKeyRemovesTheUnsupportedGroups()
+    public async Task RegisteringLicenseKeyRemovesTheUnsupportedGroups()
     {
         this.SetLicensingConfiguration(
             $$"""
@@ -463,7 +465,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
 
         Assert.Empty( this.LicenseRegistrationService.UnsupportedRegisteredLicenseVersions );
         Assert.DoesNotContain( _unparsableLicenseKey, this.GetLicensingConfigurationJson(), StringComparison.Ordinal );
@@ -498,11 +500,11 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// the group reads back what another version wrote.
     /// </summary>
     [Fact]
-    public void GroupSurvivesTheRoundTripThroughTheConfigurationFile()
+    public async Task GroupSurvivesTheRoundTripThroughTheConfigurationFile()
     {
         var licenseKey = CreateLicenseKeySignedByECDsaAuthority();
 
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( licenseKey ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( licenseKey )).IsSuccess );
 
         var json = this.GetLicensingConfigurationJson();
 

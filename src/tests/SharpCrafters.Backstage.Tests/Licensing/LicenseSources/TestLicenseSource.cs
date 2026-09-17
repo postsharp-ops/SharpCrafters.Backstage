@@ -8,6 +8,8 @@ using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
 {
@@ -30,17 +32,17 @@ namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
             this._license = license;
         }
 
-        public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
+#pragma warning disable CS1998 // The source holds its license in a field, so nothing is awaited.
+        public async IAsyncEnumerable<ILicense> GetLicensesAsync(
+            Action<LicensingMessage> reportMessage,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default )
+#pragma warning restore CS1998
         {
             this.NumberOfAuditReports++;
 
-            if ( this._license == null )
+            if ( this._license != null )
             {
-                return [];
-            }
-            else
-            {
-                return [this._license];
+                yield return this._license;
             }
         }
 

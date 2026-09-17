@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption;
 
@@ -38,7 +40,10 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         this.Changed?.Invoke();
     }
 
-    public ILicenseConsumer CreateConsumer( LicenseConsumptionOptions? options, Action<LicensingMessage>? reportMessage )
+    public ValueTask<ILicenseConsumer> CreateConsumerAsync(
+        LicenseConsumptionOptions? options = null,
+        Action<LicensingMessage>? reportMessage = null,
+        CancellationToken cancellationToken = default )
     {
         options ??= LicenseConsumptionOptions.Default;
 
@@ -52,55 +57,136 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             sources.Add( new ExplicitLicenseSource( options.ProjectLicenseKey!, LicenseSourceKind.Project, this._serviceProvider ) );
         }
 
-        return this.CreateConsumer( options, sources, reportMessage );
+        return this.CreateConsumerAsync( options, sources, reportMessage, cancellationToken );
     }
 
-    private ILicenseConsumer CreateConsumer(
+    [Obsolete( "Use CreateConsumerAsync." )]
+    public ILicenseConsumer CreateConsumer( LicenseConsumptionOptions? options = null, Action<LicensingMessage>? reportMessage = null )
+
+        // Task.Run puts the continuation on a thread-pool thread, where SynchronizationContext.Current is null, so it
+        // cannot be posted back to the thread that is blocked here, which is what deadlocks a user interface thread on
+        // .NET Framework. GetResult rethrows the original exception, whereas Wait would wrap it in an
+        // AggregateException whose message does not name the failure.
+        => Task.Run( () => this.CreateConsumerAsync( options, reportMessage, CancellationToken.None ).AsTask() )
+            .GetAwaiter()
+            .GetResult();
+
+    private async ValueTask<ILicenseConsumer> CreateConsumerAsync(
         LicenseConsumptionOptions options,
         IEnumerable<ILicenseSource> licenseSources,
-        Action<LicensingMessage>? reportMessage = null )
+        Action<LicensingMessage>? reportMessage,
+        CancellationToken cancellationToken )
     {
-        // Gather valid licenses.
-        var licenses = licenseSources.OrderBy( s => s.Priority ).SelectMany( s => s.GetLicenses( ReportMessage ).Select( l => (License: l, Source: s) ) );
-
         var validLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
+        var deferredLicenses = new List<(ILicense License, ILicenseSource Source)>();
 
-        foreach ( var license in licenses )
+        // The sources are drained in the order of their priority, and each yields its licences in its own order, so a
+        // registered license key is always considered before a lease is acquired from a license server.
+        foreach ( var source in licenseSources.OrderBy( s => s.Priority ) )
         {
-            if ( !license.License.TryGetConsumptionProperties( options, out var licenseConsumptionData, out var errorMessage ) )
+            await foreach ( var license in source.GetLicensesAsync( ReportMessage, cancellationToken ).WithCancellation( cancellationToken ) )
             {
-                LicenseRegistrationProperties? registrationData = null;
-
-                if ( license.Source.SupportsRegistration )
+                // A licence leased from a license server costs a request and, above all, a seat, so it is examined
+                // only once every other licence has failed. Without this, a build that a registered license key
+                // already licenses would take a seat from the pool of the team on every run.
+                if ( license is LeasedLicense )
                 {
-                    license.License.TryGetRegistrationProperties( out registrationData, out _ );
+                    deferredLicenses.Add( (license, source) );
+
+                    continue;
                 }
 
-                var message =
-                    $"Cannot use the license '{registrationData?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationData?.Description}': {errorMessage}"
-                        .TrimEnd( '.' ) + ".";
+                var consumptionResult = await license.GetConsumptionPropertiesAsync( options, cancellationToken );
 
-                if ( license.Source.GetType() != typeof(UserProfileLicenseSource) )
+                if ( !consumptionResult.IsSuccess )
                 {
-                    message += $" The license key originates from {license.Source.Description}.";
+                    await ReportUnusableLicenseAsync( license, source, consumptionResult.ErrorMessage! );
+
+                    continue;
                 }
 
-                ReportMessage( new LicensingMessage( message ) );
-
-                continue;
+                validLicenses.Add( (license, consumptionResult.Properties) );
             }
-
-            validLicenses.Add( (license.License, licenseConsumptionData) );
         }
 
-        // Return the LicenseConsumer.
-        return new LicenseConsumer( this._serviceProvider, validLicenses.ToImmutableArray(), options );
+        // The licences that are acquired on demand are handed to the consumer unresolved. It acquires them the first
+        // time a requirement is not satisfied by anything else, so that a seat is taken for a licence that is really
+        // used rather than for one that merely might have been.
+        return new LicenseConsumer(
+            this._serviceProvider,
+            validLicenses.ToImmutableArray(),
+            options,
+            deferredLicenses.Count == 0 ? null : AcquireOnDemandLicensesAsync );
+
+        async ValueTask<ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)>> AcquireOnDemandLicensesAsync(
+            Action<LicensingMessage>? consumerReportMessage,
+            CancellationToken onDemandCancellationToken )
+        {
+            var acquiredLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
+
+            foreach ( var deferred in deferredLicenses )
+            {
+                var consumptionResult = await deferred.License.GetConsumptionPropertiesAsync( options, onDemandCancellationToken );
+
+                if ( consumptionResult.IsSuccess )
+                {
+                    acquiredLicenses.Add( (deferred.License, consumptionResult.Properties) );
+                }
+                else
+                {
+                    // The message goes to the requirement that triggered the acquisition, so that it reaches the
+                    // compilation that needed the licence rather than the creation of the consumer.
+                    await this.ReportUnusableLicenseAsync(
+                        deferred.License,
+                        deferred.Source,
+                        consumptionResult.ErrorMessage!,
+                        consumerReportMessage,
+                        onDemandCancellationToken );
+                }
+            }
+
+            return acquiredLicenses.ToImmutable();
+        }
 
         void ReportMessage( LicensingMessage message )
         {
             reportMessage?.Invoke( message );
             this._logger.Warning?.Log( message.Text );
         }
+
+        Task ReportUnusableLicenseAsync( ILicense license, ILicenseSource source, string errorMessage )
+            => this.ReportUnusableLicenseAsync( license, source, errorMessage, reportMessage, cancellationToken );
+    }
+
+    /// <summary>
+    /// Reports that a licence is present but cannot be used, naming it as well as the licence itself allows.
+    /// </summary>
+    private async Task ReportUnusableLicenseAsync(
+        ILicense license,
+        ILicenseSource source,
+        string errorMessage,
+        Action<LicensingMessage>? reportMessage,
+        CancellationToken cancellationToken )
+    {
+        LicenseRegistrationProperties? registrationProperties = null;
+
+        if ( source.SupportsRegistration )
+        {
+            var registrationResult = await license.GetRegistrationPropertiesAsync( cancellationToken );
+            registrationProperties = registrationResult.Properties;
+        }
+
+        var message =
+            $"Cannot use the license '{registrationProperties?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationProperties?.Description}': {errorMessage}"
+                .TrimEnd( '.' ) + ".";
+
+        if ( source.GetType() != typeof(UserProfileLicenseSource) )
+        {
+            message += $" The license key originates from {source.Description}.";
+        }
+
+        reportMessage?.Invoke( new LicensingMessage( message ) );
+        this._logger.Warning?.Log( message );
     }
 
     public event Action? Changed;

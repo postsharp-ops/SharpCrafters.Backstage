@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.UserInterface;
 using System;
@@ -15,6 +16,8 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Registration;
 
@@ -27,6 +30,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     private readonly IConfigurationManager _configurationManager;
     private readonly ProductProfile _productProfile;
     private readonly ILicenseProductCatalog _catalog;
+    private readonly LicenseLeaseStore _leaseStore;
 
     /// <summary>
     /// The version of the running product. It decides the groups of license keys that the current service reads.
@@ -43,6 +47,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
         this._catalog = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>();
+        this._leaseStore = serviceProvider.GetRequiredBackstageService<LicenseLeaseStore>();
 
         // We intentionally omit to unsubscribe from the event because this service has generally the same lifetime as the application
         // and is never disposed of.
@@ -178,17 +183,32 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         return true;
     }
 
-    public LicenseRegistrationResult RegisterLicense( string licenseString )
+    public ValueTask<LicenseRegistrationResult> RegisterLicenseAsync( string licenseString, CancellationToken cancellationToken = default )
+        => this.RegisterLicenseCoreAsync( licenseString, false, cancellationToken );
+
+    [Obsolete( "Use RegisterLicenseAsync." )]
+    public LicenseRegistrationResult RegisterLicense( string licenseString ) => Block( () => this.RegisterLicenseAsync( licenseString ) );
+
+    public ValueTask<LicenseRegistrationResult> ValidateLicenseKeyAsync( string licenseKey, CancellationToken cancellationToken = default )
+        => this.RegisterLicenseCoreAsync( licenseKey, true, cancellationToken );
+
+    /// <inheritdoc />
+    public ValueTask<LicenseRegistrationResult> TestLicenseServerAsync( string licenseServerUrl, CancellationToken cancellationToken = default )
     {
-        return this.RegisterLicenseCore( licenseString, false );
+        if ( !LicenseServerUrl.IsLicenseServerUrl( licenseServerUrl, out var errorMessage ) )
+        {
+            return new ValueTask<LicenseRegistrationResult>( LicenseRegistrationResult.Failure( errorMessage ) );
+        }
+
+        // The same path as a registration, without the write: the server is contacted and the licence it leases is
+        // validated, so that what the user sees is what a registration would store.
+        return this.RegisterLicenseCoreAsync( licenseServerUrl, true, cancellationToken );
     }
 
-    public LicenseRegistrationResult ValidateLicenseKey( string licenseKey )
-    {
-        return this.RegisterLicenseCore( licenseKey, true );
-    }
+    [Obsolete( "Use ValidateLicenseKeyAsync." )]
+    public LicenseRegistrationResult ValidateLicenseKey( string licenseKey ) => Block( () => this.ValidateLicenseKeyAsync( licenseKey ) );
 
-    public LicenseRegistrationResult ParseLicenseKey( string licenseKey )
+    public async ValueTask<LicenseRegistrationResult> ParseLicenseKeyAsync( string licenseKey, CancellationToken cancellationToken = default )
     {
         if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
@@ -197,16 +217,35 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         var factory = new LicenseFactory( this._serviceProvider );
 
-        if ( !factory.TryCreate( licenseKey, out var license, out errorMessage )
-             || !license.TryGetRegistrationProperties( out var licenseProperties, out errorMessage ) )
+        if ( !factory.TryCreate( licenseKey, out var license, out var factoryErrorMessage ) )
         {
-            return LicenseRegistrationResult.Failure( errorMessage );
+            return LicenseRegistrationResult.Failure( factoryErrorMessage );
         }
 
-        return LicenseRegistrationResult.Success( licenseProperties );
+        var registrationResult = await license.GetRegistrationPropertiesAsync( cancellationToken );
+
+        return registrationResult.IsSuccess
+            ? LicenseRegistrationResult.Success( registrationResult.Properties )
+            : LicenseRegistrationResult.Failure( registrationResult.ErrorMessage );
     }
 
-    private LicenseRegistrationResult RegisterLicenseCore( string licenseString, bool dry )
+    [Obsolete( "Use ParseLicenseKeyAsync." )]
+    public LicenseRegistrationResult ParseLicenseKey( string licenseKey ) => Block( () => this.ParseLicenseKeyAsync( licenseKey ) );
+
+    /// <summary>
+    /// Runs an asynchronous registration operation to completion on the calling thread, for the obsolete synchronous
+    /// members that exist so that the callers of earlier versions keep compiling.
+    /// </summary>
+    /// <remarks>
+    /// The work is started on a thread-pool thread, where <see cref="System.Threading.SynchronizationContext.Current"/>
+    /// is null, so no continuation can be posted back to the thread that is blocked here; that is what deadlocks a user
+    /// interface thread on .NET Framework. <c>GetResult</c> rethrows the original exception, whereas <c>Wait</c> would
+    /// wrap it in an <see cref="AggregateException"/> whose message does not name the failure.
+    /// </remarks>
+    private static LicenseRegistrationResult Block( Func<ValueTask<LicenseRegistrationResult>> operation )
+        => Task.Run( () => operation().AsTask() ).GetAwaiter().GetResult();
+
+    private async ValueTask<LicenseRegistrationResult> RegisterLicenseCoreAsync( string licenseString, bool dry, CancellationToken cancellationToken )
     {
         if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
@@ -215,16 +254,26 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         var factory = new LicenseFactory( this._serviceProvider );
 
-        if ( !factory.TryCreate( licenseString, out var license, out errorMessage )
-             || !license.TryGetRegistrationProperties( out var properties, out errorMessage ) )
+        if ( !factory.TryCreate( licenseString, out var license, out var factoryErrorMessage ) )
         {
-            return LicenseRegistrationResult.Failure( errorMessage );
+            return LicenseRegistrationResult.Failure( factoryErrorMessage );
         }
 
-        if ( !license.CanBeRegistered( out errorMessage ) )
+        var registrationResult = await license.GetRegistrationPropertiesAsync( cancellationToken );
+
+        if ( !registrationResult.IsSuccess )
         {
-            return LicenseRegistrationResult.Failure( errorMessage );
+            return LicenseRegistrationResult.Failure( registrationResult.ErrorMessage );
         }
+
+        var registrationBlocker = await license.GetRegistrationBlockerAsync( cancellationToken );
+
+        if ( registrationBlocker != null )
+        {
+            return LicenseRegistrationResult.Failure( registrationBlocker );
+        }
+
+        var properties = registrationResult.Properties;
 
         if ( !dry )
         {
@@ -239,12 +288,77 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     public void RemoveLicenses()
     {
         this._configurationManager.Update<LicensingConfiguration>( config => config.RemoveAllLicenses() );
+
+        // A separate transaction, after the first one has released its lock: a transformation must not update another
+        // configuration file. Without this, unregistering would leave the leases behind and the product would keep a
+        // licence it was told to forget until that lease ended.
+        this._leaseStore.RemoveAllLeases();
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// A license server is reported with the properties of the licence it currently leases, so that the user sees
+    /// which product the server gives them. No server is contacted: the stored lease is read, and a server that has
+    /// not yet leased anything is reported with the little that is known about it.
+    /// </remarks>
     public IEnumerable<LicenseRegistrationProperties> RegisteredLicenses
-        => this._configurationManager.Get<LicensingConfiguration>()
-            .GetRegisteredLicenses( this._currentVersion )
-            .Select( x => x.ToLicenseRegistrationProperties( this._catalog ) );
+    {
+        get
+        {
+            var configuration = this._configurationManager.Get<LicensingConfiguration>();
+
+            foreach ( var licenseString in configuration.GetRegisteredLicenseStrings( this._currentVersion ) )
+            {
+                if ( LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
+                {
+                    yield return this.GetLicenseServerProperties( licenseString );
+                }
+                else if ( LicenseKeyData.TryDeserialize( licenseString, out var licenseKeyData, out _ ) )
+                {
+                    yield return licenseKeyData.ToLicenseRegistrationProperties( this._catalog );
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Describes a registered license server from the lease it currently holds.
+    /// </summary>
+    private LicenseRegistrationProperties GetLicenseServerProperties( string licenseServerUrl )
+    {
+        if ( this._leaseStore.TryGetLease( licenseServerUrl, out var lease )
+             && LicenseKeyData.TryDeserialize( lease.LicenseKey, out var leasedKeyData, out _ ) )
+        {
+            return LeasedLicense.ToLicenseServerProperties(
+                leasedKeyData.ToLicenseRegistrationProperties( this._catalog, lease.LicenseKey ),
+                licenseServerUrl,
+                lease );
+        }
+
+        // No lease has been acquired yet, or the stored one cannot be read. The URL is all that is known, and
+        // reporting nothing would make a registered server invisible to the user.
+        return new LicenseRegistrationProperties(
+            licenseServerUrl,
+            licenseServerUrl,
+            false,
+            null,
+            null,
+            "License server",
+            LicenseProduct.None,
+            LicenseType.None,
+            null,
+
+            // No end date, so that the notification which warns about an expiring licence stays silent: a lease that
+            // has not been acquired is not a licence about to expire.
+            null,
+            null,
+            null,
+            false,
+            true,
+            new Version( 5, 0, 22 ),
+            LicenseGeneration.Current,
+            ServicingPhase.Current ) { LicenseServerUrl = licenseServerUrl };
+    }
 
     public IEnumerable<Version> UnsupportedRegisteredLicenseVersions
         => this._configurationManager.Get<LicensingConfiguration>().GetUnsupportedMinimalVersions( this._currentVersion );

@@ -4,8 +4,8 @@
 
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
-using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
 
@@ -15,25 +15,29 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
 {
     private readonly string _licenseString;
     private readonly string _licensePropertyName;
-    private readonly ILicenseProductCatalog _catalog;
 
     public override string Description => $"the MSBuild property or environment variable named {this._licensePropertyName}";
 
     public override LicenseSourceKind Kind { get; }
 
-    protected override IEnumerable<LicenseRegistrationProperties> GetRegisteredLicenses( Action<LicensingMessage> reportMessage )
+    protected override IEnumerable<string> GetLicenseStrings( Action<LicensingMessage> reportMessage )
     {
-        if ( !LicenseKeyData.TryDeserialize( this._licenseString, out var license, out var errorMessage ) )
+        if ( LicenseServerUrl.IsLicenseServerUrl( this._licenseString ) )
         {
-            // The license string is typically supplied by a secret of a continuous integration server, so a mistyped
-            // value is a likely mistake. The message names the source instead of quoting the value, which may be a
-            // secret. The source provides no license, so the caller reports that no valid license was found.
+            return [this._licenseString];
+        }
+
+        // The license key is validated here, and not left to the factory, so that the message names the source rather
+        // than quoting the value: the string is typically supplied by a secret of a continuous integration server, a
+        // mistyped value is a likely mistake, and the value itself must not reach a build log. See issue #1859.
+        if ( !LicenseKeyData.TryDeserialize( this._licenseString, out _, out var errorMessage ) )
+        {
             reportMessage( new LicensingMessage( $"The license key set in {this.Description} is invalid. {errorMessage}" ) );
 
             return [];
         }
 
-        return [license.ToLicenseRegistrationProperties( this._catalog )];
+        return [this._licenseString];
     }
 
     public ExplicitLicenseSource( string licenseString, LicenseSourceKind kind, IServiceProvider services )
@@ -41,7 +45,6 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
     {
         this._licenseString = licenseString;
         this._licensePropertyName = services.GetRequiredBackstageService<ProductProfile>().LicensePropertyName;
-        this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
         this.Kind = kind;
     }
 

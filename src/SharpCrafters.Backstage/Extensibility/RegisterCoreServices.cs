@@ -62,6 +62,7 @@ public static class RegisterCoreServices
             .AddSingleton<IEnvironmentVariableProvider>( _ => new EnvironmentVariableProvider() )
             .AddSingleton<IRuntimeInformation>( _ => new RuntimeInformationProvider() )
             .AddSingleton<IMachineIdProvider>( CreateMachineIdProvider )
+            .AddSingleton<IUserIdentityProvider>( _ => new UserIdentityProvider() )
             .AddSingleton<IRecoverableExceptionService>( serviceProvider => new RecoverableExceptionService( serviceProvider ) )
             .AddSingleton<IApplicationInfoProvider>( new ApplicationInfoProvider( applicationInfo ) )
             .AddSingleton<IUserDeviceDetectionService>( serviceProvider => new WindowsUserDeviceDetectionService( serviceProvider ) )

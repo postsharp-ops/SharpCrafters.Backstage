@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Testing;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -36,14 +37,14 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), true )]
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimatePersonal), true )]
 #pragma warning restore CS0612 // Type or member is obsolete
-    public void LicenseQualifiesForExtensionWithEligibleBuild( string licenseKeyName, bool expectedResult )
+    public async Task LicenseQualifiesForExtensionWithEligibleBuild( string licenseKeyName, bool expectedResult )
     {
         this.SetBuildDate( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( -1 ) );
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
     }
 
     [Theory]
@@ -65,14 +66,14 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), false )]
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimatePersonal), false )]
 #pragma warning restore CS0612 // Type or member is obsolete
-    public void LicenseQualifiesForExtensionWithIneligibleBuild( string licenseKeyName, bool expectedResult )
+    public async Task LicenseQualifiesForExtensionWithIneligibleBuild( string licenseKeyName, bool expectedResult )
     {
         this.SetBuildDate( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ) );
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
     }
 
     [Theory]
@@ -94,14 +95,14 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), true )]
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimatePersonal), true )]
 #pragma warning restore CS0612 // Type or member is obsolete
-    public void LicenseQualifiesForToolingWithEligibleBuild( string licenseKeyName, bool expectedResult )
+    public async Task LicenseQualifiesForToolingWithEligibleBuild( string licenseKeyName, bool expectedResult )
     {
         this.SetBuildDate( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( -1 ) );
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaToolingLicenseRequirement() ) );
     }
 
     [Theory]
@@ -123,14 +124,14 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), false )]
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimatePersonal), false )]
 #pragma warning restore CS0612 // Type or member is obsolete
-    public void LicenseQualifiesForToolingWithIneligibleBuild( string licenseKeyName, bool expectedResult )
+    public async Task LicenseQualifiesForToolingWithIneligibleBuild( string licenseKeyName, bool expectedResult )
     {
         this.SetBuildDate( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 1 ) );
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaToolingLicenseRequirement() ) );
     }
 
     [Theory]
@@ -150,29 +151,29 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), true )]
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimatePersonal), true )]
 #pragma warning restore CS0612 // Type or member is obsolete
-    public void LicenseQualifiesForToolingWithEligibleBuildAfterSubscriptionExpires( string licenseKeyName, bool expectedResult )
+    public async Task LicenseQualifiesForToolingWithEligibleBuildAfterSubscriptionExpires( string licenseKeyName, bool expectedResult )
     {
         this.Time.Set( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( 45 ) );
         this.SetBuildDate( LicenseKeyProvider.DefaultSubscriptionExpirationDate.AddDays( -1 ) );
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaToolingLicenseRequirement() ) );
     }
 
     [Theory]
     [InlineData( nameof(TestLicenseKeyProvider.ExpiredSubscription), true )]
     [InlineData( nameof(TestLicenseKeyProvider.ExpiredSubscriptionLegacyGeneration), true )]
-    public void LicenseQualifiesForToolingWithEligibleBuildAfterSubscriptionExpires2( string licenseKeyName, bool expectedResult )
+    public async Task LicenseQualifiesForToolingWithEligibleBuildAfterSubscriptionExpires2( string licenseKeyName, bool expectedResult )
     {
         this.Time.Set( LicenseKeyProvider.ExpiredSubscriptionEndDate.AddDays( 45 ) );
         this.SetBuildDate( LicenseKeyProvider.ExpiredSubscriptionEndDate.AddDays( -1 ) );
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaToolingLicenseRequirement() ) );
     }
 
     [Theory]
@@ -193,12 +194,12 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), ServicingPhase.Extended, true )]
     [InlineData( nameof(TestLicenseKeyProvider.MetalamaUltimateBusiness), ServicingPhase.LongTerm, true )]
 #pragma warning restore CS0612 // Type or member is obsolete
-    public void LicenseQualifiesForServicingPhase( string licenseKeyName, ServicingPhase servicingPhase, bool expectedResult )
+    public async Task LicenseQualifiesForServicingPhase( string licenseKeyName, ServicingPhase servicingPhase, bool expectedResult )
     {
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<Component>", servicingPhase ) ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
+        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaExtensionLicenseRequirement( "<Component>", servicingPhase ) ) );
     }
 
     [Theory]
@@ -214,14 +215,14 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         nameof(TestLicenseKeyProvider.MetalamaCommunity),
         ServicingPhase.Current,
         "Metalama Professional, Metalama Enterprise, PostSharp Framework, PostSharp Ultimate, Metalama Starter (legacy), Metalama Ultimate (legacy)" )]
-    public void ErrorMessageContainsExpectedProductList( string licenseKeyName, ServicingPhase servicingPhase, string expectedProductList )
+    public async Task ErrorMessageContainsExpectedProductList( string licenseKeyName, ServicingPhase servicingPhase, string expectedProductList )
     {
         var messages = new List<LicensingMessage>();
 
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer( reportMessage: messages.Add );
-        Assert.False( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<Component>", servicingPhase ), reportMessage: messages.Add ) );
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync( reportMessage: messages.Add );
+        Assert.False( await consumer.TryConsumeAsync( new MetalamaExtensionLicenseRequirement( "<Component>", servicingPhase ), reportMessage: messages.Add ) );
 
         var match = Regex.Match( messages[0].Text, "It requires one of the following products\\: ([^\\.]*)\\." );
 

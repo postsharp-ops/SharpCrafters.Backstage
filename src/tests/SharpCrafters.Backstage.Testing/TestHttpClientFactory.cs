@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -24,21 +25,83 @@ namespace SharpCrafters.Backstage.Testing
             this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(TestHttpClientFactory) );
         }
 
-        private readonly List<(Predicate<HttpRequestMessage> Filter, Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> Hook)>
-            _hooks = new();
+        /// <summary>
+        /// The registered hooks, first match wins. The list is immutable and replaced atomically, because a test may
+        /// register a hook while a request started by another thread is enumerating it, which throws on a
+        /// <see cref="List{T}"/>.
+        /// </summary>
+        private ImmutableList<Hook> _hooks = ImmutableList<Hook>.Empty;
 
         public ConcurrentBag<(HttpRequestMessage Request, HttpResponseMessage Response)> ProcessedRequests { get; private set; } = [];
 
+        /// <summary>
+        /// Gets the options passed to the last call to <see cref="Create(HttpClientOptions)"/>, so that a test can
+        /// assert how the code under test asked for its client without observing a real connection.
+        /// </summary>
+        public HttpClientOptions? LastOptions { get; private set; }
+
         public void InsertHook( Predicate<HttpRequestMessage> filter, Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> hook )
         {
-            this._hooks.Insert( 0, (filter, hook) );
+            var item = new Hook( filter, hook );
+
+            ImmutableList<Hook> initial, updated;
+
+            do
+            {
+                initial = this._hooks;
+                updated = initial.Insert( 0, item );
+            }
+            while ( Interlocked.CompareExchange( ref this._hooks, updated, initial ) != initial );
+        }
+
+        /// <summary>
+        /// Removes a hook registered by <see cref="InsertHook"/>, so that one component can stop answering without
+        /// removing the hooks of the others, which <see cref="ClearHooks"/> does.
+        /// </summary>
+        /// <param name="hook">The delegate passed to <see cref="InsertHook"/>.</param>
+        /// <returns><see langword="true"/> if the hook was registered.</returns>
+        public bool RemoveHook( Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> hook )
+        {
+            ImmutableList<Hook> initial, updated;
+
+            do
+            {
+                initial = this._hooks;
+                var index = initial.FindIndex( h => h.Handler == hook );
+
+                if ( index < 0 )
+                {
+                    return false;
+                }
+
+                updated = initial.RemoveAt( index );
+            }
+            while ( Interlocked.CompareExchange( ref this._hooks, updated, initial ) != initial );
+
+            return true;
         }
 
         public void ClearProcessedRequests() => this.ProcessedRequests = [];
 
-        public void ClearHooks() => this._hooks.Clear();
+        public void ClearHooks() => this._hooks = ImmutableList<Hook>.Empty;
 
-        public HttpClient Create() => new( new Handler( this ) );
+        public HttpClient Create() => this.Create( HttpClientOptions.Default );
+
+        public HttpClient Create( HttpClientOptions options )
+        {
+            this.LastOptions = options;
+
+            var client = new HttpClient( new Handler( this ) );
+
+            if ( options.Timeout != null )
+            {
+                client.Timeout = options.Timeout.Value;
+            }
+
+            return client;
+        }
+
+        private sealed record Hook( Predicate<HttpRequestMessage> Filter, Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> Handler );
 
         private sealed class Handler : HttpMessageHandler
         {
@@ -51,8 +114,7 @@ namespace SharpCrafters.Backstage.Testing
 
             protected override async Task<HttpResponseMessage> SendAsync( HttpRequestMessage request, CancellationToken cancellationToken )
             {
-                var hook = this._parent._hooks.FirstOrDefault( h => h.Filter( request ) )
-                    .Hook;
+                var hook = this._parent._hooks.FirstOrDefault( h => h.Filter( request ) )?.Handler;
 
                 HttpResponseMessage response;
 

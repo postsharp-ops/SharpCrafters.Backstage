@@ -3,9 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Licensing.Licenses;
-using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
 {
@@ -22,15 +23,31 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
             this._services = services;
         }
 
-        protected abstract IEnumerable<LicenseRegistrationProperties> GetRegisteredLicenses( Action<LicensingMessage> reportMessage );
+        /// <summary>
+        /// Gets the license strings of the source, in the order in which they should be considered.
+        /// </summary>
+        /// <param name="reportMessage">Action to be called when a license string is present but unusable.</param>
+        /// <remarks>
+        /// The method yields the strings and not their parsed properties, because a license string is a license key
+        /// <b>or</b> the URL of a license server, and only <see cref="LicenseFactory"/> decides which. A source that
+        /// parsed the string itself would reject a URL before the factory ever saw it.
+        /// </remarks>
+        protected abstract IEnumerable<string> GetLicenseStrings( Action<LicensingMessage> reportMessage );
 
-        public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
+#pragma warning disable CS1998 // The method has no await: the strings come from a configuration file, but a license
+                              // among them may be leased from a server, which is fetched when it is consumed.
+        public async IAsyncEnumerable<ILicense> GetLicensesAsync(
+            Action<LicensingMessage> reportMessage,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default )
+#pragma warning restore CS1998
         {
-            foreach ( var licenseProperties in this.GetRegisteredLicenses( reportMessage ) )
-            {
-                var licenseFactory = new LicenseFactory( this._services );
+            var licenseFactory = new LicenseFactory( this._services );
 
-                if ( licenseFactory.TryCreate( licenseProperties.LicenseString, out var license, out var errorMessage ) )
+            foreach ( var licenseString in this.GetLicenseStrings( reportMessage ) )
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if ( licenseFactory.TryCreate( licenseString, out var license, out var errorMessage ) )
                 {
                     yield return license;
                 }

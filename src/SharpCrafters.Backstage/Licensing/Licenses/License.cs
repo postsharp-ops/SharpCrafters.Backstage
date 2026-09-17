@@ -11,6 +11,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Licenses
 {
@@ -58,10 +60,34 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             return stringBuilder.ToString().ToUpperInvariant();
         }
 
-        public override bool CanBeRegistered( [MaybeNullWhen( true )] out string errorMessage )
+        /// <inheritdoc />
+        /// <remarks>
+        /// A licence key carries everything it needs, so the operation completes synchronously and allocates nothing.
+        /// The asynchronous shape exists for the licence leased from a license server, which is fetched over HTTP.
+        /// </remarks>
+        public override ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
+            => new( this.CanBeRegisteredCore( out var errorMessage ) ? null : errorMessage );
+
+        /// <inheritdoc />
+        public override ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(
+            LicenseConsumptionOptions options,
+            CancellationToken cancellationToken = default )
+            => new(
+                this.TryGetConsumptionPropertiesCore( options, out var properties, out var errorMessage )
+                    ? LicenseConsumptionResult.Success( properties )
+                    : LicenseConsumptionResult.Failure( errorMessage ) );
+
+        /// <inheritdoc />
+        public override ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default )
+            => new(
+                this.TryGetRegistrationPropertiesCore( out var properties, out var errorMessage )
+                    ? LicenseRegistrationPropertiesResult.Success( properties )
+                    : LicenseRegistrationPropertiesResult.Failure( errorMessage ) );
+
+        private bool CanBeRegisteredCore( [MaybeNullWhen( true )] out string errorMessage )
         {
             // Validates that the key can be consumed.
-            if ( !this.TryGetConsumptionProperties( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out errorMessage ) )
+            if ( !this.TryGetConsumptionPropertiesCore( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out errorMessage ) )
             {
                 return false;
             }
@@ -78,8 +104,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             return true;
         }
 
-        /// <inheritdoc />
-        public override bool TryGetConsumptionProperties(
+        private bool TryGetConsumptionPropertiesCore(
             LicenseConsumptionOptions options,
             [MaybeNullWhen( false )] out LicenseConsumptionProperties licenseConsumptionProperties,
             [MaybeNullWhen( true )] out string errorMessage )
@@ -227,8 +252,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             return true;
         }
 
-        /// <inheritdoc />
-        public override bool TryGetRegistrationProperties(
+        private bool TryGetRegistrationPropertiesCore(
             [MaybeNullWhen( false )] out LicenseRegistrationProperties licenseProperties,
             [MaybeNullWhen( true )] out string errorMessage )
         {

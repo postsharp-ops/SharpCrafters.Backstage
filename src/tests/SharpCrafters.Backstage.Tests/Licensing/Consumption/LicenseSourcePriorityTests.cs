@@ -12,6 +12,7 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tests.Extensibility;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -27,7 +28,7 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 
     protected override void ConfigureServices( ServiceProviderBuilder services ) { }
 
-    private ILicenseConsumer CreateLicenseConsumer(
+    private async Task<ILicenseConsumer> CreateLicenseConsumerAsync(
         bool isUnattendedProcess,
         string? projectLicense,
         string? userLicense,
@@ -57,37 +58,37 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 
         if ( userLicense != null )
         {
-            Assert.True( this.LicenseRegistrationService.RegisterLicense( userLicense ).IsSuccess );
+            Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( userLicense )).IsSuccess );
         }
 
         var service = serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
 
-        return service.CreateConsumer( new LicenseConsumptionOptions { ProjectLicenseKey = projectLicense }, reportMessage );
+        return await service.CreateConsumerAsync( new LicenseConsumptionOptions { ProjectLicenseKey = projectLicense }, reportMessage );
     }
 
     [Fact]
-    public void NoMessageGivenWithNoLicense()
+    public async Task NoMessageGivenWithNoLicense()
     {
         var hasMessage = false;
-        this.CreateLicenseConsumer( false, null, null, false, _ => hasMessage = true );
+        await this.CreateLicenseConsumerAsync( false, null, null, false, _ => hasMessage = true );
         Assert.False( hasMessage );
 
         // Note that trying to consume does report a message in this case.
     }
 
     [Fact]
-    public void UnattendedLicenseHasHighestPriority()
+    public async Task UnattendedLicenseHasHighestPriority()
     {
-        var licenseConsumptionManager = this.CreateLicenseConsumer( true, null, UserLicense, false );
+        var licenseConsumptionManager = await this.CreateLicenseConsumerAsync( true, null, UserLicense, false );
 
         Assert.True(
-            licenseConsumptionManager.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseType == LicenseType.Unattended ) ) );
+            await licenseConsumptionManager.TryConsumeAsync( new DelegateLicenseRequirement( context => context.License.LicenseType == LicenseType.Unattended ) ) );
     }
 
     [Fact]
-    public void ProjectLicenseHasPriorityOverUserLicense()
+    public async Task ProjectLicenseHasPriorityOverUserLicense()
     {
-        var licenseConsumptionManager = this.CreateLicenseConsumer( false, ProjectLicense, UserLicense, false );
-        Assert.True( licenseConsumptionManager.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseString == ProjectLicense ) ) );
+        var licenseConsumptionManager = await this.CreateLicenseConsumerAsync( false, ProjectLicense, UserLicense, false );
+        Assert.True( await licenseConsumptionManager.TryConsumeAsync( new DelegateLicenseRequirement( context => context.License.LicenseString == ProjectLicense ) ) );
     }
 }

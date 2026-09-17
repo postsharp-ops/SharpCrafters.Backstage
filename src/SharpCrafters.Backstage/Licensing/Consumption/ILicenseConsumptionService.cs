@@ -5,6 +5,8 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption
 {
@@ -15,8 +17,27 @@ namespace SharpCrafters.Backstage.Licensing.Consumption
     public interface ILicenseConsumptionService : IBackstageService
     {
         /// <summary>
-        /// Creates an <see cref="ILicenseConsumer"/>.
+        /// Creates an <see cref="ILicenseConsumer"/>, resolving every licence of every source.
         /// </summary>
+        /// <param name="options">The options of the consumption.</param>
+        /// <param name="reportMessage">A delegate that receives the message of each licence that is present but unusable.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <remarks>
+        /// This is the only asynchronous step of licence consumption: a licence may be leased from a license server,
+        /// which is fetched over HTTP. Once the consumer exists, every licence is in hand, so
+        /// <see cref="ILicenseConsumer.TryConsume"/> is synchronous and contacts nothing.
+        /// </remarks>
+        ValueTask<ILicenseConsumer> CreateConsumerAsync(
+            LicenseConsumptionOptions? options = null,
+            Action<LicensingMessage>? reportMessage = null,
+            CancellationToken cancellationToken = default );
+
+        /// <summary>
+        /// Creates an <see cref="ILicenseConsumer"/>, blocking until every licence is resolved.
+        /// </summary>
+        [Obsolete(
+            "Use CreateConsumerAsync. This overload blocks the calling thread while a license server is contacted, "
+            + "which stalls a user interface thread." )]
         ILicenseConsumer CreateConsumer( LicenseConsumptionOptions? options = null, Action<LicensingMessage>? reportMessage = null );
 
         /// <summary>
