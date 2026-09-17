@@ -391,6 +391,31 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     /// Tests that a user diagnosing a server that is down is told so, which is the answer they ran the command to
     /// get.
     /// </summary>
+    /// <summary>
+    /// Tests that acquiring a lease refuses a licence the next build would refuse. Reading the properties of a key
+    /// does not validate it, so a server that has been reconfigured with a key that is not eligible for a license
+    /// server would otherwise have this command report success while every build failed.
+    /// </summary>
+    /// <remarks>
+    /// This is the command somebody runs to find out whether their next build will work, so an answer that does not
+    /// agree with the next build is the one answer it must not give.
+    /// </remarks>
+    [Fact]
+    public async Task AcquiringRefusesALicenceTheBuildWouldRefuse()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        // The administrator moves the pool to a key that may not be leased.
+        server.LicenseKey = LicenseKeyProvider.MetalamaProfessionalNotLicenseServerEligible;
+
+        var result = await this.LicenseRegistrationService.AcquireLeaseAsync( true );
+
+        Assert.False( result.IsSuccess );
+        Assert.Contains( "not eligible for a license server", result.ErrorMessage, StringComparison.Ordinal );
+    }
+
     [Fact]
     public async Task AcquiringFromAnUnreachableServerReportsTheFailure()
     {

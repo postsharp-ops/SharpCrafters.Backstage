@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -112,7 +112,24 @@ internal sealed record LicenseLease( string LicenseKey, DateTime StartTime, Date
         }
 
         var start = startTime ?? now;
-        var end = endTime ?? (start + _defaultDuration);
+
+        DateTime end;
+
+        if ( endTime is { } declaredEnd )
+        {
+            end = declaredEnd;
+        }
+        else if ( DateTime.MaxValue - _defaultDuration < start )
+        {
+            // A start so late that the default end would not fit in a DateTime. The arithmetic is outside the block
+            // that catches the malformed values, and a Try... method answers false rather than raising, whatever a
+            // server sends it.
+            return false;
+        }
+        else
+        {
+            end = start + _defaultDuration;
+        }
 
         // ReSharper disable once RedundantSuppressNullableWarningExpression
         lease = new LicenseLease( licenseKey!, start, end, renewTime ?? end );

@@ -211,7 +211,24 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         var license = new LeasedLicense( licenseServerUrl, this._serviceProvider );
         var result = await license.GetRegistrationPropertiesAsync( forceRenewal, cancellationToken );
 
-        return result.IsSuccess ? LicenseRegistrationResult.Success( result.Properties ) : LicenseRegistrationResult.Failure( result.ErrorMessage );
+        if ( !result.IsSuccess )
+        {
+            return LicenseRegistrationResult.Failure( result.ErrorMessage );
+        }
+
+        // Reading the properties of a licence does not validate it: a key that is revoked, expired, unsigned, meant
+        // for redistribution or not eligible for a license server still has properties to report. Saying that a
+        // server leases a licence when the next build will refuse it is the one answer this command must not give,
+        // because it is the command somebody runs to find out whether their next build will work. The resolution is
+        // memoized, so the check costs no second request.
+        var blocker = await license.GetRegistrationBlockerAsync( cancellationToken );
+
+        if ( blocker.IsBlocked )
+        {
+            return LicenseRegistrationResult.Failure( blocker.Message! );
+        }
+
+        return LicenseRegistrationResult.Success( result.Properties );
     }
 
     /// <summary>

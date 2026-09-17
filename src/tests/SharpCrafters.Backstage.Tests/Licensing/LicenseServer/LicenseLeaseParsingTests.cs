@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -260,6 +260,30 @@ public sealed class LicenseLeaseParsingTests
     {
         Assert.False( LicenseLease.TryDeserialize( body, _now, out var lease ) );
         Assert.Null( lease );
+    }
+
+    /// <summary>
+    /// Tests the answer that would make the default end of a lease fall outside what a date can hold: a start at the
+    /// end of time, and no end. It is refused like any other unusable answer. A server can say anything, and a
+    /// <c>Try</c> method answers false rather than raising, whatever it is told.
+    /// </summary>
+    [Fact]
+    public void StartAtTheEndOfTimeWithoutAnEndFails()
+    {
+        Assert.False( LicenseLease.TryDeserialize( "License: KEY; StartTime: 9999-12-31T23:59:59.9999999Z", _now, out var lease ) );
+        Assert.Null( lease );
+    }
+
+    /// <summary>
+    /// Tests that the same answer with an end of its own is read, so that the refusal above is about the arithmetic
+    /// that cannot be done and not about the date itself.
+    /// </summary>
+    [Fact]
+    public void StartAtTheEndOfTimeWithAnEndParses()
+    {
+        var lease = Parse( "License: KEY; StartTime: 9999-12-31T23:59:59.9999999Z; EndTime: 9999-12-31T23:59:59.9999999Z" );
+
+        Assert.Equal( DateTime.MaxValue, lease.EndTime );
     }
 
     /// <summary>

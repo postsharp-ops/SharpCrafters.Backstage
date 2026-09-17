@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -109,6 +109,7 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
     [InlineData( "https://license.test", "https://license.test/" )]
     [InlineData( "https://license.test/", "https://license.test" )]
     [InlineData( "https://license.test", "HTTPS://LICENSE.TEST" )]
+    [InlineData( "https://license.test/postsharp", "https://LICENSE.TEST/postsharp" )]
     public void EquivalentUrlsShareOneLease( string writeUrl, string readUrl )
     {
         this.Store.SetLease( writeUrl, CreateLease() );
@@ -122,6 +123,24 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
     /// accumulated one entry per renewal would grow without end and would leave the product to guess which of them
     /// is current.
     /// </summary>
+    /// <summary>
+    /// Tests that two servers published under paths that differ only by case keep their own leases. They may be the
+    /// servers of two divisions, with two pools of seats; a build licensed from the wrong one would draw a seat its
+    /// team never bought.
+    /// </summary>
+    [Fact]
+    public void ServersWhosePathsDifferByCaseKeepTheirOwnLeases()
+    {
+        this.Store.SetLease( "https://license.test/TeamA", CreateLease( "KEY-A" ) );
+        this.Store.SetLease( "https://license.test/teama", CreateLease( "KEY-B" ) );
+
+        Assert.True( this.Store.TryGetLease( "https://license.test/TeamA", out var first ) );
+        Assert.Equal( "KEY-A", first.LicenseKey );
+
+        Assert.True( this.Store.TryGetLease( "https://license.test/teama", out var second ) );
+        Assert.Equal( "KEY-B", second.LicenseKey );
+    }
+
     [Fact]
     public void SetLeaseReplacesThePreviousOne()
     {

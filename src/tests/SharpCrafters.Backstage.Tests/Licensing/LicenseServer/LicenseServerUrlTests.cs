@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -78,6 +78,49 @@ public sealed class LicenseServerUrlTests
     {
         Assert.False( LicenseServerUrl.IsLicenseServerUrl( url, out var errorMessage ) );
         Assert.Equal( "The URL cannot contain a query string.", errorMessage );
+    }
+
+    /// <summary>
+    /// Tests that an address carrying a fragment is refused. The product appends the path and the arguments of the
+    /// lease endpoint to what the user registered, and everything after a number sign is a fragment: the request
+    /// would go to the root of the server with no arguments at all. The user would then be told that their server
+    /// refused them, when what is wrong is the address they typed.
+    /// </summary>
+    [Theory]
+    [InlineData( "https://license.test/#x" )]
+    [InlineData( "https://license.test#" )]
+    [InlineData( "https://license.test/postsharp#fragment" )]
+    public void FragmentIsRejected( string url )
+    {
+        Assert.False( LicenseServerUrl.IsLicenseServerUrl( url, out var errorMessage ) );
+        Assert.Equal( "The URL cannot contain a fragment.", errorMessage );
+    }
+
+    /// <summary>
+    /// Tests that two addresses that differ only in the case of their path are <b>not</b> the same server. A path is
+    /// case-sensitive on most servers, so <c>/TeamA</c> and <c>/teama</c> may be two applications, possibly of two
+    /// divisions with two pools of seats; sharing one lease between them would license a build of either from the
+    /// seat of the other.
+    /// </summary>
+    [Fact]
+    public void StoreKeyKeepsTheCaseOfThePath()
+    {
+        Assert.NotEqual(
+            LicenseServerUrl.GetStoreKey( "https://license.test/TeamA" ),
+            LicenseServerUrl.GetStoreKey( "https://license.test/teama" ) );
+    }
+
+    /// <summary>
+    /// Tests that two addresses that differ only in the case of their scheme or of their host <b>are</b> the same
+    /// server, because a URI says those are case-insensitive. Otherwise one machine would take two seats for one
+    /// server, depending on how the user happened to type it.
+    /// </summary>
+    [Theory]
+    [InlineData( "https://license.test", "HTTPS://LICENSE.TEST" )]
+    [InlineData( "https://License.Test/postsharp", "https://license.test/postsharp" )]
+    public void StoreKeyIgnoresTheCaseOfTheSchemeAndTheHost( string url, string otherUrl )
+    {
+        Assert.Equal( LicenseServerUrl.GetStoreKey( url ), LicenseServerUrl.GetStoreKey( otherUrl ) );
     }
 
     /// <summary>

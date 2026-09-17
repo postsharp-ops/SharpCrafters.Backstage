@@ -150,13 +150,18 @@ internal sealed class LicenseServerClient : IBackstageService
                     UseDefaultCredentials = this._options.LicenseServerUsesDefaultCredentials, Timeout = this._options.LicenseServerTimeout
                 } );
 
-            using var response = await client.GetAsync( requestUri, cancellationToken ).ConfigureAwait( false );
+            // The headers are enough to begin with: the body is read by ReadBoundedAsync, which stops at the bound.
+            // Waiting for the whole body here would buffer whatever the server chose to send before anything could
+            // object to its size.
+            using var response = await client
+                .GetAsync( requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken )
+                .ConfigureAwait( false );
 
             statusCode = response.StatusCode;
 
             // The body is read before the status is inspected, because the body of an HTTP 403 is the explanation
             // that the administrator of the server configured and is the most useful thing to show the user.
-            body = await ReadBoundedAsync( response.Content ).ConfigureAwait( false );
+            body = await ReadBoundedAsync( response.Content, cancellationToken ).ConfigureAwait( false );
         }
         catch ( OperationCanceledException ) when ( cancellationToken.IsCancellationRequested )
         {
@@ -264,15 +269,58 @@ internal sealed class LicenseServerClient : IBackstageService
         return builder.ToString();
     }
 
-    private static async Task<string> ReadBoundedAsync( HttpContent content )
+    /// <summary>
+    /// Reads at most <see cref="_maxResponseLength"/> bytes of a response.
+    /// </summary>
+    /// <remarks>
+    /// The bound is taken off the stream rather than checked afterwards. The declared length is the word of the
+    /// server and may be absent or untrue, so a check against it bounds nothing; and the request asks only for the
+    /// headers, so nothing has been buffered by the time this runs. A server, or a proxy standing in front of one,
+    /// therefore cannot make a build allocate a body of its choosing.
+    /// </remarks>
+    private static async Task<string> ReadBoundedAsync( HttpContent content, CancellationToken cancellationToken )
     {
-        if ( content.Headers.ContentLength > _maxResponseLength )
+        using var stream = await content.ReadAsStreamAsync().ConfigureAwait( false );
+
+        var buffer = new byte[_maxResponseLength];
+        var count = 0;
+
+        while ( count < buffer.Length )
         {
-            return "";
+            var read = await stream.ReadAsync( buffer, count, buffer.Length - count, cancellationToken ).ConfigureAwait( false );
+
+            if ( read == 0 )
+            {
+                break;
+            }
+
+            count += read;
         }
 
-        var body = await content.ReadAsStringAsync().ConfigureAwait( false );
+        return GetEncoding( content ).GetString( buffer, 0, count );
+    }
 
-        return body.Length > _maxResponseLength ? body.Substring( 0, _maxResponseLength ) : body;
+    /// <summary>
+    /// Gets the encoding of a response, which matters because the body of a denial is a sentence an administrator
+    /// wrote and may be in any language. An absent or unknown encoding is read as UTF-8, which is what a lease is.
+    /// </summary>
+    private static Encoding GetEncoding( HttpContent content )
+    {
+        var charSet = content.Headers.ContentType?.CharSet;
+
+        if ( string.IsNullOrEmpty( charSet ) )
+        {
+            return Encoding.UTF8;
+        }
+
+        try
+        {
+            // ReSharper disable once RedundantSuppressNullableWarningExpression
+            return Encoding.GetEncoding( charSet!.Trim( '"' ) );
+        }
+        catch ( ArgumentException )
+        {
+            return Encoding.UTF8;
+        }
     }
 }

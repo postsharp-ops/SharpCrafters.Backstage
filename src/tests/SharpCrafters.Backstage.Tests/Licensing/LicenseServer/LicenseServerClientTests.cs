@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -8,6 +8,10 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -529,6 +533,88 @@ public sealed class LicenseServerClientTests : LicensingTestsBase
 
         Assert.False( result.IsSuccess );
         Assert.Contains( "did not answer within", result.ErrorMessage, StringComparison.Ordinal );
+    }
+
+    /// <summary>
+    /// Tests that a server which answers without end does not make a build allocate without end either. The body is
+    /// read up to a bound rather than buffered and measured afterwards, because the length a server declares is the
+    /// word of that server and may be absent or untrue.
+    /// </summary>
+    /// <remarks>
+    /// The body served here is far larger than the bound and declares no length at all, which is the shape that a
+    /// check against <c>Content-Length</c> lets through. It does end, so that a client which reads without a bound
+    /// fails this test rather than exhausting the memory of whoever is running it.
+    /// </remarks>
+    [Fact]
+    public async Task OversizedResponseIsNotReadWithoutEnd()
+    {
+        var server = this.CreateServer();
+        server.IsEnabled = false;
+
+        var wasRead = 0L;
+
+        this.HttpClientFactory.InsertHook(
+            request => request.RequestUri!.AbsolutePath.EndsWith( LicenseServerSimulator.LeasePath, StringComparison.OrdinalIgnoreCase ),
+            ( _, _ ) => Task.FromResult(
+                new HttpResponseMessage( HttpStatusCode.OK )
+                {
+                    Content = new StreamContent( new LargeStream( read => Interlocked.Add( ref wasRead, read ) ) )
+                } ) );
+
+        var result = await this.Client.GetLeaseAsync( server.Url );
+
+        Assert.False( result.IsSuccess );
+        Assert.Contains( "returned an invalid response", result.ErrorMessage, StringComparison.Ordinal );
+
+        // A little more than the bound may be read, because a read returns what a buffer holds; orders of magnitude
+        // more may not.
+        Assert.InRange( Interlocked.Read( ref wasRead ), 0, 1024 * 1024 );
+    }
+
+    /// <summary>
+    /// A response body far larger than anything a license server would send, which is what a broken or hostile one
+    /// is. It counts what was taken from it, so that a test can tell a bounded read from an unbounded one.
+    /// </summary>
+    private sealed class LargeStream : Stream
+    {
+        // Large enough that reading it whole is unmistakable, small enough that doing so fails a test rather than
+        // the machine it runs on.
+        private const long _length = 8 * 1024 * 1024;
+
+        private readonly Action<int> _onRead;
+        private long _position;
+
+        public LargeStream( Action<int> onRead )
+        {
+            this._onRead = onRead;
+        }
+
+        public override int Read( byte[] buffer, int offset, int count )
+        {
+            var read = (int) Math.Min( count, _length - this._position );
+            this._position += read;
+            this._onRead( read );
+
+            return read;
+        }
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override void Flush() { }
+
+        public override long Seek( long offset, SeekOrigin origin ) => throw new NotSupportedException();
+
+        public override void SetLength( long value ) => throw new NotSupportedException();
+
+        public override void Write( byte[] buffer, int offset, int count ) => throw new NotSupportedException();
     }
 
     /// <summary>

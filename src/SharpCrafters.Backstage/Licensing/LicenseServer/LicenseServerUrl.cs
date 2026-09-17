@@ -62,6 +62,17 @@ internal static class LicenseServerUrl
             return false;
         }
 
+        if ( !string.IsNullOrEmpty( uri.Fragment ) )
+        {
+            // The client appends the path and the query string of the lease endpoint to this URL. Everything after a
+            // number sign is a fragment, so the appended part would become one too: the request would go to the base
+            // path with no arguments at all, and the user would meet a rejection by their server rather than a
+            // rejection of what they typed.
+            errorMessage = "The URL cannot contain a fragment.";
+
+            return false;
+        }
+
         if ( !string.IsNullOrEmpty( uri.UserInfo ) )
         {
             // PostSharp accepted a URL with a user info because it used WebClient, which honoured it. HttpClient
@@ -93,13 +104,26 @@ internal static class LicenseServerUrl
 
     /// <summary>
     /// Gets the key under which the lease of a license server is stored, so that two registrations that differ only
-    /// by a trailing slash or by the case of the host share one lease instead of leasing a seat each.
+    /// by a trailing slash or by the case of the scheme or the host share one lease instead of leasing a seat each.
     /// </summary>
     /// <param name="licenseServerUrl">The URL of a license server, as it was registered.</param>
     /// <returns>The key of <paramref name="licenseServerUrl"/> in the lease store.</returns>
     /// <remarks>
-    /// Only the key is normalized. The request is always built from the string the user registered, because the path
-    /// of a URL is case-sensitive on most servers and must not be touched.
+    /// <para>
+    /// The scheme and the host are case-insensitive by the specification of a URI, so two registrations that differ
+    /// only there are the same server. <b>A path is not.</b> On most servers <c>/TeamA</c> and <c>/teama</c> are two
+    /// applications, possibly of two divisions with two pools of seats, and a key that treated them as one would
+    /// license a build of either from the lease of the other.
+    /// </para>
+    /// <para>
+    /// Only the key is normalized. The request is always built from the string the user registered.
+    /// </para>
     /// </remarks>
-    public static string GetStoreKey( string licenseServerUrl ) => licenseServerUrl.TrimEnd( '/' );
+    public static string GetStoreKey( string licenseServerUrl )
+    {
+        // AbsoluteUri lower-cases the scheme and the host and leaves the path alone, which is exactly the rule.
+        var normalizedUrl = Uri.TryCreate( licenseServerUrl, UriKind.Absolute, out var uri ) ? uri.AbsoluteUri : licenseServerUrl;
+
+        return normalizedUrl.TrimEnd( '/' );
+    }
 }

@@ -3,8 +3,6 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Configuration;
-using SharpCrafters.Backstage.Serialization;
-using System;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Text.Json.Serialization;
@@ -32,8 +30,11 @@ namespace SharpCrafters.Backstage.Licensing.LicenseServer;
 [Description( "Licenses leased from license servers." )]
 internal sealed record LicenseServerConfiguration : ConfigurationFile
 {
+    /// <remarks>
+    /// The keys are compared ordinally, and <see cref="LicenseServerUrl.GetStoreKey"/> is what makes two spellings of
+    /// one server into one key. The comparison cannot be case-insensitive, because the path of a URL is not: two
+    /// servers published under paths that differ only by case are two servers.
+    /// </remarks>
     [JsonPropertyName( "leases" )]
-    [JsonConverter( typeof(CaseInsensitiveImmutableDictionaryConverterFactory<LeaseConfiguration>) )]
-    public ImmutableDictionary<string, LeaseConfiguration> Leases { get; init; } =
-        ImmutableDictionary<string, LeaseConfiguration>.Empty.WithComparers( StringComparer.OrdinalIgnoreCase );
+    public ImmutableDictionary<string, LeaseConfiguration> Leases { get; init; } = ImmutableDictionary<string, LeaseConfiguration>.Empty;
 }

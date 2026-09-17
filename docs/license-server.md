@@ -18,7 +18,7 @@ This is the question to answer before changing anything in this subsystem.
 | `ILicense.ReportUse` (the audit) | no | no |
 | `ILicenseRegistrationService.RegisterLicenseAsync` | **yes**, always | **yes** |
 | `ILicenseRegistrationService.ResolveLicenseAsync` | **yes**, always, for a URL | **yes** |
-| `ILicenseRegistrationService.AcquireLeaseAsync` (`license acquire-lease`) | only when the stored lease is due, or **always** with `--force` | **yes**, when it downloads; requires an interactive session |
+| `ILicenseRegistrationService.AcquireLeaseAsync` (`license acquire-lease`) | only when the stored lease is due, or **always** with `--force` | **yes**, when it downloads; requires an interactive session, and refuses a licence the next build would refuse |
 | `ILicenseRegistrationService.RegisteredLicenses` (`license list`) | no | no |
 | `ILicenseRegistrationService.RemoveLicenses` (`license unregister`) | no | releases nothing before the lease ends |
 
@@ -88,6 +88,8 @@ An absent `version` is read by the server as `4.9.9`, that is, "a pre-5.0 client
 
 > **Rule.** Never call `EnsureSuccessStatusCode` on this response. It discards the body of a 403, which is the only thing that tells the user what to do.
 
+> **Rule.** The body is read up to a bound, off the stream, with `HttpCompletionOption.ResponseHeadersRead`. The length a server declares is the word of that server and may be absent or untrue, so a check against `Content-Length` bounds nothing and a buffered read has already allocated whatever was sent by the time anything can object.
+
 ### The response
 
 One line, parsed leniently: split on `;`, split each part at the *first* `:`, lowercase the key, recognize `license`, `starttime`, `endtime` and `renewtime`, ignore everything else.
@@ -123,11 +125,13 @@ Reproduced faithfully by `LicenseServerSimulator`, because a simulator that disa
 | File | Scope | Contents |
 |---|---|---|
 | `licensing.json` | user | the registered license strings, including a server URL; `allowInsecureLicenseServer` |
-| `licenseServer.json` | user | one lease per server URL, keyed by `LicenseServerUrl.GetStoreKey` |
+| `licenseServer.json` | user | one lease per server URL, keyed by `LicenseServerUrl.GetStoreKey`, compared ordinally |
 
 The leases live in a file of their own, not in `licensing.json`, for two reasons. The configuration manager takes one named lock **per file path**, and a lease is written whenever a build renews one, whereas the registered keys are written only when the user registers something; sharing the file would make every build queue behind an occasional command. And the two have different standing: `licensing.json` records what the user decided, a lease is derived state that can be acquired again at any moment.
 
 A registered URL is stored in the group of `LicensingConstants.MinimalLicenseServerVersion` (`2027.0`), so an earlier Metalama reading the same `licensing.json` skips it instead of reporting a parse error the user cannot act upon.
+
+> **Rule.** The key of a lease lower-cases the scheme and the host, which a URI says are case-insensitive, and leaves the path alone, which it does not. On most servers `/TeamA` and `/teama` are two applications — possibly of two divisions with two pools of seats — so a key that folded their case would license a build of either from the seat of the other.
 
 > **Rule.** `LicenseLeaseStore` skips its write when `ConfigurationUpdateScope.IsUpdating`, rather than throwing. A transformation of one configuration file must not update another; a skipped write costs one extra request later, whereas an exception fails a build.
 
