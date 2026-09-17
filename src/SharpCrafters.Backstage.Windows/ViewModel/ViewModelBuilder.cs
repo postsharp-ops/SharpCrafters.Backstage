@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -76,6 +76,18 @@ internal static class ViewModelBuilder
 
             return true;
         }
+        else if ( settings.Kind == ToastNotificationKinds.LicenseServerUnreachable.Name )
+        {
+            // The action opens the setup page, which is where the user sees what licenses this machine and can
+            // register a license key if the server stays down. Nothing here can reach the server for them.
+            viewModel = new NotificationViewModel(
+                settings.Kind,
+                settings.Title ?? "License server unreachable",
+                settings.Text ?? $"{productName} could not renew the license of this machine.",
+                new CommandActionViewModel( "Options", activationArguments.Setup ) );
+
+            return true;
+        }
         else if ( settings.Kind == ToastNotificationKinds.ExceptionReport.Name )
         {
             // Open the worker review page (formatted report + Report button + per-category auto-report checkbox)
@@ -129,6 +141,20 @@ internal static class ViewModelBuilder
                 settings.Title,
                 new UriActionViewModel( "Read", newsUri ),
                 new CommandActionViewModel( "Options", activationArguments.OpenRssOptions ) ) { CanMute = false, CanSnooze = false };
+
+            return true;
+        }
+        else if ( ToastNotificationKinds.All.ContainsKey( settings.Kind ) && settings.Title != null )
+        {
+            // A kind this build does not know by name, but which the product does. It is shown with the words the
+            // product supplied and no tailored action.
+            //
+            // The branch exists because the alternative is silence: every kind above needs a case here, nothing
+            // fails to build when one is added without it, and the notification is then raised, recorded and never
+            // seen. A notification that cannot be seen is worse than one with a generic button, and the desktop
+            // application is versioned separately from the product that publishes the kinds, so the two are not
+            // always in step even when nobody forgets.
+            viewModel = new NotificationViewModel( settings.Kind, settings.Title, settings.Text );
 
             return true;
         }

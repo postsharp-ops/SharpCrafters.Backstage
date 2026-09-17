@@ -53,8 +53,11 @@ A renewal begins a day before the lease ends, so a server that stops answering i
 | The build | Nothing. It is licensed, and there is nothing it could report that the developer could act upon while compiling. |
 | The person | A toast notification, `ToastNotificationKinds.LicenseServerUnreachable`, naming the server and the instant the builds stop. |
 | The log | A warning, for whoever reads it afterwards. |
+| Nobody, once the lease has run out | The build is unlicensed and says so — see below. |
 
 `LicenseServerClient` publishes `LicenseLeaseRenewalFailedEvent`, and `UserInterfaceEventSubscriber` turns it into the notification. The licensing services do not reference the user interface, which is why it goes through the dispatcher.
+
+> **Rule.** A notification is not shown until `SharpCrafters.Backstage.Windows` knows how to draw it. `ViewModelBuilder` matches on the name of the kind, nothing fails to build when a kind has no case, and the product and the desktop application are versioned separately — so a kind added on one side is invisible on the other until the other catches up. Its fallback branch now draws any kind the product declares, with the words the product supplied and no tailored action, so the failure is a plain notification rather than silence.
 
 > **Rule.** A build that holds a valid lease reports nothing about the server. A warning on every project of every build is noise, and noise is what makes the warning that matters invisible — this one has a day to be noticed in.
 
