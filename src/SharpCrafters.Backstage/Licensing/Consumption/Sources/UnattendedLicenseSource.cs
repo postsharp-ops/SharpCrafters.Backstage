@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -30,12 +30,8 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
     }
 
-#pragma warning disable CS1998 // The method has no await: the decision costs no I/O, but the interface is asynchronous
-                              // because another source fetches its licences from a license server.
-    public async IAsyncEnumerable<ILicense> GetLicensesAsync(
-        Action<LicensingMessage> reportMessage,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default )
-#pragma warning restore CS1998
+    /// <inheritdoc />
+    public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
     {
         if ( this._applicationInfo.IsUnattendedProcess( this._serviceProvider.GetLoggerFactory() ) )
         {
@@ -49,7 +45,7 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         }
     }
 
-    public ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
+    public ValueTask<LicenseRegistrationBlocker> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
         => throw new NotSupportedException( "Unattended license source doesn't support license registration." );
 
     ValueTask<LicenseConsumptionResult> ILicense.GetConsumptionPropertiesAsync(

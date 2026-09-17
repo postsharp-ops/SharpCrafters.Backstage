@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -65,8 +65,8 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// A licence key carries everything it needs, so the operation completes synchronously and allocates nothing.
         /// The asynchronous shape exists for the licence leased from a license server, which is fetched over HTTP.
         /// </remarks>
-        public override ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
-            => new( this.CanBeRegisteredCore( out var errorMessage ) ? null : errorMessage );
+        public override ValueTask<LicenseRegistrationBlocker> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
+            => new( this.GetRegistrationBlockerCore() );
 
         /// <inheritdoc />
         public override ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(
@@ -84,24 +84,22 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                     ? LicenseRegistrationPropertiesResult.Success( properties )
                     : LicenseRegistrationPropertiesResult.Failure( errorMessage ) );
 
-        private bool CanBeRegisteredCore( [MaybeNullWhen( true )] out string errorMessage )
+        private LicenseRegistrationBlocker GetRegistrationBlockerCore()
         {
             // Validates that the key can be consumed.
-            if ( !this.TryGetConsumptionPropertiesCore( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out errorMessage ) )
+            if ( !this.TryGetConsumptionPropertiesCore( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out var errorMessage ) )
             {
-                return false;
+                return LicenseRegistrationBlocker.Unusable( errorMessage );
             }
 
 #pragma warning disable CS0612 // Type or member is obsolete
             if ( licenseConsumptionData.IsRedistributable )
             {
-                errorMessage = "this is a redistribution license key";
-
-                return false;
+                return LicenseRegistrationBlocker.Redistribution;
             }
 #pragma warning restore CS0612 // Type or member is obsolete
 
-            return true;
+            return LicenseRegistrationBlocker.None;
         }
 
         private bool TryGetConsumptionPropertiesCore(

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -10,7 +10,6 @@ using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Serialization;
-using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -89,11 +88,11 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     /// Reads the license keys of the user profile, which is the path that a compilation takes.
     /// </summary>
     /// <returns>The license keys that the running version consumes, and the messages that reading them reported.</returns>
-    private async Task<(List<ILicense> Licenses, List<LicensingMessage> Messages)> GetLicensesFromUserProfileAsync()
+    private (List<ILicense> Licenses, List<LicensingMessage> Messages) GetLicensesFromUserProfile()
     {
         var messages = new List<LicensingMessage>();
         var source = new UserProfileLicenseSource( this.ServiceProvider );
-        var licenses = await source.GetLicensesAsync( messages.Add ).DrainAsync();
+        var licenses = source.GetLicenses( messages.Add ).ToList();
 
         foreach ( var message in messages )
         {
@@ -160,7 +159,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
+        var (licenses, messages) = this.GetLicensesFromUserProfile();
 
         Assert.Single( licenses );
         Assert.Empty( messages );
@@ -184,7 +183,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
+        var (licenses, messages) = this.GetLicensesFromUserProfile();
 
         Assert.Empty( licenses );
         Assert.Empty( messages );
@@ -210,7 +209,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
               }
               """ );
 
-        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
+        var (licenses, messages) = this.GetLicensesFromUserProfile();
 
         Assert.Equal( 3, licenses.Count );
         Assert.Empty( messages );
@@ -239,7 +238,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
 
         this.EnsureServicesInitialized();
 
-        var (licenses, messages) = await this.GetLicensesFromUserProfileAsync();
+        var (licenses, messages) = this.GetLicensesFromUserProfile();
 
         Assert.Single( licenses );
         Assert.Empty( messages );

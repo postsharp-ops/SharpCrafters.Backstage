@@ -37,7 +37,7 @@ internal abstract class AuditableLicense : ILicense
     }
 
     /// <inheritdoc />
-    public abstract ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default );
+    public abstract ValueTask<LicenseRegistrationBlocker> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default );
 
     /// <inheritdoc />
     public abstract ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(

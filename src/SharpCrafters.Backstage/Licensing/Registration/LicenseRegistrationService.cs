@@ -31,6 +31,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     private readonly ProductProfile _productProfile;
     private readonly ILicenseProductCatalog _catalog;
     private readonly LicenseLeaseStore _leaseStore;
+    private readonly LicenseServerUrlValidator _licenseServerUrlValidator;
 
     /// <summary>
     /// The version of the running product. It decides the groups of license keys that the current service reads.
@@ -48,6 +49,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
         this._catalog = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>();
         this._leaseStore = serviceProvider.GetRequiredBackstageService<LicenseLeaseStore>();
+        this._licenseServerUrlValidator = serviceProvider.GetRequiredBackstageService<LicenseServerUrlValidator>();
 
         // We intentionally omit to unsubscribe from the event because this service has generally the same lifetime as the application
         // and is never disposed of.
@@ -195,7 +197,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     /// <inheritdoc />
     public ValueTask<LicenseRegistrationResult> TestLicenseServerAsync( string licenseServerUrl, CancellationToken cancellationToken = default )
     {
-        if ( !LicenseServerUrl.IsLicenseServerUrl( licenseServerUrl, out var errorMessage ) )
+        if ( !this._licenseServerUrlValidator.TryValidate( licenseServerUrl, out var errorMessage, out _ ) )
         {
             return new ValueTask<LicenseRegistrationResult>( LicenseRegistrationResult.Failure( errorMessage ) );
         }
@@ -218,7 +220,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         var factory = new LicenseFactory( this._serviceProvider );
 
-        if ( !factory.TryCreate( licenseString, out var license, out var factoryErrorMessage ) )
+        if ( !factory.TryCreate( licenseString, null, out var license, out var factoryErrorMessage ) )
         {
             return LicenseRegistrationResult.Failure( factoryErrorMessage );
         }
@@ -255,7 +257,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         var factory = new LicenseFactory( this._serviceProvider );
 
-        if ( !factory.TryCreate( licenseString, out var license, out var factoryErrorMessage ) )
+        if ( !factory.TryCreate( licenseString, null, out var license, out var factoryErrorMessage ) )
         {
             return LicenseRegistrationResult.Failure( factoryErrorMessage );
         }
@@ -269,9 +271,9 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         var registrationBlocker = await license.GetRegistrationBlockerAsync( cancellationToken );
 
-        if ( registrationBlocker != null )
+        if ( registrationBlocker.IsBlocked )
         {
-            return LicenseRegistrationResult.Failure( registrationBlocker );
+            return LicenseRegistrationResult.Failure( registrationBlocker.Message! );
         }
 
         var properties = registrationResult.Properties;

@@ -89,8 +89,10 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         // decides which licence satisfies a requirement, not whether the server is contacted.
         foreach ( var source in licenseSources.OrderBy( s => s.Priority ) )
         {
-            await foreach ( var license in source.GetLicensesAsync( ReportMessage, cancellationToken ).WithCancellation( cancellationToken ) )
+            foreach ( var license in source.GetLicenses( ReportMessage ) )
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var consumptionResult = await license.GetConsumptionPropertiesAsync( options, cancellationToken );
 
                 if ( !consumptionResult.IsSuccess )

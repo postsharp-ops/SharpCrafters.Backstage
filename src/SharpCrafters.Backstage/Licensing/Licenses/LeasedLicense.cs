@@ -118,23 +118,23 @@ internal sealed class LeasedLicense : AuditableLicense
     }
 
     /// <inheritdoc />
-    public override async ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
+    public override async ValueTask<LicenseRegistrationBlocker> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default )
     {
         var consumptionResult = await this.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.ForRegistration, cancellationToken );
 
         if ( !consumptionResult.IsSuccess )
         {
-            return consumptionResult.ErrorMessage;
+            return LicenseRegistrationBlocker.Unusable( consumptionResult.ErrorMessage! );
         }
 
 #pragma warning disable CS0612 // Type or member is obsolete
         if ( consumptionResult.Properties!.IsRedistributable )
 #pragma warning restore CS0612
         {
-            return "this is a redistribution license key";
+            return LicenseRegistrationBlocker.Redistribution;
         }
 
-        return null;
+        return LicenseRegistrationBlocker.None;
     }
 
     /// <summary>

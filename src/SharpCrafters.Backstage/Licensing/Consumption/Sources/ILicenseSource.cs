@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -6,7 +6,6 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
-using System.Threading;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
 {
@@ -27,12 +26,13 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         /// present but unusable.
         /// </summary>
         /// <param name="reportMessage">Action to be called when a license is invalid.</param>
-        /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>The licenses of the source, which may be none.</returns>
         /// <remarks>
-        /// The sequence is asynchronous because a license server is contacted over HTTP while it is enumerated.
+        /// Enumerating a source costs no I/O: it turns license strings into <see cref="ILicense"/> objects and does
+        /// nothing else. A license server is contacted when the licence that stands for it is resolved, which
+        /// <see cref="ILicenseConsumptionService.CreateConsumerAsync"/> does after the enumeration.
         /// </remarks>
-        IAsyncEnumerable<ILicense> GetLicensesAsync( Action<LicensingMessage> reportMessage, CancellationToken cancellationToken = default );
+        IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage );
 
         /// <summary>
         /// Event raised when the current source has changed.

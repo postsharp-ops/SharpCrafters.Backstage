@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -95,6 +95,24 @@ public sealed class TestLicenseKeyProvider
     public string PostSharpUltimateWithLongTermSupport => this.GenerateLicenseKey( 3, LicenseProduct.PostSharpUltimate, servicing: ServicingPhase.LongTerm );
 
     public const string PostSharpUltimateOpenSourceRedistributionNamespace = "Oss";
+
+    /// <summary>
+    /// Gets a redistribution license key, which licenses the code that a customer ships rather than the machine of a
+    /// user and which is therefore never registered in a user profile. It carries a namespace, without which it would
+    /// be refused earlier and for a different reason.
+    /// </summary>
+    public string MetalamaProfessionalRedistribution
+        => this.GenerateLicenseKey(
+            30,
+            license =>
+            {
+                license.Product = LicenseProduct.MetalamaProfessional;
+#pragma warning disable CS0618 // Redistribution license types are obsolete, which is exactly what this key tests.
+                license.LicenseType = LicenseType.CommercialRedistribution;
+#pragma warning restore CS0618
+                license.Generation = LicenseGeneration.Current;
+                license.Namespace = NamespaceConstraint;
+            } );
 
     public string MetalamaProfessionalPersonal => this.GenerateLicenseKey( 4, LicenseProduct.MetalamaProfessional, LicenseType.Personal );
 

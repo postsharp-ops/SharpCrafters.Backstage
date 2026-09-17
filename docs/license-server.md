@@ -1,4 +1,4 @@
-# License server
+﻿# License server
 
 This document describes how a license server works inside `SharpCrafters.Backstage`: what the wire protocol is, where a lease is stored, and — the part that is easy to get wrong — **when a seat is taken from the customer's pool**. It exists because a mistake in seat accounting is invisible: nothing fails, the organization simply runs out of seats, and the person who reports it is not the person whose build took them.
 
@@ -10,6 +10,7 @@ This is the question to answer before changing anything in this subsystem.
 
 | Operation | Contacts the server | Takes a seat |
 |---|---|---|
+| `ILicenseSource.GetLicenses` | no | no |
 | `LicenseFactory.TryCreate` | no | no |
 | `ILicenseConsumptionService.CreateConsumerAsync` | **yes**, unless a stored lease is valid and not due for renewal | **yes**, on the first acquisition for this machine |
 | `ILicenseConsumer.TryConsume` | no | no |
@@ -23,6 +24,8 @@ This is the question to answer before changing anything in this subsystem.
 **Creating a consumer is where a lease is acquired.** Every licence of every source is resolved by the time `CreateConsumerAsync` returns, so that `TryConsume` — which a compilation calls once per requirement, on its critical path — neither waits nor allocates. `TryConsume` cannot take a seat, because by then there is nothing left to acquire.
 
 > **Rule.** `ILicenseConsumer.TryConsume` is synchronous and stays synchronous. Anything that would make it wait for a network belongs in `CreateConsumerAsync` instead.
+
+> **Rule.** Enumerating an `ILicenseSource` costs no I/O either. It turns license strings into `ILicense` objects and does nothing else, which is why `GetLicenses` is a plain `IEnumerable<ILicense>`. The server is contacted one step later, when the consumption service resolves the licence.
 
 A *seat* is held by a **user and machine for the life of the lease**, not by a build. With the server defaults — a three-day lease, renewed after two — one machine contacts the server about once every two days, whatever the number of builds in between. Acquiring is therefore better read as "registering this machine with the server for the next three days" than as "paying for this build".
 
@@ -114,7 +117,7 @@ It does not decide whether the server is contacted. See [When a seat is taken](#
 
 ## Insecure `http://`
 
-A lease request carries the user name and the machine name, so an `http://` server discloses who works where to anyone on the path. That is reported as a warning by `InsecureLicenseServerWarning`, from the licence source on every build and from `license register` and `license test-server`, which is the moment the user can still choose a different URL.
+A lease request carries the user name and the machine name, so an `http://` server discloses who works where to anyone on the path. `LicenseServerUrlValidator.TryValidate` returns that as a *warning* beside the error that would refuse the URL, and every caller reports it: `LicenseFactory`, so a build says it once per license string; and `license register` and `license test-server`, which is the moment the user can still choose a different URL.
 
 It is **never an error**. Refusing the server would fail a build over a deployment the developer did not choose and cannot change. `allowInsecureLicenseServer` in `licensing.json` silences the warning; there is no other setting, and a loopback address is not exempt, because an exemption would also cover a loopback port forwarded to a remote host.
 

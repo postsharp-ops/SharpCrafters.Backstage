@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -10,7 +10,6 @@ using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -226,11 +225,7 @@ public sealed class ObsoleteSyncForwarderTests : LicensingTestsBase
 
         public bool SupportsRegistration => false;
 
-#pragma warning disable CS1998 // The method throws before it yields, so nothing is awaited.
-        public async IAsyncEnumerable<ILicense> GetLicensesAsync(
-            Action<LicensingMessage> reportMessage,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default )
-#pragma warning restore CS1998
+        public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
         {
             throw new InvalidOperationException( "The license source failed." );
 

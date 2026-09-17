@@ -2,12 +2,9 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
 {
@@ -35,29 +32,15 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         /// </remarks>
         protected abstract IEnumerable<string> GetLicenseStrings( Action<LicensingMessage> reportMessage );
 
-#pragma warning disable CS1998 // The method has no await: the strings come from a configuration file, but a license
-                              // among them may be leased from a server, which is fetched when it is consumed.
-        public async IAsyncEnumerable<ILicense> GetLicensesAsync(
-            Action<LicensingMessage> reportMessage,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default )
-#pragma warning restore CS1998
+        /// <inheritdoc />
+        public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
         {
             var licenseFactory = new LicenseFactory( this._services );
 
             foreach ( var licenseString in this.GetLicenseStrings( reportMessage ) )
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if ( licenseFactory.TryCreate( licenseString, out var license, out var errorMessage ) )
+                if ( licenseFactory.TryCreate( licenseString, reportMessage, out var license, out var errorMessage ) )
                 {
-                    // A license server about to be used over HTTP is worth saying out loud, once per source and per
-                    // consumer, and here is where a license string is known to be a server that this build will
-                    // contact.
-                    if ( InsecureLicenseServerWarning.Get( this._services, licenseString ) is { } insecureServerWarning )
-                    {
-                        reportMessage( new LicensingMessage( insecureServerWarning ) );
-                    }
-
                     yield return license;
                 }
                 else

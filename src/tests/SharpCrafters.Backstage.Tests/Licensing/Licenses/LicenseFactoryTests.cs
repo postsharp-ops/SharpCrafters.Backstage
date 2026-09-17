@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -40,26 +40,26 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [Fact]
         public void NullLicenseStringFails()
         {
-            Assert.False( this.LicenseFactory.TryCreate( "", out _, out _ ) );
+            Assert.False( this.LicenseFactory.TryCreate( "", null, out _, out _ ) );
         }
 
         [Fact]
         public void EmptyLicenseStringFails()
         {
-            Assert.False( this.LicenseFactory.TryCreate( string.Empty, out _, out _ ) );
+            Assert.False( this.LicenseFactory.TryCreate( string.Empty, null, out _, out _ ) );
         }
 
         [Fact]
         public void WhitespaceLicenseStringFails()
         {
-            Assert.False( this.LicenseFactory.TryCreate( " ", out _, out _ ) );
+            Assert.False( this.LicenseFactory.TryCreate( " ", null, out _, out _ ) );
         }
 
         [Fact]
         public async Task InvalidLicenseStringCreatesInvalidLicense()
         {
             const string invalidLicenseString = "SomeInvalidLicenseString";
-            Assert.True( this.LicenseFactory.TryCreate( invalidLicenseString, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( invalidLicenseString, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
             Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
@@ -74,7 +74,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
 
             // ReSharper restore StringLiteralTypo
 
-            Assert.True( this.LicenseFactory.TryCreate( revokedLicenseString, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( revokedLicenseString, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
             Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
@@ -83,7 +83,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [Fact]
         public async Task ValidLicenseKeyCreatesValidLicense()
         {
-            Assert.True( this.LicenseFactory.TryCreate( LicenseKeyProvider.PostSharpUltimate, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( LicenseKeyProvider.PostSharpUltimate, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
             var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
@@ -103,7 +103,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [InlineData( "https://license.test:8443/postsharp" )]
         public void UrlCreatesLeasedLicense( string url )
         {
-            Assert.True( this.LicenseFactory.TryCreate( url, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( url, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.IsType<LeasedLicense>( license );
             Assert.Empty( this.HttpClientFactory.ProcessedRequests );
@@ -120,7 +120,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [InlineData( "https://alice:secret@license.test", "user name" )]
         public void MalformedUrlIsRefusedWithItsReason( string url, string expectedMessageSubstring )
         {
-            Assert.False( this.LicenseFactory.TryCreate( url, out var license, out var errorMessage ) );
+            Assert.False( this.LicenseFactory.TryCreate( url, null, out var license, out var errorMessage ) );
             Assert.Null( license );
             Assert.Contains( expectedMessageSubstring, errorMessage, StringComparison.Ordinal );
         }
@@ -140,7 +140,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
                 Product = LicenseProduct.MetalamaProfessional, Signature = new byte[16], SignatureKeyId = signatureKeyId
             }.SerializeToLicenseString();
 
-            Assert.True( this.LicenseFactory.TryCreate( licenseKey, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( licenseKey, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
 

@@ -31,9 +31,11 @@ internal class TestLicenseServerCommand : BaseAsyncCommand<TestLicenseServerComm
 
         context.Console.WriteSuccess( $"The license server '{settings.Url}' is reachable and leases the following license:" );
         context.Console.Out.Write( LicenseTable.Create( result.RegisteredLicense ) );
-        if ( InsecureLicenseServerWarning.Get( context.ServiceProvider, settings.Url ) is { } insecureServerWarning )
+        if ( context.ServiceProvider.GetRequiredBackstageService<LicenseServerUrlValidator>()
+                 .TryValidate( settings.Url, out _, out var warning )
+             && warning != null )
         {
-            context.Console.WriteWarning( insecureServerWarning );
+            context.Console.WriteWarning( warning );
         }
 
         context.Console.WriteMessage( "The license server has not been registered. Use 'license register' to register it." );

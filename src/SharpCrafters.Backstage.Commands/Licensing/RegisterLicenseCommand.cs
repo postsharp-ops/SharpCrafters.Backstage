@@ -39,9 +39,12 @@ internal class RegisterLicenseCommand : BaseAsyncCommand<RegisterLicenseCommandS
 
         // Registering is the moment the user can still choose a different URL, so the warning belongs here as much as
         // it belongs to the builds that will lease from this server.
-        if ( InsecureLicenseServerWarning.Get( context.ServiceProvider, result.RegisteredLicense.LicenseServerUrl ) is { } insecureServerWarning )
+        if ( result.RegisteredLicense.LicenseServerUrl != null
+             && context.ServiceProvider.GetRequiredBackstageService<LicenseServerUrlValidator>()
+                 .TryValidate( result.RegisteredLicense.LicenseServerUrl, out _, out var warning )
+             && warning != null )
         {
-            context.Console.WriteWarning( insecureServerWarning );
+            context.Console.WriteWarning( warning );
         }
     }
 }
