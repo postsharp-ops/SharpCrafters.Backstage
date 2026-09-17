@@ -10,7 +10,9 @@ using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tests.Licensing.Consumption;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -564,6 +566,139 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
 
         Assert.True( canConsume );
         server.AssertContacted();
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // A license server that goes down while a lease is still valid.
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Brings the current lease to the day on which the product renews it, and takes the license server down.
+    /// </summary>
+    private void MakeTheServerUnreachableOnRenewalDay( LicenseServerSimulator server )
+    {
+        // The default lease lasts three days and is renewed after two.
+        this.Time.AddTime( TimeSpan.FromDays( 2 ) + TimeSpan.FromMinutes( 1 ) );
+        server.FaultMode = LicenseServerFault.Unreachable;
+        server.ClearRequests();
+        this.Messages.Clear();
+    }
+
+    /// <summary>
+    /// Tests that a developer whose license server goes down keeps building. They hold a lease that is still valid,
+    /// they paid for the period it covers, and a server that is briefly unreachable -- a restart, a certificate, a
+    /// virtual private network that dropped -- must not stop the work of everyone who relies on it.
+    /// </summary>
+    [Fact]
+    public async Task BuildIsLicensedWhenTheServerIsDownAndTheLeaseIsStillValid()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.MakeTheServerUnreachableOnRenewalDay( server );
+
+        Assert.True( await this.TryConsumeAsync() );
+        server.AssertContacted();
+    }
+
+    /// <summary>
+    /// Tests that the build says nothing about it. The build is licensed, so there is nothing it could report that
+    /// the developer could act upon while compiling; a warning on every project of every build is noise, and noise is
+    /// what makes the warning that matters invisible.
+    /// </summary>
+    [Fact]
+    public async Task BuildReportsNothingWhenTheServerIsDownAndTheLeaseIsStillValid()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.MakeTheServerUnreachableOnRenewalDay( server );
+
+        Assert.True( await this.TryConsumeAsync() );
+        Assert.Empty( this.Messages );
+    }
+
+    /// <summary>
+    /// Tests that the person is told, through a notification. The lease they are living on has an end, their builds
+    /// stop on the day it arrives, and this is the only warning they get: the renewal begins a day before the end, so
+    /// this is the day on which somebody has to notice and go and look at the server.
+    /// </summary>
+    [Fact]
+    public async Task UserIsNotifiedWhenTheServerIsDownAndTheLeaseIsStillValid()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.MakeTheServerUnreachableOnRenewalDay( server );
+
+        Assert.True( await this.TryConsumeAsync() );
+        await this.DrainEventsAsync();
+
+        var notification = Assert.Single( this.UserInterface.Notifications );
+        Assert.Equal( ToastNotificationKinds.LicenseServerUnreachable, notification.Kind );
+        Assert.Contains( server.Url, notification.Text, StringComparison.Ordinal );
+    }
+
+    /// <summary>
+    /// Tests that the notification says until when the builds are licensed. "The server is unreachable" is a fact the
+    /// user can do nothing with on its own; the date is what tells them whether to walk over to the server now or
+    /// after lunch.
+    /// </summary>
+    [Fact]
+    public async Task NotificationSaysUntilWhenTheBuildsAreLicensed()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        Assert.True( this.LeaseStore.TryGetLease( server.Url, out var lease ) );
+        this.MakeTheServerUnreachableOnRenewalDay( server );
+
+        Assert.True( await this.TryConsumeAsync() );
+        await this.DrainEventsAsync();
+
+        var notification = Assert.Single( this.UserInterface.Notifications );
+        Assert.Contains( lease.EndTime.ToLocalTime().ToString( "f", CultureInfo.CurrentCulture ), notification.Text, StringComparison.Ordinal );
+    }
+
+    /// <summary>
+    /// Tests that a server which is answering produces no notification. A warning shown when nothing is wrong is the
+    /// fastest way to teach a user to dismiss the one that matters without reading it.
+    /// </summary>
+    [Fact]
+    public async Task NoNotificationWhileTheServerAnswers()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        // Past the renewal instant, but with the server answering: the lease is renewed and nobody hears about it.
+        this.Time.AddTime( TimeSpan.FromDays( 2 ) + TimeSpan.FromMinutes( 1 ) );
+
+        Assert.True( await this.TryConsumeAsync() );
+        await this.DrainEventsAsync();
+
+        Assert.Empty( this.UserInterface.Notifications );
+    }
+
+    /// <summary>
+    /// Tests that once the lease has run out the product stops pretending. The developer is no longer licensed, so
+    /// the build tells them so, which is the message they can act upon: the notification was the warning, and this is
+    /// the consequence it warned about.
+    /// </summary>
+    [Fact]
+    public async Task BuildIsUnlicensedOnceTheLeaseHasRunOutAndTheServerIsStillDown()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        this.Time.AddTime( TimeSpan.FromDays( 3 ) + TimeSpan.FromMinutes( 1 ) );
+        server.FaultMode = LicenseServerFault.Unreachable;
+        this.Messages.Clear();
+
+        Assert.False( await this.TryConsumeAsync() );
+        Assert.Contains( this.Messages, m => m.Text.Contains( "Cannot get a lease", StringComparison.Ordinal ) );
     }
 
     // ---------------------------------------------------------------------------------------------------------------

@@ -35,6 +35,12 @@ internal sealed class LicenseServerClient : IBackstageService
     private readonly IApplicationInfo _applicationInfo;
     private readonly LicenseLeaseStore _leaseStore;
     private readonly ILogger _logger;
+
+    /// <summary>
+    /// The dispatcher on which a failed renewal is announced, or <see langword="null"/> in a service graph that has
+    /// none. A command line has no user interface to notify, and must not fail for want of one.
+    /// </summary>
+    private readonly IEventDispatcher? _eventDispatcher;
     private readonly LicensingInitializationOptions _options;
 
     public LicenseServerClient( IServiceProvider serviceProvider, LicensingInitializationOptions options )
@@ -46,6 +52,7 @@ internal sealed class LicenseServerClient : IBackstageService
         this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
         this._leaseStore = serviceProvider.GetRequiredBackstageService<LicenseLeaseStore>();
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
+        this._eventDispatcher = serviceProvider.GetBackstageService<IEventDispatcher>();
         this._options = options;
     }
 
@@ -65,7 +72,9 @@ internal sealed class LicenseServerClient : IBackstageService
     /// rather than allocating one.
     /// </para>
     /// <para>
-    /// A renewal that fails while the stored lease is still valid keeps that lease and reports nothing to the caller:
+    /// A renewal that fails while the stored lease is still valid publishes a
+    /// <see cref="LicenseLeaseRenewalFailedEvent"/>, so that the user interface can warn the person, and keeps that
+    /// lease and reports nothing to the caller:
     /// the build has a licence, and failing it because the server is briefly unreachable would be worse than the
     /// problem. PostSharp reported such a failure as an error although it went on using the lease.
     /// </para>
@@ -97,6 +106,11 @@ internal sealed class LicenseServerClient : IBackstageService
 
                 this._logger.Warning?.Log(
                     $"Could not renew the lease of '{licenseServerUrl}': {renewalResult.ErrorMessage} The lease held until {storedLease.EndTime:u} is used instead." );
+
+                // The build is licensed and hears nothing. The person is told, because the lease they are living on
+                // has an end and this is the only warning they will get before it arrives.
+                this._eventDispatcher?.Publish(
+                    new LicenseLeaseRenewalFailedEvent( licenseServerUrl, storedLease.EndTime, renewalResult.ErrorMessage! ) );
 
                 return LicenseLeaseResult.Success( storedLease );
             }

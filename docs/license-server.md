@@ -44,6 +44,22 @@ In that configuration **the server is contacted and a seat is held although the 
 
 The trade is one seat held by a machine that did not need it, against a build that fails although a licence was available. It is also symmetric with a licence key, which is reported to the licence audit whether or not a requirement used it; the ledger of the server is that same accounting in the customer's own hands. And what it costs is now bounded by the machines of the developers, which is the population the seats were bought for: the build servers, which would have cost the most, are out of it.
 
+### When the server goes down
+
+A renewal begins a day before the lease ends, so a server that stops answering is caught while there is still a day of licensed building left. What happens then is split deliberately:
+
+| Who | What they get |
+|---|---|
+| The build | Nothing. It is licensed, and there is nothing it could report that the developer could act upon while compiling. |
+| The person | A toast notification, `ToastNotificationKinds.LicenseServerUnreachable`, naming the server and the instant the builds stop. |
+| The log | A warning, for whoever reads it afterwards. |
+
+`LicenseServerClient` publishes `LicenseLeaseRenewalFailedEvent`, and `UserInterfaceEventSubscriber` turns it into the notification. The licensing services do not reference the user interface, which is why it goes through the dispatcher.
+
+> **Rule.** A build that holds a valid lease reports nothing about the server. A warning on every project of every build is noise, and noise is what makes the warning that matters invisible — this one has a day to be noticed in.
+
+Once the lease has run out the product stops pretending: the build is unlicensed and says so, which is the message the developer can act upon. The notification was the warning; this is the thing it warned about.
+
 > **Rule.** A licence is resolved once per `ILicense` instance (`LeasedLicense._resolution`). The consumption service asks a licence that failed for its registration properties in order to name it in the message, so dropping the memo would contact the server twice for one consumer.
 
 ## The protocol
@@ -133,7 +149,7 @@ Each of these is a defect of the original, not a difference of taste. Reintroduc
 1. `TryDownloadLease` returned a lease **and** reported an error when only the registry write had failed, because one `try` covered both. Here a download failure returns a failed result; a cache-write failure is logged only.
 2. The expired-lease path wrote to the default registry value inside a loop over *named* values, so an expired version-named lease wiped the version-agnostic one. Structurally impossible now: one lease per URL.
 3. `CleanLicenseString` strips everything that is not a letter, digit or `-`, which destroys a URL. `LeasedLicense` must never call it.
-4. A failed **renewal** was reported at error severity although the code went on using a still-valid cached lease — a build failure over a licence that was fine. It is a warning here.
+4. A failed **renewal** was reported at error severity although the code went on using a still-valid cached lease — a build failure over a licence that was fine. Here the build hears nothing and the *person* is notified; see below.
 5. `Deserialize` caught only `FormatException`; `XmlConvert.ToDateTime` also throws `ArgumentException` and `ArgumentOutOfRangeException`. Catch broadly.
 
 Two further departures, which are corrections rather than omissions:

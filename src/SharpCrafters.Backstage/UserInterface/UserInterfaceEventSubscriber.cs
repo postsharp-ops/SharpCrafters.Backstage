@@ -1,10 +1,11 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface.Toasts;
 using SharpCrafters.Backstage.Welcome;
@@ -54,7 +55,8 @@ internal sealed class UserInterfaceEventSubscriber : IBackstageService, IDisposa
         [
             this._dispatcher.Subscribe<ExceptionReportCapturedEvent>( this.OnExceptionReportCaptured ),
             this._dispatcher.Subscribe<TelemetryActivatedEvent>( this.OnTelemetryActivated ),
-            this._dispatcher.Subscribe<LicenseRequirementNotSatisfiedEvent>( this.OnLicenseRequirementNotSatisfied )
+            this._dispatcher.Subscribe<LicenseRequirementNotSatisfiedEvent>( this.OnLicenseRequirementNotSatisfied ),
+            this._dispatcher.Subscribe<LicenseLeaseRenewalFailedEvent>( this.OnLicenseLeaseRenewalFailed )
         ];
     }
 
@@ -90,6 +92,21 @@ internal sealed class UserInterfaceEventSubscriber : IBackstageService, IDisposa
                 ToastNotificationKinds.RequiresLicense,
                 this._catalog?.PremiumEditionDisplayName ?? "Premium edition",
                 @event.Message + "Open to start a trial or register a license key." ) );
+    }
+
+    /// <summary>
+    /// Warns the user that their license server cannot be reached. The build itself says nothing, because it is
+    /// licensed and there is nothing it could usefully report; what matters is that somebody notices before the
+    /// lease that licenses it runs out.
+    /// </summary>
+    private void OnLicenseLeaseRenewalFailed( LicenseLeaseRenewalFailedEvent @event )
+    {
+        this._toastNotificationService.Show(
+            new ToastNotification(
+                ToastNotificationKinds.LicenseServerUnreachable,
+                "License server unreachable",
+                $"The license server '{@event.LicenseServerUrl}' could not be reached to renew the license of this machine. "
+                + $"Builds are licensed until {@event.LeaseEndTime.ToLocalTime():f}. {@event.ErrorMessage}" ) );
     }
 
     public void Dispose()
