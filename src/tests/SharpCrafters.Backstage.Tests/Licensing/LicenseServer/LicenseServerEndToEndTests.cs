@@ -209,31 +209,121 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     }
 
     /// <summary>
-    /// Tests that testing a server reports what it would lease without registering anything, which is what makes it
-    /// usable for diagnosing a server.
+    /// Tests that a URL which cannot be a license server is refused with the reason it cannot be one, rather than
+    /// with the reason it is not a valid license key either.
     /// </summary>
-    [Fact]
-    public async Task TestingAServerRegistersNothing()
-    {
-        var server = this.CreateServer();
-
-        var result = await this.LicenseRegistrationService.TestLicenseServerAsync( server.Url );
-
-        AssertSucceeded( result );
-        Assert.Equal( server.Url, result.RegisteredLicense!.LicenseServerUrl );
-        Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
-    }
-
+    /// <remarks>
+    /// A string that is not a well-formed absolute URI, such as <c>nonsense</c>, is not covered here: it is a license
+    /// key as far as the factory is concerned, and it is reported as an unparsable key, which is the right answer.
+    /// </remarks>
     [Theory]
     [InlineData( "https://license.test?x=1", "query string" )]
     [InlineData( "ftp://license.test", "HTTP and HTTPS" )]
-    [InlineData( "not a url", "Invalid URL" )]
-    public async Task TestingAMalformedUrlReportsTheReason( string url, string expectedMessageSubstring )
+    [InlineData( "https://alice:secret@license.test", "user name" )]
+    public async Task RegisteringAMalformedUrlReportsTheReason( string url, string expectedMessageSubstring )
     {
-        var result = await this.LicenseRegistrationService.TestLicenseServerAsync( url );
+        var result = await this.LicenseRegistrationService.RegisterLicenseAsync( url );
 
         Assert.False( result.IsSuccess );
         Assert.Contains( expectedMessageSubstring, result.ErrorMessage, StringComparison.Ordinal );
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // Acquiring a lease on demand.
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Tests that acquiring a lease without a registered license server says so, rather than failing in a way that
+    /// reads as a problem with a server.
+    /// </summary>
+    [Fact]
+    public async Task AcquiringWithoutARegisteredServerSaysSo()
+    {
+        var result = await this.LicenseRegistrationService.AcquireLeaseAsync();
+
+        Assert.False( result.IsSuccess );
+        Assert.Contains( "No license server is registered", result.ErrorMessage, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public async Task AcquiringReportsTheLeasedLicense()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        var result = await this.LicenseRegistrationService.AcquireLeaseAsync();
+
+        AssertSucceeded( result );
+        Assert.Equal( server.Url, result.RegisteredLicense!.LicenseServerUrl );
+        Assert.NotNull( result.RegisteredLicense.Lease );
+    }
+
+    /// <summary>
+    /// Tests that acquiring costs what a build costs: a lease that is still valid and not yet due for renewal is used
+    /// as it stands and nothing is sent, so running the command does not take a further seat.
+    /// </summary>
+    [Fact]
+    public async Task AcquiringHonoursAValidLease()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        server.ClearRequests();
+
+        AssertSucceeded( await this.LicenseRegistrationService.AcquireLeaseAsync() );
+
+        server.AssertNotContacted();
+    }
+
+    /// <summary>
+    /// Tests that the force flag renews a lease that is not due, which is what makes the command usable for
+    /// diagnosing a server: without it, a machine that already holds a lease would never contact the server and the
+    /// command would report nothing about it.
+    /// </summary>
+    [Fact]
+    public async Task ForcedAcquisitionRenewsALeaseThatIsNotDue()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        server.ClearRequests();
+
+        AssertSucceeded( await this.LicenseRegistrationService.AcquireLeaseAsync( true ) );
+
+        server.AssertContacted();
+    }
+
+    /// <summary>
+    /// Tests that acquiring stores the lease, so that the build which follows the command uses what the command
+    /// obtained instead of contacting the server again.
+    /// </summary>
+    [Fact]
+    public async Task ForcedAcquisitionStoresTheNewLease()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.Time.AddTime( TimeSpan.FromHours( 1 ) );
+
+        AssertSucceeded( await this.LicenseRegistrationService.AcquireLeaseAsync( true ) );
+
+        Assert.True( this.LeaseStore.TryGetLease( server.Url, out var lease ) );
+        Assert.Equal( this.Time.UtcNow + server.LeaseDuration, lease.EndTime );
+    }
+
+    [Fact]
+    public async Task AcquiringFromAnUnreachableServerReportsTheFailure()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        server.FaultMode = LicenseServerFault.Unreachable;
+
+        var result = await this.LicenseRegistrationService.AcquireLeaseAsync( true );
+
+        Assert.False( result.IsSuccess );
+        Assert.Contains( "Cannot get a lease", result.ErrorMessage, StringComparison.Ordinal );
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -413,7 +503,7 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         var server = this.CreateServer();
         server.LicenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-        var result = await this.LicenseRegistrationService.TestLicenseServerAsync( server.Url );
+        var result = await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
 
         Assert.Equal( expectedEligible, result.IsSuccess );
 

@@ -232,58 +232,82 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     }
 
     // ---------------------------------------------------------------------------------------------------------------
-    // test-server
+    // acquire-lease
     // ---------------------------------------------------------------------------------------------------------------
 
     [Fact]
-    public async Task TestServer_ShowsWhatTheServerWouldLease()
+    public async Task AcquireLease_ShowsTheLeasedLicense()
     {
-        await this.TestCommandAsync( $"license test-server {_url}", expectedOutput: "is reachable and leases the following license" );
-        await this.TestCommandAsync( $"license test-server {_url}", expectedOutput: "Metalama Enterprise" );
+        await this.TestCommandAsync( $"license register {_url}" );
+
+        await this.TestCommandAsync( "license acquire-lease", expectedOutput: "leases the following license" );
+        await this.TestCommandAsync( "license acquire-lease", expectedOutput: "Metalama Enterprise" );
     }
 
     /// <summary>
-    /// Tests that testing a server changes nothing, which is what makes it usable for diagnosing one.
+    /// Tests that the command without a registered license server says so, rather than reporting something that reads
+    /// as a problem with a server.
     /// </summary>
     [Fact]
-    public async Task TestServer_RegistersNothing()
+    public async Task AcquireLease_WithoutARegisteredServer_SaysSo()
     {
-        await this.TestCommandAsync( $"license test-server {_url}", expectedOutput: "has not been registered" );
+        await this.TestCommandAsync( "license acquire-lease", expectedOutput: "No license server is registered", expectedExitCode: 1 );
+    }
 
-        await this.TestCommandAsync( "license list", expectedOutput: "No Metalama license is currently registered." );
+    /// <summary>
+    /// Tests that the command costs what a build costs: a lease that is still good is used as it stands, so running it
+    /// does not take a further seat.
+    /// </summary>
+    [Fact]
+    public async Task AcquireLease_WithAValidLease_ContactsNothing()
+    {
+        await this.TestCommandAsync( $"license register {_url}" );
+        this._server.ClearRequests();
+
+        await this.TestCommandAsync( "license acquire-lease" );
+
+        this._server.AssertNotContacted();
     }
 
     [Fact]
-    public async Task TestServer_UnreachableServer_Fails()
+    public async Task AcquireLease_Force_RenewsALeaseThatIsNotDue()
     {
+        await this.TestCommandAsync( $"license register {_url}" );
+        this._server.ClearRequests();
+
+        await this.TestCommandAsync( "license acquire-lease --force" );
+
+        this._server.AssertContacted();
+    }
+
+    [Fact]
+    public async Task AcquireLease_UnreachableServer_Fails()
+    {
+        await this.TestCommandAsync( $"license register {_url}" );
+
         this._server.FaultMode = LicenseServerFault.Unreachable;
 
-        await this.TestCommandAsync( $"license test-server {_url}", expectedOutput: "Cannot get a lease", expectedExitCode: 1 );
+        await this.TestCommandAsync( "license acquire-lease --force", expectedOutput: "Cannot get a lease", expectedExitCode: 1 );
     }
 
     [Fact]
-    public async Task TestServer_DeniedByTheServer_ShowsTheMessageOfTheServer()
+    public async Task AcquireLease_DeniedByTheServer_ShowsTheMessageOfTheServer()
     {
+        await this.TestCommandAsync( $"license register {_url}" );
+
         this._server.FaultMode = LicenseServerFault.Forbidden;
         this._server.DenialMessage = "All 5 seats are in use.";
 
-        await this.TestCommandAsync( $"license test-server {_url}", expectedOutput: this._server.DenialMessage, expectedExitCode: 1 );
-    }
-
-    [Theory]
-    [InlineData( "https://license.test?x=1", "query string" )]
-    [InlineData( "ftp://license.test", "HTTP and HTTPS" )]
-    [InlineData( "nonsense", "Invalid URL" )]
-    public async Task TestServer_MalformedUrl_ReportsTheReason( string url, string expectedOutput )
-    {
-        await this.TestCommandAsync( $"license test-server {url}", expectedOutput: expectedOutput, expectedExitCode: 1 );
+        await this.TestCommandAsync( "license acquire-lease --force", expectedOutput: this._server.DenialMessage, expectedExitCode: 1 );
     }
 
     [Fact]
-    public async Task TestServer_InsecureServer_Warns()
+    public async Task AcquireLease_InsecureServer_Warns()
     {
         _ = this.CreateInsecureServer();
 
-        await this.TestCommandAsync( $"license test-server {_insecureUrl}", expectedOutput: "cleartext" );
+        await this.TestCommandAsync( $"license register {_insecureUrl}" );
+
+        await this.TestCommandAsync( "license acquire-lease", expectedOutput: "cleartext" );
     }
 }

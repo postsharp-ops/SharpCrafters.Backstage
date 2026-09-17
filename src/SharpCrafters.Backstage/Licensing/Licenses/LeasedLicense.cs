@@ -96,11 +96,25 @@ internal sealed class LeasedLicense : AuditableLicense
     /// <inheritdoc />
     /// <remarks>
     /// Registration contacts the server rather than reading the stored lease, so that registering a URL tells the user
-    /// at once whether the server answers and has a licence for them. This is PostSharp's <c>TestLicenseServer</c>.
+    /// at once whether the server answers and has a licence for them.
     /// </remarks>
-    public override async ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default )
+    public override ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default )
+        => this.GetRegistrationPropertiesAsync( true, cancellationToken );
+
+    /// <summary>
+    /// Reads the properties of the leased licence, acquiring the lease if necessary.
+    /// </summary>
+    /// <param name="forceRenewal">
+    /// <see langword="true"/> to contact the server even when the stored lease is valid and not yet due for renewal.
+    /// Registering a server does that, so that the user learns at once whether it answers; so does
+    /// <see cref="ILicenseRegistrationService.AcquireLeaseAsync"/> when it is asked to.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    internal async ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync(
+        bool forceRenewal,
+        CancellationToken cancellationToken = default )
     {
-        var leaseResult = await this.ResolveAsync( true, cancellationToken );
+        var leaseResult = await this.ResolveAsync( forceRenewal, cancellationToken );
 
         if ( !leaseResult.IsSuccess )
         {

@@ -7,11 +7,9 @@ using System.ComponentModel;
 
 namespace SharpCrafters.Backstage.Commands.Licensing;
 
-#pragma warning disable CS8618
-
-internal class TestLicenseServerCommandSettings : BaseCommandSettings
+internal class AcquireLeaseCommandSettings : BaseCommandSettings
 {
-    [Description( "The URL of the license server to contact." )]
-    [CommandArgument( 1, "<url>" )]
-    public string Url { get; init; }
+    [Description( "Renews the lease even when the one currently held is still valid and not yet due for renewal." )]
+    [CommandOption( "--force" )]
+    public bool Force { get; init; }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -45,9 +45,9 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( "Unregisters all license keys and license servers." );
 
-                        license.AddCommand<TestLicenseServerCommand>( "test-server" )
+                        license.AddCommand<AcquireLeaseCommand>( "acquire-lease" )
                             .WithData( options )
-                            .WithDescription( "Contacts a license server and prints the license it leases, without registering it." );
+                            .WithDescription( "Acquires a lease from the registered license server and prints the license it leases." );
 
                         license.AddCommand<RegisterTrialCommand>( "try" )
                             .WithData( options )

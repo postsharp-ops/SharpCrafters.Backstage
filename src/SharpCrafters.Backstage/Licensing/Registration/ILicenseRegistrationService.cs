@@ -64,16 +64,32 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     ValueTask<LicenseRegistrationResult> ValidateLicenseKeyAsync( string licenseKey, CancellationToken cancellationToken = default );
 
     /// <summary>
-    /// Contacts a license server and reports the licence it would lease, without registering anything.
+    /// Acquires a lease from the registered license server and reports the licence it leases.
     /// </summary>
-    /// <param name="licenseServerUrl">The URL of the license server.</param>
+    /// <param name="forceRenewal">
+    /// <see langword="true"/> to renew the lease even when the one currently held is valid and not yet due for
+    /// renewal. <see langword="false"/>, the default, does what a build does: the stored lease is used when it is
+    /// still good, and the server is contacted only when it is not.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <remarks>
-    /// Diagnosing an on-premises server is the most common support interaction for this feature, and registering is
-    /// the wrong tool for it because it changes what the product uses. It does contact the server and therefore takes
-    /// a seat, exactly as a build would.
+    /// <para>
+    /// This is what a build does, made explicit: it contacts the server, it takes a seat, and it stores the lease.
+    /// Diagnosing an on-premises server is the most common support interaction for this feature, and doing it by
+    /// acquiring a lease means that what the user sees is what their next build will see, rather than the result of a
+    /// separate code path.
+    /// </para>
+    /// <para>
+    /// The server is the one that is registered, and there is no way to name another: a server that is not registered
+    /// is not what the product will use, so reporting on it would answer a question nobody asked. Registering a URL
+    /// contacts it too, so <see cref="RegisterLicenseAsync"/> is what diagnoses a server that is not registered yet.
+    /// </para>
+    /// <para>
+    /// Unlike registration, this does not require an interactive session: acquiring a lease is exactly what an
+    /// unattended build does.
+    /// </para>
     /// </remarks>
-    ValueTask<LicenseRegistrationResult> TestLicenseServerAsync( string licenseServerUrl, CancellationToken cancellationToken = default );
+    ValueTask<LicenseRegistrationResult> AcquireLeaseAsync( bool forceRenewal = false, CancellationToken cancellationToken = default );
 
     /// <inheritdoc cref="ValidateLicenseKeyAsync"/>
     [Obsolete( "Use ValidateLicenseKeyAsync. This overload blocks the calling thread while a license server is contacted." )]

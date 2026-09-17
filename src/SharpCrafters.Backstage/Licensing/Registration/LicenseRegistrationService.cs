@@ -31,7 +31,6 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     private readonly ProductProfile _productProfile;
     private readonly ILicenseProductCatalog _catalog;
     private readonly LicenseLeaseStore _leaseStore;
-    private readonly LicenseServerUrlValidator _licenseServerUrlValidator;
 
     /// <summary>
     /// The version of the running product. It decides the groups of license keys that the current service reads.
@@ -49,7 +48,6 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
         this._catalog = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>();
         this._leaseStore = serviceProvider.GetRequiredBackstageService<LicenseLeaseStore>();
-        this._licenseServerUrlValidator = serviceProvider.GetRequiredBackstageService<LicenseServerUrlValidator>();
 
         // We intentionally omit to unsubscribe from the event because this service has generally the same lifetime as the application
         // and is never disposed of.
@@ -195,16 +193,44 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         => this.RegisterLicenseCoreAsync( licenseKey, true, cancellationToken );
 
     /// <inheritdoc />
-    public ValueTask<LicenseRegistrationResult> TestLicenseServerAsync( string licenseServerUrl, CancellationToken cancellationToken = default )
+    public async ValueTask<LicenseRegistrationResult> AcquireLeaseAsync( bool forceRenewal = false, CancellationToken cancellationToken = default )
     {
-        if ( !this._licenseServerUrlValidator.TryValidate( licenseServerUrl, out var errorMessage, out _ ) )
+        if ( this.RegisteredLicenseServerUrl is not { } licenseServerUrl )
         {
-            return new ValueTask<LicenseRegistrationResult>( LicenseRegistrationResult.Failure( errorMessage ) );
+            return LicenseRegistrationResult.Failure(
+                "No license server is registered. Use the 'register' command with the URL of a license server." );
         }
 
-        // The same path as a registration, without the write: the server is contacted and the licence it leases is
-        // validated, so that what the user sees is what a registration would store.
-        return this.RegisterLicenseCoreAsync( licenseServerUrl, true, cancellationToken );
+        // The very licence a build would use, resolved the way a build resolves it, so that what the user sees is what
+        // their next build will see.
+        var license = new LeasedLicense( licenseServerUrl, this._serviceProvider );
+        var result = await license.GetRegistrationPropertiesAsync( forceRenewal, cancellationToken );
+
+        return result.IsSuccess ? LicenseRegistrationResult.Success( result.Properties ) : LicenseRegistrationResult.Failure( result.ErrorMessage );
+    }
+
+    /// <summary>
+    /// Gets the URL of the registered license server, or <see langword="null"/> when no license server is registered.
+    /// </summary>
+    /// <remarks>
+    /// Registering any license string removes the others, so there is at most one. A configuration file that was
+    /// edited by hand may hold several; the first is taken, because nothing distinguishes them.
+    /// </remarks>
+    private string? RegisteredLicenseServerUrl
+    {
+        get
+        {
+            foreach ( var licenseString in this._configurationManager.Get<LicensingConfiguration>()
+                         .GetRegisteredLicenseStrings( this._currentVersion ) )
+            {
+                if ( LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
+                {
+                    return licenseString;
+                }
+            }
+
+            return null;
+        }
     }
 
     [Obsolete( "Use ValidateLicenseKeyAsync." )]

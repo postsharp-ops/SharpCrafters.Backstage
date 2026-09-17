@@ -17,7 +17,7 @@ This is the question to answer before changing anything in this subsystem.
 | `ILicense.ReportUse` (the audit) | no | no |
 | `ILicenseRegistrationService.RegisterLicenseAsync` | **yes**, always | **yes** |
 | `ILicenseRegistrationService.ResolveLicenseAsync` | **yes**, always, for a URL | **yes** |
-| `ILicenseRegistrationService.TestLicenseServerAsync` | **yes**, always | **yes** |
+| `ILicenseRegistrationService.AcquireLeaseAsync` (`license acquire-lease`) | only when the stored lease is due, or **always** with `--force` | **yes**, when it downloads |
 | `ILicenseRegistrationService.RegisteredLicenses` (`license list`) | no | no |
 | `ILicenseRegistrationService.RemoveLicenses` (`license unregister`) | no | releases nothing before the lease ends |
 
@@ -30,6 +30,8 @@ This is the question to answer before changing anything in this subsystem.
 A *seat* is held by a **user and machine for the life of the lease**, not by a build. With the server defaults — a three-day lease, renewed after two — one machine contacts the server about once every two days, whatever the number of builds in between. Acquiring is therefore better read as "registering this machine with the server for the next three days" than as "paying for this build".
 
 `LicenseServerClient.GetLeaseAsync` downloads only when there is no stored lease, when the stored one has expired, or when it is past its renew time. Everything else is served from `licenseServer.json`.
+
+> **Rule.** There is no way to ask a license server what it *would* lease without leasing it, so nothing here may be named as though there were. `license acquire-lease` is called that because that is what it does: it takes the same path a build takes, takes a seat and stores the lease, which is also what makes it a faithful diagnostic — what the user sees is what their next build will see. `--force` renews a lease that is not yet due, because a machine that already holds one would otherwise contact nothing and the command would report nothing about the server.
 
 ### What this costs, and why it is accepted
 
@@ -117,7 +119,7 @@ It does not decide whether the server is contacted. See [When a seat is taken](#
 
 ## Insecure `http://`
 
-A lease request carries the user name and the machine name, so an `http://` server discloses who works where to anyone on the path. `LicenseServerUrlValidator.TryValidate` returns that as a *warning* beside the error that would refuse the URL, and every caller reports it: `LicenseFactory`, so a build says it once per license string; and `license register` and `license test-server`, which is the moment the user can still choose a different URL.
+A lease request carries the user name and the machine name, so an `http://` server discloses who works where to anyone on the path. `LicenseServerUrlValidator.TryValidate` returns that as a *warning* beside the error that would refuse the URL, and every caller reports it: `LicenseFactory`, so a build says it once per license string; and `license register` and `license acquire-lease`, the first being the moment the user can still choose a different URL.
 
 It is **never an error**. Refusing the server would fail a build over a deployment the developer did not choose and cannot change. `allowInsecureLicenseServer` in `licensing.json` silences the warning; there is no other setting, and a loopback address is not exempt, because an exemption would also cover a loopback port forwarded to a remote host.
 
