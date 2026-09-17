@@ -73,7 +73,12 @@ internal sealed class SimulatedInstallation : IDisposable
         builder
             .AddCoreServices( new CoreInitializationOptions( MetalamaProduct.Profile, applicationInfo ) )
             .AddConfigurationServices()
-            .AddLicensingServices( new LicensingInitializationOptions(), applicationInfo );
+            .AddLicensingServices( new LicensingInitializationOptions(), applicationInfo )
+
+            // Registering a license server is something a person does, and the product refuses it in an unattended
+            // session. The simulation says so itself rather than letting the answer depend on the machine it happens
+            // to run on: a run from a remote session would otherwise register nothing and measure nothing.
+            .AddUserDeviceDetection( new TestUserDeviceDetectionService { IsInteractiveDevice = true } );
 
         // Everything that makes this installation somebody else's. It is registered after the product, because the
         // last registration of a service wins.
@@ -83,9 +88,6 @@ internal sealed class SimulatedInstallation : IDisposable
         services.AddSingleton<IMachineIdProvider>( new TestMachineIdProvider { MachineId = MachineIdOf( machineName ) } );
         services.AddSingleton<IConfigurationManager>( serviceProvider => new InMemoryConfigurationManager( serviceProvider ) );
 
-        // The detection of an interactive session is left to the product. Registering a license server is something
-        // a person does, and the product refuses it otherwise; this tool is run by hand, so the real answer is the
-        // right one, and a run from somewhere the product considers unattended should fail rather than pretend.
         this._serviceProvider = services.BuildServiceProvider();
     }
 

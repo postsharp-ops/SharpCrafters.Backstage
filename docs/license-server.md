@@ -165,7 +165,7 @@ It drives a simulated organization on the server's accelerated clock, then print
 
 > **Rule.** Nothing in `src/utilities/LicenseServerLoadSimulator` may build a request, parse an answer or decide when to renew. The moment it does, the run stops being evidence about the product.
 
-The configuration of each installation is in memory, so a run leaves the profile of whoever is running it untouched and each simulated user starts from an empty one. The harness also declares itself attended: an unattended process never leases, so a simulation that declared otherwise would send nothing at all.
+The configuration of each installation is in memory, so a run leaves the profile of whoever is running it untouched and each simulated user starts from an empty one. The harness also declares itself attended, through a fake device detection: an unattended process never leases, and registering a license server is refused outside an interactive session, so a run from a remote session would otherwise register nothing and measure nothing.
 
 Operating an accelerated server, all of it undocumented upstream and all of it easy to get wrong:
 
