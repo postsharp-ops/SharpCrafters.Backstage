@@ -14,7 +14,8 @@ using Xunit.Abstractions;
 namespace SharpCrafters.Backstage.Tests.Licensing.LicenseServer;
 
 /// <summary>
-/// Tests the store that keeps the lease held from each license server between two runs of the product.
+/// Tests where the product keeps what a license server has granted the user, so that their next build is licensed
+/// by what the last one obtained instead of asking their organization for a second seat.
 /// </summary>
 public sealed class LicenseLeaseStoreTests : LicensingTestsBase
 {
@@ -47,6 +48,11 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
     private static LicenseLease CreateLease( string licenseKey = "KEY", int days = 3 )
         => new( licenseKey, _start, _start.AddDays( days ), _start.AddDays( days - 1 ) );
 
+    /// <summary>
+    /// Tests that a lease survives being stored and read back unchanged. This is what spares the customer a seat:
+    /// the build that follows the one which leased reads the lease of its predecessor instead of asking the server
+    /// for a second one.
+    /// </summary>
     [Fact]
     public void LeaseRoundTrips()
     {
@@ -58,8 +64,8 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that the instants keep their UTC kind through the store, so that a lease written in one time zone is not
-    /// read as a different instant in another.
+    /// Tests that a lease means the same period wherever it is read. A developer travelling, or a machine set to a
+    /// different time zone, must not find their licence expiring hours early or lasting hours too long.
     /// </summary>
     [Fact]
     public void StoredInstantsStayUtc()
@@ -72,6 +78,10 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
         Assert.Equal( DateTimeKind.Utc, storedLease.RenewTime.Kind );
     }
 
+    /// <summary>
+    /// Tests that a server the user has never leased from holds no lease, so that the first build against a freshly
+    /// registered server acquires one rather than failing on an entry that was never written.
+    /// </summary>
     [Fact]
     public void UnknownServerHasNoLease()
     {
@@ -80,8 +90,8 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that a fresh configuration has an empty, and not a null or default, set of leases. A default
-    /// <see cref="System.Collections.Immutable.ImmutableDictionary{TKey,TValue}"/> throws when it is enumerated.
+    /// Tests that a user who has never leased anything has no leases, rather than something the product cannot
+    /// read. This is the state of every installation until the first build against a license server.
     /// </summary>
     [Fact]
     public void FreshConfigurationHasNoLeases()
@@ -107,6 +117,11 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
         Assert.Single( this.ConfigurationManager!.Get<LicenseServerConfiguration>().Leases );
     }
 
+    /// <summary>
+    /// Tests that renewing replaces the lease of a server instead of adding a second entry for it. A store that
+    /// accumulated one entry per renewal would grow without end and would leave the product to guess which of them
+    /// is current.
+    /// </summary>
     [Fact]
     public void SetLeaseReplacesThePreviousOne()
     {
@@ -118,6 +133,10 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
         Assert.Single( this.ConfigurationManager!.Get<LicenseServerConfiguration>().Leases );
     }
 
+    /// <summary>
+    /// Tests that the leases of two license servers do not interfere. A customer may lease from more than one
+    /// server, and forgetting one must not take the licence of the other away.
+    /// </summary>
     [Fact]
     public void LeasesOfTwoServersAreIndependent()
     {
@@ -131,6 +150,10 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
         Assert.Equal( "SECOND", lease.LicenseKey );
     }
 
+    /// <summary>
+    /// Tests that forgetting a lease the user never held leaves the leases they do hold alone, so that
+    /// unregistering a server they mistyped does not unlicense the builds that were working.
+    /// </summary>
     [Fact]
     public void RemoveLeaseOfUnknownServerDoesNothing()
     {
@@ -141,6 +164,10 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
         Assert.True( this.Store.TryGetLease( _url, out _ ) );
     }
 
+    /// <summary>
+    /// Tests that unregistering really forgets every lease. A user who unregisters expects the product to stop
+    /// using what it was leasing, not to go on using it until the lease runs out days later.
+    /// </summary>
     [Fact]
     public void RemoveAllLeasesClearsEveryServer()
     {
@@ -221,8 +248,9 @@ public sealed class LicenseLeaseStoreTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that the guard of the previous test really is the reason nothing was written, by verifying that the same
-    /// call outside a transformation does store the lease.
+    /// Tests that the lease really is stored in the ordinary case. Its companion shows the one case where the
+    /// product gives up on storing it; without this, that test would pass even if the product never stored a lease
+    /// at all.
     /// </summary>
     [Fact]
     public void StoringOutsideAnotherUpdateSucceeds()

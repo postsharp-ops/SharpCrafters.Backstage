@@ -88,6 +88,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.NotNull( result.RegisteredLicense.Lease );
     }
 
+    /// <summary>
+    /// Tests that a user who registered a license server sees it in the list of what they registered. Anything the
+    /// product uses to license a build must be visible to the person answering for it.
+    /// </summary>
     [Fact]
     public async Task RegisteredServerIsListed()
     {
@@ -134,6 +138,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.Null( registered.Lease );
     }
 
+    /// <summary>
+    /// Tests that a server which cannot be reached, refuses, or answers nonsense is not registered. Storing it
+    /// would leave the user believing they are licensed and finding out on their next build.
+    /// </summary>
     [Theory]
     [InlineData( LicenseServerFault.Unreachable )]
     [InlineData( LicenseServerFault.Forbidden )]
@@ -166,6 +174,11 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.Equal( server.DenialMessage, result.ErrorMessage );
     }
 
+    /// <summary>
+    /// Tests that a customer who moves from licence keys to a license server ends up using the server. Leaving the
+    /// old key behind would keep licensing their builds from it and would make the move look as though it had not
+    /// happened.
+    /// </summary>
     [Fact]
     public async Task RegisteringAServerRemovesAPreviouslyRegisteredKey()
     {
@@ -178,6 +191,11 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.Equal( server.Url, registered.LicenseServerUrl );
     }
 
+    /// <summary>
+    /// Tests the move in the other direction, which is what a customer does when they leave a license server
+    /// behind: the key they have just registered is what licenses their builds, and the server is not contacted
+    /// again.
+    /// </summary>
     [Fact]
     public async Task RegisteringAKeyRemovesAPreviouslyRegisteredServer()
     {
@@ -245,6 +263,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.Contains( "No license server is registered", result.ErrorMessage, StringComparison.Ordinal );
     }
 
+    /// <summary>
+    /// Tests that the user is told which licence their license server grants them, and until when. Which product a
+    /// server hands out is the first thing a developer wants to know and the first thing support asks.
+    /// </summary>
     [Fact]
     public async Task AcquiringReportsTheLeasedLicense()
     {
@@ -312,6 +334,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.Equal( this.Time.UtcNow + server.LeaseDuration, lease.EndTime );
     }
 
+    /// <summary>
+    /// Tests that a user diagnosing a server that is down is told so, which is the answer they ran the command to
+    /// get.
+    /// </summary>
     [Fact]
     public async Task AcquiringFromAnUnreachableServerReportsTheFailure()
     {
@@ -427,6 +453,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         server.AssertNotContacted();
     }
 
+    /// <summary>
+    /// Tests that a developer whose license server is unreachable, and who holds no lease, is told that their build
+    /// has no licence and why. Failing without naming the server would send them looking at their own project.
+    /// </summary>
     [Fact]
     public async Task UnreachableServerLeavesTheBuildUnlicensed()
     {
@@ -735,6 +765,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         Assert.DoesNotContain( this.Messages, m => m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
     }
 
+    /// <summary>
+    /// Tests what counts as a server that exposes the names of the user and of their machine: any address reached
+    /// without encryption, including one on the machine itself, which may be a tunnel to somewhere else.
+    /// </summary>
     [Theory]
     [InlineData( "http://license.test", true )]
     [InlineData( "http://localhost:8080", true )]

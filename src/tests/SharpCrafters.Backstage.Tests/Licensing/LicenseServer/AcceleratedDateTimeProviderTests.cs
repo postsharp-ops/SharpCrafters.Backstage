@@ -35,6 +35,11 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
     private AcceleratedDateTimeProvider CreateClock( LicenseServerSimulator server )
         => new( this.HttpClientFactory, server.Url );
 
+    /// <summary>
+    /// Tests that the harness lives on the clock of the server rather than on its own. A lease is granted and
+    /// expires by the clock of the server, so a simulation that ran on a different one would renew at the wrong
+    /// moments and would report a load no real deployment ever produces.
+    /// </summary>
     [Fact]
     public async Task ClockAnchorsOnTheInstantReportedByTheServer()
     {
@@ -49,6 +54,10 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
         Assert.InRange( clock.UtcNow, _serverTime, _serverTime.AddSeconds( 5 ) );
     }
 
+    /// <summary>
+    /// Tests that the harness takes its speed from the server it is driving. The two have to agree, or a simulation
+    /// of a fortnight against a server living a fortnight of its own would measure nothing.
+    /// </summary>
     [Fact]
     public async Task AccelerationIsReadFromTheServer()
     {
@@ -99,6 +108,11 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
         Assert.InRange( clock.UtcNow, DateTime.UtcNow.AddSeconds( -5 ), DateTime.UtcNow.AddSeconds( 5 ) );
     }
 
+    /// <summary>
+    /// Tests that the harness can re-anchor on the server. Over a long run the two clocks drift apart, and the
+    /// protocol offers no way to correct that other than asking again; without it a simulation slowly stops
+    /// reflecting the deployment it is meant to imitate.
+    /// </summary>
     [Fact]
     public async Task SynchronizingAgainReanchorsTheClock()
     {
@@ -116,8 +130,8 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that waiting for an instant that has already passed returns at once, rather than computing a negative
-    /// delay.
+    /// Tests that a simulated developer who is already late for their next build gets on with it, instead of
+    /// waiting for a moment that has gone.
     /// </summary>
     [Fact]
     public async Task WaitingForAPastInstantReturnsImmediately()
@@ -153,8 +167,8 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that waiting before the first synchronization does not throw. The original divided by an acceleration
-    /// factor initialized to zero, so this call produced an infinite delay.
+    /// Tests that a harness which has not yet asked the server for its clock still runs, at real speed, rather than
+    /// stopping for ever. The original divided by a factor it had not read yet.
     /// </summary>
     [Fact]
     public async Task WaitingBeforeSynchronizationDoesNotThrow()
@@ -166,8 +180,9 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that a base URL without a trailing slash reaches the time endpoint. The original concatenated the two
-    /// without a separator here while trimming for the lease endpoint, so such a URL broke the clock alone.
+    /// Tests that the address of the server is understood however it is written. In the original, an address
+    /// without a trailing slash reached the lease endpoint but not the clock, so a simulation silently ran at real
+    /// speed and measured a load nobody would ever produce.
     /// </summary>
     [Theory]
     [InlineData( "https://license.test" )]
@@ -184,8 +199,8 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that an acceleration of zero, which a server uses to mean that acceleration is disabled, is read as one
-    /// rather than as a stopped clock.
+    /// Tests the server that reports no acceleration at all, which is what a production build of one does. The
+    /// simulation then runs at real speed, rather than stopping on a clock that never advances.
     /// </summary>
     [Fact]
     public async Task ZeroAccelerationIsReadAsRealSpeed()
@@ -199,6 +214,11 @@ public sealed class AcceleratedDateTimeProviderTests : LicensingTestsBase
         Assert.Equal( 1m, clock.Acceleration );
     }
 
+    /// <summary>
+    /// Tests that a server answering something other than a time and a speed stops the simulation with an
+    /// explanation. A harness that silently fell back to its own clock would run at real speed and report a load
+    /// that no real deployment ever produces, which is worse than not running at all.
+    /// </summary>
     [Theory]
     [InlineData( "" )]
     [InlineData( "not-a-time" )]

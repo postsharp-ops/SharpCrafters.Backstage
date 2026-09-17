@@ -9,11 +9,17 @@ using Xunit;
 namespace SharpCrafters.Backstage.Tests.Licensing.LicenseServer;
 
 /// <summary>
-/// Tests the recognition of a license server URL among license strings. These tests need no service, because the
-/// recognition is purely syntactic.
+/// Tests how the product tells the address of a license server apart from a licence key. A user registers one or
+/// the other with the same command, so this is what decides whether their build reads a key or asks their
+/// organization for a seat.
 /// </summary>
 public sealed class LicenseServerUrlTests
 {
+    /// <summary>
+    /// Tests the shapes of URL that an administrator may reasonably give when they register their license server:
+    /// with or without a trailing slash, with a port, with a path, and by address rather than by name. Refusing any
+    /// of them would send the administrator looking for a fault in a server that is working.
+    /// </summary>
     [Theory]
     [InlineData( "http://license.test" )]
     [InlineData( "https://license.test" )]
@@ -45,6 +51,11 @@ public sealed class LicenseServerUrlTests
         Assert.Equal( "Invalid URL.", errorMessage );
     }
 
+    /// <summary>
+    /// Tests that a URL the product cannot fetch a lease from is refused at once, with the reason. The lease is
+    /// requested over HTTP, so a URL of any other protocol can never work, and saying so while the administrator is
+    /// still typing is worth more than failing on their next build.
+    /// </summary>
     [Theory]
     [InlineData( "ftp://license.test" )]
     [InlineData( "file:///c:/licenses" )]
@@ -56,7 +67,9 @@ public sealed class LicenseServerUrlTests
     }
 
     /// <summary>
-    /// Tests that a URL which already carries a query string is rejected, because the client appends its own.
+    /// Tests that an address which already carries arguments is refused. The product adds its own when it asks for
+    /// a lease, so such an address would produce a request the server cannot read, and the user would see a failure
+    /// that names their server rather than what they typed.
     /// </summary>
     [Theory]
     [InlineData( "https://license.test?user=x" )]

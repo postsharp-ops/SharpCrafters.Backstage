@@ -141,6 +141,11 @@ public sealed class ObsoleteSyncForwarderTests : LicensingTestsBase
         Assert.Equal( expected, actual );
     }
 
+    /// <summary>
+    /// Tests that registering a licence through the older member registers the same licence as the newer one. A
+    /// product that has not yet moved to the new member must go on working exactly as it did, or upgrading this
+    /// package would break it.
+    /// </summary>
     [Fact]
     public async Task RegisterLicenseMatchesRegisterLicenseAsync()
     {
@@ -168,6 +173,10 @@ public sealed class ObsoleteSyncForwarderTests : LicensingTestsBase
         Assert.Equal( asyncResult.ErrorMessage, syncResult.ErrorMessage );
     }
 
+    /// <summary>
+    /// Tests that reading a licence through the older members answers what the newer ones answer, so that a product
+    /// which has not moved yet shows its users the same thing it showed them before the upgrade.
+    /// </summary>
     [Fact]
     public async Task ValidateAndParseMatchTheirAsyncCounterparts()
     {

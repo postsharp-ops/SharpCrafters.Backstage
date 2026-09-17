@@ -29,6 +29,10 @@ public sealed class LicenseServerUrlValidatorTests : LicenseServerTestsBase
         }
     }
 
+    /// <summary>
+    /// Tests that an HTTPS server is accepted and says nothing. The great majority of servers are of this kind, and
+    /// a warning they cannot act upon is a warning users learn to ignore, including the ones that matter.
+    /// </summary>
     [Theory]
     [InlineData( "https://license.test" )]
     [InlineData( "https://license.test/" )]
@@ -41,6 +45,11 @@ public sealed class LicenseServerUrlValidatorTests : LicenseServerTestsBase
         Assert.Null( warning );
     }
 
+    /// <summary>
+    /// Tests that a URL the product cannot use is refused with the reason it cannot be used. The administrator who
+    /// typed it is the only person who can correct it, and they can only do so if they are told what is wrong
+    /// rather than that something is.
+    /// </summary>
     [Theory]
     [InlineData( "https://license.test?user=x", "query string" )]
     [InlineData( "ftp://license.test", "HTTP and HTTPS" )]
@@ -74,6 +83,10 @@ public sealed class LicenseServerUrlValidatorTests : LicenseServerTestsBase
         Assert.Contains( "allowInsecureLicenseServer", warning, StringComparison.Ordinal );
     }
 
+    /// <summary>
+    /// Tests that the warning can be turned off. An organization that runs its license server on a network it
+    /// controls has made its decision, and the product must stop repeating the question on every build.
+    /// </summary>
     [Fact]
     public void InsecureUrlIsSilentOnceAllowed()
     {

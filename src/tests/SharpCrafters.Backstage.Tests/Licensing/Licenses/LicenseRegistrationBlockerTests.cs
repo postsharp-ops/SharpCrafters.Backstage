@@ -32,6 +32,10 @@ public sealed class LicenseRegistrationBlockerTests : LicensingTestsBase
         return await license.GetRegistrationBlockerAsync();
     }
 
+    /// <summary>
+    /// Tests that a licence key a customer bought can be registered. Everything else in this class is a reason to
+    /// refuse one, and a rule that refuses too much is worse than no rule at all.
+    /// </summary>
     [Fact]
     public async Task ValidLicenseKeyIsNotBlocked()
     {
@@ -56,6 +60,10 @@ public sealed class LicenseRegistrationBlockerTests : LicensingTestsBase
         Assert.False( string.IsNullOrEmpty( blocker.Message ) );
     }
 
+    /// <summary>
+    /// Tests that a licence key that carries no valid signature of the licensing authority is refused. This is what
+    /// makes a licence key worth buying rather than composing.
+    /// </summary>
     [Fact]
     public async Task UnsignedLicenseKeyIsUnusable()
     {

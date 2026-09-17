@@ -47,12 +47,22 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     // register
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that a user who registers a license server is told they registered a server. What they registered is
+    /// the address of a service their organization runs, not a key, and confusing the two makes the next support
+    /// conversation start from the wrong place.
+    /// </summary>
     [Fact]
     public async Task Register_ReportsTheServerAndNotAKey()
     {
         await this.TestCommandAsync( $"license register {_url}", expectedOutput: $"The license server '{_url}' has been registered." );
     }
 
+    /// <summary>
+    /// Tests that registering proves the server works. A registration that stored the address without asking the
+    /// server anything would tell the user they are done, and leave them to discover on their next build that they
+    /// are not.
+    /// </summary>
     [Fact]
     public async Task Register_ContactsTheServer()
     {
@@ -61,6 +71,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         this._server.AssertContacted();
     }
 
+    /// <summary>
+    /// Tests that a user who mistypes the address, or whose server is not running, learns it while they are still
+    /// at the command line, rather than the next time they build.
+    /// </summary>
     [Fact]
     public async Task Register_UnreachableServer_Fails()
     {
@@ -82,6 +96,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         await this.TestCommandAsync( $"license register {_url}", expectedOutput: this._server.DenialMessage, expectedExitCode: 1 );
     }
 
+    /// <summary>
+    /// Tests the address that answers but is not a license server, which is what a user gets when they point at the
+    /// wrong service on the right host. It must be refused rather than registered.
+    /// </summary>
     [Fact]
     public async Task Register_GarbageResponse_Fails()
     {
@@ -90,6 +108,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         await this.TestCommandAsync( $"license register {_url}", expectedOutput: "invalid response", expectedExitCode: 1 );
     }
 
+    /// <summary>
+    /// Tests that an address the product can never use is refused with the reason it can never be used, so that the
+    /// user corrects the address rather than looking for a fault in their server.
+    /// </summary>
     [Theory]
     [InlineData( "https://license.test?x=1", "query string" )]
     [InlineData( "ftp://license.test", "HTTP and HTTPS" )]
@@ -111,6 +133,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         await this.TestCommandAsync( $"license register {_insecureUrl}", expectedOutput: "cleartext" );
     }
 
+    /// <summary>
+    /// Tests that a properly secured server is registered in silence. A warning on the ordinary case teaches users
+    /// to ignore warnings, including the one that matters.
+    /// </summary>
     [Fact]
     public async Task Register_SecureServer_DoesNotWarn()
     {
@@ -121,6 +147,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     // list
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the list shows the server a user registered and the period it has licensed them for. It is how
+    /// they check what licenses their builds and how long they have before the product asks the server again.
+    /// </summary>
     [Fact]
     public async Task List_ShowsTheServerAndItsLease()
     {
@@ -206,6 +236,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     // unregister
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that a user who unregisters stops being licensed by the server, and is told so. The command is how
+    /// someone hands a machine back or moves to a licence key of their own.
+    /// </summary>
     [Fact]
     public async Task Unregister_RemovesTheServer()
     {
@@ -235,6 +269,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     // acquire-lease
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the user is shown which product their license server grants them. That is the question the
+    /// command exists to answer, and the first one support asks.
+    /// </summary>
     [Fact]
     public async Task AcquireLease_ShowsTheLeasedLicense()
     {
@@ -269,6 +307,11 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         this._server.AssertNotContacted();
     }
 
+    /// <summary>
+    /// Tests that a user can make the product talk to the server on demand. Without it, someone diagnosing a server
+    /// from a machine that already holds a lease would watch the command report an old answer and learn nothing
+    /// about the server they are trying to check.
+    /// </summary>
     [Fact]
     public async Task AcquireLease_Force_RenewsALeaseThatIsNotDue()
     {
@@ -280,6 +323,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         this._server.AssertContacted();
     }
 
+    /// <summary>
+    /// Tests that a user checking a server which is down is told it is down, which is the answer they ran the
+    /// command to get.
+    /// </summary>
     [Fact]
     public async Task AcquireLease_UnreachableServer_Fails()
     {
@@ -290,6 +337,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         await this.TestCommandAsync( "license acquire-lease --force", expectedOutput: "Cannot get a lease", expectedExitCode: 1 );
     }
 
+    /// <summary>
+    /// Tests that the explanation an administrator configured for a refusal reaches the developer unaltered. Those
+    /// words are how a company tells its own developers whom to ask for a seat.
+    /// </summary>
     [Fact]
     public async Task AcquireLease_DeniedByTheServer_ShowsTheMessageOfTheServer()
     {
@@ -301,6 +352,10 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
         await this.TestCommandAsync( "license acquire-lease --force", expectedOutput: this._server.DenialMessage, expectedExitCode: 1 );
     }
 
+    /// <summary>
+    /// Tests that a user leasing from a server reached without encryption is reminded that their name and the name
+    /// of their machine travel in the clear, at the moment they are looking at that server.
+    /// </summary>
     [Fact]
     public async Task AcquireLease_InsecureServer_Warns()
     {

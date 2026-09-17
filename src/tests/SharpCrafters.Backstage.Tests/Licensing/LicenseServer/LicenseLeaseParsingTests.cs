@@ -82,6 +82,10 @@ public sealed class LicenseLeaseParsingTests
         Assert.Equal( new DateTime( 2026, 6, 1, 12, 0, 0, DateTimeKind.Utc ), lease.StartTime );
     }
 
+    /// <summary>
+    /// Tests that a lease granted without a start is taken to start now. The protocol makes only the licence key
+    /// mandatory, and a customer whose server omits the rest must still be able to build.
+    /// </summary>
     [Fact]
     public void MissingStartTimeDefaultsToNow()
     {
@@ -90,6 +94,10 @@ public sealed class LicenseLeaseParsingTests
         Assert.Equal( _now, lease.StartTime );
     }
 
+    /// <summary>
+    /// Tests that a lease granted without an end lasts a day. It has to end at some point, and a day is short
+    /// enough that a seat is given back quickly, yet long enough to cover a working day of builds.
+    /// </summary>
     [Fact]
     public void MissingEndTimeDefaultsToOneDayAfterStart()
     {
@@ -98,6 +106,11 @@ public sealed class LicenseLeaseParsingTests
         Assert.Equal( new DateTime( 2026, 6, 2, 8, 0, 0, DateTimeKind.Utc ), lease.EndTime );
     }
 
+    /// <summary>
+    /// Tests that a lease granted without a renewal instant is renewed when it ends. Without a margin the product
+    /// renews later than it otherwise would, which is the safe direction: it takes a seat no sooner than the
+    /// customer agreed to.
+    /// </summary>
     [Fact]
     public void MissingRenewTimeDefaultsToEndTime()
     {
@@ -120,6 +133,10 @@ public sealed class LicenseLeaseParsingTests
         Assert.Equal( _now.AddDays( 1 ), lease.RenewTime );
     }
 
+    /// <summary>
+    /// Tests that the product reads the answer of a server whatever case it writes its field names in. The format
+    /// is a line of text produced by deployments the customer controls and we do not.
+    /// </summary>
     [Theory]
     [InlineData( "license" )]
     [InlineData( "LICENSE" )]
@@ -144,6 +161,10 @@ public sealed class LicenseLeaseParsingTests
         Assert.Equal( new DateTime( 2026, 6, 3, 12, 0, 0, DateTimeKind.Utc ), lease.EndTime );
     }
 
+    /// <summary>
+    /// Tests that a stray or empty field does not cost the customer their licence. The licence key is what matters;
+    /// discarding the whole lease over a field nobody reads would fail a build for no reason.
+    /// </summary>
     [Theory]
     [InlineData( "License: KEY; nonsense" )]
     [InlineData( "License: KEY; EndTime:" )]
@@ -157,7 +178,9 @@ public sealed class LicenseLeaseParsingTests
     }
 
     /// <summary>
-    /// Tests that a part is split at its first colon, so that the colons inside a timestamp stay in the value.
+    /// Tests that the instants of a lease survive being read. They are written with colons in them, and a product
+    /// that cut a value at the first one would take the expiry of the lease to be an hour it cannot read and would
+    /// refuse a licence that was granted.
     /// </summary>
     [Fact]
     public void ValueKeepsItsOwnColons()
@@ -167,6 +190,11 @@ public sealed class LicenseLeaseParsingTests
         Assert.Equal( new DateTime( 2026, 6, 1, 12, 34, 56, DateTimeKind.Utc ), lease.StartTime );
     }
 
+    /// <summary>
+    /// Tests that spacing in the answer of a server does not change the licence key it grants. A key read with a
+    /// space around it is a key that does not verify, and the customer would be told their valid licence is
+    /// invalid.
+    /// </summary>
     [Fact]
     public void SurroundingWhitespaceIsTrimmed()
     {
@@ -177,7 +205,8 @@ public sealed class LicenseLeaseParsingTests
     }
 
     /// <summary>
-    /// Tests that a body broken over several lines parses, which is what a handler that writes a newline produces.
+    /// Tests that a server which lays its answer out over several lines still licenses the customer. How the answer
+    /// is laid out is the choice of a deployment we do not control.
     /// </summary>
     [Fact]
     public void LineBreaksAreTolerated()
@@ -189,7 +218,8 @@ public sealed class LicenseLeaseParsingTests
     }
 
     /// <summary>
-    /// Tests that the last occurrence of a repeated part wins, so that the outcome is defined rather than incidental.
+    /// Tests that a server which states something twice gets a defined answer rather than an incidental one. Two
+    /// installations of the product must agree about the licence a customer holds.
     /// </summary>
     [Fact]
     public void RepeatedPartTakesTheLastValue()
@@ -233,7 +263,8 @@ public sealed class LicenseLeaseParsingTests
     }
 
     /// <summary>
-    /// Tests that a licence key of an unusual length is not truncated, since the format has no length field.
+    /// Tests that a licence key is taken whole, however long it is. A key cut short is a key that does not verify,
+    /// and the customer would be told the licence they bought is invalid.
     /// </summary>
     [Fact]
     public void LongLicenseKeyParses()
@@ -245,8 +276,8 @@ public sealed class LicenseLeaseParsingTests
     }
 
     /// <summary>
-    /// Tests that two leases carrying the same values compare equal, which is what lets a renewal that changes
-    /// nothing avoid a write to the lease store.
+    /// Tests that a renewal which grants the same period as before is recognized as such, so that the product
+    /// leaves the configuration of the user untouched instead of rewriting it on every build.
     /// </summary>
     [Fact]
     public void EqualLeasesCompareEqual()

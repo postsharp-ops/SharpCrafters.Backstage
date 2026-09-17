@@ -57,6 +57,11 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         return await response.Content.ReadAsStringAsync();
     }
 
+    /// <summary>
+    /// Tests that what the simulator writes is what the product reads. The simulator writes the answer of a server
+    /// by hand, on purpose, so that it cannot agree with the product about a format no deployed server speaks; this
+    /// is the one test that holds the two ends together.
+    /// </summary>
     [Fact]
     public async Task LeaseBodyParsesBackIntoALease()
     {
@@ -73,8 +78,8 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that the request is recorded with its arguments parsed, which is what lets a test assert on values rather
-    /// than on a URL.
+    /// Tests that the simulator remembers who asked for what. Every claim these tests make about what a build costs
+    /// the customer -- which user, which machine, which product -- is read back from here.
     /// </summary>
     [Fact]
     public async Task RequestArgumentsAreRecorded()
@@ -93,6 +98,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( _start, request.ReceivedAt );
     }
 
+    /// <summary>
+    /// Tests that two simulated servers can stand for two real ones. A customer with a server per division is a
+    /// deployment worth covering, and it can only be covered if the instrument can represent it.
+    /// </summary>
     [Fact]
     public async Task TwoServersAreRoutedIndependently()
     {
@@ -109,7 +118,9 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests the clock endpoint, which is what lets a load simulation run on the accelerated clock of the server.
+    /// Tests that the simulated server tells a caller what time it is and how fast its clock runs. That is what
+    /// lets a load simulation live through the weeks of leases and renewals that reveal how a real server behaves
+    /// under a year of use.
     /// </summary>
     [Fact]
     public async Task TimeEndpointReportsTheClockAndTheAcceleration()
@@ -123,6 +134,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( "2026-06-01T12:00:00Z;1440", body );
     }
 
+    /// <summary>
+    /// Tests that the simulated server keeps the time of the test rather than of the wall clock, so that a test can
+    /// live through the weeks a lease takes to expire without waiting for them.
+    /// </summary>
     [Fact]
     public async Task TimeEndpointFollowsTheClockOfTheTest()
     {
@@ -182,6 +197,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( 2, server.OccupiedSeatCount );
     }
 
+    /// <summary>
+    /// Tests that seats are counted per person and not per machine. This is what the customer bought, and a
+    /// simulator that counted otherwise would let a defect in the product pass unnoticed.
+    /// </summary>
     [Fact]
     public async Task SecondUserTakesASecondSeat()
     {
@@ -194,6 +213,11 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( 2, server.OccupiedSeatCount );
     }
 
+    /// <summary>
+    /// Tests that a team which has used every seat it bought is refused, and told so. Running out of seats is the
+    /// situation this whole feature exists to manage, and the refusal is the moment the customer learns they need
+    /// more.
+    /// </summary>
     [Fact]
     public async Task ExhaustedSeatsAreDeniedWithAnExplanation()
     {
@@ -208,6 +232,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Contains( "No license with free capacity", await denied.Content.ReadAsStringAsync(), StringComparison.Ordinal );
     }
 
+    /// <summary>
+    /// Tests that the words an administrator configured for a refusal reach the developer unaltered. Those words
+    /// are how a company tells its own developers whom to ask for a seat.
+    /// </summary>
     [Fact]
     public async Task DenialMessageIsServedVerbatim()
     {
@@ -246,6 +274,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( 1, server.OccupiedSeatCount );
     }
 
+    /// <summary>
+    /// Tests that keeping a machine licensed costs one seat and not one per renewal. A developer builds for years
+    /// on the same machine, and a pool that drained as they worked would be unusable.
+    /// </summary>
     [Fact]
     public async Task RenewalDoesNotTakeASecondSeat()
     {
@@ -302,6 +334,11 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( HttpStatusCode.Forbidden, denied.StatusCode );
     }
 
+    /// <summary>
+    /// Tests that the grace period is a period and not a permanent allowance. It exists so that a team which has
+    /// just grown keeps building while the purchase goes through, and it has to end, or nobody would ever buy the
+    /// seats.
+    /// </summary>
     [Fact]
     public async Task GracePeriodEndsAfterItsDays()
     {
@@ -320,6 +357,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( HttpStatusCode.Forbidden, denied.StatusCode );
     }
 
+    /// <summary>
+    /// Tests the customer whose licence sets no limit on seats. Their developers must never be refused, whatever
+    /// the size of the organization.
+    /// </summary>
     [Fact]
     public async Task UnlimitedSeatsNeverDeny()
     {
@@ -333,6 +374,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( 20, server.OccupiedSeatCount );
     }
 
+    /// <summary>
+    /// Tests that the instrument can be returned to an empty pool, so that one test does not leave the seats it
+    /// took to another and make a refusal look like a defect.
+    /// </summary>
     [Fact]
     public async Task ReleaseAllSeatsFreesEveryone()
     {
@@ -351,6 +396,11 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
     // Faults.
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that a server nobody can reach fails the way an unreachable server really fails. It is the most common
+    /// thing that goes wrong with an on-premises deployment -- a name that does not resolve, a port that is closed
+    /// -- so the product has to be exercised against the real shape of it.
+    /// </summary>
     [Fact]
     public async Task UnreachableServerThrowsTheTransportException()
     {
@@ -383,6 +433,11 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         await Assert.ThrowsAnyAsync<OperationCanceledException>( () => client.GetAsync( server.LeaseUrl + "?user=a&machine=b" ) );
     }
 
+    /// <summary>
+    /// Tests each way a server or the infrastructure in front of it turns a request away: a rejected argument, a
+    /// refusal, a wrong address, a broken server, an overloaded one. The product has to tell them apart, because
+    /// the person who can fix each one is a different person.
+    /// </summary>
     [Theory]
     [InlineData( LicenseServerFault.BadRequest, HttpStatusCode.BadRequest )]
     [InlineData( LicenseServerFault.Forbidden, HttpStatusCode.Forbidden )]
@@ -399,6 +454,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( expectedStatusCode, response.StatusCode );
     }
 
+    /// <summary>
+    /// Tests the answers that are not a lease at all, which is what a proxy, a sign-in page or a load balancer
+    /// returns when it intercepts the request. They must not be mistaken for a licence.
+    /// </summary>
     [Theory]
     [InlineData( LicenseServerFault.GarbageResponse )]
     [InlineData( LicenseServerFault.EmptyResponse )]
@@ -451,6 +510,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( HttpStatusCode.InternalServerError, second.StatusCode );
     }
 
+    /// <summary>
+    /// Tests that a test can make the simulator answer anything at all, so that a deployment nobody anticipated can
+    /// be reproduced without changing the instrument itself.
+    /// </summary>
     [Fact]
     public async Task ResponseFactoryOverridesEverything()
     {
@@ -465,6 +528,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
     // Response shape.
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that the simulator can answer with the licence key alone, as a minimal server implementation does. The
+    /// protocol makes the rest optional, and a customer running such a server has to be able to build.
+    /// </summary>
     [Fact]
     public async Task OmittedInstantsAreAbsentFromTheBody()
     {
@@ -478,6 +545,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Equal( "License: KEY", body );
     }
 
+    /// <summary>
+    /// Tests that the simulator can add a field the product does not know, so that the product can be shown to go
+    /// on working against a server of a later version than itself.
+    /// </summary>
     [Fact]
     public async Task ExtraPartsAreAppended()
     {
@@ -503,6 +574,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Contains( "License: RENEWED", await this.GetLeaseBodyAsync( server ), StringComparison.Ordinal );
     }
 
+    /// <summary>
+    /// Tests that the simulator can grant a different licence to a different person, as a real server does when it
+    /// draws from several pools. Without it, no test could tell whose licence a build ended up using.
+    /// </summary>
     [Fact]
     public async Task LicenseKeySelectorLeasesPerUser()
     {
@@ -517,12 +592,20 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
     // Assertions and bookkeeping.
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Tests that "the server was never contacted" is true of a server nobody has contacted. Many of the claims
+    /// about what a build costs the customer rest on that assertion, so it is worth knowing it can pass.
+    /// </summary>
     [Fact]
     public void AssertNotContactedPassesOnAFreshServer()
     {
         this.CreateServer().AssertNotContacted();
     }
 
+    /// <summary>
+    /// Tests that "the server was never contacted" fails once it has been. An assertion that cannot fail proves
+    /// nothing, and this one is what guards the promise that a build with a valid lease costs no seat.
+    /// </summary>
     [Fact]
     public async Task AssertNotContactedFailsAfterARequest()
     {
@@ -532,6 +615,10 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
         Assert.Throws<InvalidOperationException>( server.AssertNotContacted );
     }
 
+    /// <summary>
+    /// Tests that forgetting the requests does not give the seats back. A test that sets the scene and then
+    /// measures what follows must not accidentally reset the pool it is measuring against.
+    /// </summary>
     [Fact]
     public async Task ClearRequestsForgetsTheRequestsButKeepsTheSeats()
     {
@@ -546,8 +633,8 @@ public sealed class LicenseServerSimulatorTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Tests that a disabled server answers nothing, so that the request falls through to whatever the test registered
-    /// before it.
+    /// Tests that a simulated server can be taken out of service, so that a test can reproduce what happens to a
+    /// customer whose server is switched off rather than merely unreachable.
     /// </summary>
     [Fact]
     public async Task DisabledServerDoesNotAnswer()
