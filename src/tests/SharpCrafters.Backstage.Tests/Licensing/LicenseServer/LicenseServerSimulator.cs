@@ -37,7 +37,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.LicenseServer;
 /// <para>
 /// The body of a lease is written here by hand rather than by calling the parser's counterpart in the product,
 /// because the format is an external contract: a serializer of our own would agree with our parser whatever the real
-/// servers emit, which is exactly the weakness of the test double this class replaces.
+/// servers emit, which is exactly the weakness of the fake this class replaces.
 /// </para>
 /// </remarks>
 [PublicAPI]

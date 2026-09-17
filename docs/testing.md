@@ -31,7 +31,7 @@ public async Task MachineHashIsLowerCaseHexadecimal()
 
 Where the rule needs a technical explanation as well — the exact bytes of a wire format, a difference between two target frameworks, the defect a guard exists for — that goes in `<remarks>` beside the summary, not instead of it.
 
-## Where a test double lives
+## Where a fake lives
 
 | Kind | Home |
 |---|---|
@@ -39,15 +39,15 @@ Where the rule needs a technical explanation as well — the exact bytes of a wi
 | Needed by more than one project of this repository | `SharpCrafters.Backstage.Testing` |
 | Needed by one test project | That test project, beside the tests that use it |
 
-`SharpCrafters.Backstage.Testing` is a package. Everything in it is a commitment to the repositories that consume it, so a double goes there because something outside this repository needs it, not because two test projects here happen to.
+`SharpCrafters.Backstage.Testing` is a package. Everything in it is a commitment to the repositories that consume it, so a fake goes there because something outside this repository needs it, not because two test projects here happen to.
 
-> **Rule.** "Two of our own test projects need it" is a reason to look for a smaller double, not a reason to publish the bigger one. `LicenseServerSimulator` was in the package for exactly that reason; once the command tests were reduced to smoke tests they needed a canned response of a dozen lines, and the simulator moved beside the tests that really use it.
+> **Rule.** "Two of our own test projects need it" is a reason to look for a smaller fake, not a reason to publish the bigger one. `LicenseServerSimulator` was in the package for exactly that reason; once the command tests were reduced to smoke tests they needed a canned response of a dozen lines, and the simulator moved beside the tests that really use it.
 
-## Test doubles are not the product
+## A fake is not the product
 
-A double that shares code with the thing it tests cannot disagree with it. `LicenseServerSimulator` writes the wire format of a license server **by hand** and shares no serializer with the product, because a symmetric mistake in a shared one would be invisible to every test.
+A fake that shares code with the thing it tests cannot disagree with it. `LicenseServerSimulator` writes the wire format of a license server **by hand** and shares no serializer with the product, because a symmetric mistake in a shared one would be invisible to every test.
 
-> **Rule.** When a double stands for something outside this repository — a deployed server, a protocol, a file another product writes — it reproduces that thing from its specification, and at least one test pins a literal captured from the real thing.
+> **Rule.** When a fake stands for something outside this repository — a deployed server, a protocol, a file another product writes — it reproduces that thing from its specification, and at least one test pins a literal captured from the real thing.
 
 ## Determinism
 
