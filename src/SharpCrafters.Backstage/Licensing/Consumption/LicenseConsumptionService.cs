@@ -79,10 +79,14 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
     {
         var validLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
 
+        // Every licence of every source is resolved here, which for a license server means acquiring a lease and
+        // therefore taking a seat. This is what lets TryConsume stay synchronous; docs/license-server.md explains
+        // what it costs and why deferring the acquisition until a requirement asked was removed.
+        //
         // The sources are drained in the order of their priority, and each yields its licences in its own order, so a
-        // registered license key is always considered before a lease is acquired from a license server: a license
-        // server is registered in the user profile, which is the last source, and a URL is the last license string of
-        // that source.
+        // registered license key is always considered before a lease from a license server: a server is registered in
+        // the user profile, which is the last source, and a URL is the last license string of that source. That order
+        // decides which licence satisfies a requirement, not whether the server is contacted.
         foreach ( var source in licenseSources.OrderBy( s => s.Priority ) )
         {
             await foreach ( var license in source.GetLicensesAsync( ReportMessage, cancellationToken ).WithCancellation( cancellationToken ) )

@@ -28,6 +28,14 @@ namespace SharpCrafters.Backstage.Licensing.Licenses;
 /// registration properties in order to name it in the message, so without the memo a failed acquisition would contact
 /// the server twice for one consumer.
 /// </para>
+/// <para>
+/// The resolution happens while the consumer is built, like that of every other licence, and therefore takes a seat
+/// whether or not a requirement ends up using this licence. Deferring it until a requirement asked was tried and
+/// removed: the requirements are not known while the consumer is being built, so a higher-priority license key that is
+/// valid but not eligible for a particular requirement would leave a build unlicensed that this lease would have
+/// licensed. The cost is a seat held by a machine that did not need it; the alternative is a build that fails although
+/// a licence was available. See <c>docs/license-server.md</c>.
+/// </para>
 /// </remarks>
 internal sealed class LeasedLicense : AuditableLicense
 {

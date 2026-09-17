@@ -1,4 +1,4 @@
-# SharpCrafters.Backstage
+﻿# SharpCrafters.Backstage
 
 Infrastructure services shared by the Metalama and PostSharp products: configuration, diagnostics, telemetry,
 licensing and user interface, with a customization package per product.
@@ -6,6 +6,13 @@ licensing and user interface, with a customization package per product.
 The product name inside the build system and on TeamCity is `Backstage`. The repository is named
 `SharpCrafters.Backstage`, the neutral packages `SharpCrafters.Backstage*` and `SharpCrafters.Common`, and the product
 customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
+
+## Documentation
+
+| Document | Subject |
+|---|---|
+| [`docs/license-server.md`](docs/license-server.md) | The license server protocol, where a lease is stored, and when a seat is taken |
+| [`docs/telemetry.md`](docs/telemetry.md) | The telemetry channels, consent, and the path of an exception report |
 
 ## Building
 

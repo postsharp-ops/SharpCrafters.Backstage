@@ -57,9 +57,18 @@ internal sealed class LicenseServerClient : IBackstageService
     /// <param name="product">The product whose licence pool the server should allocate from, or <see langword="null"/> for any.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <remarks>
+    /// <para>
+    /// A download is what takes a seat from the pool of the customer, and it happens only when there is no stored
+    /// lease, when the stored one has expired, or when it is past its renew time. With the defaults of a server -- a
+    /// three-day lease renewed after two -- one machine therefore contacts the server about once every two days,
+    /// whatever the number of builds in between, and a renewal on a machine the user already holds prolongs a seat
+    /// rather than allocating one.
+    /// </para>
+    /// <para>
     /// A renewal that fails while the stored lease is still valid keeps that lease and reports nothing to the caller:
     /// the build has a licence, and failing it because the server is briefly unreachable would be worse than the
     /// problem. PostSharp reported such a failure as an error although it went on using the lease.
+    /// </para>
     /// </remarks>
     public async ValueTask<LicenseLeaseResult> GetLeaseAsync(
         string licenseServerUrl,

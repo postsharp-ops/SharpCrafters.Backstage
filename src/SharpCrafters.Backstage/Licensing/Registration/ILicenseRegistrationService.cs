@@ -28,8 +28,8 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     /// <param name="licenseString">The license key, or the URL of a license server.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <remarks>
-    /// Registering the URL of a license server contacts it, so that the user learns at once that the URL is wrong or
-    /// that the server has no licence for them, rather than on their next build.
+    /// Registering the URL of a license server contacts it, and therefore takes a seat, so that the user learns at
+    /// once that the URL is wrong or that the server has no licence for them, rather than on their next build.
     /// </remarks>
     ValueTask<LicenseRegistrationResult> RegisterLicenseAsync( string licenseString, CancellationToken cancellationToken = default );
 
@@ -70,7 +70,8 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <remarks>
     /// Diagnosing an on-premises server is the most common support interaction for this feature, and registering is
-    /// the wrong tool for it because it changes what the product uses.
+    /// the wrong tool for it because it changes what the product uses. It does contact the server and therefore takes
+    /// a seat, exactly as a build would.
     /// </remarks>
     ValueTask<LicenseRegistrationResult> TestLicenseServerAsync( string licenseServerUrl, CancellationToken cancellationToken = default );
 
