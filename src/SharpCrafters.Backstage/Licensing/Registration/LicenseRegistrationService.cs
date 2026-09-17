@@ -195,6 +195,11 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     /// <inheritdoc />
     public async ValueTask<LicenseRegistrationResult> AcquireLeaseAsync( bool forceRenewal = false, CancellationToken cancellationToken = default )
     {
+        if ( !this.RequireAttendedSession( out var attendedSessionErrorMessage ) )
+        {
+            return LicenseRegistrationResult.Failure( attendedSessionErrorMessage );
+        }
+
         if ( this.RegisteredLicenseServerUrl is not { } licenseServerUrl )
         {
             return LicenseRegistrationResult.Failure(

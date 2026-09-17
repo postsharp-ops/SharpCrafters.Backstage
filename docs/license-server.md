@@ -11,13 +11,14 @@ This is the question to answer before changing anything in this subsystem.
 | Operation | Contacts the server | Takes a seat |
 |---|---|---|
 | `ILicenseSource.GetLicenses` | no | no |
+| any of them, in an **unattended** process | **never** | **never** |
 | `LicenseFactory.TryCreate` | no | no |
 | `ILicenseConsumptionService.CreateConsumerAsync` | **yes**, unless a stored lease is valid and not due for renewal | **yes**, on the first acquisition for this machine |
 | `ILicenseConsumer.TryConsume` | no | no |
 | `ILicense.ReportUse` (the audit) | no | no |
 | `ILicenseRegistrationService.RegisterLicenseAsync` | **yes**, always | **yes** |
 | `ILicenseRegistrationService.ResolveLicenseAsync` | **yes**, always, for a URL | **yes** |
-| `ILicenseRegistrationService.AcquireLeaseAsync` (`license acquire-lease`) | only when the stored lease is due, or **always** with `--force` | **yes**, when it downloads |
+| `ILicenseRegistrationService.AcquireLeaseAsync` (`license acquire-lease`) | only when the stored lease is due, or **always** with `--force` | **yes**, when it downloads; requires an interactive session |
 | `ILicenseRegistrationService.RegisteredLicenses` (`license list`) | no | no |
 | `ILicenseRegistrationService.RemoveLicenses` (`license unregister`) | no | releases nothing before the lease ends |
 
@@ -31,15 +32,17 @@ A *seat* is held by a **user and machine for the life of the lease**, not by a b
 
 `LicenseServerClient.GetLeaseAsync` downloads only when there is no stored lease, when the stored one has expired, or when it is past its renew time. Everything else is served from `licenseServer.json`.
 
+> **Rule.** **An unattended process never leases.** It is licensed by the unattended license, which costs nothing, so taking a seat would hold one that the people who need it cannot get — and a build server builds far more often than a developer, so it would hold several. A license source skips a registered license server when the process is unattended, whether the URL comes from the user profile or from the build itself, and `license acquire-lease` requires an interactive session for the same reason. The skip is silent: what the user configured is right, the process it does not apply to is not the one whose user could act on a message, and saying it would mean a warning on every build of a continuous integration server, for ever.
+
 > **Rule.** There is no way to ask a license server what it *would* lease without leasing it, so nothing here may be named as though there were. `license acquire-lease` is called that because that is what it does: it takes the same path a build takes, takes a seat and stores the lease, which is also what makes it a faithful diagnostic — what the user sees is what their next build will see. `--force` renews a lease that is not yet due, because a machine that already holds one would otherwise contact nothing and the command would report nothing about the server.
 
 ### What this costs, and why it is accepted
 
-A licence key and a license server cannot both be registered in the user profile: `LicensingConfiguration.SetLicense` removes one when the other is registered. The two can only coexist when a higher-priority source supplies the key — a project key from MSBuild or CI, or an unattended licence.
+A licence key and a license server cannot both be registered in the user profile: `LicensingConfiguration.SetLicense` removes one when the other is registered. The two can only coexist when a higher-priority source supplies the key, which now means one case: a project key from MSBuild, on the machine of a developer. The unattended licence, which was the other case, no longer produces it, because an unattended process does not reach a license server at all.
 
 In that configuration **the server is contacted and a seat is held although the key licensed the build**. This is deliberate. The alternative — skip the server when a higher-priority source already yielded a valid licence — cannot be decided at the moment it would have to be: the requirements of the compilation are not known while the consumer is being built, so a key that is valid but not eligible for a particular requirement would leave a build unlicensed that the lease would have licensed. Resolving everything never does that.
 
-The trade is one seat held by a machine that did not need it, against a build that fails although a licence was available. It is also symmetric with a licence key, which is reported to the licence audit whether or not a requirement used it; the ledger of the server is that same accounting in the customer's own hands.
+The trade is one seat held by a machine that did not need it, against a build that fails although a licence was available. It is also symmetric with a licence key, which is reported to the licence audit whether or not a requirement used it; the ledger of the server is that same accounting in the customer's own hands. And what it costs is now bounded by the machines of the developers, which is the population the seats were bought for: the build servers, which would have cost the most, are out of it.
 
 > **Rule.** A licence is resolved once per `ILicense` instance (`LeasedLicense._resolution`). The consumption service asks a licence that failed for its registration properties in order to name it in the message, so dropping the memo would contact the server twice for one consumer.
 
@@ -113,7 +116,7 @@ A registered URL is stored in the group of `LicensingConstants.MinimalLicenseSer
 
 ## Resolution order
 
-Sources are drained in the order of `LicenseSourcePriority`: `Unattended`, then `Explicit`, then `UserProfile`. Within the user profile, `LicensingConfiguration.GetRegisteredLicenseStrings` yields the license keys first and the URLs last. A license server is therefore always considered after every license key, which is what decides **which licence satisfies a requirement**, and so which one is audited.
+Sources are drained in the order of `LicenseSourcePriority`: `Unattended`, then `Explicit`, then `UserProfile`. `Unattended` being first is what makes "the unattended license wins over the license server" true of the *result*; the rule above is what makes it true of the *cost*, by keeping an unattended process away from the server in the first place. Within the user profile, `LicensingConfiguration.GetRegisteredLicenseStrings` yields the license keys first and the URLs last. A license server is therefore always considered after every license key, which is what decides **which licence satisfies a requirement**, and so which one is audited.
 
 It does not decide whether the server is contacted. See [When a seat is taken](#when-a-seat-is-taken).
 

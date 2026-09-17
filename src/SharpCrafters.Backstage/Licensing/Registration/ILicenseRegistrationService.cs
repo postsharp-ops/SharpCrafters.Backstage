@@ -85,8 +85,9 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     /// contacts it too, so <see cref="RegisterLicenseAsync"/> is what diagnoses a server that is not registered yet.
     /// </para>
     /// <para>
-    /// Unlike registration, this does not require an interactive session: acquiring a lease is exactly what an
-    /// unattended build does.
+    /// This requires an interactive session, because an unattended process never leases: it is licensed by the
+    /// unattended license, which costs nothing, and a build server that leased would hold seats that the people who
+    /// need them cannot get. A license source skips a registered license server for the same reason.
     /// </para>
     /// </remarks>
     ValueTask<LicenseRegistrationResult> AcquireLeaseAsync( bool forceRenewal = false, CancellationToken cancellationToken = default );

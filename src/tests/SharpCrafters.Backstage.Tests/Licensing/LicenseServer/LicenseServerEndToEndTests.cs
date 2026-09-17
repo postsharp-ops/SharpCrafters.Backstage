@@ -486,6 +486,126 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     }
 
     // ---------------------------------------------------------------------------------------------------------------
+    // An unattended process never leases.
+    // ---------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Makes the current process unattended, as a build server is. It has to be done before the services are built,
+    /// because the application information is read once.
+    /// </summary>
+    private void MakeTheProcessUnattended()
+        => this.ApplicationInfo = new TestApplicationInfo(
+            "License Server Test App",
+            false,
+            "2027.0.1",
+            new DateTime( 2026, 1, 15, 0, 0, 0, DateTimeKind.Utc ) ) { IsUnattendedProcess = true };
+
+    /// <summary>
+    /// Tests the rule that matters most to the pool of a team: an unattended process is licensed by the unattended
+    /// license, and never contacts the license server. A build server builds far more often than a developer, and a
+    /// build server that leased would hold seats that the people who need them cannot get.
+    /// </summary>
+    [Fact]
+    public async Task UnattendedLicenseWinsAndTheServerIsNeverContacted()
+    {
+        this.MakeTheProcessUnattended();
+
+        var server = this.CreateServer();
+
+        // Registering is an attended act, and it is what a developer does before handing the build over.
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.LeaseStore.RemoveAllLeases();
+        server.ClearRequests();
+
+        // The service of this test base ignores the unattended source, so the sources are built by hand to have both.
+        var service = new LicenseConsumptionService(
+            this.ServiceProvider,
+            [new UnattendedLicenseSource( this.ServiceProvider ), new UserProfileLicenseSource( this.ServiceProvider )] );
+
+        var consumer = await service.CreateConsumerAsync( null, this.Messages.Add );
+
+        Assert.True( consumer.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseType == SharpCrafters.Backstage.Licensing.LicenseType.Unattended ) ) );
+        server.AssertNotContacted();
+    }
+
+    /// <summary>
+    /// Tests that the rule holds even when there is no unattended license to fall back on, because it is about what an
+    /// unattended process may take rather than about what it already has.
+    /// </summary>
+    [Fact]
+    public async Task UnattendedProcessDoesNotLeaseEvenWithoutAnUnattendedLicense()
+    {
+        this.MakeTheProcessUnattended();
+
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.LeaseStore.RemoveAllLeases();
+        server.ClearRequests();
+
+        Assert.False( await this.TryConsumeAsync() );
+        server.AssertNotContacted();
+    }
+
+    /// <summary>
+    /// Tests that the rule is not reported. What the user configured is right, and the process it does not apply to is
+    /// not the one whose user could act on a message; saying it would mean a warning on every build of a continuous
+    /// integration server, for ever.
+    /// </summary>
+    [Fact]
+    public async Task UnattendedProcessReportsNothingAboutTheServerItSkips()
+    {
+        this.MakeTheProcessUnattended();
+
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.Messages.Clear();
+
+        _ = await this.TryConsumeAsync();
+
+        Assert.DoesNotContain( this.Messages, m => m.Text.Contains( server.Url, StringComparison.OrdinalIgnoreCase ) );
+    }
+
+    /// <summary>
+    /// Tests that a license server named by the build itself is skipped as well. The rule is about the process, not
+    /// about where the URL came from.
+    /// </summary>
+    [Fact]
+    public async Task UnattendedProcessSkipsAServerGivenByTheBuild()
+    {
+        this.MakeTheProcessUnattended();
+
+        var server = this.CreateServer();
+
+        var canConsume = await this.TryConsumeAsync(
+            new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile } );
+
+        Assert.False( canConsume );
+        server.AssertNotContacted();
+    }
+
+    /// <summary>
+    /// Tests that acquiring a lease by hand requires an interactive session, for the same reason: the command is how a
+    /// person asks for a seat, and a build server must not be able to ask by running it.
+    /// </summary>
+    [Fact]
+    public async Task AcquiringRequiresAnAttendedSession()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.UserDeviceDetection.IsInteractiveDevice = false;
+        server.ClearRequests();
+
+        var result = await this.LicenseRegistrationService.AcquireLeaseAsync( true );
+
+        Assert.False( result.IsSuccess );
+        Assert.Contains( "interactive session", result.ErrorMessage, StringComparison.Ordinal );
+        server.AssertNotContacted();
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
     // Eligibility.
     // ---------------------------------------------------------------------------------------------------------------
 

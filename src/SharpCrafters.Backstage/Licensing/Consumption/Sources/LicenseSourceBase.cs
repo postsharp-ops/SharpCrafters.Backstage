@@ -2,6 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
@@ -11,6 +15,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
     internal abstract class LicenseSourceBase : ILicenseSource
     {
         private readonly IServiceProvider _services;
+        private readonly IApplicationInfo _applicationInfo;
+        private readonly ILoggerFactory _loggerFactory;
 
         public abstract string Description { get; }
 
@@ -19,6 +25,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         protected LicenseSourceBase( IServiceProvider services )
         {
             this._services = services;
+            this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+            this._loggerFactory = services.GetLoggerFactory();
         }
 
         /// <summary>
@@ -37,8 +45,32 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         {
             var licenseFactory = new LicenseFactory( this._services );
 
+            // Asking the question logs, and most sources hold no license server at all, so it is asked at most once
+            // and only when a license server is actually met.
+            bool? isUnattendedProcess = null;
+
             foreach ( var licenseString in this.GetLicenseStrings( reportMessage ) )
             {
+                if ( LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
+                {
+                    isUnattendedProcess ??= this._applicationInfo.IsUnattendedProcess( this._loggerFactory );
+
+                    if ( isUnattendedProcess.Value )
+                    {
+                        // An unattended process is licensed by the unattended license, which costs nothing, so it must
+                        // never take a seat from the pool of the team: a build server builds far more often than a
+                        // developer, and it would hold seats that the people who need them cannot get.
+                        //
+                        // The license server is skipped silently rather than reported. What is configured is right and
+                        // the process it does not apply to is not the one whose user could act on a message; saying it
+                        // would mean a warning on every continuous integration build, for ever.
+                        this._loggerFactory.Licensing()
+                            .Trace?.Log( $"Ignoring the license server '{licenseString}': this process is unattended." );
+
+                        continue;
+                    }
+                }
+
                 if ( licenseFactory.TryCreate( licenseString, reportMessage, out var license, out var errorMessage ) )
                 {
                     yield return license;
