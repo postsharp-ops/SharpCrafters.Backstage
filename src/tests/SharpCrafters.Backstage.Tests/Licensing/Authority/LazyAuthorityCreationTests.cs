@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Tests.Licensing.Licenses;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -55,11 +56,11 @@ public sealed class LazyAuthorityCreationTests : LicensingTestsBase
     }
 
     [Fact]
-    public void TrialLicenseCreatesNoAuthority()
+    public async Task TrialLicenseCreatesNoAuthority()
     {
         Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
 
-        var consumer = this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumer();
+        var consumer = await this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumerAsync();
 
         Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
 

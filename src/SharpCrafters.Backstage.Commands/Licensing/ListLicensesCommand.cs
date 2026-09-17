@@ -4,11 +4,8 @@
 
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
-using Spectre.Console;
 using System;
-using System.Globalization;
 using System.Linq;
 
 namespace SharpCrafters.Backstage.Commands.Licensing
@@ -19,6 +16,9 @@ namespace SharpCrafters.Backstage.Commands.Licensing
         {
             var licenseRegistrationService = context.ServiceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
             var productName = context.ServiceProvider.GetRequiredBackstageService<ProductProfile>().Name;
+
+            // Listing contacts no license server: it reports the lease that is already held, so that showing what is
+            // registered never waits for a network.
             var licenses = licenseRegistrationService.RegisteredLicenses.ToList();
             var unsupportedVersions = licenseRegistrationService.UnsupportedRegisteredLicenseVersions.ToList();
 
@@ -26,62 +26,18 @@ namespace SharpCrafters.Backstage.Commands.Licensing
             {
                 foreach ( var license in licenses )
                 {
-                    context.Console.WriteMessage( "The following license is currently registered:" + Environment.NewLine );
+                    context.Console.WriteMessage(
+                        (license.LicenseServerUrl == null
+                            ? "The following license is currently registered:"
+                            : "The following license server is currently registered:")
+                        + Environment.NewLine );
 
-                    static string? Format( DateTime? dateTime )
+                    context.Console.Out.Write( LicenseTable.Create( license ) );
+
+                    if ( license is { LicenseServerUrl: not null, Lease: null } )
                     {
-                        if ( dateTime == null )
-                        {
-                            return null;
-                        }
-
-                        return dateTime.Value.ToString( "D", CultureInfo.InvariantCulture );
+                        context.Console.WriteMessage( "No license has been leased from this license server yet." );
                     }
-
-                    var table = new Table();
-                    table.AddColumn( "Field" );
-                    table.AddColumn( "Value" );
-
-                    void AddRow( string description, string? value )
-                    {
-                        if ( value != null )
-                        {
-                            table.AddRow( description, value );
-                        }
-                    }
-
-                    var data = license;
-
-                    AddRow( "License ID", data.LicenseId?.ToString( CultureInfo.InvariantCulture ) );
-
-                    if ( data.LicenseId != null )
-                    {
-                        AddRow( "License Key", license.LicenseString );
-                    }
-
-                    AddRow( "Description", data.Description );
-                    AddRow( "Licensee", data.Licensee );
-
-                    string? expiration = null;
-
-                    if ( data.Perpetual != null )
-                    {
-                        if ( data.Perpetual.Value )
-                        {
-                            expiration = "Never (perpetual license)";
-                        }
-                        else
-                        {
-                            expiration = Format( data.ValidTo );
-                        }
-                    }
-
-                    AddRow( "License Expiration", expiration );
-                    AddRow( "Maintenance Expiration", Format( data.SubscriptionEndDate ) );
-                    AddRow( "Eligible Servicing Phases", data.ServicingPhase.GetDisplayName( true ) );
-                    AddRow( "License Audit", data.Auditable ? "Yes" : "No" );
-
-                    context.Console.Out.Write( table );
                 }
             }
             else if ( unsupportedVersions.Count == 0 )

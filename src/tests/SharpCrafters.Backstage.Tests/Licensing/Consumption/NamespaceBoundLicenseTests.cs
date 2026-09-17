@@ -5,6 +5,7 @@
 using Metalama.Backstage;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Testing;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,10 +21,10 @@ public sealed class NamespaceBoundLicenseTests : LicenseConsumptionServiceTestsB
     [InlineData( null, false )]
     [InlineData( "", false )]
     [InlineData( "AnotherNamespace", false )]
-    public void TestWithProjectName( string? projectName, bool expectedResult )
+    public async Task TestWithProjectName( string? projectName, bool expectedResult )
     {
-        var consumer = this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalEvaluationNamespaceConstrained )
-            .CreateConsumer( new LicenseConsumptionOptions() { ProjectName = projectName } );
+        var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalEvaluationNamespaceConstrained )
+            .CreateConsumerAsync( new LicenseConsumptionOptions() { ProjectName = projectName } );
 
         Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
     }

@@ -22,4 +22,15 @@ internal static class LicensingConstants
     public static TimeSpan LicenseExpirationWarningPeriod { get; } = TimeSpan.FromDays( 7 );
 
     public static TimeSpan SubscriptionExpirationWarningPeriod { get; } = TimeSpan.FromDays( 30 );
+
+    /// <summary>
+    /// Gets the minimal version of the product that can consume a registered license server URL.
+    /// </summary>
+    /// <remarks>
+    /// A registered URL is stored in the group of this version, so that an earlier version skips it instead of
+    /// reporting it as an invalid license key: every installed version reads the same <c>licensing.json</c>, and one
+    /// that predates license server support would otherwise tell the user that what they registered is broken. It
+    /// must stay at or below the version of the first release that ships this feature.
+    /// </remarks>
+    public static Version MinimalLicenseServerVersion { get; } = new( 2027, 0 );
 }

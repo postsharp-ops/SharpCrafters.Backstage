@@ -40,5 +40,16 @@ namespace SharpCrafters.Backstage.Licensing.Registration
         /// which cannot consume it never read it.
         /// </summary>
         public Version? MinMetalamaVersion { get; init; }
+
+        /// <summary>
+        /// Gets the URL of the license server that leases the licence, or <c>null</c> when the licence is a key.
+        /// </summary>
+        public string? LicenseServerUrl { get; init; }
+
+        /// <summary>
+        /// Gets the times of the lease currently held from <see cref="LicenseServerUrl"/>, or <c>null</c> when the
+        /// licence is a key or when no lease is held.
+        /// </summary>
+        public LicenseLeaseProperties? Lease { get; init; }
     }
 }

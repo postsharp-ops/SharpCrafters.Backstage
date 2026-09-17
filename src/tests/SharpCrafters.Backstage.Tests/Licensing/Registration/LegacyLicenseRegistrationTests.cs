@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -17,11 +18,11 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     public LegacyLicenseRegistrationTests( ITestOutputHelper logger ) : base( logger ) { }
 
     [Fact]
-    public void FreeLicenseIsNotOverwrittenByCommunity()
+    public async Task FreeLicenseIsNotOverwrittenByCommunity()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaFree ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaFree )).IsSuccess );
         Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaCommunity ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaCommunity )).IsSuccess );
 
         var registeredLicenses = this.LicenseRegistrationService.RegisteredLicenses.ToList();
         Assert.Equal( 2, registeredLicenses.Count );
@@ -30,11 +31,11 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     }
 
     [Fact]
-    public void CommunityLicenseIsNotOverwrittenByFree()
+    public async Task CommunityLicenseIsNotOverwrittenByFree()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaCommunity ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaCommunity )).IsSuccess );
         Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaFree ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaFree )).IsSuccess );
 
         var registeredLicenses = this.LicenseRegistrationService.RegisteredLicenses.ToList();
         Assert.Equal( 2, registeredLicenses.Count );
@@ -43,9 +44,9 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     }
 
     [Fact]
-    public void MetalamaCommunityNotStoredInLegacyField()
+    public async Task MetalamaCommunityNotStoredInLegacyField()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaCommunity ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaCommunity )).IsSuccess );
 
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 
@@ -55,9 +56,9 @@ public sealed class LegacyLicenseRegistrationTests : LicensingTestsBase
     }
 
     [Fact]
-    public void MetalamaProfessionalStoredInLegacyField()
+    public async Task MetalamaProfessionalStoredInLegacyField()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
 
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 

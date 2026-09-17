@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Testing;
 using Spectre.Console;
@@ -20,8 +21,8 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands
     {
         private readonly ILogger _logger;
 
-        protected CommandsTestsBase( ITestOutputHelper logger )
-            : base( logger )
+        protected CommandsTestsBase( ITestOutputHelper logger, IApplicationInfo? applicationInfo = null )
+            : base( logger, applicationInfo )
         {
             this._logger = this.ServiceProvider.GetLoggerFactory().GetLogger( "Console" );
         }

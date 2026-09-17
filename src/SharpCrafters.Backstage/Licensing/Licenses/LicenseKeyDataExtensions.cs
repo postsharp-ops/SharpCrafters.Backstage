@@ -106,6 +106,14 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             {
                 licenseServerEligible = licenseKeyData.LicenseServerEligible.Value;
             }
+#pragma warning disable CS0618 // Type or member is obsolete
+            else if ( licenseKeyData.LicenseType == LicenseType.PerUsage )
+#pragma warning restore CS0618
+            {
+                // A per-usage license key is metered per build and cannot be leased. The rule comes from PostSharp,
+                // whose IsLicenseServerEligible checks the license type before it falls back to the identifier.
+                licenseServerEligible = false;
+            }
             else
             {
                 const int lastLicenseIdBefore50Rtm = 100802;

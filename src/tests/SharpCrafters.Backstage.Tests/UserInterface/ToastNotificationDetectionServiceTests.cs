@@ -40,7 +40,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         if ( requireLicense )
         {
             var licensing = this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
-            var consumer = licensing.CreateConsumer();
+            var consumer = await licensing.CreateConsumerAsync();
             consumer.TryConsume( new AnyLicenseRequirement() );
         }
 
@@ -152,7 +152,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         this.UserDeviceDetection.IsInteractiveDevice = true;
 
         // Register a license key.
-        Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+        Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
 
         // Move the clock.
         this.Time.Set( LicenseKeyProvider.DefaultSubscriptionExpirationDate - TimeSpan.FromDays( daysBeforeExpiration ) );

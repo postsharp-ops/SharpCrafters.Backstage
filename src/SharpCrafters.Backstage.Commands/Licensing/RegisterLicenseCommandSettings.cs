@@ -11,7 +11,7 @@ namespace SharpCrafters.Backstage.Commands.Licensing;
 
 internal class RegisterLicenseCommandSettings : BaseCommandSettings
 {
-    [Description( "The license key to be registered or unregistered, or 'trial' or 'free'." )]
+    [Description( "The license key or license server URL to be registered, or 'trial' or 'free'." )]
     [CommandArgument( 1, "<license>" )]
     public string License { get; init; }
 }

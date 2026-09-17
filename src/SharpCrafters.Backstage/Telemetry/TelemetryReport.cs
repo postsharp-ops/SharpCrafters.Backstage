@@ -16,6 +16,7 @@ internal abstract class TelemetryReport
 
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
     private readonly IMachineIdProvider _machineIdProvider;
+    private readonly IUserIdentityProvider _userIdentityProvider;
 
     public abstract string Kind { get; }
 
@@ -26,6 +27,7 @@ internal abstract class TelemetryReport
         this.Metrics = metrics;
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
         this._machineIdProvider = serviceProvider.GetRequiredBackstageService<IMachineIdProvider>();
+        this._userIdentityProvider = serviceProvider.GetRequiredBackstageService<IUserIdentityProvider>();
 
         // Note that we are intentionally and "randomly" reporting the version of the first component that
         // triggered audit, to prioritize having just one hit per day over having accurate version reporting
@@ -60,8 +62,6 @@ internal abstract class TelemetryReport
     // sensitive information, so correlating between both does not matter.
     private const TelemetrySaltKind _aggregateHashKind = TelemetrySaltKind.Matomo;
 
-#pragma warning disable CA1822
-
     /// <summary>
     /// Gets the identifier of the current user reported by the license audit.
     /// </summary>
@@ -78,8 +78,7 @@ internal abstract class TelemetryReport
     /// stay unjoinable to this one. See issue #1668.
     /// </para>
     /// </remarks>
-    public long CrossProductUserHash => HashUtilities.ComputeStringHash64( Environment.UserName );
-#pragma warning restore CA1822
+    public long CrossProductUserHash => HashUtilities.ComputeStringHash64( this._userIdentityProvider.UserName );
 
     // The device hash sent to the third-party analytics platform (Matomo). Keyed by MatomoSalt.
     // DeviceId is already rotated monthly, so there is no need to salt it further.

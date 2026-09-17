@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption;
 
@@ -38,7 +40,10 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         this.Changed?.Invoke();
     }
 
-    public ILicenseConsumer CreateConsumer( LicenseConsumptionOptions? options, Action<LicensingMessage>? reportMessage )
+    public ValueTask<ILicenseConsumer> CreateConsumerAsync(
+        LicenseConsumptionOptions? options = null,
+        Action<LicensingMessage>? reportMessage = null,
+        CancellationToken cancellationToken = default )
     {
         options ??= LicenseConsumptionOptions.Default;
 
@@ -52,48 +57,55 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             sources.Add( new ExplicitLicenseSource( options.ProjectLicenseKey!, LicenseSourceKind.Project, this._serviceProvider ) );
         }
 
-        return this.CreateConsumer( options, sources, reportMessage );
+        return this.CreateConsumerAsync( options, sources, reportMessage, cancellationToken );
     }
 
-    private ILicenseConsumer CreateConsumer(
+    [Obsolete( "Use CreateConsumerAsync." )]
+    public ILicenseConsumer CreateConsumer( LicenseConsumptionOptions? options = null, Action<LicensingMessage>? reportMessage = null )
+
+        // Task.Run puts the continuation on a thread-pool thread, where SynchronizationContext.Current is null, so it
+        // cannot be posted back to the thread that is blocked here, which is what deadlocks a user interface thread on
+        // .NET Framework. GetResult rethrows the original exception, whereas Wait would wrap it in an
+        // AggregateException whose message does not name the failure.
+        => Task.Run( () => this.CreateConsumerAsync( options, reportMessage, CancellationToken.None ).AsTask() )
+            .GetAwaiter()
+            .GetResult();
+
+    private async ValueTask<ILicenseConsumer> CreateConsumerAsync(
         LicenseConsumptionOptions options,
         IEnumerable<ILicenseSource> licenseSources,
-        Action<LicensingMessage>? reportMessage = null )
+        Action<LicensingMessage>? reportMessage,
+        CancellationToken cancellationToken )
     {
-        // Gather valid licenses.
-        var licenses = licenseSources.OrderBy( s => s.Priority ).SelectMany( s => s.GetLicenses( ReportMessage ).Select( l => (License: l, Source: s) ) );
-
         var validLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
 
-        foreach ( var license in licenses )
+        // Every licence of every source is resolved here, which for a license server means acquiring a lease and
+        // therefore taking a seat. This is what lets TryConsume stay synchronous; docs/license-server.md explains
+        // what it costs and why deferring the acquisition until a requirement asked was removed.
+        //
+        // The sources are drained in the order of their priority, and each yields its licences in its own order, so a
+        // registered license key is always considered before a lease from a license server: a server is registered in
+        // the user profile, which is the last source, and a URL is the last license string of that source. That order
+        // decides which licence satisfies a requirement, not whether the server is contacted.
+        foreach ( var source in licenseSources.OrderBy( s => s.Priority ) )
         {
-            if ( !license.License.TryGetConsumptionProperties( options, out var licenseConsumptionData, out var errorMessage ) )
+            foreach ( var license in source.GetLicenses( ReportMessage ) )
             {
-                LicenseRegistrationProperties? registrationData = null;
+                cancellationToken.ThrowIfCancellationRequested();
 
-                if ( license.Source.SupportsRegistration )
+                var consumptionResult = await license.GetConsumptionPropertiesAsync( options, cancellationToken );
+
+                if ( !consumptionResult.IsSuccess )
                 {
-                    license.License.TryGetRegistrationProperties( out registrationData, out _ );
+                    await this.ReportUnusableLicenseAsync( license, source, consumptionResult.ErrorMessage!, reportMessage, cancellationToken );
+
+                    continue;
                 }
 
-                var message =
-                    $"Cannot use the license '{registrationData?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationData?.Description}': {errorMessage}"
-                        .TrimEnd( '.' ) + ".";
-
-                if ( license.Source.GetType() != typeof(UserProfileLicenseSource) )
-                {
-                    message += $" The license key originates from {license.Source.Description}.";
-                }
-
-                ReportMessage( new LicensingMessage( message ) );
-
-                continue;
+                validLicenses.Add( (license, consumptionResult.Properties) );
             }
-
-            validLicenses.Add( (license.License, licenseConsumptionData) );
         }
 
-        // Return the LicenseConsumer.
         return new LicenseConsumer( this._serviceProvider, validLicenses.ToImmutableArray(), options );
 
         void ReportMessage( LicensingMessage message )
@@ -101,6 +113,37 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             reportMessage?.Invoke( message );
             this._logger.Warning?.Log( message.Text );
         }
+    }
+
+    /// <summary>
+    /// Reports that a licence is present but cannot be used, naming it as well as the licence itself allows.
+    /// </summary>
+    private async Task ReportUnusableLicenseAsync(
+        ILicense license,
+        ILicenseSource source,
+        string errorMessage,
+        Action<LicensingMessage>? reportMessage,
+        CancellationToken cancellationToken )
+    {
+        LicenseRegistrationProperties? registrationProperties = null;
+
+        if ( source.SupportsRegistration )
+        {
+            var registrationResult = await license.GetRegistrationPropertiesAsync( cancellationToken );
+            registrationProperties = registrationResult.Properties;
+        }
+
+        var message =
+            $"Cannot use the license '{registrationProperties?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationProperties?.Description}': {errorMessage}"
+                .TrimEnd( '.' ) + ".";
+
+        if ( source.GetType() != typeof(UserProfileLicenseSource) )
+        {
+            message += $" The license key originates from {source.Description}.";
+        }
+
+        reportMessage?.Invoke( new LicensingMessage( message ) );
+        this._logger.Warning?.Log( message );
     }
 
     public event Action? Changed;

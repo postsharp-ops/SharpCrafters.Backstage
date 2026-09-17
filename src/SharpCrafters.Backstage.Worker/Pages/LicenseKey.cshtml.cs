@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Worker.Pages;
 
@@ -35,7 +36,7 @@ public class LicenseKeyPageModel : PageModel
 
     public List<string> ErrorMessages { get; } = [];
 
-    public IActionResult OnPost()
+    public async Task<IActionResult> OnPostAsync()
     {
         if ( !this.ModelState.IsValid )
         {
@@ -44,7 +45,7 @@ public class LicenseKeyPageModel : PageModel
             return this.Page();
         }
 
-        var validationResult = this._licenseRegistrationService.ValidateLicenseKey( this.LicenseKey! );
+        var validationResult = await this._licenseRegistrationService.ValidateLicenseKeyAsync( this.LicenseKey! );
 
         if ( !validationResult.IsSuccess )
         {

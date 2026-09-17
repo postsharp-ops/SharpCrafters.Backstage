@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,10 +31,10 @@ public sealed class LegacyLicenseKeyTests : LicensingTestsBase
 
     [Theory]
     [MemberData( nameof(GetLicenseKeys) )]
-    public void LicenseKeyIsRevoked( string licenseKey )
+    public async Task LicenseKeyIsRevoked( string licenseKey )
     {
         var license = new License( licenseKey, this.ServiceProvider );
-        Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+        Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
     }
 
     [Fact]

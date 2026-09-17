@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Testing;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,10 +29,10 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         [InlineData( nameof(TestLicenseKeyProvider.MetalamaStarter) )]
         [InlineData( nameof(TestLicenseKeyProvider.MetalamaFree) )]
 #pragma warning restore CS0612 // Type or member is obsolete
-        public void RegisterValidLicense( string licenseKeyName )
+        public async Task RegisterValidLicense( string licenseKeyName )
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
-            Assert.True( this.LicenseRegistrationService.RegisterLicense( licenseKey ).IsSuccess );
+            Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( licenseKey )).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( licenseKey, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
         }
@@ -55,12 +56,12 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         [InlineData( nameof(TestLicenseKeyProvider.MetalamaStarter) )]
         [InlineData( nameof(TestLicenseKeyProvider.MetalamaFree) )]
 #pragma warning restore CS0612
-        public void ParseAndValidateLicense( string licenseKeyName, bool isParsable = true, bool isValid = true )
+        public async Task ParseAndValidateLicense( string licenseKeyName, bool isParsable = true, bool isValid = true )
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-            Assert.Equal( isParsable, this.LicenseRegistrationService.ParseLicenseKey( licenseKey ).IsSuccess );
-            Assert.Equal( isValid, this.LicenseRegistrationService.ValidateLicenseKey( licenseKey ).IsSuccess );
+            Assert.Equal( isParsable, (await this.LicenseRegistrationService.ResolveLicenseAsync( licenseKey )).IsSuccess );
+            Assert.Equal( isValid, (await this.LicenseRegistrationService.ValidateLicenseKeyAsync( licenseKey )).IsSuccess );
 
             // Check that this does not register the license.
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
@@ -69,26 +70,26 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         [Theory]
         [InlineData( nameof(TestLicenseKeyProvider.MetalamaProfessionalBusinessUnsigned) )]
         [InlineData( nameof(TestLicenseKeyProvider.InvalidLicenseKey) )]
-        public void RegisterInvalidLicense( string licenseKeyName )
+        public async Task RegisterInvalidLicense( string licenseKeyName )
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-            Assert.False( this.LicenseRegistrationService.RegisterLicense( licenseKey ).IsSuccess );
+            Assert.False( (await this.LicenseRegistrationService.RegisterLicenseAsync( licenseKey )).IsSuccess );
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
         }
 
         [Fact]
-        public void RegisterManyKeys()
+        public async Task RegisterManyKeys()
         {
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
             // First registration. 
-            Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+            Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalBusiness, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
 
             // Second registration. 
-            Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalPersonal ).IsSuccess );
+            Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalPersonal )).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalPersonal, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
         }
@@ -104,12 +105,12 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         }
 
         [Fact]
-        public void Unregister()
+        public async Task Unregister()
         {
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
             // First registration. 
-            Assert.True( this.LicenseRegistrationService.RegisterLicense( LicenseKeyProvider.MetalamaProfessionalBusiness ).IsSuccess );
+            Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness )).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseKeyProvider.MetalamaProfessionalBusiness, this.LicenseRegistrationService.RegisteredLicenses.Single().LicenseString );
 

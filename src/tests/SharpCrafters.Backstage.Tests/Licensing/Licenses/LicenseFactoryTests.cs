@@ -1,10 +1,12 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
+using System;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -38,33 +40,33 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [Fact]
         public void NullLicenseStringFails()
         {
-            Assert.False( this.LicenseFactory.TryCreate( "", out _, out _ ) );
+            Assert.False( this.LicenseFactory.TryCreate( "", null, out _, out _ ) );
         }
 
         [Fact]
         public void EmptyLicenseStringFails()
         {
-            Assert.False( this.LicenseFactory.TryCreate( string.Empty, out _, out _ ) );
+            Assert.False( this.LicenseFactory.TryCreate( string.Empty, null, out _, out _ ) );
         }
 
         [Fact]
         public void WhitespaceLicenseStringFails()
         {
-            Assert.False( this.LicenseFactory.TryCreate( " ", out _, out _ ) );
+            Assert.False( this.LicenseFactory.TryCreate( " ", null, out _, out _ ) );
         }
 
         [Fact]
-        public void InvalidLicenseStringCreatesInvalidLicense()
+        public async Task InvalidLicenseStringCreatesInvalidLicense()
         {
             const string invalidLicenseString = "SomeInvalidLicenseString";
-            Assert.True( this.LicenseFactory.TryCreate( invalidLicenseString, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( invalidLicenseString, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
-            Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+            Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
         }
 
         [Fact]
-        public void RevokedLicenseStringCreatesInvalidLicense()
+        public async Task RevokedLicenseStringCreatesInvalidLicense()
         {
             // ReSharper disable StringLiteralTypo
             const string revokedLicenseString =
@@ -72,32 +74,55 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
 
             // ReSharper restore StringLiteralTypo
 
-            Assert.True( this.LicenseFactory.TryCreate( revokedLicenseString, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( revokedLicenseString, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
-            Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+            Assert.False( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
         }
 
         [Fact]
-        public void ValidLicenseKeyCreatesValidLicense()
+        public async Task ValidLicenseKeyCreatesValidLicense()
         {
-            Assert.True( this.LicenseFactory.TryCreate( LicenseKeyProvider.PostSharpUltimate, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( LicenseKeyProvider.PostSharpUltimate, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
-            Assert.True( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var licenseData, out errorMessage ) );
-            Assert.NotNull( licenseData );
-            Assert.Null( errorMessage );
+            var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
+            Assert.True( consumptionResult.IsSuccess );
+            Assert.NotNull( consumptionResult.Properties );
+            Assert.Null( consumptionResult.ErrorMessage );
         }
 
-        [Fact]
-        public void UrlCreatesLicenseLease()
+        /// <summary>
+        /// Tests that a well-formed license server URL is turned into a leased license and not into a license key, and
+        /// that the factory contacts nothing while doing so: the server is reached when the license is consumed or
+        /// registered, not when it is created, because this method is called wherever a license string is met.
+        /// </summary>
+        [Theory]
+        [InlineData( "http://license.test" )]
+        [InlineData( "https://license.test" )]
+        [InlineData( "https://license.test:8443/postsharp" )]
+        public void UrlCreatesLeasedLicense( string url )
         {
-            // LicenseConsumptionOptions.Default
+            Assert.True( this.LicenseFactory.TryCreate( url, null, out var license, out var errorMessage ) );
+            Assert.Null( errorMessage );
+            Assert.IsType<LeasedLicense>( license );
+            Assert.Empty( this.HttpClientFactory.ProcessedRequests );
+        }
 
-            // Assert.True( this._licenseFactory.TryCreate( "http://hello.world", out var license ) );
-            // Assert.True( license is LicenseLease );
-
-            Assert.False( this.LicenseFactory.TryCreate( "http://hello.world", out _, out _ ) );
+        /// <summary>
+        /// Tests that a URL which cannot be a license server is refused with the reason, rather than being left to
+        /// fail later as an unparsable license key.
+        /// </summary>
+        [Theory]
+        [InlineData( "https://license.test?user=x", "query string" )]
+        [InlineData( "ftp://license.test", "HTTP and HTTPS" )]
+        [InlineData( "file:///c:/licenses", "HTTP and HTTPS" )]
+        [InlineData( "https://alice:secret@license.test", "user name" )]
+        public void MalformedUrlIsRefusedWithItsReason( string url, string expectedMessageSubstring )
+        {
+            Assert.False( this.LicenseFactory.TryCreate( url, null, out var license, out var errorMessage ) );
+            Assert.Null( license );
+            Assert.Contains( expectedMessageSubstring, errorMessage, StringComparison.Ordinal );
         }
 
         /// <summary>
@@ -108,20 +133,21 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses
         [Theory]
         [InlineData( TestLicensingAuthorityProvider.DsaTestKeyId )]
         [InlineData( TestLicensingAuthorityProvider.ECDsaTestKeyId )]
-        public void LicenseKeyWithInvalidSignatureFails( byte signatureKeyId )
+        public async Task LicenseKeyWithInvalidSignatureFails( byte signatureKeyId )
         {
             var licenseKey = new LicenseKeyDataBuilder
             {
                 Product = LicenseProduct.MetalamaProfessional, Signature = new byte[16], SignatureKeyId = signatureKeyId
             }.SerializeToLicenseString();
 
-            Assert.True( this.LicenseFactory.TryCreate( licenseKey, out var license, out var errorMessage ) );
+            Assert.True( this.LicenseFactory.TryCreate( licenseKey, null, out var license, out var errorMessage ) );
             Assert.Null( errorMessage );
             Assert.True( license is License );
 
-            Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out var data, out errorMessage ) );
-            Assert.Null( data );
-            Assert.NotEmpty( errorMessage );
+            var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
+            Assert.False( consumptionResult.IsSuccess );
+            Assert.Null( consumptionResult.Properties );
+            Assert.NotEmpty( consumptionResult.ErrorMessage );
         }
     }
 }

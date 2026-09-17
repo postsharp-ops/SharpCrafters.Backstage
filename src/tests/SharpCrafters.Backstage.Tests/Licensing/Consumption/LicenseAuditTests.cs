@@ -82,10 +82,10 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             c => c with { DeviceId = _testDeviceId, MatomoSalt = _testSalt, LastSaltChangeTime = this.Time.UtcNow } );
     }
 
-    private InstrumentedLicenseWrapper CreateAndConsumeLicense( string licenseKey )
+    private async Task<InstrumentedLicenseWrapper> CreateAndConsumeLicenseAsync( string licenseKey )
     {
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
-        var consumer = this.CreateConsumptionService( license ).CreateConsumer();
+        var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
         Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
 
         return license;
@@ -104,18 +104,18 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     [Theory]
     [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusiness), true, "MetalamaProfessional", "Business" )]
     [InlineData( nameof(LicenseKeyProvider.MetalamaProfessionalBusinessNotAuditable), false, null, null )]
-    public void LicenseIsAudited( string licenseKeyName, bool isAuditReportExpected, string? expectedProductName, string? expectedLicenseType )
+    public async Task LicenseIsAudited( string licenseKeyName, bool isAuditReportExpected, string? expectedProductName, string? expectedLicenseType )
     {
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-        void Consume()
+        async Task Consume()
         {
-            _ = this.CreateAndConsumeLicense( licenseKey );
+            _ = await this.CreateAndConsumeLicenseAsync( licenseKey );
         }
 
         if ( isAuditReportExpected )
         {
-            Consume();
+            await Consume();
             var reports = this.GetReports();
             Assert.Single( reports );
 
@@ -134,7 +134,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             // Second time in the same day.
             this.FileSystem.Reset();
 
-            Consume();
+            await Consume();
             var secondReports = this.GetReports();
             Assert.Empty( secondReports );
 
@@ -143,7 +143,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             this.HttpClientFactory.ClearProcessedRequests();
             this.Time.AddTime( TimeSpan.FromDays( 1.01 ) );
 
-            Consume();
+            await Consume();
             var thirdReports = this.GetReports();
             Assert.Single( thirdReports );
 
@@ -168,11 +168,14 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     }
 
     [Fact]
-    public void LicenseAuditReportsDistinctLicenseKeyWithNoDelay()
+    public async Task LicenseAuditReportsDistinctLicenseKeyWithNoDelay()
     {
         var licenseKeys = new List<string> { LicenseKeyProvider.MetalamaProfessionalBusiness, LicenseKeyProvider.MetalamaProfessionalPersonal };
 
-        licenseKeys.ForEach( l => this.CreateAndConsumeLicense( l ) );
+        foreach ( var l in licenseKeys )
+        {
+            await this.CreateAndConsumeLicenseAsync( l );
+        }
 
         var reports = this.GetReports();
 
@@ -193,14 +196,14 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
         Assert.All( reports, r => Assert.Contains( _auditedLicenseKey, r, StringComparison.OrdinalIgnoreCase ) );
     }
 
-    private void ConsumeAndAssertReportsCount( int expectedCount )
+    private async Task ConsumeAndAssertReportsCount( int expectedCount )
     {
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
         this.AssertReportsCount( expectedCount );
     }
 
     [Fact]
-    public void LicenseAuditReportsSameLicenseKeyDaily()
+    public async Task LicenseAuditReportsSameLicenseKeyDaily()
     {
         Assert.Empty( this.FileSystem.Mock.AllFiles );
 
@@ -213,27 +216,27 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
         }
 
         ShiftTime( TimeSpan.Zero );
-        this.ConsumeAndAssertReportsCount( 1 );
+        await this.ConsumeAndAssertReportsCount( 1 );
 
-        this.ConsumeAndAssertReportsCount( 1 );
-
-        ShiftTime( TimeSpan.FromDays( 1 ) - TimeSpan.FromMilliseconds( 1 ) );
-        this.ConsumeAndAssertReportsCount( 1 );
-
-        ShiftTime( TimeSpan.FromMilliseconds( 1 ) );
-        this.ConsumeAndAssertReportsCount( 2 );
-
-        this.ConsumeAndAssertReportsCount( 2 );
+        await this.ConsumeAndAssertReportsCount( 1 );
 
         ShiftTime( TimeSpan.FromDays( 1 ) - TimeSpan.FromMilliseconds( 1 ) );
-        this.ConsumeAndAssertReportsCount( 2 );
+        await this.ConsumeAndAssertReportsCount( 1 );
 
         ShiftTime( TimeSpan.FromMilliseconds( 1 ) );
-        this.ConsumeAndAssertReportsCount( 3 );
+        await this.ConsumeAndAssertReportsCount( 2 );
+
+        await this.ConsumeAndAssertReportsCount( 2 );
+
+        ShiftTime( TimeSpan.FromDays( 1 ) - TimeSpan.FromMilliseconds( 1 ) );
+        await this.ConsumeAndAssertReportsCount( 2 );
+
+        ShiftTime( TimeSpan.FromMilliseconds( 1 ) );
+        await this.ConsumeAndAssertReportsCount( 3 );
     }
 
     [Fact]
-    public void DeviceIdIsSerialized()
+    public async Task DeviceIdIsSerialized()
     {
         var guid = new Guid( "75c1ce19-e594-4bfe-ac39-e37b9dd62069" );
         var configuration = new TelemetryConfiguration { DeviceId = guid };
@@ -243,24 +246,24 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     }
 
     [Fact]
-    public void LicenseIsNotReportedReportedWhenTelemetryIsDisabled()
+    public async Task LicenseIsNotReportedReportedWhenTelemetryIsDisabled()
     {
         this.ApplicationInfo = new TestApplicationInfo() { IsTelemetryEnabled = false };
-        this.ConsumeAndAssertReportsCount( 0 );
+        await this.ConsumeAndAssertReportsCount( 0 );
     }
 
     [Fact]
-    public void LicenseIsReportedWhenOptOutEnvironmentVariableIsSet()
+    public async Task LicenseIsReportedWhenOptOutEnvironmentVariableIsSet()
     {
         this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] = "true";
-        this.ConsumeAndAssertReportsCount( 1 );
+        await this.ConsumeAndAssertReportsCount( 1 );
     }
 
     [Fact]
-    public void LicenseIsNotReportedForUnattendedBuild()
+    public async Task LicenseIsNotReportedForUnattendedBuild()
     {
         this.ApplicationInfo = new TestApplicationInfo() { IsUnattendedProcess = true };
-        this.ConsumeAndAssertReportsCount( 0 );
+        await this.ConsumeAndAssertReportsCount( 0 );
     }
 
     [Fact]
@@ -283,7 +286,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
         var telemetryConfigurationService = this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
         Assert.False( telemetryConfigurationService.IsActivated );
 
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
         await this.BackgroundTasks.WhenNoPendingTaskAsync();
 
         Assert.True( telemetryConfigurationService.IsActivated );
@@ -345,14 +348,14 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     /// them is counted once instead of twice. See issue #1873.
     /// </remarks>
     [Fact]
-    public void LicenseAuditReportsPostSharpCompatibleUserHash()
+    public async Task LicenseAuditReportsPostSharpCompatibleUserHash()
     {
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );
 
-        Assert.Equal( ComputeExpectedPostSharpHash( Environment.UserName ), GetReportField( report, "User" ) );
+        Assert.Equal( ComputeExpectedPostSharpHash( this.UserIdentity.UserName ), GetReportField( report, "User" ) );
     }
 
     /// <summary>
@@ -367,16 +370,16 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     [Theory]
     [InlineData( 0x0123456789ABCDEF )]
     [InlineData( 0x7EDCBA9876543210 )]
-    public void LicenseAuditUserHashDoesNotDependOnLicenseAuditSalt( long licenseAuditSalt )
+    public async Task LicenseAuditUserHashDoesNotDependOnLicenseAuditSalt( long licenseAuditSalt )
     {
         this.ConfigurationManager!.Update<TelemetryConfiguration>( c => c with { LicenseAuditSalt = licenseAuditSalt } );
 
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );
 
-        Assert.Equal( ComputeExpectedPostSharpHash( Environment.UserName ), GetReportField( report, "User" ) );
+        Assert.Equal( ComputeExpectedPostSharpHash( this.UserIdentity.UserName ), GetReportField( report, "User" ) );
     }
 
     /// <summary>
@@ -387,9 +390,9 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     /// must stay unjoinable to the license audit channel. See issues #1873 and #1668.
     /// </remarks>
     [Fact]
-    public void LicenseAuditUserHashIsNotTheSaltedHash()
+    public async Task LicenseAuditUserHashIsNotTheSaltedHash()
     {
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );
@@ -403,7 +406,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
                  } )
         {
             var saltedUserHash = HashUtilities
-                .ComputeInt64Hmac( Environment.UserName, telemetryConfigurationService.GetSalt( saltKind ) )
+                .ComputeInt64Hmac( this.UserIdentity.UserName, telemetryConfigurationService.GetSalt( saltKind ) )
                 .ToString( "x", CultureInfo.InvariantCulture );
 
             Assert.NotEqual( saltedUserHash, GetReportField( report, "User" ) );
@@ -420,9 +423,9 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     /// user profile under which the build runs. See issue #1873.
     /// </remarks>
     [Fact]
-    public void LicenseAuditReportsPostSharpCompatibleDeviceHash()
+    public async Task LicenseAuditReportsPostSharpCompatibleDeviceHash()
     {
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );
@@ -440,12 +443,12 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     [Theory]
     [InlineData( 0x0123456789ABCDEF )]
     [InlineData( 0x7EDCBA9876543210 )]
-    public void LicenseAuditDeviceHashDependsOnlyOnTheMachineIdentifier( long licenseAuditSalt )
+    public async Task LicenseAuditDeviceHashDependsOnlyOnTheMachineIdentifier( long licenseAuditSalt )
     {
         this.ConfigurationManager!.Update<TelemetryConfiguration>(
             c => c with { LicenseAuditSalt = licenseAuditSalt, DeviceId = new Guid( "1e0f9a8b-7c6d-5e4f-3a2b-1c0d9e8f7a6b" ) } );
 
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );
@@ -462,9 +465,9 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     /// must stay unjoinable to the license audit channel. See issues #1873 and #1668.
     /// </remarks>
     [Fact]
-    public void LicenseAuditDeviceHashIsNotTheSaltedHash()
+    public async Task LicenseAuditDeviceHashIsNotTheSaltedHash()
     {
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );
@@ -490,9 +493,9 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     /// that the report identifies the person and the machine separately.
     /// </summary>
     [Fact]
-    public void LicenseAuditReportsDistinctUserAndDeviceHashes()
+    public async Task LicenseAuditReportsDistinctUserAndDeviceHashes()
     {
-        this.CreateAndConsumeLicense( _auditedLicenseKey );
+        await this.CreateAndConsumeLicenseAsync( _auditedLicenseKey );
 
         var report = Assert.Single( this.GetReports() );
         this.Logger.WriteLine( report );

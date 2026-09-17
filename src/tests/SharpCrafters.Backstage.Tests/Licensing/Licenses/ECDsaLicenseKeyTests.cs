@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -64,10 +65,10 @@ public sealed class ECDsaLicenseKeyTests : LicensingTestsBase
     /// covers the validation rules that depend on the identifier of the signature key.
     /// </summary>
     [Fact]
-    public void SignedLicenseKeyIsConsumable()
+    public async Task SignedLicenseKeyIsConsumable()
     {
         var license = new License( CreateLicenseKey(), this.ServiceProvider );
 
-        Assert.True( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out _ ) );
+        Assert.True( (await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default )).IsSuccess );
     }
 }

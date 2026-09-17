@@ -32,6 +32,17 @@ internal static class ConfigurationUpdateScope
     private static string? _fileBeingUpdatedByCurrentThread;
 
     /// <summary>
+    /// Gets a value indicating whether the current thread is executing the transformation of a configuration file.
+    /// </summary>
+    /// <remarks>
+    /// A caller that writes a configuration file as a side effect of something else, rather than because the user
+    /// asked for it, reads this to skip the write instead of raising the exception that <see cref="VerifyNotNested"/>
+    /// raises. A skipped write of derived state costs a recomputation later; an exception would fail the operation
+    /// that merely happened to trigger it.
+    /// </remarks>
+    public static bool IsUpdating => _fileBeingUpdatedByCurrentThread != null;
+
+    /// <summary>
     /// Verifies that the current thread is not already executing a transformation, and throws if it is.
     /// </summary>
     /// <param name="fileName">The file that the caller is about to update.</param>

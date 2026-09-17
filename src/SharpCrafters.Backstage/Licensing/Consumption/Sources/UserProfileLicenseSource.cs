@@ -5,11 +5,8 @@
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Licensing.Licenses;
-using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 
@@ -19,7 +16,6 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 internal sealed class UserProfileLicenseSource : LicenseSourceBase
 {
     private readonly Version _currentVersion;
-    private readonly ILicenseProductCatalog _catalog;
 
     private LicensingConfiguration _licensingConfiguration;
 
@@ -27,17 +23,13 @@ internal sealed class UserProfileLicenseSource : LicenseSourceBase
 
     public override LicenseSourceKind Kind => LicenseSourceKind.UserProfile;
 
-    protected override IEnumerable<LicenseRegistrationProperties> GetRegisteredLicenses( Action<LicensingMessage> reportMessage )
-    {
-        return this._licensingConfiguration.GetRegisteredLicenses( this._currentVersion, reportMessage )
-            .Select( l => l.ToLicenseRegistrationProperties( this._catalog ) );
-    }
+    protected override IEnumerable<string> GetLicenseStrings( Action<LicensingMessage> reportMessage )
+        => this._licensingConfiguration.GetRegisteredLicenseStrings( this._currentVersion, reportMessage );
 
     public UserProfileLicenseSource( IServiceProvider services )
         : base( services )
     {
         this._currentVersion = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication.GetLicensingVersion();
-        this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
 
         var configurationManager = services.GetRequiredBackstageService<IConfigurationManager>();
         this._licensingConfiguration = configurationManager.Get<LicensingConfiguration>();

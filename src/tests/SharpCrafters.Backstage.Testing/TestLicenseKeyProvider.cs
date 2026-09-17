@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -96,6 +96,24 @@ public sealed class TestLicenseKeyProvider
 
     public const string PostSharpUltimateOpenSourceRedistributionNamespace = "Oss";
 
+    /// <summary>
+    /// Gets a redistribution license key, which licenses the code that a customer ships rather than the machine of a
+    /// user and which is therefore never registered in a user profile. It carries a namespace, without which it would
+    /// be refused earlier and for a different reason.
+    /// </summary>
+    public string MetalamaProfessionalRedistribution
+        => this.GenerateLicenseKey(
+            30,
+            license =>
+            {
+                license.Product = LicenseProduct.MetalamaProfessional;
+#pragma warning disable CS0618 // Redistribution license types are obsolete, which is exactly what this key tests.
+                license.LicenseType = LicenseType.CommercialRedistribution;
+#pragma warning restore CS0618
+                license.Generation = LicenseGeneration.Current;
+                license.Namespace = NamespaceConstraint;
+            } );
+
     public string MetalamaProfessionalPersonal => this.GenerateLicenseKey( 4, LicenseProduct.MetalamaProfessional, LicenseType.Personal );
 
     public string MetalamaProfessionalBusiness => this.GenerateLicenseKey( 5, LicenseProduct.MetalamaProfessional );
@@ -192,6 +210,53 @@ public sealed class TestLicenseKeyProvider
 
     [Obsolete]
     public string MetalamaFree => this.GenerateLicenseKey( 13, LicenseProduct.MetalamaFree, generation: LicenseGeneration.None );
+
+    // The license keys below exercise the rule that decides whether a license server may lease a key. The rule is the
+    // key own LicenseServerEligible field when it has one, then a refusal for a per-usage key, then an identifier in
+    // the range issued before 5.0 RTM.
+
+    /// <summary>
+    /// Gets a license key that a license server may lease because its own field says so, although its identifier is
+    /// above the range that would otherwise make it eligible.
+    /// </summary>
+    public string MetalamaEnterpriseLicenseServerEligible
+        => this.GenerateLicenseKey(
+            200000,
+            key =>
+            {
+                key.Product = LicenseProduct.MetalamaEnterprise;
+                key.LicenseType = LicenseType.Business;
+                key.Generation = LicenseGeneration.Current;
+                key.ServicingPhase = ServicingPhase.LongTerm;
+                key.LicenseServerEligible = true;
+            } );
+
+    /// <summary>
+    /// Gets a license key that a license server may not lease because its own field says so, although its identifier
+    /// is inside the range that would otherwise make it eligible.
+    /// </summary>
+    public string MetalamaProfessionalNotLicenseServerEligible
+        => this.GenerateLicenseKey(
+            14,
+            key =>
+            {
+                key.Product = LicenseProduct.MetalamaProfessional;
+                key.LicenseType = LicenseType.Business;
+                key.Generation = LicenseGeneration.Current;
+                key.LicenseServerEligible = false;
+            } );
+
+    /// <summary>
+    /// Gets a license key that a license server may lease because its identifier is the last one of the range issued
+    /// before 5.0 RTM, and that carries no explicit field.
+    /// </summary>
+    public string MetalamaProfessionalEligibleByIdUpperBound => this.GenerateLicenseKey( 100802, LicenseProduct.MetalamaProfessional );
+
+    /// <summary>
+    /// Gets a license key that a license server may not lease because its identifier is one above that range, and that
+    /// carries no explicit field.
+    /// </summary>
+    public string MetalamaProfessionalIneligibleByIdAboveBound => this.GenerateLicenseKey( 100803, LicenseProduct.MetalamaProfessional );
 
     public DateTime ExpiredSubscriptionEndDate { get; } = new( 2025, 1, 1, 0, 0, 0, DateTimeKind.Utc );
 

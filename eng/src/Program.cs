@@ -6,16 +6,23 @@ using PostSharp.Engineering.BuildTools.Build.Solutions;
 using PostSharp.Engineering.BuildTools.Docker;
 using BackstageDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.BackstageDependencies.V2027_0;
 
-// The .NET 11 SDK, which global.json names as the main SDK of the product and which the build container installs.
-// The version is a literal instead of a member of the product family, because the .NET 11 SDK is a prerelease and
-// PostSharp.Engineering names only released feature bands. Keep it equal to the constant of the same name in the
-// Metalama repository, which consumes the packages of this repository, and move both to
+// The .NET 11 SDK, which the build container installs beside the .NET 10 one so that the product can be built
+// against it on demand. The version is a literal instead of a member of the product family, because the .NET 11 SDK
+// is a prerelease and PostSharp.Engineering names only released feature bands. Keep it equal to the constant of the
+// same name in the Metalama repository, which consumes the packages of this repository, and move both to
 // BackstageDependencies.V2027_0.Family.PreferredVersions.DotNetSdk once the .NET 11 SDK is released.
 const string dotNet11SdkVersion = "11.0.100-rc.1.26425.128";
 
-// The .NET 10 SDK, which stays installed beside the .NET 11 one, because the build tool of this repository targets
-// net10.0 and the .NET 11 SDK carries no .NET 10 runtime. The version comes from the product family, so that every
-// product of the family requests the same feature band and the container layers are shared.
+// The .NET 10 SDK, which global.json names as the main SDK of the product. The version comes from the product
+// family, so that every product of the family requests the same feature band and the container layers are shared.
+//
+// It is this SDK and not the .NET 11 one, although the latter is the newer, because the Razor source generator of
+// 11.0.100-rc.1.26425.128 miscompiles the pages of SharpCrafters.Backstage.Worker: it emits the assignment of a tag
+// helper attribute with a source span that is off by two columns, so that
+// `<div asp-validation-summary="ModelOnly">` generates `ValidationSummary.` followed by `="ModelOn`, which does not
+// compile. Three pages are affected and the build of the whole solution fails from a clean output directory. No
+// project of this repository targets net11.0, so nothing is lost by building with the released SDK. Move back to
+// `dotNet11SdkVersion` once a .NET 11 SDK that compiles those pages is available.
 var dotNet10SdkVersion = BackstageDependencies.Family.PreferredVersions.DotNetSdk.V_10_0;
 
 var product = new Product( BackstageDependencies.Backstage )
@@ -29,7 +36,7 @@ var product = new Product( BackstageDependencies.Backstage )
         ]
     },
     GenerateNuGetConfig = true,
-    DotNetSdkVersion = new DotNetSdkVersion( dotNet11SdkVersion ) { AllowPrerelease = true },
+    DotNetSdkVersion = new DotNetSdkVersion( dotNet10SdkVersion ),
 
     Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
 

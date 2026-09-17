@@ -13,6 +13,6 @@ internal class UnregisterCommand : BaseCommand<BaseCommandSettings>
     {
         context.ServiceProvider.GetRequiredBackstageService<ILicenseRegistrationService>().RemoveLicenses();
 
-        context.Console.WriteSuccess( $"All license keys have been unregistered." );
+        context.Console.WriteSuccess( "All license keys and license servers have been unregistered." );
     }
 }

@@ -40,10 +40,49 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     }
 
     /// <inheritdoc />
-    public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage, bool showsToastNotification )
+    public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage = null, bool showsToastNotification = true )
     {
         this._logger.Trace?.Log( $"TryConsume({{{requirement}}}" );
 
+        if ( this.TryConsumeCore( requirement, reportMessage ) )
+        {
+            return true;
+        }
+
+        this._logger.Warning?.Log( $"TryConsume({{{requirement}}}: no eligible license found." );
+
+        var messageText =
+            $"The component '{requirement.ComponentNameWithServicingPhase}' is not licensed. It requires one of the following products: "
+            + string.Join( ", ", requirement.GetEligibleProductNames( this._catalog ) )
+            + ".";
+
+        if ( this._licenses.IsEmpty )
+        {
+            messageText += " Could not find any valid registered license.";
+        }
+        else
+        {
+            messageText +=
+                $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.LicenseString ) )}.";
+        }
+
+        // Report a licensing message (this is typically reported as a compiler diagnostic).
+        reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true } );
+
+        // Publish the event, so that the user interface can show a notification, unless the application provides its own UI.
+        if ( showsToastNotification )
+        {
+            this._eventDispatcher.Publish( new LicenseRequirementNotSatisfiedEvent( requirement, messageText ) );
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Looks for a licence that satisfies a requirement, and reports its use when one does.
+    /// </summary>
+    private bool TryConsumeCore( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
+    {
         foreach ( var license in this._licenses )
         {
             // Check project-bound license keys.
@@ -78,32 +117,6 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             {
                 this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is not eligible." );
             }
-        }
-
-        this._logger.Warning?.Log( $"TryConsume({{{requirement}}}: no eligible license found." );
-
-        var messageText =
-            $"The component '{requirement.ComponentNameWithServicingPhase}' is not licensed. It requires one of the following products: "
-            + string.Join( ", ", requirement.GetEligibleProductNames( this._catalog ) )
-            + ".";
-
-        if ( this._licenses.IsEmpty )
-        {
-            messageText += " Could not find any valid registered license.";
-        }
-        else
-        {
-            messageText +=
-                $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.LicenseString ) )}.";
-        }
-
-        // Report a licensing message (this is typically reported as a compiler diagnostic).
-        reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true } );
-
-        // Publish the event, so that the user interface can show a notification, unless the application provides its own UI.
-        if ( showsToastNotification )
-        {
-            this._eventDispatcher.Publish( new LicenseRequirementNotSatisfiedEvent( requirement, messageText ) );
         }
 
         return false;

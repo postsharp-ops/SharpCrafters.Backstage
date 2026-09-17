@@ -37,7 +37,7 @@ public interface IRuntimeInformation : IBackstageService
 
     /// <summary>
     /// Gets the kind of the current process (e.g. <see cref="Diagnostics.ProcessKind.Rider"/>),
-    /// abstracted so test doubles can simulate hosts without depending on the real process name.
+    /// abstracted so a fake can simulate a host without depending on the real process name.
     /// </summary>
     ProcessKind ProcessKind { get; }
 }

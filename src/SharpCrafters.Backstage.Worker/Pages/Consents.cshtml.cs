@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Toasts;
 using SharpCrafters.Backstage.Worker.Pages.Shared;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Worker.Pages;
 
@@ -44,7 +45,7 @@ internal class ConsentsPageModel : PageModel
         return this.Page();
     }
 
-    public IActionResult OnPost()
+    public async Task<IActionResult> OnPostAsync()
     {
         this.BackUrl = GlobalState.SelectedAction == SelectedAction.Register ? "/LicenseKey" : "/ChooseLicenseKind";
 
@@ -87,7 +88,7 @@ internal class ConsentsPageModel : PageModel
                         return this.Page();
                     }
 
-                    if ( !ProcessRegistrationResult( this._licenseRegistrationService.RegisterLicense( GlobalState.LicenseKey ) ) )
+                    if ( !ProcessRegistrationResult( await this._licenseRegistrationService.RegisterLicenseAsync( GlobalState.LicenseKey ) ) )
                     {
                         return this.Page();
                     }

@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -57,20 +58,24 @@ public sealed class UnsupportedAlgorithmTests : LicensingTestsBase
     }
 
     [Fact]
-    public void ConsumptionReportsTheUnsupportedAlgorithm()
+    public async Task ConsumptionReportsTheUnsupportedAlgorithm()
     {
         var license = new License( CreateSignedLicenseKey(), this.ServiceProvider );
 
-        Assert.False( license.TryGetConsumptionProperties( LicenseConsumptionOptions.Default, out _, out var errorMessage ) );
+        var consumptionResult = await license.GetConsumptionPropertiesAsync( LicenseConsumptionOptions.Default );
+        Assert.False( consumptionResult.IsSuccess );
+        var errorMessage = consumptionResult.ErrorMessage;
         Assert.Equal( _expectedErrorMessage, errorMessage );
     }
 
     [Fact]
-    public void RegistrationReportsTheUnsupportedAlgorithm()
+    public async Task RegistrationReportsTheUnsupportedAlgorithm()
     {
         var license = new License( CreateSignedLicenseKey(), this.ServiceProvider );
 
-        Assert.False( license.TryGetRegistrationProperties( out _, out var errorMessage ) );
+        var registrationResult = await license.GetRegistrationPropertiesAsync();
+        Assert.False( registrationResult.IsSuccess );
+        var errorMessage = registrationResult.ErrorMessage;
         Assert.Contains( _expectedErrorMessage, errorMessage, StringComparison.Ordinal );
     }
 
