@@ -16,11 +16,18 @@ namespace SharpCrafters.Backstage.Tests.Licensing.LicenseServer;
 /// The base of the tests that exercise a license server end to end.
 /// </summary>
 /// <remarks>
-/// The application it pins declares a version at or above
-/// <see cref="SharpCrafters.Backstage.Licensing.Registration.LicensingConstants.MinimalLicenseServerVersion"/>,
-/// because a registered license server URL is stored in the group of that version and an application older than it
-/// would skip the group. <see cref="LicensingTestsBase"/> pins version 1.0, which is what the tests of the license
-/// key groups depend on, so it is not raised there.
+/// <para>
+/// The application declares the version of the product itself, which is at or above
+/// <see cref="SharpCrafters.Backstage.Licensing.Registration.LicensingConstants.MinimalLicenseServerVersion"/>:
+/// a registered license server URL is stored in the group of that version, and an application older than it would
+/// skip the group. That is also why the version is read from the assembly rather than written here -- a literal
+/// would stop being the version of the product without anything saying so. <see cref="LicensingTestsBase"/> pins
+/// version 1.0, which is what the tests of the license key groups depend on, so it is not raised there.
+/// </para>
+/// <para>
+/// The build date stays a literal, because it is matched against the subscription period of the licence keys that
+/// these tests use, and those periods are fixed.
+/// </para>
 /// </remarks>
 public abstract class LicenseServerTestsBase : LicensingTestsBase
 {
@@ -35,7 +42,7 @@ public abstract class LicenseServerTestsBase : LicensingTestsBase
         this.ApplicationInfo = new TestApplicationInfo(
             "License Server Test App",
             false,
-            "2027.0.1",
+            TestApplicationInfo.CurrentPackageVersion,
             new DateTime( 2026, 1, 15, 0, 0, 0, DateTimeKind.Utc ) );
 
         this.Time.Set( StartTime, false );

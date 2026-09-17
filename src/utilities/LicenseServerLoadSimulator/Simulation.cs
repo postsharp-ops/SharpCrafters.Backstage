@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Testing;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
@@ -15,30 +16,32 @@ namespace SharpCrafters.Backstage.LicenseServerLoadSimulator;
 /// <remarks>
 /// <para>
 /// Every user runs on its own task and lives a working day on the virtual clock: it starts around eight, builds every
-/// so often until the evening, and renews its lease when the one it holds is due. A day of the virtual clock takes a
-/// real minute at the default acceleration of a license server, so a fortnight of leases, renewals and expiries fits
-/// into a coffee break.
+/// so often until the evening, and its installation of the product decides for itself whether a build has to contact
+/// the server. A day of the virtual clock takes a real minute at the default acceleration of a license server, so a
+/// fortnight of leases, renewals and expiries fits into a coffee break.
 /// </para>
 /// <para>
 /// What it exercises that a unit test cannot: the real socket, the real server, its database, its global lock under
-/// concurrency, and its seat accounting over time.
+/// concurrency, and its seat accounting over time. What it exercises that a harness with a client of its own cannot:
+/// the licensing code that customers actually run, including when it decides to say nothing.
 /// </para>
 /// </remarks>
-internal sealed class Simulation
+internal sealed class Simulation : IDisposable
 {
     private readonly SimulationOptions _options;
     private readonly AcceleratedDateTimeProvider _clock;
-    private readonly LeaseClient _leaseClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ConcurrentDictionary<string, int> _outcomes = new( StringComparer.Ordinal );
+    private readonly List<SimulatedInstallation> _installations = new();
 
-    private int _activeRequests;
-    private int _peakActiveRequests;
+    private int _activeBuilds;
+    private int _peakActiveBuilds;
 
-    public Simulation( SimulationOptions options, AcceleratedDateTimeProvider clock, LeaseClient leaseClient )
+    public Simulation( SimulationOptions options, AcceleratedDateTimeProvider clock, IHttpClientFactory httpClientFactory )
     {
         this._options = options;
         this._clock = clock;
-        this._leaseClient = leaseClient;
+        this._httpClientFactory = httpClientFactory;
     }
 
     public async Task RunAsync( CancellationToken cancellationToken )
@@ -68,7 +71,9 @@ internal sealed class Simulation
         // One generator per user, seeded from the user, so that a run with the same seed replays the same working
         // pattern although the tasks interleave differently.
         var random = new Random( this._options.Seed ^ user.UserName.GetHashCode( StringComparison.Ordinal ) );
-        LicenseLeaseInfo? lease = null;
+
+        // One installation of the product per machine this user works on, as in a real organization.
+        var installations = new Dictionary<string, SimulatedInstallation>( StringComparer.Ordinal );
 
         try
         {
@@ -89,6 +94,7 @@ internal sealed class Simulation
 
                     // Which machine does this user work on today?
                     var machine = user.Machines[random.Next( user.Machines.Length )];
+                    var installation = await this.GetInstallationAsync( installations, user, machine, cancellationToken );
 
                     for ( var time = startOfDay; time < endOfDay; time = time.AddMinutes( 30 * random.NextDouble() ) )
                     {
@@ -99,14 +105,9 @@ internal sealed class Simulation
                             return;
                         }
 
-                        // A build only contacts the server when the lease it holds is due for renewal, which is what
-                        // the product does.
-                        if ( lease != null && lease.RenewTime > this._clock.UtcNow )
-                        {
-                            continue;
-                        }
-
-                        lease = await this.AcquireLeaseAsync( user, machine, lease, cancellationToken );
+                        // Whether this build contacts the server at all is the decision of the product, not of the
+                        // harness. That decision is a large part of what a load simulation is measuring.
+                        await this.BuildAsync( installation, cancellationToken );
                     }
                 }
 
@@ -120,53 +121,73 @@ internal sealed class Simulation
         }
     }
 
-    private async Task<LicenseLeaseInfo?> AcquireLeaseAsync(
+    /// <summary>
+    /// Gets the installation of a user on a machine, setting it up the first time they work on it: that is the
+    /// moment a developer registers the license server of their organization, and it takes their first seat.
+    /// </summary>
+    private async Task<SimulatedInstallation> GetInstallationAsync(
+        Dictionary<string, SimulatedInstallation> installations,
         SimulatedUser user,
         string machine,
-        LicenseLeaseInfo? previousLease,
         CancellationToken cancellationToken )
     {
-        var active = Interlocked.Increment( ref this._activeRequests );
-        InterlockedMax( ref this._peakActiveRequests, active );
+        if ( installations.TryGetValue( machine, out var existingInstallation ) )
+        {
+            return existingInstallation;
+        }
+
+        var installation = new SimulatedInstallation( this._options, this._clock, this._httpClientFactory, user, machine );
+
+        lock ( this._installations )
+        {
+            this._installations.Add( installation );
+        }
+
+        installations.Add( machine, installation );
+
+        var errorMessage = await installation.RegisterAsync( cancellationToken );
+
+        if ( errorMessage == null )
+        {
+            this.Record( "registered" );
+        }
+        else
+        {
+            this.Record( "registration refused" );
+            Console.WriteLine( $"{this.Now} {user.UserName} on {machine}: could not register the license server. {errorMessage}" );
+        }
+
+        return installation;
+    }
+
+    private async Task BuildAsync( SimulatedInstallation installation, CancellationToken cancellationToken )
+    {
+        var active = Interlocked.Increment( ref this._activeBuilds );
+        InterlockedMax( ref this._peakActiveBuilds, active );
 
         var startedAt = DateTime.UtcNow;
 
         try
         {
-            var result = await this._leaseClient.TryGetLeaseAsync( user.UserName, machine, cancellationToken );
+            var errorMessage = await installation.BuildAsync( cancellationToken );
 
-            if ( result.Lease == null )
+            if ( errorMessage == null )
             {
-                this.Record( "denied or failed" );
-                Console.WriteLine( $"{this.Now} {user.UserName} on {machine}: no lease. {result.ErrorMessage}" );
-
-                return previousLease;
+                this.Record( "licensed build" );
             }
-
-            this.Record( previousLease == null ? "first lease" : "renewal" );
-
-            // A lease whose renewal instant has already passed means the clock of this process has run ahead of the
-            // server's. The round trip is not compensated, so the drift is real and grows; re-anchoring is the only
-            // remedy the protocol offers.
-            if ( result.Lease.RenewTime < this._clock.UtcNow )
+            else
             {
-                this.Record( "clock re-synchronized" );
-
-                Console.WriteLine(
-                    $"{this.Now} {user.UserName}: the lease is already due for renewal at {result.Lease.RenewTime:u}. Re-synchronizing the clock." );
-
-                await this._clock.SyncAsync( cancellationToken );
+                this.Record( "unlicensed build" );
+                Console.WriteLine( $"{this.Now} {installation.UserName} on {installation.MachineName}: {errorMessage}" );
             }
 
             var elapsed = DateTime.UtcNow - startedAt;
 
             if ( elapsed > TimeSpan.FromSeconds( 1 ) )
             {
-                this.Record( "slow response" );
-                Console.WriteLine( $"{this.Now} {user.UserName}: the server answered in {elapsed.TotalSeconds:F1} s." );
+                this.Record( "slow build" );
+                Console.WriteLine( $"{this.Now} {installation.UserName}: the build waited {elapsed.TotalSeconds:F1} s for the license server." );
             }
-
-            return result.Lease;
         }
         catch ( OperationCanceledException )
         {
@@ -175,13 +196,11 @@ internal sealed class Simulation
         catch ( Exception e )
         {
             this.Record( "exception" );
-            Console.WriteLine( $"{this.Now} {user.UserName}: {e.GetType().Name}: {e.Message}" );
-
-            return previousLease;
+            Console.WriteLine( $"{this.Now} {installation.UserName}: {e.GetType().Name}: {e.Message}" );
         }
         finally
         {
-            Interlocked.Decrement( ref this._activeRequests );
+            Interlocked.Decrement( ref this._activeBuilds );
         }
     }
 
@@ -194,7 +213,7 @@ internal sealed class Simulation
                 await Task.Delay( TimeSpan.FromSeconds( 15 ), cancellationToken );
 
                 Console.WriteLine(
-                    $"{this.Now} -- {this._activeRequests} request(s) in flight, peak {this._peakActiveRequests}; "
+                    $"{this.Now} -- {this._activeBuilds} build(s) in flight, peak {this._peakActiveBuilds}; "
                     + string.Join( ", ", this._outcomes.OrderBy( o => o.Key, StringComparer.Ordinal ).Select( o => $"{o.Key}: {o.Value}" ) ) );
             }
         }
@@ -211,7 +230,8 @@ internal sealed class Simulation
         Console.WriteLine( "-------" );
         Console.WriteLine( $"Virtual time reached: {this._clock.UtcNow:u}" );
         Console.WriteLine( $"Clock synchronizations: {this._clock.SyncCount}" );
-        Console.WriteLine( $"Peak concurrent requests: {this._peakActiveRequests}" );
+        Console.WriteLine( $"Simulated installations: {this._installations.Count}" );
+        Console.WriteLine( $"Peak concurrent builds: {this._peakActiveBuilds}" );
 
         foreach ( var outcome in this._outcomes.OrderBy( o => o.Key, StringComparer.Ordinal ) )
         {
@@ -261,10 +281,20 @@ internal sealed class Simulation
             var machines = ImmutableArray.CreateRange(
                 Enumerable.Range( 0, this._options.BuildServerMachineCount ).Select( _ => $"SERVER-{random.Next( 0, ushort.MaxValue ):x}" ) );
 
-            // A build server works every day, which is what makes it worth separating from the developers.
+            // A build server works every day, which is what makes it worth separating from the developers. It runs
+            // the product attended here, because an unattended process never leases at all: what is being simulated
+            // is a machine that builds constantly, not the rule that keeps a real one away from the server.
             users.Add( new SimulatedUser( $"CONTOSO\\BUILDSERVER.{i}", machines, 1, true ) );
         }
 
         return users.ToImmutable();
+    }
+
+    public void Dispose()
+    {
+        foreach ( var installation in this._installations )
+        {
+            installation.Dispose();
+        }
     }
 }

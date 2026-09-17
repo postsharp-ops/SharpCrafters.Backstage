@@ -36,6 +36,16 @@ namespace SharpCrafters.Backstage.Testing
 
         public TestApplicationInfo() : this( "test", false, "0.0", DateTime.Now ) { }
 
+        /// <summary>
+        /// Gets the package version of the product under test, read from its own assembly. A test whose subject
+        /// depends on the version -- licensing does, because a license key and a license server both state the
+        /// version they require -- takes it from here. A literal would go on saying "the current version" long after
+        /// it had stopped being one, and would pass for years before failing on the release that moved past it.
+        /// </summary>
+        public static string CurrentPackageVersion { get; } =
+            AssemblyMetadataReader.GetInstance( typeof(IApplicationInfo).Assembly ).PackageVersion
+            ?? throw new InvalidOperationException( "The assembly of the product under test declares no package version." );
+
         public string? Company { get; init; }
 
         /// <inheritdoc />

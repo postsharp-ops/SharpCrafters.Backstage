@@ -151,7 +151,7 @@ Everything below runs in process, over `TestHttpClientFactory`. There is no sock
 
 `LicenseServerSimulator`, in `SharpCrafters.Backstage.Tests/Licensing/LicenseServer` beside the tests that use it, serves `Lease.ashx` and `GetTime.ashx`, reproduces the seat model above, and has twelve fault modes (`LicenseServerFault`). It exposes `Requests`, `AssertContacted`, `AssertNotContacted` and `OccupiedSeatCount`.
 
-> **Rule.** The simulator writes the wire format **by hand** and shares no serializer with the product. The product only ever parses a lease, so sharing would mean adding a `Serialize` nothing calls — and `Deserialize(Serialize(x)) == x` holds for any self-consistent pair, including one that agrees on a format no real server emits. That is exactly the weakness of PostSharp's own test double. One test pins a literal response captured from a real server, and one pins the request byte for byte, including a hard-coded machine hash.
+> **Rule.** The simulator writes the wire format **by hand** and shares no serializer with the product. The product only ever parses a lease, so sharing would mean adding a `Serialize` nothing calls — and `Deserialize(Serialize(x)) == x` holds for any self-consistent pair, including one that agrees on a format no real server emits. That is exactly the weakness of the fake PostSharp used. One test pins a literal response captured from a real server, and one pins the request byte for byte, including a hard-coded machine hash.
 
 Against a real server, by hand:
 
@@ -159,12 +159,22 @@ Against a real server, by hand:
 dotnet run --project src/utilities/LicenseServerLoadSimulator -- http://localhost:44670/
 ```
 
-It drives a simulated organization on the server's accelerated clock, then prints what happened. Operating an accelerated server, all of it undocumented upstream and all of it easy to get wrong:
+It drives a simulated organization on the server's accelerated clock, then prints what happened.
+
+**The harness runs the product.** Each simulated user and machine is a `SimulatedInstallation`: a service provider carrying the real licensing services, with that user's account, machine, configuration and the clock of the server. A build is `CreateConsumerAsync` followed by `TryConsume`, so what reaches the server is what a customer's build would send, and whether a build contacts the server at all is the product's decision rather than the harness's — which is a large part of what a load simulation is measuring. A harness with a lease client of its own measures that client instead, and goes on passing after the product has changed underneath it.
+
+> **Rule.** Nothing in `src/utilities/LicenseServerLoadSimulator` may build a request, parse an answer or decide when to renew. The moment it does, the run stops being evidence about the product.
+
+The configuration of each installation is in memory, so a run leaves the profile of whoever is running it untouched and each simulated user starts from an empty one. The harness also declares itself attended: an unattended process never leases, so a simulation that declared otherwise would send nothing at all.
+
+Operating an accelerated server, all of it undocumented upstream and all of it easy to get wrong:
 
 - Acceleration is `#if DEBUG` on **both** sides. A Release server reports `1440` from `GetTime.ashx` yet returns real time, while the client still divides by 1440 and never sleeps — a request flood against a real-time server, with no error. Build the server in Debug.
 - `TimeAcceleration` has two different defaults: `1` in the shipped `web.config` and `1440` in the compiled settings. Set it explicitly.
 - The virtual epoch of the server is captured once at static initialization and never resets, and only the current reading is transmitted. Recycle the application pool between runs, or the second run starts days into the future.
 - `GetTime.ashx` is not latency-compensated. At 1440× a 50 ms round trip is 72 virtual seconds of skew; the only correction is the re-synchronization the harness performs when a lease arrives already past its `RenewTime`.
 - Every 403 sends an e-mail synchronously, with no rate limit. Blank `DeniedRequestEmailTo` before a run that deliberately exhausts seats.
+
+> **Rule.** `Build.ps1 test` does not appear to compile this utility, so nothing tells you when a change to the product has broken it. Build it explicitly after changing anything it touches: `dotnet build src/utilities/LicenseServerLoadSimulator`.
 
 Every rule of this subsystem is tested in `SharpCrafters.Backstage.Tests/Licensing/LicenseServer`, against `ILicenseRegistrationService`, `ILicenseConsumptionService` and `LicenseServerClient`. The commands are shims over those services, so `SharpCrafters.Backstage.Commands.Tests` holds four smoke tests and nothing else, and it does not use the simulator: a smoke test needs a server that answers, not one that keeps seats. See [`docs/testing.md`](testing.md).
