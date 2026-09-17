@@ -105,6 +105,57 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     }
 
     /// <summary>
+    /// Tests that the user is told which product their license server grants them, and not merely that a server is
+    /// configured. Which product they get is the question they registered the server to have answered.
+    /// </summary>
+    [Fact]
+    public async Task ListedServerNamesTheProductItLeases()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        var registered = Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
+        Assert.Equal( SharpCrafters.Backstage.Licensing.LicenseProduct.MetalamaEnterprise, registered.Product );
+    }
+
+    /// <summary>
+    /// Tests that the licence key a server leases is never presented as something the user registered. They did not
+    /// choose it, it expires in days, and they can do nothing with it; showing it invites them to keep it, and
+    /// support to ask them for it.
+    /// </summary>
+    [Fact]
+    public async Task LeasedLicenseKeyIsNotPresentedAsTheRegisteredLicense()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+
+        var registered = Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
+        Assert.Equal( server.Url, registered.LicenseString );
+        Assert.NotEqual( server.LicenseKey, registered.LicenseString );
+    }
+
+    /// <summary>
+    /// Tests that a licence key which only a later version of the product understands does not hide the license
+    /// server the user registered. Several versions share one configuration, so a user who registers a key with a
+    /// newer version must still see, and still be licensed by, the server the older one uses. See issue #1922.
+    /// </summary>
+    [Fact]
+    public async Task ServerSurvivesAGroupThatThisVersionCannotRead()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        this.AddLicenseGroup( "2099.0", "999-THIS-LICENSE-KEY-REQUIRES-A-LATER-VERSION" );
+
+        var registered = Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
+        Assert.Equal( server.Url, registered.LicenseServerUrl );
+
+        Assert.Equal( new Version( 2099, 0 ), Assert.Single( this.LicenseRegistrationService.UnsupportedRegisteredLicenseVersions ) );
+    }
+
+    /// <summary>
     /// Tests that listing the registered licences contacts nothing: it reads the stored lease, so that a command that
     /// shows what is registered never waits for a network.
     /// </summary>

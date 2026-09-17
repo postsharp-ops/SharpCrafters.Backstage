@@ -149,7 +149,7 @@ Everything below runs in process, over `TestHttpClientFactory`. There is no sock
 .\Build.ps1 test
 ```
 
-`LicenseServerSimulator` (in `SharpCrafters.Backstage.Testing`, because both the core tests and the CLI tests need it) serves `Lease.ashx` and `GetTime.ashx`, reproduces the seat model above, and has twelve fault modes (`LicenseServerFault`). It exposes `Requests`, `AssertContacted`, `AssertNotContacted` and `OccupiedSeatCount`.
+`LicenseServerSimulator`, in `SharpCrafters.Backstage.Tests/Licensing/LicenseServer` beside the tests that use it, serves `Lease.ashx` and `GetTime.ashx`, reproduces the seat model above, and has twelve fault modes (`LicenseServerFault`). It exposes `Requests`, `AssertContacted`, `AssertNotContacted` and `OccupiedSeatCount`.
 
 > **Rule.** The simulator writes the wire format **by hand** and shares no serializer with the product. The product only ever parses a lease, so sharing would mean adding a `Serialize` nothing calls — and `Deserialize(Serialize(x)) == x` holds for any self-consistent pair, including one that agrees on a format no real server emits. That is exactly the weakness of PostSharp's own test double. One test pins a literal response captured from a real server, and one pins the request byte for byte, including a hard-coded machine hash.
 
@@ -167,4 +167,4 @@ It drives a simulated organization on the server's accelerated clock, then print
 - `GetTime.ashx` is not latency-compensated. At 1440× a 50 ms round trip is 72 virtual seconds of skew; the only correction is the re-synchronization the harness performs when a lease arrives already past its `RenewTime`.
 - Every 403 sends an e-mail synchronously, with no rate limit. Blank `DeniedRequestEmailTo` before a run that deliberately exhausts seats.
 
-Unit tests live in `SharpCrafters.Backstage.Tests/Licensing/LicenseServer` and `SharpCrafters.Backstage.Commands.Tests/Commands/Licensing`.
+Every rule of this subsystem is tested in `SharpCrafters.Backstage.Tests/Licensing/LicenseServer`, against `ILicenseRegistrationService`, `ILicenseConsumptionService` and `LicenseServerClient`. The commands are shims over those services, so `SharpCrafters.Backstage.Commands.Tests` holds four smoke tests and nothing else, and it does not use the simulator: a smoke test needs a server that answers, not one that keeps seats. See [`docs/testing.md`](testing.md).

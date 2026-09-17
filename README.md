@@ -13,6 +13,7 @@ customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 |---|---|
 | [`docs/license-server.md`](docs/license-server.md) | The license server protocol, where a lease is stored, and when a seat is taken |
 | [`docs/telemetry.md`](docs/telemetry.md) | The telemetry channels, consent, and the path of an exception report |
+| [`docs/testing.md`](docs/testing.md) | The testing doctrine: what is tested where, how a test is documented, and where a test double lives |
 
 ## Building
 

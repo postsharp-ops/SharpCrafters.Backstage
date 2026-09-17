@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -48,6 +48,13 @@ public sealed class AcceleratedDateTimeProvider : IDateTimeProvider
     private decimal _acceleration;
 
     /// <summary>
+    /// The path of the endpoint that reports the clock of a license server. It is stated here and in the simulator
+    /// separately, on purpose: the two stand on opposite sides of a protocol that deployed servers define, and a
+    /// constant they shared could be changed on both sides at once without any test noticing.
+    /// </summary>
+    private const string _timePath = "/GetTime.ashx";
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="AcceleratedDateTimeProvider"/> class. The clock reads real time
     /// until <see cref="SyncAsync"/> has been called.
     /// </summary>
@@ -60,7 +67,7 @@ public sealed class AcceleratedDateTimeProvider : IDateTimeProvider
         // The base URL is trimmed and the path appended here, rather than concatenated at the call site, because the
         // original harness concatenated the two without a separator for this endpoint while trimming for the other,
         // so a URL without a trailing slash broke the clock alone and left the leases working.
-        this._timeUrl = licenseServerUrl.TrimEnd( '/' ) + LicenseServerSimulator.TimePath;
+        this._timeUrl = licenseServerUrl.TrimEnd( '/' ) + _timePath;
 
         this._serverTimeAtSync = DateTime.UtcNow;
         this._timestampAtSync = Stopwatch.GetTimestamp();
