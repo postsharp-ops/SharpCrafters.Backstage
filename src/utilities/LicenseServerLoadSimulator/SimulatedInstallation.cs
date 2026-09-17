@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Testing;
 using System.Security.Cryptography;
@@ -61,7 +62,12 @@ internal sealed class SimulatedInstallation : IDisposable
         {
             // A simulated developer, not a build server: an unattended process never leases, so a simulation that
             // declared itself unattended would send nothing at all and would report a server that is never used.
-            IsUnattendedProcess = false
+            IsUnattendedProcess = false,
+
+            // The audit uploads a report of the licenses it consumes to PostSharp Technologies. A simulation consumes
+            // licenses nobody bought, on machines that do not exist, so it has nothing to report. The audit manager
+            // also requires the support services, which this harness does not compose.
+            IsLicenseAuditEnabled = false
         };
 
         var services = new ServiceCollection();
@@ -73,7 +79,21 @@ internal sealed class SimulatedInstallation : IDisposable
         builder
             .AddCoreServices( new CoreInitializationOptions( MetalamaProduct.Profile, applicationInfo ) )
             .AddConfigurationServices()
-            .AddLicensingServices( new LicensingInitializationOptions(), applicationInfo )
+            .AddLicensingServices(
+                new LicensingInitializationOptions
+                {
+                    // The catalog names the products whose license keys this installation consumes. The umbrella
+                    // package of a product sets it; this harness composes the services itself and so has to name it.
+                    ProductCatalog = MetalamaProduct.LicenseProductCatalog,
+
+                    // A development license server signs the license keys it issues to itself, and a client that does
+                    // not know that authority refuses every lease the server grants. Trusting it is what lets the
+                    // simulation run against a server that nobody bought a license for.
+                    AuthorityProviderFactory = options.TestAuthority is { } testAuthority
+                        ? _ => new ExplicitLicensingAuthorityProvider( (testAuthority.KeyId, testAuthority.PublicKey) )
+                        : serviceProvider => new ProductionLicensingAuthorityProvider( serviceProvider )
+                },
+                applicationInfo )
 
             // Registering a license server is something a person does, and the product refuses it in an unattended
             // session. The simulation says so itself rather than letting the answer depend on the machine it happens

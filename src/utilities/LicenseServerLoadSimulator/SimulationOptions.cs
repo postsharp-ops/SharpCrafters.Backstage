@@ -48,6 +48,17 @@ internal sealed record SimulationOptions
     /// </summary>
     public int Seed { get; init; }
 
+    /// <summary>
+    /// Gets the licensing authority the simulated installations trust, as the identifier of a key and the public half
+    /// of that key, or <see langword="null"/> to trust the production authorities as a customer does.
+    /// </summary>
+    /// <remarks>
+    /// A development license server signs the license keys it issues to itself, because no production authority signs
+    /// a key that nobody bought. A client that does not know that authority refuses every lease such a server grants,
+    /// so a simulation against one has to be told which authority to trust.
+    /// </remarks>
+    public (byte KeyId, string PublicKey)? TestAuthority { get; init; }
+
     public static bool TryParse( string[] args, out SimulationOptions options, out string? errorMessage )
     {
         options = new SimulationOptions();
@@ -117,6 +128,13 @@ internal sealed record SimulationOptions
 
                     break;
 
+                case "--test-authority":
+                    if ( !TryParseAuthority( value, out var testAuthority, out errorMessage ) ) { return false; }
+
+                    options = options with { TestAuthority = testAuthority };
+
+                    break;
+
                 case "--seed":
                     if ( !TryParseCount( argument, value, out var seed, out errorMessage ) ) { return false; }
 
@@ -130,6 +148,30 @@ internal sealed record SimulationOptions
                     return false;
             }
         }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Reads the identifier of a key and the public half of that key, written as <c>200=&lt;ECDSAKeyValue&gt;...</c>.
+    /// </summary>
+    private static bool TryParseAuthority( string value, out (byte KeyId, string PublicKey)? authority, out string? errorMessage )
+    {
+        authority = null;
+        var separator = value.IndexOf( '=', StringComparison.Ordinal );
+
+        if ( separator <= 0
+             || !byte.TryParse( value[..separator], NumberStyles.Integer, CultureInfo.InvariantCulture, out var keyId )
+             || separator + 1 == value.Length )
+        {
+            errorMessage = "The option '--test-authority' takes the identifier of a key and the public half of that "
+                           + "key, as in --test-authority \"200=<ECDSAKeyValue>...</ECDSAKeyValue>\".";
+
+            return false;
+        }
+
+        authority = (keyId, value[(separator + 1)..]);
+        errorMessage = null;
 
         return true;
     }
@@ -163,6 +205,10 @@ internal sealed record SimulationOptions
              --version <version>      Version the clients declare. Default: 2027.0.0
              --minutes <n>            How long to run, in real minutes. Default: 10
              --seed <n>               Seed of the random number generator. Default: 0
+             --test-authority <id=key> A licensing authority to trust instead of the production ones, as the
+                                      identifier of a key and its public half. A development license server signs
+                                      the license keys it issues to itself, and without this the simulated clients
+                                      refuse every lease it grants.
 
            The server must be a Debug build with TimeAcceleration set in its web.config, and its application pool
            must be recycled between runs: its virtual clock is anchored when the pool starts and never resets.

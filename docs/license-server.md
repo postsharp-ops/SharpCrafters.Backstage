@@ -173,6 +173,8 @@ Operating an accelerated server, all of it undocumented upstream and all of it e
 - `TimeAcceleration` has two different defaults: `1` in the shipped `web.config` and `1440` in the compiled settings. Set it explicitly.
 - The virtual epoch of the server is captured once at static initialization and never resets, and only the current reading is transmitted. Recycle the application pool between runs, or the second run starts days into the future.
 - `GetTime.ashx` is not latency-compensated. At 1440× a 50 ms round trip is 72 virtual seconds of skew; the only correction is the re-synchronization the harness performs when a lease arrives already past its `RenewTime`.
+- A development server **signs the license keys it issues to itself**, because no production authority signs a key nobody bought. A client that does not know that authority refuses every lease the server grants, and the run reports a server that is answering perfectly as one that licenses nothing. Pass the authority with `--test-authority "<id>=<public key>"`.
+- The simulated installations turn the **license audit** off. A simulation consumes licences nobody bought, on machines that do not exist, so it has nothing to report; the audit would also require support services that the harness does not compose.
 - Every 403 sends an e-mail synchronously, with no rate limit. Blank `DeniedRequestEmailTo` before a run that deliberately exhausts seats.
 
 > **Rule.** `Build.ps1 test` does not appear to compile this utility, so nothing tells you when a change to the product has broken it. Build it explicitly after changing anything it touches: `dotnet build src/utilities/LicenseServerLoadSimulator`.
