@@ -82,13 +82,13 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
         var licenseConsumptionManager = await this.CreateLicenseConsumerAsync( true, null, UserLicense, false );
 
         Assert.True(
-            await licenseConsumptionManager.TryConsumeAsync( new DelegateLicenseRequirement( context => context.License.LicenseType == LicenseType.Unattended ) ) );
+            licenseConsumptionManager.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseType == LicenseType.Unattended ) ) );
     }
 
     [Fact]
     public async Task ProjectLicenseHasPriorityOverUserLicense()
     {
         var licenseConsumptionManager = await this.CreateLicenseConsumerAsync( false, ProjectLicense, UserLicense, false );
-        Assert.True( await licenseConsumptionManager.TryConsumeAsync( new DelegateLicenseRequirement( context => context.License.LicenseString == ProjectLicense ) ) );
+        Assert.True( licenseConsumptionManager.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseString == ProjectLicense ) ) );
     }
 }

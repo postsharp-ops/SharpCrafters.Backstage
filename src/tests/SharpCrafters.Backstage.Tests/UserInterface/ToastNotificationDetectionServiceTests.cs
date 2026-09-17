@@ -41,7 +41,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         {
             var licensing = this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
             var consumer = await licensing.CreateConsumerAsync();
-            await consumer.TryConsumeAsync( new AnyLicenseRequirement() );
+            consumer.TryConsume( new AnyLicenseRequirement() );
         }
 
         // The telemetry notification is linked to the first activation of telemetry, from

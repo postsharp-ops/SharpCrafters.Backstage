@@ -136,7 +136,7 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     {
         var messages = new List<LicensingMessage>();
         var service = new LicenseConsumptionService( this.ServiceProvider, [new UserProfileLicenseSource( this.ServiceProvider )] );
-        var canConsume = await (await service.CreateConsumerAsync( LicenseConsumptionOptions.Default, messages.Add )).TryConsumeAsync( LicenseRequirement.Any );
+        var canConsume = (await service.CreateConsumerAsync( LicenseConsumptionOptions.Default, messages.Add )).TryConsume( LicenseRequirement.Any );
 
         foreach ( var message in messages )
         {

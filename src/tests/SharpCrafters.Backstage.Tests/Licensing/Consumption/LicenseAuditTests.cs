@@ -86,7 +86,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     {
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
-        Assert.True( await consumer.TryConsumeAsync( LicenseRequirement.Any ) );
+        Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
 
         return license;
     }

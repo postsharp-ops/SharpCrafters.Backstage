@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -68,6 +68,27 @@ internal sealed record LicensingConfiguration : ConfigurationFile
     [JsonPropertyName( "licensesByMinimalVersion" )]
     [JsonIgnore( Condition = JsonIgnoreCondition.WhenWritingNull )]
     public ImmutableDictionary<string, ImmutableArray<string?>>? LicensesByMinimalVersion { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the warning about a license server reached over an insecure <c>http://</c> URL
+    /// is silenced.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Contacting a license server transmits the name of the user and the name of the machine, so an <c>http://</c>
+    /// server discloses who works where to anyone on the path. That is worth a warning, but not an error: an
+    /// on-premises server on a network the administrator considers safe is a legitimate deployment, and refusing it
+    /// would fail a build over something the user cannot change from their side.
+    /// </para>
+    /// <para>
+    /// This is the only way to silence the warning. PostSharp also read an MSBuild property and an environment
+    /// variable, with three values; a single setting in the configuration of the user is enough, because the decision
+    /// belongs to whoever registered the server and does not change from one build to the next.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName( "allowInsecureLicenseServer" )]
+    [JsonIgnore( Condition = JsonIgnoreCondition.WhenWritingDefault )]
+    public bool AllowInsecureLicenseServer { get; init; }
 
     public CommunityLicenseReason CommunityLicenseReason { get; init; }
 

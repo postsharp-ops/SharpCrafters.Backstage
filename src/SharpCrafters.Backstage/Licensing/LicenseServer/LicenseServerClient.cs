@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -16,18 +16,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.LicenseServer;
-
-/// <summary>
-/// The result of asking a license server for a lease: either the lease, or the reason there is none.
-/// </summary>
-internal readonly record struct LicenseLeaseResult( LicenseLease? Lease, string? ErrorMessage )
-{
-    public bool IsSuccess => this.Lease != null;
-
-    public static LicenseLeaseResult Success( LicenseLease lease ) => new( lease, null );
-
-    public static LicenseLeaseResult Failure( string errorMessage ) => new( null, errorMessage );
-}
 
 /// <summary>
 /// Obtains a lease from a license server, honouring the lease that is already stored.

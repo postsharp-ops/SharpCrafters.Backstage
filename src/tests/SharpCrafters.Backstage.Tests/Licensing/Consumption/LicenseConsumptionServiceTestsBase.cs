@@ -60,7 +60,7 @@ public abstract class LicenseConsumptionServiceTestsBase : LicensingTestsBase
         bool expectedCanConsume )
     {
         var consumer = await service.CreateConsumerAsync();
-        var actualCanConsume = await consumer.TryConsumeAsync( requirement );
+        var actualCanConsume = consumer.TryConsume( requirement );
         Assert.Equal( expectedCanConsume, actualCanConsume );
     }
 }

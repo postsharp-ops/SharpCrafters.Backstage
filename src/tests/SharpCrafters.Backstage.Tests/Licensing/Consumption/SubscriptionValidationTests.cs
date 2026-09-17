@@ -68,7 +68,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Consumption
                 LicenseConsumptionOptions.Default with { SubscriptionGracePeriod = _subscriptionGracePeriod },
                 messages.Add );
 
-            var canConsume = await licenseConsumer.TryConsumeAsync( LicenseRequirement.Any );
+            var canConsume = licenseConsumer.TryConsume( LicenseRequirement.Any );
 
             Assert.Equal( mustSucceed, canConsume );
 

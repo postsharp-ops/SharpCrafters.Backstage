@@ -60,7 +60,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         {
             var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
 
-            Assert.Equal( isParsable, (await this.LicenseRegistrationService.ParseLicenseKeyAsync( licenseKey )).IsSuccess );
+            Assert.Equal( isParsable, (await this.LicenseRegistrationService.ResolveLicenseAsync( licenseKey )).IsSuccess );
             Assert.Equal( isValid, (await this.LicenseRegistrationService.ValidateLicenseKeyAsync( licenseKey )).IsSuccess );
 
             // Check that this does not register the license.

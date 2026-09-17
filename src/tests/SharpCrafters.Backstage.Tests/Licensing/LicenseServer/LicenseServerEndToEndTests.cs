@@ -1,13 +1,15 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Tests.Licensing.Consumption;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +33,14 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     private static void AssertSucceeded( LicenseRegistrationResult result )
         => Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
 
+    /// <summary>
+    /// Silences the warning about a license server reached over HTTP, as a user would by editing their licensing
+    /// configuration.
+    /// </summary>
+    private void AllowInsecureLicenseServer()
+        => this.ConfigurationManager!.Update<SharpCrafters.Backstage.Licensing.LicensingConfiguration>(
+            configuration => configuration with { AllowInsecureLicenseServer = true } );
+
     private ILicenseConsumptionService ConsumptionService
         => this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
 
@@ -39,8 +49,8 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         var consumer = await this.ConsumptionService.CreateConsumerAsync( options, this.Messages.Add );
 
         // The messages are collected from both calls: the consumer reports what it found while it was built, and the
-        // requirement reports what acquiring a licence on demand found.
-        return await consumer.TryConsumeAsync( LicenseRequirement.Any, this.Messages.Add );
+        // requirement reports why nothing satisfied it.
+        return consumer.TryConsume( LicenseRequirement.Any, this.Messages.Add );
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -231,28 +241,12 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     // ---------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Tests the doctrine that a licence is consumed only when it is really used: building the consumer contacts no
-    /// license server, because no requirement has asked for a licence yet. A seat belongs to a licence that is used,
-    /// not to one that might have been.
+    /// Tests that the lease is acquired once, while the consumer is built, and that consuming a requirement
+    /// afterwards waits for nothing. The licences of a consumer are resolved by the time it exists, which is what
+    /// keeps <see cref="ILicenseConsumer.TryConsume"/> synchronous on the critical path of a compilation.
     /// </summary>
     [Fact]
-    public async Task BuildingTheConsumerContactsNoServer()
-    {
-        var server = this.CreateServer();
-
-        _ = await this.ConsumptionService.CreateConsumerAsync(
-            new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile },
-            this.Messages.Add );
-
-        server.AssertNotContacted();
-    }
-
-    /// <summary>
-    /// Tests that the server is contacted by the requirement that needs it, and only once however many requirements
-    /// follow.
-    /// </summary>
-    [Fact]
-    public async Task ServerIsContactedOnceByTheRequirementThatNeedsIt()
+    public async Task ServerIsContactedOnceWhileTheConsumerIsBuilt()
     {
         var server = this.CreateServer();
 
@@ -260,21 +254,20 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
             new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile },
             this.Messages.Add );
 
-        server.AssertNotContacted();
-
-        Assert.True( await consumer.TryConsumeAsync( LicenseRequirement.Any ) );
         server.AssertContacted();
 
-        Assert.True( await consumer.TryConsumeAsync( LicenseRequirement.Any ) );
+        Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
+        Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
+
         server.AssertContacted();
     }
 
     /// <summary>
-    /// Tests the case the whole deferral exists for: a licence key that satisfies the requirement means the server is
-    /// never contacted, so no seat is taken from the pool of the team.
+    /// Tests that a build which names no license server contacts none, which is the case of the overwhelming majority
+    /// of builds and the reason a license server costs nothing to the customers who do not run one.
     /// </summary>
     [Fact]
-    public async Task EligibleKeyMeansTheServerIsNeverContacted()
+    public async Task BuildWithoutAServerContactsNothing()
     {
         var server = this.CreateServer();
 
@@ -282,7 +275,7 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
             new LicenseConsumptionOptions { ProjectLicenseKey = LicenseKeyProvider.MetalamaProfessionalBusiness },
             this.Messages.Add );
 
-        Assert.True( await consumer.TryConsumeAsync( LicenseRequirement.Any ) );
+        Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
 
         server.AssertNotContacted();
         Assert.Equal( 0, server.OccupiedSeatCount );
@@ -340,7 +333,7 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
 
         var consumer = await secondService.CreateConsumerAsync();
 
-        Assert.True( await consumer.TryConsumeAsync( LicenseRequirement.Any ) );
+        Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
         server.AssertNotContacted();
     }
 
@@ -358,23 +351,29 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     }
 
     /// <summary>
-    /// Tests that a registered licence key is preferred to a license server, and that the server is not contacted at
-    /// all: a build that a key can license must cost neither a request nor a seat.
+    /// Tests that a licence key is preferred to a license server, because the source of a key has a higher priority
+    /// than the user profile, which is where a server is registered.
     /// </summary>
+    /// <remarks>
+    /// The server is still contacted. Every licence of a consumer is resolved while the consumer is built, whether or
+    /// not a requirement ends up using it, exactly as a licence key is read whether or not it is used. What the
+    /// priority decides is which licence satisfies the requirement, and therefore which one is audited and which
+    /// ledger accounts for the build.
+    /// </remarks>
     [Fact]
     public async Task ProjectLicenseKeyIsPreferredToAServer()
     {
         var server = this.CreateServer();
 
         await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
-        this.LeaseStore.RemoveAllLeases();
-        server.ClearRequests();
 
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions { ProjectLicenseKey = LicenseKeyProvider.MetalamaProfessionalBusiness } );
+        var consumer = await this.ConsumptionService.CreateConsumerAsync(
+            new LicenseConsumptionOptions { ProjectLicenseKey = LicenseKeyProvider.MetalamaProfessionalBusiness },
+            this.Messages.Add );
 
-        Assert.True( canConsume );
-        server.AssertNotContacted();
+        Assert.True(
+            consumer.TryConsume(
+                new DelegateLicenseRequirement( context => context.License.LicenseString == LicenseKeyProvider.MetalamaProfessionalBusiness ) ) );
     }
 
     /// <summary>
@@ -441,142 +440,89 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     }
 
     // ---------------------------------------------------------------------------------------------------------------
-    // The policy on an insecure server.
+    // The warning about an insecure server.
     // ---------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Tests that an <c>http://</c> server is used by default, because the policy warns rather than refusing: an
-    /// organisation that has always run its server over HTTP must not have its builds broken by an upgrade.
+    /// Tests that an <c>http://</c> server warns and is used anyway. It is a warning and never an error: an
+    /// organization that has always run its server over HTTP must not have its builds broken by an upgrade, and the
+    /// developer whose build would break is not the person who can change the URL.
     /// </summary>
     [Fact]
-    public async Task InsecureServerIsUsedByDefault()
+    public async Task InsecureServerWarnsAndIsUsed()
     {
         var server = this.CreateServer( "http://license.test" );
 
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile } );
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
 
-        Assert.True( canConsume );
-        server.AssertContacted();
+        Assert.True( await this.TryConsumeAsync() );
+        Assert.Contains( this.Messages, m => m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
+        Assert.DoesNotContain( this.Messages, m => m.IsError && m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
     }
 
     /// <summary>
-    /// Tests that the policy set to refuse leaves the build unlicensed and, above all, sends nothing: the whole point
-    /// is that the user name and the machine name do not travel in cleartext.
+    /// Tests that the warning names the configuration setting that silences it, because a warning a user cannot act
+    /// upon is a warning they learn to ignore.
     /// </summary>
     [Fact]
-    public async Task InsecureServerIsRefusedAndNotContactedUnderTheErrorPolicy()
+    public async Task InsecureServerWarningNamesTheSetting()
     {
         var server = this.CreateServer( "http://license.test" );
 
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions
-            {
-                ProjectLicenseKey = server.Url,
-                IgnoredLicenseSources = LicenseSourceKind.UserProfile,
-                InsecureLicenseServerHandling = InsecureLicenseServerHandling.Error
-            } );
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        _ = await this.TryConsumeAsync();
 
-        Assert.False( canConsume );
-        server.AssertNotContacted();
-        Assert.Contains( this.Messages, m => m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
+        Assert.Contains( this.Messages, m => m.Text.Contains( "allowInsecureLicenseServer", StringComparison.Ordinal ) );
     }
 
+    /// <summary>
+    /// Tests that the configuration setting silences the warning, which is the whole of the configuration this policy
+    /// needs: the decision belongs to whoever registered the server and does not change from one build to the next.
+    /// </summary>
     [Fact]
-    public async Task InsecureServerIsSilentUnderTheAllowPolicy()
+    public async Task InsecureServerWarningIsSilencedByTheConfiguration()
     {
         var server = this.CreateServer( "http://license.test" );
 
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions
-            {
-                ProjectLicenseKey = server.Url,
-                IgnoredLicenseSources = LicenseSourceKind.UserProfile,
-                InsecureLicenseServerHandling = InsecureLicenseServerHandling.Allow
-            } );
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
 
-        Assert.True( canConsume );
+        this.AllowInsecureLicenseServer();
+
+        Assert.True( await this.TryConsumeAsync() );
         Assert.DoesNotContain( this.Messages, m => m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
     }
 
     /// <summary>
-    /// Tests that a secure server is never reported, whatever the policy.
+    /// Tests that an <c>https://</c> server is never reported, whatever the setting.
     /// </summary>
     [Theory]
-    [InlineData( InsecureLicenseServerHandling.Warning )]
-    [InlineData( InsecureLicenseServerHandling.Error )]
-    [InlineData( InsecureLicenseServerHandling.Allow )]
-    public async Task SecureServerIsNeverReported( InsecureLicenseServerHandling handling )
+    [InlineData( false )]
+    [InlineData( true )]
+    public async Task SecureServerIsNeverReported( bool allowInsecure )
     {
         var server = this.CreateServer( "https://license.test" );
 
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions
-            {
-                ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile, InsecureLicenseServerHandling = handling
-            } );
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
 
-        Assert.True( canConsume );
+        if ( allowInsecure )
+        {
+            this.AllowInsecureLicenseServer();
+        }
+
+        Assert.True( await this.TryConsumeAsync() );
         Assert.DoesNotContain( this.Messages, m => m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
     }
 
     /// <summary>
-    /// Tests that the environment variable applies when the build sets no policy of its own, which is what makes the
-    /// setting reachable from a command line and from an integrated development environment.
+    /// Tests that a licence key never produces the warning.
     /// </summary>
     [Fact]
-    public async Task EnvironmentVariableAppliesWhenTheBuildSetsNoPolicy()
+    public async Task LicenseKeyIsNeverReportedAsInsecure()
     {
-        var server = this.CreateServer( "http://license.test" );
+        await this.LicenseRegistrationService.RegisterLicenseAsync( LicenseKeyProvider.MetalamaProfessionalBusiness );
 
-        this.EnvironmentVariableProvider.Environment["METALAMA_ALLOW_INSECURE_LICENSE_SERVER"] = "Error";
-
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile } );
-
-        Assert.False( canConsume );
-        server.AssertNotContacted();
-    }
-
-    /// <summary>
-    /// Tests that the setting of the build wins over the environment variable, so that a build script can override
-    /// what the machine says.
-    /// </summary>
-    [Fact]
-    public async Task BuildPolicyWinsOverTheEnvironmentVariable()
-    {
-        var server = this.CreateServer( "http://license.test" );
-
-        this.EnvironmentVariableProvider.Environment["METALAMA_ALLOW_INSECURE_LICENSE_SERVER"] = "Error";
-
-        var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions
-            {
-                ProjectLicenseKey = server.Url,
-                IgnoredLicenseSources = LicenseSourceKind.UserProfile,
-                InsecureLicenseServerHandling = InsecureLicenseServerHandling.Allow
-            } );
-
-        Assert.True( canConsume );
-        server.AssertContacted();
-    }
-
-    [Theory]
-    [InlineData( null, InsecureLicenseServerHandling.Warning )]
-    [InlineData( "", InsecureLicenseServerHandling.Warning )]
-    [InlineData( "   ", InsecureLicenseServerHandling.Warning )]
-    [InlineData( "Warning", InsecureLicenseServerHandling.Warning )]
-    [InlineData( "nonsense", InsecureLicenseServerHandling.Warning )]
-    [InlineData( "Error", InsecureLicenseServerHandling.Error )]
-    [InlineData( "error", InsecureLicenseServerHandling.Error )]
-    [InlineData( "False", InsecureLicenseServerHandling.Error )]
-    [InlineData( "FALSE", InsecureLicenseServerHandling.Error )]
-    [InlineData( "Allow", InsecureLicenseServerHandling.Allow )]
-    [InlineData( "true", InsecureLicenseServerHandling.Allow )]
-    [InlineData( " True ", InsecureLicenseServerHandling.Allow )]
-    public void PolicyIsParsedWithThePostSharpSynonyms( string? value, InsecureLicenseServerHandling expected )
-    {
-        Assert.Equal( expected, InsecureLicenseServerHandlingParser.Parse( value ) );
+        Assert.True( await this.TryConsumeAsync() );
+        Assert.DoesNotContain( this.Messages, m => m.Text.Contains( "cleartext", StringComparison.Ordinal ) );
     }
 
     [Theory]
@@ -584,8 +530,9 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     [InlineData( "http://localhost:8080", true )]
     [InlineData( "https://license.test", false )]
     [InlineData( "not a url", false )]
-    public void InsecurityIsDecidedByTheScheme( string url, bool expectedInsecure )
+    [InlineData( null, false )]
+    public void InsecurityIsDecidedByTheScheme( string? url, bool expectedInsecure )
     {
-        Assert.Equal( expectedInsecure, InsecureLicenseServerHandlingParser.IsInsecure( url ) );
+        Assert.Equal( expectedInsecure, LicenseServerUrl.IsInsecure( url ) );
     }
 }

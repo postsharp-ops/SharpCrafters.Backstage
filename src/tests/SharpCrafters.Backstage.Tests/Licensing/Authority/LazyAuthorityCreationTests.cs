@@ -62,7 +62,7 @@ public sealed class LazyAuthorityCreationTests : LicensingTestsBase
 
         var consumer = await this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumerAsync();
 
-        Assert.True( await consumer.TryConsumeAsync( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
 
         Assert.Empty( this._observer.CreatedAuthorityKeyIds );
     }

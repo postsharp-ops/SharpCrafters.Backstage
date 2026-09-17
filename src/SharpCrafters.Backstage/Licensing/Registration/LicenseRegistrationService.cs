@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -208,7 +208,8 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     [Obsolete( "Use ValidateLicenseKeyAsync." )]
     public LicenseRegistrationResult ValidateLicenseKey( string licenseKey ) => Block( () => this.ValidateLicenseKeyAsync( licenseKey ) );
 
-    public async ValueTask<LicenseRegistrationResult> ParseLicenseKeyAsync( string licenseKey, CancellationToken cancellationToken = default )
+    /// <inheritdoc />
+    public async ValueTask<LicenseRegistrationResult> ResolveLicenseAsync( string licenseString, CancellationToken cancellationToken = default )
     {
         if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
@@ -217,7 +218,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         var factory = new LicenseFactory( this._serviceProvider );
 
-        if ( !factory.TryCreate( licenseKey, out var license, out var factoryErrorMessage ) )
+        if ( !factory.TryCreate( licenseString, out var license, out var factoryErrorMessage ) )
         {
             return LicenseRegistrationResult.Failure( factoryErrorMessage );
         }
@@ -229,8 +230,8 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
             : LicenseRegistrationResult.Failure( registrationResult.ErrorMessage );
     }
 
-    [Obsolete( "Use ParseLicenseKeyAsync." )]
-    public LicenseRegistrationResult ParseLicenseKey( string licenseKey ) => Block( () => this.ParseLicenseKeyAsync( licenseKey ) );
+    [Obsolete( "Use ResolveLicenseAsync." )]
+    public LicenseRegistrationResult ParseLicenseKey( string licenseKey ) => Block( () => this.ResolveLicenseAsync( licenseKey ) );
 
     /// <summary>
     /// Runs an asynchronous registration operation to completion on the calling thread, for the obsolete synchronous

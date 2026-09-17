@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -13,6 +13,15 @@ using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Licensing.Licenses;
 
+/// <summary>
+/// The base class of every <see cref="ILicense"/> of this assembly, which adds the reporting of a consumed licence to
+/// the licence audit.
+/// </summary>
+/// <remarks>
+/// The audit is what records that a licence was really used, and it is how a licence key is accounted for. A licence
+/// leased from a license server is accounted for twice: here, like any other, and in the ledger of the server, which
+/// is what the customer reads to see who holds a seat.
+/// </remarks>
 internal abstract class AuditableLicense : ILicense
 {
     private readonly ILicenseAuditManager? _licenseAuditManager;
@@ -27,21 +36,24 @@ internal abstract class AuditableLicense : ILicense
         this.Logger = services.GetLoggerFactory().Licensing();
     }
 
+    /// <inheritdoc />
     public abstract ValueTask<string?> GetRegistrationBlockerAsync( CancellationToken cancellationToken = default );
 
+    /// <inheritdoc />
     public abstract ValueTask<LicenseConsumptionResult> GetConsumptionPropertiesAsync(
         LicenseConsumptionOptions options,
         CancellationToken cancellationToken = default );
 
+    /// <inheritdoc />
     public abstract ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default );
 
-    /// <summary>
-    /// Reports the use of the licence to the audit.
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
+    /// <para>
     /// The method stays synchronous although reading the properties of the licence is not, because the whole
     /// operation is enqueued on the background tasks service, which is where the audit already ran. It is called from
     /// the consumption of a licence, which is on the critical path of a compilation and must not await anything.
+    /// </para>
     /// </remarks>
     public void ReportUse()
     {

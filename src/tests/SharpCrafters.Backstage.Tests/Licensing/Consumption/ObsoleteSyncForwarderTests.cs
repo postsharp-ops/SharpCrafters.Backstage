@@ -121,7 +121,7 @@ public sealed class ObsoleteSyncForwarderTests : LicensingTestsBase
         var licensingConfiguration = this.ConfigurationManager!.Get<SharpCrafters.Backstage.Licensing.LicensingConfiguration>();
         this.ConfigurationManager!.Set( licensingConfiguration with { LegacyLicense = LicenseKeyProvider.MetalamaProfessionalBusiness } );
 
-        var expected = await (await this.ConsumptionService.CreateConsumerAsync()).TryConsumeAsync( LicenseRequirement.Any );
+        var expected = (await this.ConsumptionService.CreateConsumerAsync()).TryConsume( LicenseRequirement.Any );
         var actual = this.ConsumptionService.CreateConsumer().TryConsume( LicenseRequirement.Any );
 
         Assert.True( expected );
@@ -135,7 +135,7 @@ public sealed class ObsoleteSyncForwarderTests : LicensingTestsBase
     [Fact]
     public async Task CreateConsumerMatchesCreateConsumerAsyncWithoutLicense()
     {
-        var expected = await (await this.ConsumptionService.CreateConsumerAsync()).TryConsumeAsync( LicenseRequirement.Any );
+        var expected = (await this.ConsumptionService.CreateConsumerAsync()).TryConsume( LicenseRequirement.Any );
         var actual = this.ConsumptionService.CreateConsumer().TryConsume( LicenseRequirement.Any );
 
         Assert.False( expected );
@@ -179,7 +179,7 @@ public sealed class ObsoleteSyncForwarderTests : LicensingTestsBase
             this.LicenseRegistrationService.ValidateLicenseKey( licenseKey ).IsSuccess );
 
         Assert.Equal(
-            (await this.LicenseRegistrationService.ParseLicenseKeyAsync( licenseKey )).IsSuccess,
+            (await this.LicenseRegistrationService.ResolveLicenseAsync( licenseKey )).IsSuccess,
             this.LicenseRegistrationService.ParseLicenseKey( licenseKey ).IsSuccess );
     }
 

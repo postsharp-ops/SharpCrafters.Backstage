@@ -1,10 +1,8 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Registration;
@@ -22,8 +20,8 @@ namespace SharpCrafters.Backstage.Licensing.Licenses;
 /// <para>
 /// Everything that a licence key means — its signature, its revocation, its validity dates, its subscription, its
 /// product — is decided by an inner <see cref="License"/> built from the leased key, so none of those rules is stated
-/// twice. What this class adds is the lease itself, the rule that a leased key must be eligible for a license server,
-/// and the policy on an insecure server.
+/// twice. What this class adds is the lease itself and the rule that a leased key must be eligible for a license
+/// server.
 /// </para>
 /// <para>
 /// The lease is resolved at most once per instance. The consumption service asks a licence that failed for its
@@ -35,25 +33,12 @@ internal sealed class LeasedLicense : AuditableLicense
 {
     private readonly IServiceProvider _services;
     private readonly LicenseServerClient _client;
-    private readonly IEnvironmentVariableProvider _environmentVariableProvider;
-    private readonly ProductProfile _productProfile;
     private readonly ILicenseProductCatalog _catalog;
 
     /// <summary>
     /// What resolving the lease produced, computed on the first call and reused afterwards.
     /// </summary>
     private LicenseLeaseResult? _resolution;
-
-    /// <summary>
-    /// The reason the server must not be contacted at all, once one has been found.
-    /// </summary>
-    /// <remarks>
-    /// The policy on an insecure server is decided while the licence is consumed, but the consumption service then
-    /// asks a licence that failed for its registration properties in order to name it in the message. Without this,
-    /// that second call would contact the very server the policy just refused, and the user name and the machine name
-    /// would travel in cleartext anyway.
-    /// </remarks>
-    private string? _blocker;
 
     private License? _innerLicense;
 
@@ -62,8 +47,6 @@ internal sealed class LeasedLicense : AuditableLicense
         this.LicenseServerUrl = licenseServerUrl;
         this._services = services;
         this._client = services.GetRequiredBackstageService<LicenseServerClient>();
-        this._environmentVariableProvider = services.GetRequiredBackstageService<IEnvironmentVariableProvider>();
-        this._productProfile = services.GetRequiredBackstageService<ProductProfile>();
         this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
     }
 
@@ -77,15 +60,6 @@ internal sealed class LeasedLicense : AuditableLicense
         LicenseConsumptionOptions options,
         CancellationToken cancellationToken = default )
     {
-        // The policy on an insecure server is applied before the lease is acquired, so that an administrator who
-        // forbids cleartext never has the user name and the machine name sent over one.
-        if ( this.GetInsecureServerBlocker( options ) is { } insecureServerBlocker )
-        {
-            this._blocker = insecureServerBlocker;
-
-            return LicenseConsumptionResult.Failure( insecureServerBlocker );
-        }
-
         var leaseResult = await this.ResolveAsync( false, cancellationToken );
 
         if ( !leaseResult.IsSuccess )
@@ -176,11 +150,6 @@ internal sealed class LeasedLicense : AuditableLicense
 
     private async ValueTask<LicenseLeaseResult> ResolveAsync( bool forceDownload, CancellationToken cancellationToken )
     {
-        if ( this._blocker is { } blocker )
-        {
-            return LicenseLeaseResult.Failure( blocker );
-        }
-
         if ( this._resolution is { } resolution )
         {
             return resolution;
@@ -210,45 +179,6 @@ internal sealed class LeasedLicense : AuditableLicense
     private bool IsLicenseServerEligible( LicenseLease lease )
         => LicenseKeyData.TryDeserialize( lease.LicenseKey, out var keyData, out _ )
            && keyData.ToLicenseRegistrationProperties( this._catalog, lease.LicenseKey ).LicenseServerEligible;
-
-    /// <summary>
-    /// Gets the reason the licence must not be used because its server is reached over an insecure URL, or
-    /// <see langword="null"/> when it may be used.
-    /// </summary>
-    /// <remarks>
-    /// A warning is reported through the logger rather than through the result, because the result is what makes the
-    /// licence unusable and a warning must not. The consumption service logs the message of a licence it rejects; a
-    /// licence it accepts reports nothing, so the warning is logged here.
-    /// </remarks>
-    private string? GetInsecureServerBlocker( LicenseConsumptionOptions options )
-    {
-        if ( !InsecureLicenseServerHandlingParser.IsInsecure( this.LicenseServerUrl ) )
-        {
-            return null;
-        }
-
-        var handling = options.InsecureLicenseServerHandling
-                       ?? InsecureLicenseServerHandlingParser.Parse(
-                           this._environmentVariableProvider.GetEnvironmentVariable(
-                               this._productProfile.GetEnvironmentVariableName( InsecureLicenseServerHandlingParser.SettingName ) ) );
-
-        var message =
-            $"the license server '{this.LicenseServerUrl}' is reached over HTTP, so the name of the user and the name of the machine are transmitted in cleartext. Use an HTTPS URL, or set {this._productProfile.GetEnvironmentVariableName( InsecureLicenseServerHandlingParser.SettingName )} to Allow";
-
-        switch ( handling )
-        {
-            case InsecureLicenseServerHandling.Allow:
-                return null;
-
-            case InsecureLicenseServerHandling.Error:
-                return message;
-
-            default:
-                this.Logger.Warning?.Log( message );
-
-                return null;
-        }
-    }
 
     /// <inheritdoc />
     public override bool Equals( object? obj )

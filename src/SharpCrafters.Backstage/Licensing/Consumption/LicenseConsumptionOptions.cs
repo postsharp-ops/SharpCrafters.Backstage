@@ -1,10 +1,9 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
-using SharpCrafters.Backstage.Licensing.LicenseServer;
 using System;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption;
@@ -19,14 +18,6 @@ public sealed record LicenseConsumptionOptions
     public TimeSpan? SubscriptionGracePeriod { get; init; }
 
     public LicenseSourceKind IgnoredLicenseSources { get; init; } = LicenseSourceKind.None;
-
-    /// <summary>
-    /// Gets how the build reacts when a license server is configured over an insecure <c>http://</c> URL, which
-    /// transmits the user name and the machine name in cleartext. The build sets it from its own property; when it is
-    /// <see langword="null"/>, the environment variable of the product is read, and failing that the default is
-    /// <see cref="LicenseServer.InsecureLicenseServerHandling.Warning"/>.
-    /// </summary>
-    public InsecureLicenseServerHandling? InsecureLicenseServerHandling { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether to ignore the condition that requires the build date to be within the subscription period.

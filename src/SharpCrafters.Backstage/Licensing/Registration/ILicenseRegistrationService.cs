@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -79,12 +79,19 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     LicenseRegistrationResult ValidateLicenseKey( string licenseKey );
 
     /// <summary>
-    /// Attempts to parse a license string into a <see cref="LicenseRegistrationProperties"/>, but does not test
-    /// whether it can be registered.
+    /// Resolves a license string into a <see cref="LicenseRegistrationProperties"/>, without testing whether it can
+    /// be registered and without registering it.
     /// </summary>
-    ValueTask<LicenseRegistrationResult> ParseLicenseKeyAsync( string licenseKey, CancellationToken cancellationToken = default );
+    /// <param name="licenseString">The license key, or the URL of a license server.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <remarks>
+    /// This is not a parse. A license key is deserialized and nothing else happens, but the URL of a license server
+    /// is resolved by contacting that server and taking a lease from it, which takes a seat from the pool of the
+    /// team. The method is named for what it does in the expensive case rather than in the cheap one.
+    /// </remarks>
+    ValueTask<LicenseRegistrationResult> ResolveLicenseAsync( string licenseString, CancellationToken cancellationToken = default );
 
-    /// <inheritdoc cref="ParseLicenseKeyAsync"/>
-    [Obsolete( "Use ParseLicenseKeyAsync. This overload blocks the calling thread while a license server is contacted." )]
+    /// <inheritdoc cref="ResolveLicenseAsync"/>
+    [Obsolete( "Use ResolveLicenseAsync. This overload blocks the calling thread while a license server is contacted." )]
     LicenseRegistrationResult ParseLicenseKey( string licenseKey );
 }

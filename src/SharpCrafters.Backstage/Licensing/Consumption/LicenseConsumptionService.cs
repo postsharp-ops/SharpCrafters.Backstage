@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -78,29 +78,20 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         CancellationToken cancellationToken )
     {
         var validLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
-        var deferredLicenses = new List<(ILicense License, ILicenseSource Source)>();
 
         // The sources are drained in the order of their priority, and each yields its licences in its own order, so a
-        // registered license key is always considered before a lease is acquired from a license server.
+        // registered license key is always considered before a lease is acquired from a license server: a license
+        // server is registered in the user profile, which is the last source, and a URL is the last license string of
+        // that source.
         foreach ( var source in licenseSources.OrderBy( s => s.Priority ) )
         {
             await foreach ( var license in source.GetLicensesAsync( ReportMessage, cancellationToken ).WithCancellation( cancellationToken ) )
             {
-                // A licence leased from a license server costs a request and, above all, a seat, so it is examined
-                // only once every other licence has failed. Without this, a build that a registered license key
-                // already licenses would take a seat from the pool of the team on every run.
-                if ( license is LeasedLicense )
-                {
-                    deferredLicenses.Add( (license, source) );
-
-                    continue;
-                }
-
                 var consumptionResult = await license.GetConsumptionPropertiesAsync( options, cancellationToken );
 
                 if ( !consumptionResult.IsSuccess )
                 {
-                    await ReportUnusableLicenseAsync( license, source, consumptionResult.ErrorMessage! );
+                    await this.ReportUnusableLicenseAsync( license, source, consumptionResult.ErrorMessage!, reportMessage, cancellationToken );
 
                     continue;
                 }
@@ -109,53 +100,13 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             }
         }
 
-        // The licences that are acquired on demand are handed to the consumer unresolved. It acquires them the first
-        // time a requirement is not satisfied by anything else, so that a seat is taken for a licence that is really
-        // used rather than for one that merely might have been.
-        return new LicenseConsumer(
-            this._serviceProvider,
-            validLicenses.ToImmutableArray(),
-            options,
-            deferredLicenses.Count == 0 ? null : AcquireOnDemandLicensesAsync );
-
-        async ValueTask<ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)>> AcquireOnDemandLicensesAsync(
-            Action<LicensingMessage>? consumerReportMessage,
-            CancellationToken onDemandCancellationToken )
-        {
-            var acquiredLicenses = ImmutableArray.CreateBuilder<(ILicense License, LicenseConsumptionProperties Properties)>();
-
-            foreach ( var deferred in deferredLicenses )
-            {
-                var consumptionResult = await deferred.License.GetConsumptionPropertiesAsync( options, onDemandCancellationToken );
-
-                if ( consumptionResult.IsSuccess )
-                {
-                    acquiredLicenses.Add( (deferred.License, consumptionResult.Properties) );
-                }
-                else
-                {
-                    // The message goes to the requirement that triggered the acquisition, so that it reaches the
-                    // compilation that needed the licence rather than the creation of the consumer.
-                    await this.ReportUnusableLicenseAsync(
-                        deferred.License,
-                        deferred.Source,
-                        consumptionResult.ErrorMessage!,
-                        consumerReportMessage,
-                        onDemandCancellationToken );
-                }
-            }
-
-            return acquiredLicenses.ToImmutable();
-        }
+        return new LicenseConsumer( this._serviceProvider, validLicenses.ToImmutableArray(), options );
 
         void ReportMessage( LicensingMessage message )
         {
             reportMessage?.Invoke( message );
             this._logger.Warning?.Log( message.Text );
         }
-
-        Task ReportUnusableLicenseAsync( ILicense license, ILicenseSource source, string errorMessage )
-            => this.ReportUnusableLicenseAsync( license, source, errorMessage, reportMessage, cancellationToken );
     }
 
     /// <summary>

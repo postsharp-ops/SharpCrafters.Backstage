@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -20,6 +20,7 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands.Licensing;
 public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
 {
     private const string _url = "https://license.test";
+    private const string _insecureUrl = "http://insecure.license.test";
 
     private readonly LicenseServerSimulator _server;
 
@@ -34,6 +35,13 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
             LicenseKey = LicenseKeyProvider.MetalamaEnterpriseLicenseServerEligible
         };
     }
+
+    /// <summary>
+    /// Creates a second simulator, reached over HTTP, so that the warning about an insecure server can be exercised
+    /// through the commands that a user runs when they configure one.
+    /// </summary>
+    private LicenseServerSimulator CreateInsecureServer()
+        => new( this.HttpClientFactory, this.Time, _insecureUrl ) { LicenseKey = LicenseKeyProvider.MetalamaEnterpriseLicenseServerEligible };
 
     // ---------------------------------------------------------------------------------------------------------------
     // register
@@ -88,6 +96,25 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     public async Task Register_MalformedUrl_ReportsTheReason( string url, string expectedOutput )
     {
         await this.TestCommandAsync( $"license register {url}", expectedOutput: expectedOutput, expectedExitCode: 1 );
+    }
+
+    /// <summary>
+    /// Tests that registering a server reached over HTTP succeeds and warns. Registering is the moment the user can
+    /// still choose a different URL, which is why the warning belongs here and not only to the builds that follow.
+    /// </summary>
+    [Fact]
+    public async Task Register_InsecureServer_SucceedsAndWarns()
+    {
+        _ = this.CreateInsecureServer();
+
+        await this.TestCommandAsync( $"license register {_insecureUrl}", expectedOutput: "has been registered" );
+        await this.TestCommandAsync( $"license register {_insecureUrl}", expectedOutput: "cleartext" );
+    }
+
+    [Fact]
+    public async Task Register_SecureServer_DoesNotWarn()
+    {
+        await this.TestCommandAsync( $"license register {_url}", unexpectedOutput: "cleartext" );
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -250,5 +277,13 @@ public sealed class LicenseServerCommandTests : LicensingCommandsTestsBase
     public async Task TestServer_MalformedUrl_ReportsTheReason( string url, string expectedOutput )
     {
         await this.TestCommandAsync( $"license test-server {url}", expectedOutput: expectedOutput, expectedExitCode: 1 );
+    }
+
+    [Fact]
+    public async Task TestServer_InsecureServer_Warns()
+    {
+        _ = this.CreateInsecureServer();
+
+        await this.TestCommandAsync( $"license test-server {_insecureUrl}", expectedOutput: "cleartext" );
     }
 }

@@ -20,7 +20,7 @@ public sealed class LicenseUITests : LicenseConsumptionServiceTestsBase
     public async Task NotificationShownWhenMissingRequirement()
     {
         var consumer = await this.CreateConsumptionService().CreateConsumerAsync();
-        Assert.False( await consumer.TryConsumeAsync( new DelegateLicenseRequirement( _ => false ) ) );
+        Assert.False( consumer.TryConsume( new DelegateLicenseRequirement( _ => false ) ) );
         await this.DrainEventsAsync();
         Assert.NotEmpty( this.UserInterface.Notifications );
         Assert.Equal( ToastNotificationKinds.RequiresLicense, this.UserInterface.Notifications.Single().Kind );
@@ -30,7 +30,7 @@ public sealed class LicenseUITests : LicenseConsumptionServiceTestsBase
     public async Task NotificationNotShownWhenFulfilledRequirement()
     {
         var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalBusiness ).CreateConsumerAsync();
-        Assert.True( await consumer.TryConsumeAsync( LicenseRequirement.Any ) );
+        Assert.True( consumer.TryConsume( LicenseRequirement.Any ) );
         await this.DrainEventsAsync();
         Assert.Empty( this.UserInterface.Notifications );
     }

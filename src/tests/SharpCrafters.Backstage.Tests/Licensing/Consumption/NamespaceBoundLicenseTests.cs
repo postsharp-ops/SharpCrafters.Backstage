@@ -26,6 +26,6 @@ public sealed class NamespaceBoundLicenseTests : LicenseConsumptionServiceTestsB
         var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalEvaluationNamespaceConstrained )
             .CreateConsumerAsync( new LicenseConsumptionOptions() { ProjectName = projectName } );
 
-        Assert.Equal( expectedResult, await consumer.TryConsumeAsync( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
     }
 }
