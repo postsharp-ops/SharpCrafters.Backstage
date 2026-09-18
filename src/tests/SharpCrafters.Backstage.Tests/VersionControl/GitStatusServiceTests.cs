@@ -104,9 +104,9 @@ public sealed class GitStatusServiceTests : TestsBase
     }
 
     /// <summary>
-    /// Verifies that a modification that has been staged is reported. PostSharp counts only the unstaged one, so
-    /// staging an edit waives its check; this is the hole that this service closes, and this test is what keeps it
-    /// closed.
+    /// Verifies that a modification that has been staged is reported. Staging changes where the modification is
+    /// recorded, not whether the user made it, so a check that counted only the unstaged form would be waived by
+    /// staging an edit.
     /// </summary>
     [Theory]
     [InlineData( "M  src/Class1.cs" )]
@@ -206,7 +206,8 @@ public sealed class GitStatusServiceTests : TestsBase
 
     /// <summary>
     /// Verifies that a file outside any repository does not, by itself, make a project modified when other files do
-    /// belong to one. This is the rule inherited from PostSharp, and the accepted limit that comes with it.
+    /// belong to one. This is an accepted limit: a file the repository does not track is one the user does not
+    /// control.
     /// </summary>
     [Fact]
     public async Task FilesWithoutRepositoryAreIgnoredWhenOthersHaveOne()
@@ -270,6 +271,42 @@ public sealed class GitStatusServiceTests : TestsBase
             startInfo.Arguments );
 
         Assert.Equal( _repository, startInfo.WorkingDirectory );
+    }
+
+    /// <summary>
+    /// Verifies that the git command can be named by an environment variable, for a machine on which git is installed
+    /// but is not on the search path. Without it such a machine reports every source tree as modified, which is
+    /// correct but unhelpful when the user knows where git is.
+    /// </summary>
+    [Fact]
+    public async Task TheGitCommandCanBeNamedByAnEnvironmentVariable()
+    {
+        this.CreateRepository( _repository );
+        var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
+        this.SetGitOutput( "" );
+
+        this.EnvironmentVariableProvider.Environment["METALAMA_GIT_PATH"] = "/opt/git/bin/git";
+
+        Assert.False( await this.CreateService().IsAnyFileModifiedAsync( [file] ) );
+
+        var startInfo = Assert.Single( this.ProcessExecutor.StartedProcesses );
+        Assert.Equal( "/opt/git/bin/git", startInfo.FileName );
+    }
+
+    /// <summary>
+    /// Verifies that the command is the one on the search path when the environment names none, which is the ordinary
+    /// case.
+    /// </summary>
+    [Fact]
+    public async Task TheGitCommandDefaultsToTheSearchPath()
+    {
+        this.CreateRepository( _repository );
+        var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
+        this.SetGitOutput( "" );
+
+        Assert.False( await this.CreateService().IsAnyFileModifiedAsync( [file] ) );
+
+        Assert.Equal( "git", Assert.Single( this.ProcessExecutor.StartedProcesses ).FileName );
     }
 
     /// <summary>

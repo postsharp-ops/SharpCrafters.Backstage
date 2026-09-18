@@ -31,11 +31,11 @@ public interface IProcessExecutor : IBackstageService
     /// The implementation terminates the process it has started, but it does not terminate the processes that this
     /// process has started itself.
     /// </remarks>
-    bool TryReadStandardOutput( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput );
+    bool TryExecute( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput );
 
     /// <summary>
     /// Starts a process, asynchronously waits for its completion, and gets the text that the process has written to
-    /// its standard output. This is the cancellable counterpart of <see cref="TryReadStandardOutput"/>.
+    /// its standard output. This is the cancellable counterpart of <see cref="TryExecute"/>.
     /// </summary>
     /// <param name="startInfo">The process to start. This method redirects its standard streams.</param>
     /// <param name="timeout">The time after which the method stops waiting for the completion of the process. The
@@ -47,5 +47,5 @@ public interface IProcessExecutor : IBackstageService
     /// The implementation terminates the process it has started, on a timeout and on a cancellation alike, but it does
     /// not terminate the processes that this process has started itself.
     /// </remarks>
-    Task<string?> ReadStandardOutputAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken );
+    Task<string?> TryExecuteAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken );
 }

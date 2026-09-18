@@ -19,7 +19,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
         return new ProcessWrapper( Process.Start( startInfo ) ?? throw new InvalidOperationException( "The process could not be started." ) );
     }
 
-    public bool TryReadStandardOutput( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
+    public bool TryExecute( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
     {
         startInfo.UseShellExecute = false;
         startInfo.RedirectStandardOutput = true;
@@ -73,7 +73,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
         return true;
     }
 
-    public async Task<string?> ReadStandardOutputAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken )
+    public async Task<string?> TryExecuteAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken )
     {
         startInfo.UseShellExecute = false;
         startInfo.RedirectStandardOutput = true;
@@ -93,7 +93,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
             return null;
         }
 
-        // The output stream is read asynchronously, for the reason given in TryReadStandardOutput: a blocking read
+        // The output stream is read asynchronously, for the reason given in TryExecute: a blocking read
         // would wait for the completion of the process for an unbounded time.
         var outputTask = process.StandardOutput.ReadToEndAsync();
 
@@ -117,7 +117,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
             Terminate( process );
 
             // A cancellation asked by the caller is reported, while an expired timeout is a failure like any other
-            // and is reported by a null result, exactly as in TryReadStandardOutput.
+            // and is reported by a null result, exactly as in TryExecute.
             cancellationToken.ThrowIfCancellationRequested();
 
             return null;

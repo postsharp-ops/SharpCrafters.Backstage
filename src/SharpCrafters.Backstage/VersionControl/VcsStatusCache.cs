@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.Utilities;
+using SharpCrafters.Common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -55,8 +56,33 @@ internal sealed class VcsStatusCache
     /// </summary>
     private static readonly TimeSpan _timestampMargin = TimeSpan.FromSeconds( 2 );
 
+    /// <summary>
+    /// Reached after the memory layer has missed and before the file layer is read, so that a test can let a writer
+    /// store a record in the middle of a read and observe which of the two the reader ends up with.
+    /// </summary>
+    internal const string BeforeReadingFileLocation = "BeforeReadingFile";
+
+    /// <summary>
+    /// Reached after a record has been placed in the memory layer and before it is written to the file layer, so that
+    /// a test can let another process-wide reader run while the file is not yet there.
+    /// </summary>
+    internal const string BeforeWritingFileLocation = "BeforeWritingFile";
+
+    /// <summary>
+    /// Composes the name of a synchronization point, following the <c>{ClassName}.{Location}:{Context}</c>
+    /// convention. The context is the repository root, so that a test can pin one repository.
+    /// </summary>
+    internal static string GetSyncPointName( string location, string repositoryRoot )
+        => string.Format( CultureInfo.InvariantCulture, "VcsStatusCache.{0}:{1}", location, repositoryRoot );
+
     private readonly IFileSystem _fileSystem;
     private readonly ILogger _logger;
+
+    /// <summary>
+    /// The provider of the test synchronization points, which is never registered in production and is therefore
+    /// normally <see langword="null"/>.
+    /// </summary>
+    private readonly ITestSynchronizationProvider? _testSynchronizationProvider;
     private readonly ConcurrentDictionary<string, VcsStatusRecord> _memory = new( StringComparer.OrdinalIgnoreCase );
     private readonly Lazy<string?> _directory;
 
@@ -64,6 +90,10 @@ internal sealed class VcsStatusCache
     {
         this._fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
         this._logger = logger;
+
+        // Resolved untyped, because ITestSynchronizationProvider is shared with the layers above and therefore
+        // cannot derive from IBackstageService.
+        this._testSynchronizationProvider = (ITestSynchronizationProvider?) serviceProvider.GetService( typeof(ITestSynchronizationProvider) );
 
         // The directory is resolved lazily, because creating it is an operation of the file system and this class is
         // constructed whether or not the check is ever performed.
@@ -100,6 +130,11 @@ internal sealed class VcsStatusCache
             return record;
         }
 
+        if ( this._testSynchronizationProvider != null )
+        {
+            await this._testSynchronizationProvider.SyncPointAsync( GetSyncPointName( BeforeReadingFileLocation, repositoryRoot ), cancellationToken );
+        }
+
         var stored = await this.TryReadAsync( repositoryRoot, cancellationToken );
 
         if ( stored == null || !this.IsValid( stored, repositoryRoot, files ) )
@@ -121,6 +156,11 @@ internal sealed class VcsStatusCache
     public async ValueTask SetAsync( string repositoryRoot, VcsStatusRecord record, CancellationToken cancellationToken )
     {
         this._memory[repositoryRoot] = record;
+
+        if ( this._testSynchronizationProvider != null )
+        {
+            await this._testSynchronizationProvider.SyncPointAsync( GetSyncPointName( BeforeWritingFileLocation, repositoryRoot ), cancellationToken );
+        }
 
         await this.TryWriteAsync( repositoryRoot, record, cancellationToken );
     }

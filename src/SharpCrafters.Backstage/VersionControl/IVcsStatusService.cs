@@ -18,8 +18,13 @@ namespace SharpCrafters.Backstage.VersionControl;
 /// <para>
 /// A file counts as modified only when git reports a content modification of a tracked file, staged or unstaged.
 /// Untracked, added, deleted, renamed and ignored files do not count, and neither do files that belong to no git
-/// repository. Every other ambiguity is resolved in favour of the user, and every failure is resolved against the
-/// user, which is to say reported as modified.
+/// repository.
+/// </para>
+/// <para>
+/// The rule follows one distinction: whether the user controls the condition. A global failure, such as git not being
+/// installed or the project belonging to no repository, is reported as modified, which makes the condition visible.
+/// A file-specific inconsistency, such as a generated file or a file shipped by a package, is tolerated, because the
+/// user cannot act on it.
 /// </para>
 /// <para>
 /// The complete doctrine, the reasoning behind each rule and the accepted limits are in <c>docs/vcs-check.md</c>.

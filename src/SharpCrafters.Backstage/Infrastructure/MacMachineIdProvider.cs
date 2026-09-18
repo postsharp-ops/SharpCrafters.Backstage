@@ -37,7 +37,7 @@ internal sealed class MacMachineIdProvider : MachineIdProvider
     {
         var startInfo = new ProcessStartInfo( _commandName, _commandArguments );
 
-        if ( !this._processExecutor.TryReadStandardOutput( startInfo, _commandTimeout, out var output ) )
+        if ( !this._processExecutor.TryExecute( startInfo, _commandTimeout, out var output ) )
         {
             this.Logger.Warning?.Log( $"The '{_commandName}' command did not complete successfully." );
 

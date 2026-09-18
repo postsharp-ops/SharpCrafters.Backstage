@@ -26,7 +26,7 @@ public class TestProcessExecutor : IProcessExecutor
 
     /// <summary>
     /// Gets or sets the function that returns the standard output of a process started by
-    /// <see cref="TryReadStandardOutput"/>, or <c>null</c> when the process is expected to fail. The default value
+    /// <see cref="TryExecute"/>, or <c>null</c> when the process is expected to fail. The default value
     /// returns <c>null</c> for every process.
     /// </summary>
     /// <remarks>
@@ -36,7 +36,7 @@ public class TestProcessExecutor : IProcessExecutor
     public Func<ProcessStartInfo, string?> StandardOutputProvider { get; set; } = _ => null;
 
     /// <summary>
-    /// Gets or sets the function that serves <see cref="ReadStandardOutputAsync"/>, so that a test can make the call
+    /// Gets or sets the function that serves <see cref="TryExecuteAsync"/>, so that a test can make the call
     /// block and observe what happens when it is cancelled. The default value is <c>null</c>, in which case
     /// <see cref="StandardOutputProvider"/> serves the asynchronous path too and it completes immediately.
     /// </summary>
@@ -54,7 +54,7 @@ public class TestProcessExecutor : IProcessExecutor
         return new TestProcess();
     }
 
-    public bool TryReadStandardOutput( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
+    public bool TryExecute( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
     {
         if ( this.ExceptionToThrow != null )
         {
@@ -68,7 +68,7 @@ public class TestProcessExecutor : IProcessExecutor
         return standardOutput != null;
     }
 
-    public Task<string?> ReadStandardOutputAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken )
+    public Task<string?> TryExecuteAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken )
     {
         cancellationToken.ThrowIfCancellationRequested();
 

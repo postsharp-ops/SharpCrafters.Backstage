@@ -2,10 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Common;
 using System;
+using System.Globalization;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +24,42 @@ namespace SharpCrafters.Backstage.VersionControl;
 /// </summary>
 internal sealed class GitStatusService : IVcsStatusService
 {
-    internal const string GitFileName = "git";
+    /// <summary>
+    /// The command that is run when the environment names no other one.
+    /// </summary>
+    internal const string DefaultGitFileName = "git";
+
+    /// <summary>
+    /// The environment variable, after the prefix of the product, that names the git command. It is
+    /// <c>METALAMA_GIT_PATH</c> for Metalama.
+    /// </summary>
+    internal const string GitPathVariableName = "GIT_PATH";
+
+    /// <summary>
+    /// Reached after the query of a repository has found no run in progress and before it registers its own, so that
+    /// a test can hold one caller here while another reaches the same point and exercise the registration race.
+    /// </summary>
+    internal const string BeforeRegisteringQueryLocation = "BeforeRegisteringQuery";
+
+    /// <summary>
+    /// Reached inside the run of the command, so that a test can hold the caller that started it while other callers
+    /// arrive and verify that they join the run instead of starting one of their own.
+    /// </summary>
+    internal const string InsideCommandLocation = "InsideCommand";
+
+    /// <summary>
+    /// Reached by a caller that has found a run in progress and is about to join it, so that a test can establish
+    /// that the caller joined rather than infer it from the number of commands.
+    /// </summary>
+    internal const string JoinedQueryLocation = "JoinedQuery";
+
+    /// <summary>
+    /// Composes the name of a synchronization point, following the <c>{ClassName}.{Location}:{Context}</c>
+    /// convention. The context is the repository root, so that a test can pin one repository without pinning
+    /// every other repository queried by the process.
+    /// </summary>
+    internal static string GetSyncPointName( string location, string repositoryRoot )
+        => string.Format( CultureInfo.InvariantCulture, "GitStatusService.{0}:{1}", location, repositoryRoot );
 
     /// <remarks>
     /// <para>
@@ -57,6 +95,13 @@ internal sealed class GitStatusService : IVcsStatusService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger _logger;
     private readonly VcsStatusCache _cache;
+    private readonly string _gitFileName;
+
+    /// <summary>
+    /// The provider of the test synchronization points, which is never registered in production and is therefore
+    /// normally <see langword="null"/>.
+    /// </summary>
+    private readonly ITestSynchronizationProvider? _testSynchronizationProvider;
 
     /// <summary>
     /// The repository roots being queried at this instant, so that the projects that a build node compiles in
@@ -89,6 +134,37 @@ internal sealed class GitStatusService : IVcsStatusService
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( "Vcs" );
         this._cache = new VcsStatusCache( serviceProvider, this._logger );
+
+        // Resolved untyped, because ITestSynchronizationProvider is shared with the layers above and therefore
+        // cannot derive from IBackstageService.
+        this._testSynchronizationProvider = (ITestSynchronizationProvider?) serviceProvider.GetService( typeof(ITestSynchronizationProvider) );
+
+        this._gitFileName = GetGitFileName( serviceProvider, this._logger );
+    }
+
+    /// <summary>
+    /// Gets the git command to run. The environment variable named by <see cref="GitPathVariableName"/>, after the
+    /// prefix of the product, takes precedence over the command of the same name on the search path.
+    /// </summary>
+    /// <remarks>
+    /// A developer can have git installed without it being on the search path, and a build agent can carry several
+    /// installations. Reporting every source tree of such a machine as modified, which is what a command that cannot
+    /// be started produces, is correct but unhelpful when the user knows where git is.
+    /// </remarks>
+    private static string GetGitFileName( IServiceProvider serviceProvider, ILogger logger )
+    {
+        var variableName = serviceProvider.GetRequiredBackstageService<ProductProfile>().GetEnvironmentVariableName( GitPathVariableName );
+
+        var path = serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>().GetEnvironmentVariable( variableName );
+
+        if ( string.IsNullOrWhiteSpace( path ) )
+        {
+            return DefaultGitFileName;
+        }
+
+        logger.Info?.Log( $"The git command is '{path}', named by the '{variableName}' environment variable." );
+
+        return path!;
     }
 
     public async ValueTask<bool> IsAnyFileModifiedAsync( IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default )
@@ -129,9 +205,8 @@ internal sealed class GitStatusService : IVcsStatusService
 
         if ( filesOutsideRepository > 0 )
         {
-            // These files are ignored rather than counted as modified, which is the rule inherited from PostSharp and
-            // documented as an accepted limit. The count is reported because it is what explains an unexpected verdict
-            // in a support case.
+            // These files are ignored rather than counted as modified, which is an accepted limit of the feature. The
+            // count is reported because it is what explains an unexpected verdict in a support case.
             this._logger.Info?.Log( $"{filesOutsideRepository} of {filePaths.Count} files belong to no git repository and are ignored." );
         }
 
@@ -206,6 +281,8 @@ internal sealed class GitStatusService : IVcsStatusService
         {
             if ( this._queriesInFlight.TryGetValue( repositoryRoot, out var running ) )
             {
+                this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( JoinedQueryLocation, repositoryRoot ), cancellationToken );
+
                 // The token of the caller that started the run is the one that governs it, so a cancellation cancels
                 // the query for everyone who joined it. That is the right behaviour here: the callers are the projects
                 // of one build, and a build is cancelled as a whole.
@@ -213,6 +290,8 @@ internal sealed class GitStatusService : IVcsStatusService
             }
 
             var query = new TaskCompletionSource<VcsStatusRecord?>( TaskCreationOptions.RunContinuationsAsynchronously );
+
+            this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( BeforeRegisteringQueryLocation, repositoryRoot ) );
 
             // The loop repeats rather than reading the entry that won the race, because that entry can be removed
             // again between the failed insertion and the read.
@@ -259,7 +338,7 @@ internal sealed class GitStatusService : IVcsStatusService
         // The instant is taken before the command starts. See the remarks of VcsStatusRecord.
         var timestamp = this._dateTimeProvider.UtcNow;
 
-        var startInfo = new ProcessStartInfo( GitFileName, GitArguments ) { WorkingDirectory = repositoryRoot };
+        var startInfo = new ProcessStartInfo( this._gitFileName, GitArguments ) { WorkingDirectory = repositoryRoot };
 
         // The output is decoded as UTF-8 rather than with the code page of the console, which is what the process
         // component uses by default and which would corrupt every path outside ASCII.
@@ -276,7 +355,12 @@ internal sealed class GitStatusService : IVcsStatusService
 
         try
         {
-            output = await this._processExecutor.ReadStandardOutputAsync( startInfo, _commandTimeout, cancellationToken );
+            if ( this._testSynchronizationProvider != null )
+            {
+                await this._testSynchronizationProvider.SyncPointAsync( GetSyncPointName( InsideCommandLocation, repositoryRoot ), cancellationToken );
+            }
+
+            output = await this._processExecutor.TryExecuteAsync( startInfo, _commandTimeout, cancellationToken );
         }
         catch ( OperationCanceledException )
         {
@@ -286,14 +370,14 @@ internal sealed class GitStatusService : IVcsStatusService
         {
             // This catch is what handles git not being installed: starting a process that does not exist throws
             // rather than returning a failure.
-            this._logger.Info?.Log( $"The '{GitFileName}' command could not be run in '{repositoryRoot}': {e.Message}" );
+            this._logger.Info?.Log( $"The '{this._gitFileName}' command could not be run in '{repositoryRoot}': {e.Message}" );
 
             return null;
         }
 
         if ( output == null )
         {
-            this._logger.Info?.Log( $"The '{GitFileName}' command did not complete successfully in '{repositoryRoot}'." );
+            this._logger.Info?.Log( $"The '{this._gitFileName}' command did not complete successfully in '{repositoryRoot}'." );
 
             return null;
         }
