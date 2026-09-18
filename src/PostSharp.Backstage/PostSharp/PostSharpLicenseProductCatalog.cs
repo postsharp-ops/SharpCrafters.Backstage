@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
 
@@ -88,6 +89,21 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
     /// must not offer to stay unlicensed.
     /// </remarks>
     public override bool HasUnlicensedEdition => false;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// PostSharp offers its Essentials edition to everyone and asks nothing in return, so the command takes no
+    /// reason. It never had a legacy free edition.
+    /// </remarks>
+    public override ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; } = ImmutableArray.Create(
+        new SelfRegisteredEdition(
+            "essentials",
+            "Switches to the PostSharp Essentials edition, which is free for everyone.",
+            ( service, _ ) => service.RegisterFreeEdition() )
+        {
+            SuccessMessage = "You are now using PostSharp Essentials.",
+            SetupTitle = "Start with PostSharp Essentials"
+        } );
 
     /// <inheritdoc />
     /// <remarks>

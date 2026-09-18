@@ -114,6 +114,26 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         return LicenseRegistrationResult.Success( communityLicense );
     }
 
+    public LicenseRegistrationResult RegisterFreeEdition()
+    {
+        if ( !this.RequireAttendedSession( out var errorMessage ) )
+        {
+            return LicenseRegistrationResult.Failure( errorMessage );
+        }
+
+        this._logger.Trace?.Log( $"Registering the free edition of {this._productProfile.Name}." );
+
+        var factory = new UnsignedLicenseFactory( this._serviceProvider );
+        var freeLicense = factory.CreateCommunityLicense();
+
+        if ( !this._configurationManager.Update<LicensingConfiguration>( config => config.SetLicense( freeLicense, this._catalog ) ) )
+        {
+            return LicenseRegistrationResult.Failure( $"The free edition of {this._productProfile.Name} is already registered." );
+        }
+
+        return LicenseRegistrationResult.Success( freeLicense );
+    }
+
     [Obsolete]
     public LicenseRegistrationResult RegisterLegacyFreeEdition()
     {

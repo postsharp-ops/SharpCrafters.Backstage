@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
 
@@ -83,6 +84,33 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     /// Metalama runs without a license, with the feature set of the open source edition.
     /// </remarks>
     public override bool HasUnlicensedEdition => true;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Metalama offers its Community edition, and still registers the free edition that its earlier versions issued.
+    /// The second is not offered during setup: only a version that is being replaced can consume it.
+    /// </remarks>
+    public override ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; } = ImmutableArray.Create(
+        new SelfRegisteredEdition(
+            "community",
+            "Switches to the Metalama Community edition, which is free and must be renewed every year.",
+            ( service, reason ) => service.RegisterCommunityEdition( reason ) )
+        {
+            SuccessMessage = "You are now using Metalama Community for Metalama 2025.1 and later.",
+
+            // Not offered during setup: the setup pages have no way to ask why the user is entitled to it, and the
+            // page already offers the open source edition, which needs no answer.
+            RequiresReason = true
+        },
+#pragma warning disable CS0612 // Type or member is obsolete
+        new SelfRegisteredEdition(
+            "free",
+            "Registers the Metalama Free license (for Metalama 2025.0 and earlier).",
+            ( service, _ ) => service.RegisterLegacyFreeEdition() )
+        {
+            SuccessMessage = "You are now using Metalama Free for Metalama 2025.0 and earlier."
+        } );
+#pragma warning restore CS0612
 
     /// <inheritdoc />
     /// <remarks>

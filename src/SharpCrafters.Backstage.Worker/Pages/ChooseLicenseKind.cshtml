@@ -1,4 +1,5 @@
 ﻿@page
+@using System.Linq
 @using SharpCrafters.Backstage.Licensing
 @using SharpCrafters.Backstage.Licensing.Registration
 @model ChooseLicenseKindPageModel
@@ -25,6 +26,16 @@
                     Studio Tools for @Profile.Name, architecture validation, or custom code fixes. Ideal for an initial foray,
                     with an easy upgrade path when you're ready for more.
                 </p>
+            </div>
+        }
+
+        @* One choice per edition that the product family offers and that is worth offering during setup. A family
+           that has no free edition declares none, and nothing is shown. *@
+        @foreach (var edition in Catalog.SelfRegisteredEditions.Where(e => e.SetupTitle != null))
+        {
+            <div onclick="submitForm('@("Register:" + edition.Alias)')">
+                <h4>@edition.SetupTitle</h4>
+                <p>@edition.Description</p>
             </div>
         }
 

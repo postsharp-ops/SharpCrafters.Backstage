@@ -120,6 +120,12 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The default is that the family offers none, which is what a family that sells every edition declares.
+    /// </remarks>
+    public virtual ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions => ImmutableArray<SelfRegisteredEdition>.Empty;
+
+    /// <inheritdoc />
     public abstract UnsignedLicense? CreateFreeLicense( DateTime utcNow );
 
     /// <inheritdoc />

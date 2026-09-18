@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
 
@@ -109,6 +110,16 @@ public interface ILicenseProductCatalog : IBackstageService
     /// </summary>
     /// <param name="utcNow">The current moment.</param>
     UnsignedLicense CreateTrialLicense( DateTime utcNow );
+
+    /// <summary>
+    /// Gets the editions that a user can obtain by asking for them rather than by buying them, in the order in which
+    /// they are offered. The result is empty when the family offers none.
+    /// </summary>
+    /// <remarks>
+    /// This is what the command line and the setup pages present. A family that has no free edition declares none,
+    /// and neither of them offers one.
+    /// </remarks>
+    ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
 
     /// <summary>
     /// Describes the free license that a user registers without buying anything, or returns <see langword="null"/>

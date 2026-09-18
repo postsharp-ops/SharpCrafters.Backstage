@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -18,12 +18,19 @@ public class ExtendedCommandContext
 
     public BackstageCommandOptions BackstageCommandOptions { get; }
 
+    /// <summary>
+    /// Gets the name under which the command was invoked, which is what lets one command serve several names: the
+    /// commands that register an edition are added once per edition that the product family offers.
+    /// </summary>
+    public string CommandName { get; }
+
     internal ExtendedCommandContext(
         CommandContext commandContext,
         BaseCommandSettings settings,
         Func<BackstageInitializationOptions, BackstageInitializationOptions> transformOptions )
     {
         this.BackstageCommandOptions = (BackstageCommandOptions) commandContext.Data!;
+        this.CommandName = commandContext.Name;
         this.Console = new ConsoleWriter( this.BackstageCommandOptions );
 
         this.ServiceProvider =
@@ -35,5 +42,6 @@ public class ExtendedCommandContext
         this.Console = prototype.Console;
         this.ServiceProvider = prototype.ServiceProvider;
         this.BackstageCommandOptions = prototype.BackstageCommandOptions;
+        this.CommandName = prototype.CommandName;
     }
 }

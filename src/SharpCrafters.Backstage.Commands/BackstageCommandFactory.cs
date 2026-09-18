@@ -53,29 +53,15 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( $"Activates the {productName} trial period." );
 
-                        // A command is offered when the product family issues the edition it registers. A family
-                        // that has no free edition would otherwise advertise a command whose only outcome is an
-                        // error, and the help of the command line would describe an edition that cannot be bought
-                        // or obtained.
-                        var catalog = options.Product.LicenseProductCatalog;
-                        var utcNow = DateTime.UtcNow;
-
-                        if ( catalog.CreateFreeLicense( utcNow ) is { } freeLicense )
+                        // One command per edition that the product family offers, named by the alias the family
+                        // gave it. A family that has no free edition would otherwise advertise a command whose only
+                        // outcome is an error, and the help would describe an edition that cannot be obtained.
+                        foreach ( var edition in options.Product.LicenseProductCatalog.SelfRegisteredEditions )
                         {
-                            license.AddCommand<RegisterCommunityCommand>( "community" )
+                            license.AddCommand<RegisterEditionCommand>( edition.Alias )
                                 .WithData( options )
-                                .WithDescription( $"Switches to the {catalog.GetDisplayName( freeLicense.Product )} edition." );
+                                .WithDescription( edition.Description );
                         }
-
-#pragma warning disable CS0612 // Type or member is obsolete
-                        if ( catalog.CreateLegacyFreeLicense( utcNow ) is { } legacyFreeLicense )
-                        {
-                            license.AddCommand<RegisterLegacyFreeCommand>( "free" )
-                                .WithData( options )
-                                .WithDescription(
-                                    $"Registers the {catalog.GetDisplayName( legacyFreeLicense.Product )} license (for {productName} 2025.0 and earlier)." );
-                        }
-#pragma warning restore CS0612 // Type or member is obsolete
 
                         configureBranch?.Invoke( "license", license );
                     } );

@@ -17,6 +17,16 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
 {
     LicenseRegistrationResult RegisterCommunityEdition( CommunityLicenseReason reason );
 
+    /// <summary>
+    /// Registers the free edition of the product family without recording why the user is entitled to it.
+    /// </summary>
+    /// <remarks>
+    /// Metalama asks the question, because its Community edition is given on conditions. PostSharp does not, because
+    /// its Essentials edition is given to everyone, and a question whose answer nobody reads is a question not worth
+    /// asking.
+    /// </remarks>
+    LicenseRegistrationResult RegisterFreeEdition();
+
     [Obsolete]
     LicenseRegistrationResult RegisterLegacyFreeEdition();
 
