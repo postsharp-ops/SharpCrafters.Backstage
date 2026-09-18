@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
@@ -86,6 +87,14 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
 
     /// <inheritdoc />
     public abstract ImmutableArray<LicenseProduct> GetProductsCoexistingWith( LicenseProduct product );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A family that does not override this answers that every one of its released versions can consume every key, so
+    /// no key is ever put out of their reach. That is the right answer until the family releases a reader which
+    /// refuses something a later key can carry.
+    /// </remarks>
+    public virtual Version? GetMinimalVersion( LicenseKeyData licenseKeyData ) => null;
 
     /// <inheritdoc />
     public abstract string PremiumEditionDisplayName { get; }

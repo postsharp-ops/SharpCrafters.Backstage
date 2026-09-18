@@ -4,7 +4,9 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
+using System;
 using System.Collections.Immutable;
 
 namespace Metalama.Backstage;
@@ -73,6 +75,14 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
             LicenseProduct.MetalamaFree => ImmutableArray.Create( LicenseProduct.MetalamaCommunity ),
             _ => ImmutableArray<LicenseProduct>.Empty
         };
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Every released version of Metalama steps over a field it does not know, so the content of a key never puts it
+    /// out of reach of one. Its signature can: a version released before the Elliptic Curve DSA authority reports a
+    /// key signed by it as invalid, whatever else the key says.
+    /// </remarks>
+    public override Version? GetMinimalVersion( LicenseKeyData licenseKeyData ) => licenseKeyData.GetMinMetalamaVersion();
 
     /// <inheritdoc />
     public override string PremiumEditionDisplayName => "Metalama Professional";

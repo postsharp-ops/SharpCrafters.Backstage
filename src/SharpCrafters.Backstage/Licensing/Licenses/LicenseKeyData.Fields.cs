@@ -196,7 +196,20 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             }
         }
 
+        /// <summary>
+        /// Creates a builder holding everything the current license key holds, so that changing one thing about a
+        /// key does not silently drop the rest of it.
+        /// </summary>
+        /// <remarks>
+        /// The fields are carried over, and not only the four properties that have a name of their own. A builder
+        /// without them writes a key that has lost its dates, its licensee, its signature and any field belonging to
+        /// a version other than this one, which still serializes and still reads, and is wrong in a way that only
+        /// the signature would catch.
+        /// </remarks>
         internal LicenseKeyDataBuilder ToBuilder()
-            => new() { Product = this.Product, LicenseId = this.LicenseId, LicenseType = this.LicenseType, LicenseGuid = this.LicenseGuid };
+            => new( this.Version, this._fields )
+            {
+                Product = this.Product, LicenseId = this.LicenseId, LicenseType = this.LicenseType, LicenseGuid = this.LicenseGuid
+            };
     }
 }

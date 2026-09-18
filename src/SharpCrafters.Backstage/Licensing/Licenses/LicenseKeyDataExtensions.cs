@@ -124,7 +124,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// <see cref="GetMinMetalamaVersion"/>, which the other family decides on the same ground.
         /// </para>
         /// </remarks>
-        internal static Version GetMinPostSharpVersion( this LicenseKeyData licenseKeyData )
+        public static Version GetMinPostSharpVersion( this LicenseKeyData licenseKeyData )
         {
             var minVersion = GetMinPostSharpVersionOfContent( licenseKeyData );
 
@@ -255,7 +255,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 licenseServerEligible,
                 licenseKeyData.GetMinPostSharpVersion(),
                 licenseKeyData.Generation.GetValueOrDefault(),
-                licenseKeyData.NormalizeServicingPhase( catalog ) ) { MinMetalamaVersion = licenseKeyData.GetMinMetalamaVersion() };
+                licenseKeyData.NormalizeServicingPhase( catalog ) ) { MinVersion = catalog.GetMinimalVersion( licenseKeyData ) };
 
             return data;
         }

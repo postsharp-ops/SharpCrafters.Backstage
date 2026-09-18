@@ -24,7 +24,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration;
 public sealed class PostSharpLicenseCoexistenceTests : LicensingTestsBase
 {
     public PostSharpLicenseCoexistenceTests( ITestOutputHelper logger )
-        : base( logger, product: PostSharpProduct.Instance ) { }
+        : base( logger, product: PostSharpProduct.Instance, version: PostSharpVersion ) { }
 
     private async Task RegisterAsync( string licenseKey )
         => Assert.True( (await this.LicenseRegistrationService.RegisterLicenseAsync( licenseKey )).IsSuccess );
@@ -148,9 +148,14 @@ public sealed class PostSharpLicenseCoexistenceTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// The keys go to the list, which is the <c>LicenseKeys</c> sub-key of the registry, and not to the single slot,
-    /// which is the root value that PostSharp 2026.0 only ever deletes.
+    /// The keys go to a group of the list, which is a sub-key of <c>LicenseKeys</c> in the registry, and not to the
+    /// single slot, which is the root value that PostSharp 2026.0 only ever deletes.
     /// </summary>
+    /// <remarks>
+    /// Which group, and why a key of the current generation goes to one at all, is covered by
+    /// <see cref="PostSharpVersionGroupTests"/>. What matters here is that the single slot is left alone, because it
+    /// holds one key and the products of this family do not come one at a time.
+    /// </remarks>
     [Fact]
     public async Task TheKeysAreStoredInTheList()
     {
@@ -159,6 +164,8 @@ public sealed class PostSharpLicenseCoexistenceTests : LicensingTestsBase
         var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
 
         Assert.Null( configuration.LegacyLicense );
-        Assert.Equal( LicenseKeyProvider.PostSharpFramework, Assert.Single( configuration.Licenses ) );
+
+        var group = Assert.Single( configuration.LicensesByMinimalVersion! );
+        Assert.Equal( LicenseKeyProvider.PostSharpFramework, Assert.Single( group.Value ) );
     }
 }

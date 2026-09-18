@@ -116,13 +116,17 @@ public sealed record LicensingConfiguration : ConfigurationFile
         var licenseString = license.LicenseString ?? throw new ArgumentNullException( nameof(license) );
 
         // Now we can add the new license, in the oldest group that can consume it.
-        if ( license.MinMetalamaVersion != null )
+        if ( license.MinVersion != null )
         {
-            return clone with
-            {
-                LicensesByMinimalVersion = ImmutableDictionary<string, ImmutableArray<string?>>.Empty
-                    .Add( license.MinMetalamaVersion.ToString(), ImmutableArray.Create<string?>( licenseString ) )
-            };
+            // Added to the group rather than put in its place, and the other groups are left alone, for the same
+            // reason as in the list below: in a family whose products co-exist, every key reaches a group, and
+            // replacing the groups would drop the keys that the registration is supposed to keep. The keys that do
+            // not co-exist with this one have already been removed above.
+            var groups = clone.LicensesByMinimalVersion ?? ImmutableDictionary<string, ImmutableArray<string?>>.Empty;
+            var groupName = license.MinVersion.ToString();
+            var group = groups.TryGetValue( groupName, out var existingGroup ) ? existingGroup : ImmutableArray<string?>.Empty;
+
+            return clone with { LicensesByMinimalVersion = groups.SetItem( groupName, group.Add( licenseString ) ) };
         }
         else if ( catalog.IsStoredInLicenseList( license.Product ) )
         {
@@ -142,9 +146,30 @@ public sealed record LicensingConfiguration : ConfigurationFile
 
     private LicensingConfiguration RemoveAllLicensesExcept( ImmutableArray<LicenseProduct> products )
     {
-        // A license key of a group is never a license key of a product that has to co-exist, because the products
-        // that co-exist are consumed by every released version and therefore never reach a group.
-        var clone = this.LicensesByMinimalVersion == null ? this : this with { LicensesByMinimalVersion = null };
+        // The groups are filtered by the same rule as the two other slots, and not cleared. A family whose products
+        // co-exist and whose keys all reach a group -- which is PostSharp, whose every current key is kept from the
+        // versions that cannot read it -- would otherwise lose every key it is supposed to keep each time another
+        // one is registered.
+        var clone = this;
+
+        if ( clone.LicensesByMinimalVersion is { } groups )
+        {
+            var survivingGroups = ImmutableDictionary.CreateBuilder<string, ImmutableArray<string?>>();
+
+            foreach ( var group in groups )
+            {
+                var survivingGroup = group.Value.RemoveAll( license => !CoexistsWithRegisteredLicense( license, products ) );
+
+                // A group that nothing survives in is dropped rather than left empty, so that the configuration does
+                // not accumulate the name of every version a user has ever registered a key for.
+                if ( !survivingGroup.IsEmpty )
+                {
+                    survivingGroups.Add( group.Key, survivingGroup );
+                }
+            }
+
+            clone = clone with { LicensesByMinimalVersion = survivingGroups.Count == 0 ? null : survivingGroups.ToImmutable() };
+        }
 
         if ( clone.LegacyLicense != null && !CoexistsWithRegisteredLicense( clone.LegacyLicense, products ) )
         {

@@ -70,17 +70,34 @@ namespace SharpCrafters.Backstage.Tests.Licensing
         /// </summary>
         protected Version CurrentVersion => this.ApplicationInfo.GetLicensingVersion();
 
+        /// <summary>
+        /// A version that PostSharp has released, for a test of the PostSharp family. Its keys are stored in groups
+        /// named after the versions that can read them, so an application reporting a version below those groups
+        /// registers a key and is then told that nothing is registered.
+        /// </summary>
+        protected const string PostSharpVersion = "2027.0";
+
         /// <param name="product">
         /// The product family under test. It decides which license keys are consumable at all, because a catalog
         /// rejects a key of another family before any requirement is consulted. The default is Metalama.
         /// </param>
-        private protected LicensingTestsBase( ITestOutputHelper logger, bool isTelemetryEnabled = false, BackstageProduct? product = null ) : base(
+        /// <param name="version">
+        /// The version that the test application reports. It decides which groups of license keys the application
+        /// reads, because a group named after a later version is not read at all, so a test of a family whose keys
+        /// reach a group must report a version that family has actually released. The default is a version below
+        /// every group, which is what a test naming its own groups wants.
+        /// </param>
+        private protected LicensingTestsBase(
+            ITestOutputHelper logger,
+            bool isTelemetryEnabled = false,
+            BackstageProduct? product = null,
+            string version = "1.0" ) : base(
             logger,
             new BackstageInitializationOptions(
                 new TestApplicationInfo(
                     "Licensing Test App",
                     false,
-                    "1.0",
+                    version,
                     new DateTime( 2021, 1, 1, 0, 0, 0, DateTimeKind.Utc ) ) { IsTelemetryEnabled = isTelemetryEnabled },
                 product ?? MetalamaProduct.Instance ) { AutoUploadTelemetry = false } ) { }
     }

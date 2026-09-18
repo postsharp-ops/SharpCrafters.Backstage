@@ -167,7 +167,7 @@ internal sealed class LeasedLicense : AuditableLicense
 
             // A registered URL is stored in the group of the first version that understands a license server, whatever
             // the product of the licence leased today, which the server may change tomorrow.
-            MinMetalamaVersion = LicensingConstants.MinimalLicenseServerVersion
+            MinVersion = LicensingConstants.MinimalLicenseServerVersion
         };
 
     private async ValueTask<LicenseLeaseResult> ResolveAsync( bool forceDownload, CancellationToken cancellationToken )

@@ -23,7 +23,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration;
 public sealed class PostSharpEditionTests : LicensingTestsBase
 {
     public PostSharpEditionTests( ITestOutputHelper logger )
-        : base( logger, product: PostSharpProduct.Instance ) { }
+        : base( logger, product: PostSharpProduct.Instance, version: PostSharpVersion ) { }
 
     /// <summary>
     /// The free edition is a PostSharp Ultimate key carrying the Community type, which is the key that PostSharp

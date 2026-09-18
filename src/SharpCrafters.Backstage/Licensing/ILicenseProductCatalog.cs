@@ -5,6 +5,8 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using System;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing;
@@ -84,6 +86,28 @@ public interface ILicenseProductCatalog : IBackstageService
     /// The keys of every other product are removed. The result is empty when no key is kept.
     /// </summary>
     ImmutableArray<LicenseProduct> GetProductsCoexistingWith( LicenseProduct product );
+
+    /// <summary>
+    /// Gets the earliest version of this family that can consume a license key, or <see langword="null"/> when every
+    /// released version can consume it. Registration stores the key in the group named after that version, which the
+    /// earlier versions do not read.
+    /// </summary>
+    /// <param name="licenseKeyData">The data of the license key.</param>
+    /// <remarks>
+    /// <para>
+    /// The question is asked of the family, and not answered once for both, because the two families have released
+    /// different readers and therefore differ on which keys an installed version can cope with. What a key needs of
+    /// Metalama is <c>LicenseKeyDataExtensions.GetMinMetalamaVersion</c>, and of PostSharp
+    /// <c>LicenseKeyDataExtensions.GetMinPostSharpVersion</c>.
+    /// </para>
+    /// <para>
+    /// Answering a version is not free: the versions below it stop seeing the key at all, and a version that could
+    /// have used it is then told that no license is registered. So a family answers <see langword="null"/> whenever
+    /// its released versions can all cope, and names a version only for a key that would otherwise reach a reader
+    /// which reports it as invalid.
+    /// </para>
+    /// </remarks>
+    Version? GetMinimalVersion( LicenseKeyData licenseKeyData );
 
     /// <summary>
     /// Gets the display name of the edition that the user is invited to try or to buy when a component is not

@@ -4,7 +4,9 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
+using System;
 using System.Collections.Immutable;
 
 namespace PostSharp.Backstage;
@@ -86,6 +88,32 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
             ? ImmutableArray<LicenseProduct>.Empty
             : _familyProducts.Remove( product );
 #pragma warning restore CS0618
+
+    /// <summary>
+    /// The version from which PostSharp keeps a license key out of the reach of the earlier versions, which is the
+    /// rule that PostSharp 2026.0 applies under the name <c>License.RequiresVersionSpecificStore</c>.
+    /// </summary>
+    private static readonly Version _firstVersionWithVersionSpecificStore = new( 5, 0, 0 );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <para>
+    /// PostSharp is installed side by side, version by version, and every installed version reads the same registry
+    /// key. A key of the current generation carries fields that the readers before 6.5.17, 6.8.10 and 6.9.3 refuse,
+    /// so leaving it where they look makes them report a license the user has paid for as invalid.
+    /// </para>
+    /// <para>
+    /// The threshold is the one PostSharp 2026.0 uses, so that a key registered here lands where a key registered
+    /// there lands. Below it the answer is <see langword="null"/>: those keys are consumed by every version ever
+    /// released, and naming a version would hide them from the versions that want them.
+    /// </para>
+    /// </remarks>
+    public override Version? GetMinimalVersion( LicenseKeyData licenseKeyData )
+    {
+        var minimalVersion = licenseKeyData.GetMinPostSharpVersion();
+
+        return minimalVersion >= _firstVersionWithVersionSpecificStore ? minimalVersion : null;
+    }
 
     /// <inheritdoc />
     public override string PremiumEditionDisplayName => "PostSharp Ultimate";

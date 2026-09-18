@@ -244,6 +244,35 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
     }
 
     /// <summary>
+    /// The group that a key of the current generation is put in lands in the sub-key that PostSharp 2026.0 puts the
+    /// same key in, which is named after the version that key needs.
+    /// </summary>
+    /// <remarks>
+    /// PostSharp 2026.0 reads the version a key declares and, when it is 5.0 or later, stores the key under a
+    /// sub-key of that name. Every key of the current generation declares 6.9.3, so this is where nearly every key a
+    /// user registers today belongs, and a key written anywhere else is one that a PostSharp older than 6.9.3 would
+    /// read and report as invalid. Which keys reach this group is settled by
+    /// <see cref="Tests.Licensing.Registration.PostSharpVersionGroupTests"/>; this is where the group lands.
+    /// </remarks>
+    [Fact]
+    public void TheGroupOfTheCurrentGenerationLandsWherePostSharp2026PutsIt()
+    {
+        this.Update(
+            c => c with
+            {
+                LicensesByMinimalVersion = ImmutableDictionary<string, ImmutableArray<string?>>.Empty
+                    .Add( "6.9.3", ImmutableArray.Create<string?>( "a-current-key" ) )
+            } );
+
+        Assert.Equal(
+            "a-current-key",
+            this._registry.GetOrCreateKey( RegistryHiveKind.CurrentUser, _licenseKeysKeyPath + @"\6.9.3" ).GetValue( "0" ) );
+
+        // And not in the flat list, which every installed version reads.
+        Assert.Empty( this.LicenseKeysKey().GetValueNames() );
+    }
+
+    /// <summary>
     /// Registering a license writes the timestamp that PostSharp 2026.0 watches. Without it, a license registered
     /// here stays invisible to an instance of that version which is already running.
     /// </summary>
