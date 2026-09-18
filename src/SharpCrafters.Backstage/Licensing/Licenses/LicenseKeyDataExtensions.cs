@@ -20,7 +20,16 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// keys of that algorithm, so it reports that the signature of the license key is invalid.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// The two families release under the same version numbers, so one value serves both.
+        /// </para>
+        /// <para>
+        /// It holds for PostSharp as well as for Metalama because PostSharp 2027.0 takes this package as its licensing
+        /// implementation. Reading the PostSharp repository suggests otherwise — the licensing code there verifies a
+        /// signature through a <c>DSA</c> object and names no elliptic curve anywhere — but that is the implementation
+        /// this package replaces, and it goes with the version that replaces it. Do not lower this value on the
+        /// strength of that code.
+        /// </para>
         /// </remarks>
         internal static readonly Version FirstVersionSupportingECDsaSignature = new( 2027, 0 );
 
