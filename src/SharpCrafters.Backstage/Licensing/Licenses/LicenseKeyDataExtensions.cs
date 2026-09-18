@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Licensing.Licenses.LicenseFields;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 
@@ -13,6 +14,13 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
     /// </summary>
     public static class LicenseKeyDataExtensions
     {
+        /// <summary>
+        /// The first version of PostSharp whose reader skips a field it does not know instead of rejecting the key.
+        /// The same tolerance was released as 6.5.17 and 6.8.10 on the branches maintained beside it, and every
+        /// Metalama has it; this is the version named because it is the one on the main line.
+        /// </summary>
+        private static readonly Version _firstTolerantVersion = new( 6, 9, 3 );
+
         /// <summary>
         /// If the <paramref name="licenseKeyData"/> contains an obsolete license type, it gets transformed to a respective non-obsolete one.
         /// Otherwise, the same license type is returned.
@@ -50,39 +58,96 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         internal static string GetDisplayName( this LicenseKeyData licenseKeyData, ILicenseProductCatalog catalog )
             => catalog.GetLicenseDisplayName( NormalizeProduct( licenseKeyData ), licenseKeyData.LicenseType );
 
+        /// <summary>
+        /// Gets the minimal version of PostSharp that can read a license key.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The version is derived from what the key contains: its product, its license type and the set of fields it
+        /// carries. A reader released before a field existed rejects a key carrying that field, so the presence of a
+        /// field dates the key. The rules and their boundaries are those of
+        /// <c>docs/license-key-generations.md</c> in BusinessSystems, which were verified against every license key
+        /// in production.
+        /// </para>
+        /// <para>
+        /// The <see cref="LicenseKeyData.MinPostSharpVersion"/> field is deliberately not read as the answer, only as
+        /// evidence that the key was issued in the era that introduced it. The field is not a reliable statement of
+        /// the requirement: it is absent from every key issued before PostSharp 5.0, it appears on Metalama keys that
+        /// no PostSharp reads, and the generator writes a constant 6.9.3 on the modern keys rather than the version
+        /// each one truly needs.
+        /// </para>
+        /// <para>
+        /// A key signed by the Elliptic Curve DSA authority raises the result, because a reader that does not know
+        /// that authority reports the signature as invalid whatever the rest of the key says. This mirrors
+        /// <see cref="LicenseKeyData.MinMetalamaVersion"/>, which the other family decides on the same ground.
+        /// </para>
+        /// </remarks>
         internal static Version GetMinPostSharpVersion( this LicenseKeyData licenseKeyData )
+        {
+            var minVersion = GetMinPostSharpVersionOfContent( licenseKeyData );
+
+            return licenseKeyData.IsSignedByECDsaKey && minVersion < LicenseKeyData.FirstVersionSupportingECDsaSignature
+                ? LicenseKeyData.FirstVersionSupportingECDsaSignature
+                : minVersion;
+        }
+
+        /// <summary>
+        /// Gets the oldest version of PostSharp that reads the content of a license key, ignoring its signature. The
+        /// rules are checked from the most demanding feature down, so a key gets the version of the newest feature it
+        /// carries.
+        /// </summary>
+        private static Version GetMinPostSharpVersionOfContent( LicenseKeyData licenseKeyData )
         {
 #pragma warning disable 618
 
-            // This logic is for PostSharp versions before 6.9.3.
-            // The later versions are forward compatible without the need of updating of this logic.
-            // Products not based on PostSharp (e.g. Metalama) don't need this logic at all.
-
-            if ( licenseKeyData.MinPostSharpVersion != null )
+            // A length-prefixed field (22 to 253, in practice Generation and ServicingPhase) is skipped only by the
+            // tolerant readers. The earlier ones treat every field as must-understand and reject the key.
+            if ( licenseKeyData.HasLengthPrefixedField )
             {
-                return licenseKeyData.MinPostSharpVersion;
+                return _firstTolerantVersion;
             }
-            else if ( licenseKeyData.LicenseType == LicenseType.PerUsage || licenseKeyData.Product == LicenseProduct.PostSharpCachingLibrary )
+
+            // The products and the license type introduced by PostSharp 6.6.
+            if ( licenseKeyData.Product is LicenseProduct.PostSharpUltimate or LicenseProduct.PostSharpFramework
+                     or LicenseProduct.PostSharpCachingLibrary
+                 || licenseKeyData.LicenseType == LicenseType.PerUsage )
             {
                 return new Version( 6, 6, 0 );
             }
-            else if ( licenseKeyData.Product == LicenseProduct.PostSharp20 )
-            {
-                return new Version( 2, 0, 0 );
-            }
-            else if ( licenseKeyData.Product is LicenseProduct.PostSharpUltimate or LicenseProduct.PostSharpFramework
-                      && licenseKeyData.LicenseType == LicenseType.Enterprise )
-            {
-                return new Version( 5, 0, 22 );
-            }
-            else if ( licenseKeyData.LicenseServerEligible != null )
+
+            // The fields and the license type introduced by PostSharp 5.0.22. MinPostSharpVersion counts here as the
+            // era that introduced it, not as the version it names.
+            if ( licenseKeyData.HasField( LicenseFieldIndex.LicenseServerEligible )
+                 || licenseKeyData.HasField( LicenseFieldIndex.MinPostSharpVersion )
+                 || licenseKeyData.LicenseType == LicenseType.Enterprise )
             {
                 return new Version( 5, 0, 22 );
             }
-            else
+
+            if ( licenseKeyData.HasField( LicenseFieldIndex.AllowInheritance ) )
+            {
+                return new Version( 4, 2, 0 );
+            }
+
+            // The legacy encoding of the current products, and the two fields added by PostSharp 3.0. The generator
+            // kept issuing keys of this encoding until 2025, so this is the largest class by far.
+            if ( licenseKeyData.Product is LicenseProduct.PostSharpUltimate1 or LicenseProduct.PostSharpDiagnosticsLibrary
+                     or LicenseProduct.PostSharpModelLibrary or LicenseProduct.PostSharpThreadingLibrary
+                 || licenseKeyData.HasField( LicenseFieldIndex.SubscriptionEndDate )
+                 || licenseKeyData.HasField( LicenseFieldIndex.Auditable ) )
             {
                 return new Version( 3, 0, 0 );
             }
+
+            if ( licenseKeyData.Product == LicenseProduct.PostSharp20 )
+            {
+                return new Version( 2, 0, 0 );
+            }
+
+            // A key that carries nothing later than PostSharp 3.0, including a key of a Metalama product that no
+            // version of PostSharp accepts. The product is rejected by the catalog of the family rather than here,
+            // so the value only says that nothing in the key requires a later reader.
+            return new Version( 3, 0, 0 );
 #pragma warning restore 618
         }
 

@@ -15,6 +15,36 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
 
         IReadOnlyDictionary<LicenseFieldIndex, LicenseField> ILicenseKeyData.Fields => this._fields;
 
+        /// <summary>
+        /// Determines whether the license key carries a field, whatever its value.
+        /// </summary>
+        /// <remarks>
+        /// The presence of a field dates a license key, because a reader released before the field existed rejects a
+        /// key that carries it. That is what the minimal version is derived from, rather than from the value of any
+        /// one field.
+        /// </remarks>
+        internal bool HasField( LicenseFieldIndex index ) => this._fields.ContainsKey( index );
+
+        /// <summary>
+        /// Gets a value indicating whether the license key carries a field that is prefixed by its length, which only
+        /// the tolerant readers skip over.
+        /// </summary>
+        internal bool HasLengthPrefixedField
+        {
+            get
+            {
+                foreach ( var index in this._fields.Keys )
+                {
+                    if ( index.IsPrefixedByLength() )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         private object? GetFieldValue( LicenseFieldIndex index )
         {
             if ( this._fields.TryGetValue( index, out var licenseField ) )

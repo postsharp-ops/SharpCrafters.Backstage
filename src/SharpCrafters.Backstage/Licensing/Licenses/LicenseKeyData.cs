@@ -42,11 +42,25 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         public bool IsLimitedByNamespace => !string.IsNullOrEmpty( this.Namespace );
 
         /// <summary>
-        /// The first version of Metalama that verifies an Elliptic Curve DSA signature, which is the licensing
-        /// authority added by issue #1864. An earlier version has no authority of the identifiers of the keys of that
-        /// algorithm, so it reports that the signature of the license key is invalid.
+        /// The first version of Metalama or of PostSharp that verifies an Elliptic Curve DSA signature, which is the
+        /// licensing authority added by issue #1864. An earlier version has no authority of the identifiers of the
+        /// keys of that algorithm, so it reports that the signature of the license key is invalid.
         /// </summary>
-        private static readonly Version _firstVersionSupportingECDsaSignature = new( 2027, 0 );
+        /// <remarks>
+        /// The two families release under the same version numbers, so one value serves both.
+        /// </remarks>
+        internal static readonly Version FirstVersionSupportingECDsaSignature = new( 2027, 0 );
+
+        /// <summary>
+        /// Gets a value indicating whether the license key is signed with an Elliptic Curve DSA key, which only
+        /// <see cref="FirstVersionSupportingECDsaSignature"/> and later verify.
+        /// </summary>
+        /// <remarks>
+        /// The key 2 of <c>ProductionLicensingAuthorityProvider</c> and the key 254 of
+        /// <see cref="TestLicensingAuthorityProvider"/> are the Elliptic Curve DSA keys. The other identifiers are
+        /// those of the finite field DSA keys, which every version verifies.
+        /// </remarks>
+        internal bool IsSignedByECDsaKey => this.SignatureKeyId is 2 or TestLicensingAuthorityProvider.ECDsaTestKeyId;
 
         /// <summary>
         /// Gets the minimal version of Metalama that can consume the current license key, or <c>null</c> if every
@@ -59,15 +73,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// today. A must-understand license field that an earlier version does not declare is the next property to
         /// decide it.
         /// </remarks>
-        public Version? MinMetalamaVersion
-            => this.SignatureKeyId switch
-            {
-                // The key 2 of ProductionLicensingAuthorityProvider and the key 254 of TestLicensingAuthorityProvider
-                // are the Elliptic Curve DSA keys. The other identifiers are those of the finite field DSA keys,
-                // which every version verifies.
-                2 or TestLicensingAuthorityProvider.ECDsaTestKeyId => _firstVersionSupportingECDsaSignature,
-                _ => null
-            };
+        public Version? MinMetalamaVersion => this.IsSignedByECDsaKey ? FirstVersionSupportingECDsaSignature : null;
 
         internal LicenseKeyData() : this( LicenseKeyDataSerializer.CurrentVersion, ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty ) { }
 
