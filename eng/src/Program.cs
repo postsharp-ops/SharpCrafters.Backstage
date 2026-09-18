@@ -48,7 +48,9 @@ var product = new Product( BackstageDependencies.Backstage )
         "SharpCrafters.Backstage.Commands.$(PackageVersion).nupkg", // Required by Metalama.Tool.
         "SharpCrafters.Common.$(PackageVersion).nupkg",             // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
-        "Metalama.Backstage.Tools.$(PackageVersion).nupkg" )        // Required by Metalama.Framework.Engine and Metalama.Vsx.
+        "Metalama.Backstage.Tools.$(PackageVersion).nupkg",         // Required by Metalama.Framework.Engine and Metalama.Vsx.
+        "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.
+        "PostSharp.Backstage.Tools.$(PackageVersion).nupkg" )       // Required by PostSharp and PostSharp.Vsx.
 };
 
 return new EngineeringApp( product ).Run( args );

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <RootNamespace>PostSharp.Backstage.Tools</RootNamespace>
+        <PackageDescription>The Backstage tools of PostSharp, the worker and the Windows notifier, as zipped executables that PostSharp extracts on the machine of the user. This package should only be installed as a dependency.</PackageDescription>
+
+        <!-- Workaround for having PostSharp.Backstage.Worker.runtimeconfig.json copied to the output directory.
+             TODO: Figure out why this file doesn't respect the "PrivateAssets=all" flag. -->
+        <_GetChildProjectCopyToOutputDirectoryItems>false</_GetChildProjectCopyToOutputDirectoryItems>
+        <_GetChildProjectCopyToPublishDirectoryItems>false</_GetChildProjectCopyToPublishDirectoryItems>
+
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
+      <PackageReference Include="JetBrains.Annotations" />
+      <PackageReference Include="Newtonsoft.Json" VersionOverride="$(NewtonsoftJsonMinVersion)" NoWarn="NU1903" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="..\PostSharp.Backstage.Worker\bin\PostSharp.Backstage.Worker.zip" />
+
+        <ProjectReference Include="..\PostSharp.Backstage.Worker\PostSharp.Backstage.Worker.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all" />
+
+        <EmbeddedResource Include="..\PostSharp.Backstage.Windows\bin\PostSharp.Backstage.Windows.zip" />
+
+        <ProjectReference Include="..\PostSharp.Backstage.Windows\PostSharp.Backstage.Windows.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all" />
+
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
+    </ItemGroup>
+
+</Project>

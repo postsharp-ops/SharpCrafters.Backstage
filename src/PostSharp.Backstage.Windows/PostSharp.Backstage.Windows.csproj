@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+        <RollForward>Major</RollForward>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <RootNamespace>PostSharp.Backstage</RootNamespace>
+        <AssemblyTitle>PostSharp</AssemblyTitle>
+        <ApplicationIcon>Resources/postsharp.ico</ApplicationIcon>
+        <ProductName>PostSharp</ProductName>
+        <OutputZipFile>bin\$(MSBuildProjectName).zip</OutputZipFile>
+        <EnableWindowsTargeting>True</EnableWindowsTargeting>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <!-- This project is the executable of the desktop notifier of PostSharp. The notifier itself is the
+         SharpCrafters.Backstage.Windows library; this project binds it to the PostSharp product, gives it the
+         PostSharp icon, and packages it as the zip archive that PostSharp.Backstage.Tools embeds. -->
+
+    <!-- It seems the WinRT source generator runs when it shouldn't and causes bogus warnings, see https://github.com/dotnet/sdk/issues/44026, so we disable it. -->
+    <!-- This can be removed once that bug is fixed. -->
+    <Target Name="DisableWinRTSourceGenerator" BeforeTargets="CoreCompile">
+        <ItemGroup>
+            <Analyzer Remove="@(Analyzer)"
+                      Condition="'%(FileName)%(Extension)' == 'WinRT.SourceGenerator.dll'"/>
+        </ItemGroup>
+    </Target>
+
+    <ItemGroup>
+        <ProjectReference Include="..\PostSharp.Backstage\PostSharp.Backstage.csproj"/>
+        <ProjectReference Include="..\SharpCrafters.Backstage.Windows\SharpCrafters.Backstage.Windows.csproj"/>
+
+        <!-- We need the Worker project to be built first because we invoke it as an executable. -->
+        <ProjectReference Include="..\PostSharp.Backstage.Worker\PostSharp.Backstage.Worker.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all"/>
+    </ItemGroup>
+
+    <Target Name="ResolveZipInputFiles" AfterTargets="Build" Condition="'$(IsCrossTargetingBuild)'!='true'">
+        <ItemGroup>
+            <ZipInputFiles Include="$(OutDir)\**\*"/>
+        </ItemGroup>
+    </Target>
+
+    <Import Project="../../eng/DeterministicZip.tasks"/>
+
+    <Target Name="Zip" Inputs="@(ZipInputFiles)" Outputs="$(OutputZipFile)" AfterTargets="Build" DependsOnTargets="ResolveZipInputFiles" Condition="'$(IsCrossTargetingBuild)'!='true'">
+
+        <CreateDeterministicZip SourceDirectory="$(OutDir)" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(BuildDate)"/>
+        <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High"/>
+    </Target>
+
+</Project>
