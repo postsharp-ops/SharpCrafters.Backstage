@@ -15,6 +15,41 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
     public static class LicenseKeyDataExtensions
     {
         /// <summary>
+        /// The first version of Metalama or of PostSharp that verifies an Elliptic Curve DSA signature, which is the
+        /// licensing authority added by issue #1864. An earlier version has no authority of the identifiers of the
+        /// keys of that algorithm, so it reports that the signature of the license key is invalid.
+        /// </summary>
+        /// <remarks>
+        /// The two families release under the same version numbers, so one value serves both.
+        /// </remarks>
+        internal static readonly Version FirstVersionSupportingECDsaSignature = new( 2027, 0 );
+
+        /// <summary>
+        /// Determines whether the license key is signed with an Elliptic Curve DSA key, which only
+        /// <see cref="FirstVersionSupportingECDsaSignature"/> and later verify.
+        /// </summary>
+        /// <remarks>
+        /// The key 2 of <c>ProductionLicensingAuthorityProvider</c> and the key 254 of
+        /// <see cref="TestLicensingAuthorityProvider"/> are the Elliptic Curve DSA keys. The other identifiers are
+        /// those of the finite field DSA keys, which every version verifies.
+        /// </remarks>
+        internal static bool IsSignedByECDsaKey( this LicenseKeyData licenseKeyData )
+            => licenseKeyData.SignatureKeyId is 2 or TestLicensingAuthorityProvider.ECDsaTestKeyId;
+
+        /// <summary>
+        /// Gets the minimal version of Metalama that can consume a license key, or <see langword="null"/> if every
+        /// version can consume it. The value is derived from the key and not from what the generator declares.
+        /// Registration stores the key in the group of that version, so that the versions which cannot consume it
+        /// never read it. See issue #1922.
+        /// </summary>
+        /// <remarks>
+        /// The licensing authority that signs the key is the only property that decides this today. A must-understand
+        /// field that an earlier version does not declare is the next property to decide it.
+        /// </remarks>
+        public static Version? GetMinMetalamaVersion( this LicenseKeyData licenseKeyData )
+            => licenseKeyData.IsSignedByECDsaKey() ? FirstVersionSupportingECDsaSignature : null;
+
+        /// <summary>
         /// The first version of PostSharp whose reader skips a field it does not know instead of rejecting the key.
         /// The same tolerance was released as 6.5.17 and 6.8.10 on the branches maintained beside it, and every
         /// Metalama has it; this is the version named because it is the one on the main line.
@@ -86,15 +121,15 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// <para>
         /// A key signed by the Elliptic Curve DSA authority raises the result, because a reader that does not know
         /// that authority reports the signature as invalid whatever the rest of the key says. This mirrors
-        /// <see cref="LicenseKeyData.MinMetalamaVersion"/>, which the other family decides on the same ground.
+        /// <see cref="GetMinMetalamaVersion"/>, which the other family decides on the same ground.
         /// </para>
         /// </remarks>
         internal static Version GetMinPostSharpVersion( this LicenseKeyData licenseKeyData )
         {
             var minVersion = GetMinPostSharpVersionOfContent( licenseKeyData );
 
-            return licenseKeyData.IsSignedByECDsaKey && minVersion < LicenseKeyData.FirstVersionSupportingECDsaSignature
-                ? LicenseKeyData.FirstVersionSupportingECDsaSignature
+            return licenseKeyData.IsSignedByECDsaKey() && minVersion < FirstVersionSupportingECDsaSignature
+                ? FirstVersionSupportingECDsaSignature
                 : minVersion;
         }
 
@@ -220,7 +255,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 licenseServerEligible,
                 licenseKeyData.GetMinPostSharpVersion(),
                 licenseKeyData.Generation.GetValueOrDefault(),
-                licenseKeyData.NormalizeServicingPhase( catalog ) ) { MinMetalamaVersion = licenseKeyData.MinMetalamaVersion };
+                licenseKeyData.NormalizeServicingPhase( catalog ) ) { MinMetalamaVersion = licenseKeyData.GetMinMetalamaVersion() };
 
             return data;
         }

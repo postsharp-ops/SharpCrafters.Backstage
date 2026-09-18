@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Threading;
 using System;
@@ -41,6 +42,7 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
     private readonly IConfigurationManager _fileConfigurationManager;
     private readonly IRegistryService _registryService;
     private readonly INamedLockService _lockService;
+    private readonly IJsonSerializationService _jsonSerializationService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly Dictionary<Type, IRegistryConfigurationSchema> _schemas = [];
     private readonly Dictionary<string, INamedLock> _locks = new( StringComparer.OrdinalIgnoreCase );
@@ -77,6 +79,7 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
         this._fileConfigurationManager = fileConfigurationManager;
         this._registryService = serviceProvider.GetRequiredBackstageService<IRegistryService>();
         this._lockService = serviceProvider.GetRequiredBackstageService<INamedLockService>();
+        this._jsonSerializationService = serviceProvider.GetRequiredBackstageService<IJsonSerializationService>();
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this.Logger = serviceProvider.GetRequiredBackstageService<EarlyLoggerFactory>().GetLogger( "Configuration" );
 
@@ -173,7 +176,7 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
 
             lock ( this._lastKnownValuesSync )
             {
-                hasChanged = !this._lastKnownValues.TryGetValue( type, out var lastKnownValue ) || !StructurallyEquals( currentValue, lastKnownValue );
+                hasChanged = !this._lastKnownValues.TryGetValue( type, out var lastKnownValue ) || !this.StructurallyEquals( currentValue, lastKnownValue );
                 this._lastKnownValues[type] = currentValue;
             }
 
@@ -185,28 +188,35 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
     }
 
     /// <summary>
-    /// A moment that stands for every moment, so that two values read at different times can be compared on their
-    /// content.
-    /// </summary>
-    private static readonly DateTime _anyMoment = new( 2000, 1, 1, 0, 0, 0, DateTimeKind.Utc );
-
-    /// <summary>
     /// Determines whether two configuration objects hold the same content.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The moment at which an object was read, and the number of writes made to it, are the bookkeeping of the store
     /// and not content. They are part of the object and therefore of its equality, so two reads of a key that nobody
     /// has touched are never equal, and a notification would announce a change every time it arrived.
+    /// </para>
+    /// <para>
+    /// The comparison is of the JSON of the two objects, as the file-based manager does it, and not of the objects
+    /// themselves. The equality a record generates compares each member with its own equality, and the equality of an
+    /// immutable array or dictionary is the identity of the array behind it: two reads of the same key produce two
+    /// arrays holding the same strings and comparing as different. Every object held here has such a member, so the
+    /// generated equality answers false for every pair that was not read once and compared with itself.
+    /// </para>
     /// </remarks>
-    private static bool StructurallyEquals( ConfigurationFile a, ConfigurationFile b )
+    private bool StructurallyEquals( ConfigurationFile a, ConfigurationFile b )
     {
-        var normalizedA = a with { Version = null };
-        var normalizedB = b with { Version = null };
+        var type = a.GetType();
 
-        normalizedA.SetFileSystemTimestamp( _anyMoment );
-        normalizedB.SetFileSystemTimestamp( _anyMoment );
+        if ( type != b.GetType() )
+        {
+            return false;
+        }
 
-        return normalizedA.Equals( normalizedB );
+        return string.Equals(
+            this._jsonSerializationService.Serialize( a with { Version = null }, type ),
+            this._jsonSerializationService.Serialize( b with { Version = null }, type ),
+            StringComparison.Ordinal );
     }
 
     /// <summary>
@@ -294,6 +304,18 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
 
         ConfigurationUpdateScope.VerifyNotNested( type.Name );
 
+        // The lock is the one the file-based manager takes, under a name derived from the key instead of the file, so
+        // that two processes of this version do not interleave a read and a write of the same object.
+        //
+        // It is not shared with PostSharp 2026.0, and cannot be: that version writes these values with a plain
+        // SetValue and takes no lock of any kind on this path, so there is no name to agree on. Nothing breaks — a
+        // mutex only ever blocks a process that waits on it — but the guarantee is the weaker one, that two writers
+        // of this version serialize and that a writer of the other version is last-writer-wins against them.
+        //
+        // The damage a lost race can do is bounded by what a write touches: a schema writes the values it maps and
+        // never clears the key, so the two versions collide only on the same value of the same object, changed at the
+        // same moment. A user registering a license in one version while the other writes the same one is the whole
+        // of it, and the loser of that race is a registration the user can see did not take.
         var lockName = this._registryService.GetDisplayPath( schema.Hive, schema.KeyPath ) + "!" + type.Name;
 
         if ( !this.TryAcquireLock( lockName, out var releaser ) )
@@ -354,7 +376,7 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
             return ConfigurationUpdateOutcome.Declined;
         }
 
-        if ( newValue.Equals( currentValue ) )
+        if ( this.StructurallyEquals( newValue, currentValue ) )
         {
             return ConfigurationUpdateOutcome.NoChange;
         }

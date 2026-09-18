@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using Metalama.Backstage;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
@@ -28,7 +29,14 @@ public sealed class RegistryConfigurationWatcherTests : TestsBase
     private readonly TestRegistryService _registry = new();
 
     public RegistryConfigurationWatcherTests( ITestOutputHelper logger )
-        : base( logger, new TestApplicationInfo { IsLongRunningProcess = true } ) { }
+        : base(
+            logger,
+            new BackstageInitializationOptions(
+                new TestApplicationInfo { IsLongRunningProcess = true },
+                MetalamaProduct.Instance )
+            {
+                AutoUploadTelemetry = false, AdditionalJsonTypeInfoResolvers = [TestRegistryJsonContext.Default]
+            } ) { }
 
     protected override void ConfigureServices( ServiceProviderBuilder services )
     {
@@ -187,7 +195,14 @@ public sealed class RegistryConfigurationWatcherOfShortProcessTests : TestsBase
     private readonly TestRegistryService _registry = new();
 
     public RegistryConfigurationWatcherOfShortProcessTests( ITestOutputHelper logger )
-        : base( logger, new TestApplicationInfo { IsLongRunningProcess = false } ) { }
+        : base(
+            logger,
+            new BackstageInitializationOptions(
+                new TestApplicationInfo { IsLongRunningProcess = false },
+                MetalamaProduct.Instance )
+            {
+                AutoUploadTelemetry = false, AdditionalJsonTypeInfoResolvers = [TestRegistryJsonContext.Default]
+            } ) { }
 
     protected override void ConfigureServices( ServiceProviderBuilder services )
     {

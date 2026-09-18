@@ -14,7 +14,7 @@ namespace SharpCrafters.Backstage.Tests.Registry;
 /// setting that the other version silently misreads. Each expected number is therefore computed by hand from the
 /// rules of <c>RegistryKeyExtensions</c> rather than from the code under test.
 /// </summary>
-public sealed class RegistryValueCodecTests
+public sealed class RegistryValueConvertersTests
 {
     /// <summary>
     /// A date counts milliseconds from 2000-01-01 UTC.
@@ -22,12 +22,12 @@ public sealed class RegistryValueCodecTests
     [Fact]
     public void DateIsCountedFromTheYear2000InUtc()
     {
-        Assert.Equal( 0L, RegistryValueCodec.DateTimeToQWord( new DateTime( 2000, 1, 1, 0, 0, 0, DateTimeKind.Utc ) ) );
-        Assert.Equal( 1000L, RegistryValueCodec.DateTimeToQWord( new DateTime( 2000, 1, 1, 0, 0, 1, DateTimeKind.Utc ) ) );
-        Assert.Equal( 86_400_000L, RegistryValueCodec.DateTimeToQWord( new DateTime( 2000, 1, 2, 0, 0, 0, DateTimeKind.Utc ) ) );
+        Assert.Equal( 0L, RegistryValueConverters.DateTimeToQWord( new DateTime( 2000, 1, 1, 0, 0, 0, DateTimeKind.Utc ) ) );
+        Assert.Equal( 1000L, RegistryValueConverters.DateTimeToQWord( new DateTime( 2000, 1, 1, 0, 0, 1, DateTimeKind.Utc ) ) );
+        Assert.Equal( 86_400_000L, RegistryValueConverters.DateTimeToQWord( new DateTime( 2000, 1, 2, 0, 0, 0, DateTimeKind.Utc ) ) );
 
         // 2026-09-18 is 9757 days after the reference date.
-        Assert.Equal( 9757L * 86_400_000L, RegistryValueCodec.DateTimeToQWord( new DateTime( 2026, 9, 18, 0, 0, 0, DateTimeKind.Utc ) ) );
+        Assert.Equal( 9757L * 86_400_000L, RegistryValueConverters.DateTimeToQWord( new DateTime( 2026, 9, 18, 0, 0, 0, DateTimeKind.Utc ) ) );
     }
 
     /// <summary>
@@ -41,18 +41,29 @@ public sealed class RegistryValueCodecTests
     {
         var value = DateTime.SpecifyKind( new DateTime( 2026, 9, 18, 14, 35, 46 ), kind );
 
-        var decoded = RegistryValueCodec.QWordToDateTime( RegistryValueCodec.DateTimeToQWord( value ) );
+        var decoded = RegistryValueConverters.QWordToDateTime( RegistryValueConverters.DateTimeToQWord( value ) );
 
         Assert.NotNull( decoded );
         Assert.Equal( value.ToUniversalTime(), decoded.Value.ToUniversalTime() );
     }
 
     /// <summary>
-    /// A decoded date is in local time, which is what PostSharp 2026.0 hands to its callers.
+    /// A decoded date is in universal time, which is what the stored number counts from.
     /// </summary>
+    /// <remarks>
+    /// PostSharp 2026.0 converts to local time here, and may: it compares the result against a local clock. This
+    /// version compares against <c>IDateTimeProvider.UtcNow</c>, and the arithmetic of a <see cref="DateTime"/>
+    /// ignores its kind, so a value converted to local time is read as an instant offset by the time zone. The
+    /// stored number is untouched either way, so the two versions still agree on what is written.
+    /// </remarks>
     [Fact]
-    public void ADecodedDateIsLocal()
-        => Assert.Equal( DateTimeKind.Local, RegistryValueCodec.QWordToDateTime( 86_400_000L )!.Value.Kind );
+    public void ADecodedDateIsUniversal()
+    {
+        var decoded = RegistryValueConverters.QWordToDateTime( 86_400_000L )!.Value;
+
+        Assert.Equal( DateTimeKind.Utc, decoded.Kind );
+        Assert.Equal( new DateTime( 2000, 1, 2, 0, 0, 0, DateTimeKind.Utc ), decoded );
+    }
 
     /// <summary>
     /// A value outside the range that PostSharp 2026.0 accepts means that there is no date, not that the date is
@@ -65,22 +76,22 @@ public sealed class RegistryValueCodecTests
     [InlineData( long.MinValue )]
     [InlineData( (1000L * 60 * 60 * 24 * 365 * 1000) + 1 )]
     [InlineData( long.MaxValue )]
-    public void ADateOutsideTheAcceptedRangeIsAbsent( long stored ) => Assert.Null( RegistryValueCodec.QWordToDateTime( stored ) );
+    public void ADateOutsideTheAcceptedRangeIsAbsent( long stored ) => Assert.Null( RegistryValueConverters.QWordToDateTime( stored ) );
 
     /// <summary>
     /// The largest accepted value is a date, so the bound is inclusive as it is in PostSharp 2026.0.
     /// </summary>
     [Fact]
-    public void TheLargestAcceptedDateIsADate() => Assert.NotNull( RegistryValueCodec.QWordToDateTime( 1000L * 60 * 60 * 24 * 365 * 1000 ) );
+    public void TheLargestAcceptedDateIsADate() => Assert.NotNull( RegistryValueConverters.QWordToDateTime( 1000L * 60 * 60 * 24 * 365 * 1000 ) );
 
     [Fact]
-    public void AnAbsentDateIsNull() => Assert.Null( RegistryValueCodec.QWordToDateTime( null ) );
+    public void AnAbsentDateIsNull() => Assert.Null( RegistryValueConverters.QWordToDateTime( null ) );
 
     [Fact]
     public void ABooleanIsZeroOrOne()
     {
-        Assert.Equal( 1, RegistryValueCodec.BooleanToDWord( true ) );
-        Assert.Equal( 0, RegistryValueCodec.BooleanToDWord( false ) );
+        Assert.Equal( 1, RegistryValueConverters.BooleanToDWord( true ) );
+        Assert.Equal( 0, RegistryValueConverters.BooleanToDWord( false ) );
     }
 
     /// <summary>
@@ -91,7 +102,7 @@ public sealed class RegistryValueCodecTests
     [InlineData( 2, true )]
     [InlineData( -1, true )]
     [InlineData( 0, false )]
-    public void ABooleanIsTrueWhenItIsNotZero( int stored, bool expected ) => Assert.Equal( expected, RegistryValueCodec.DWordToBoolean( stored ) );
+    public void ABooleanIsTrueWhenItIsNotZero( int stored, bool expected ) => Assert.Equal( expected, RegistryValueConverters.DWordToBoolean( stored ) );
 
     /// <summary>
     /// Several settings of PostSharp 2026.0 are on unless they were turned off, so the default of an absent value is
@@ -101,7 +112,7 @@ public sealed class RegistryValueCodecTests
     [InlineData( true )]
     [InlineData( false )]
     public void AnAbsentBooleanTakesTheDefaultOfTheCaller( bool defaultValue )
-        => Assert.Equal( defaultValue, RegistryValueCodec.DWordToBoolean( null, defaultValue ) );
+        => Assert.Equal( defaultValue, RegistryValueConverters.DWordToBoolean( null, defaultValue ) );
 
     /// <summary>
     /// A Boolean that may be unset uses a different encoding from a plain one: zero is unset rather than false, and
@@ -110,9 +121,9 @@ public sealed class RegistryValueCodecTests
     [Fact]
     public void AnUnsetBooleanIsZeroAndFalseIsTwo()
     {
-        Assert.Equal( 0, RegistryValueCodec.NullableBooleanToDWord( null ) );
-        Assert.Equal( 1, RegistryValueCodec.NullableBooleanToDWord( true ) );
-        Assert.Equal( 2, RegistryValueCodec.NullableBooleanToDWord( false ) );
+        Assert.Equal( 0, RegistryValueConverters.NullableBooleanToDWord( null ) );
+        Assert.Equal( 1, RegistryValueConverters.NullableBooleanToDWord( true ) );
+        Assert.Equal( 2, RegistryValueConverters.NullableBooleanToDWord( false ) );
     }
 
     [Theory]
@@ -121,10 +132,10 @@ public sealed class RegistryValueCodecTests
     [InlineData( 0, null )]
     [InlineData( 3, null )]
     public void ANullableBooleanDecodesOnlyOneAndTwo( int stored, bool? expected )
-        => Assert.Equal( expected, RegistryValueCodec.DWordToNullableBoolean( stored ) );
+        => Assert.Equal( expected, RegistryValueConverters.DWordToNullableBoolean( stored ) );
 
     [Fact]
-    public void AnAbsentNullableBooleanIsUnset() => Assert.Null( RegistryValueCodec.DWordToNullableBoolean( null ) );
+    public void AnAbsentNullableBooleanIsUnset() => Assert.Null( RegistryValueConverters.DWordToNullableBoolean( null ) );
 
     /// <summary>
     /// A value of another kind is not a string. PostSharp 2026.0 casts, so it would throw and fall back to its
@@ -133,9 +144,9 @@ public sealed class RegistryValueCodecTests
     [Fact]
     public void AValueThatIsNotAStringIsAbsent()
     {
-        Assert.Equal( "text", RegistryValueCodec.ToStringValue( "text" ) );
-        Assert.Null( RegistryValueCodec.ToStringValue( 1 ) );
-        Assert.Null( RegistryValueCodec.ToStringValue( null ) );
+        Assert.Equal( "text", RegistryValueConverters.ToStringValue( "text" ) );
+        Assert.Null( RegistryValueConverters.ToStringValue( 1 ) );
+        Assert.Null( RegistryValueConverters.ToStringValue( null ) );
     }
 
     /// <summary>
@@ -146,7 +157,7 @@ public sealed class RegistryValueCodecTests
     [Fact]
     public void ANumberOfTheWrongWidthIsStillRead()
     {
-        Assert.Equal( 86_400_000L, RegistryValueCodec.DateTimeToQWord( RegistryValueCodec.QWordToDateTime( 86_400_000 )!.Value ) );
-        Assert.True( RegistryValueCodec.DWordToBoolean( 1L ) );
+        Assert.Equal( 86_400_000L, RegistryValueConverters.DateTimeToQWord( RegistryValueConverters.QWordToDateTime( 86_400_000 )!.Value ) );
+        Assert.True( RegistryValueConverters.DWordToBoolean( 1L ) );
     }
 }

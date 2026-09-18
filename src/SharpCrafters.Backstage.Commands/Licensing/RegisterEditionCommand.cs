@@ -24,7 +24,7 @@ internal class RegisterEditionCommand : BaseCommand<BaseCommandSettings>
     {
         var edition = context.BackstageCommandOptions.Product.LicenseProductCatalog.SelfRegisteredEditions
                           .FirstOrDefault( e => string.Equals( e.Alias, context.CommandName, StringComparison.OrdinalIgnoreCase ) )
-                      ?? throw new InvalidOperationException( $"There is no self-registered edition named '{context.CommandName}'." );
+                      ?? throw new CommandException( $"There is no edition named '{context.CommandName}'." );
 
         var service = context.ServiceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
 

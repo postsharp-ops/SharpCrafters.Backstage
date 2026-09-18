@@ -9,7 +9,7 @@ namespace SharpCrafters.Backstage.Configuration.Registry;
 
 /// <summary>
 /// Reads and writes the individual values of a configuration object, in the encodings of
-/// <see cref="RegistryValueCodec"/>, writing only what differs from what is stored.
+/// <see cref="RegistryValueConverters"/>, writing only what differs from what is stored.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -29,12 +29,12 @@ public static class RegistryConfigurationValues
     /// <summary>
     /// Reads a string, which is <see langword="null"/> when the value is absent.
     /// </summary>
-    public static string? GetString( this IRegistryKey? key, string name ) => RegistryValueCodec.ToStringValue( key?.GetValue( name ) );
+    public static string? GetString( this IRegistryKey? key, string name ) => RegistryValueConverters.ToStringValue( key?.GetValue( name ) );
 
     /// <summary>
     /// Reads a date, which is <see langword="null"/> when the value is absent or outside the range of a date.
     /// </summary>
-    public static DateTime? GetDateTime( this IRegistryKey? key, string name ) => RegistryValueCodec.QWordToDateTime( key?.GetValue( name ) );
+    public static DateTime? GetDateTime( this IRegistryKey? key, string name ) => RegistryValueConverters.QWordToDateTime( key?.GetValue( name ) );
 
     /// <summary>
     /// Reads a Boolean.
@@ -43,13 +43,13 @@ public static class RegistryConfigurationValues
     /// <param name="name">The name of the value.</param>
     /// <param name="defaultValue">What an absent value means, which is not always <see langword="false"/>.</param>
     public static bool GetBoolean( this IRegistryKey? key, string name, bool defaultValue = false )
-        => RegistryValueCodec.DWordToBoolean( key?.GetValue( name ), defaultValue );
+        => RegistryValueConverters.DWordToBoolean( key?.GetValue( name ), defaultValue );
 
     /// <summary>
     /// Reads a Boolean that may be unset.
     /// </summary>
     public static bool? GetNullableBoolean( this IRegistryKey? key, string name )
-        => RegistryValueCodec.DWordToNullableBoolean( key?.GetValue( name ) );
+        => RegistryValueConverters.DWordToNullableBoolean( key?.GetValue( name ) );
 
     /// <summary>
     /// Reads a 32-bit integer, which is <see langword="null"/> when the value is absent.
@@ -67,7 +67,7 @@ public static class RegistryConfigurationValues
     /// <returns><see langword="true"/> if the key was touched.</returns>
     public static bool SetString( this IRegistryKey key, string name, string? value )
     {
-        var storedValue = RegistryValueCodec.ToStringValue( key.GetValue( name ) );
+        var storedValue = RegistryValueConverters.ToStringValue( key.GetValue( name ) );
 
         if ( value == null )
         {
@@ -109,7 +109,7 @@ public static class RegistryConfigurationValues
             return true;
         }
 
-        var encoded = RegistryValueCodec.DateTimeToQWord( value.Value );
+        var encoded = RegistryValueConverters.DateTimeToQWord( value.Value );
 
         if ( key.GetValue( name ) is long storedValue && storedValue == encoded )
         {
@@ -126,7 +126,7 @@ public static class RegistryConfigurationValues
     /// </summary>
     /// <returns><see langword="true"/> if the key was touched.</returns>
     public static bool SetBoolean( this IRegistryKey key, string name, bool value )
-        => key.SetInt32( name, RegistryValueCodec.BooleanToDWord( value ) );
+        => key.SetInt32( name, RegistryValueConverters.BooleanToDWord( value ) );
 
     /// <summary>
     /// Writes a Boolean that may be unset. An unset value is written as zero rather than deleted, because zero is
@@ -134,7 +134,7 @@ public static class RegistryConfigurationValues
     /// </summary>
     /// <returns><see langword="true"/> if the key was touched.</returns>
     public static bool SetNullableBoolean( this IRegistryKey key, string name, bool? value )
-        => key.SetInt32( name, RegistryValueCodec.NullableBooleanToDWord( value ) );
+        => key.SetInt32( name, RegistryValueConverters.NullableBooleanToDWord( value ) );
 
     /// <summary>
     /// Writes a 32-bit integer.

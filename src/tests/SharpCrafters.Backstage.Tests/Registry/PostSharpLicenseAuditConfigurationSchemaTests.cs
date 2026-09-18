@@ -123,7 +123,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     public void AnAuditOfTheOtherVersionIsRead()
     {
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
-        this.AuditKey().SetQWordValue( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", RegistryValueCodec.DateTimeToQWord( auditTime ) );
+        this.AuditKey().SetQWordValue( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", RegistryValueConverters.DateTimeToQWord( auditTime ) );
 
         Assert.True( this.Read().TryGetLastAuditTime( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", out var lastAuditTime ) );
         Assert.Equal( auditTime, lastAuditTime.ToUniversalTime() );
@@ -143,7 +143,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
         var stored = this.AuditKey().GetValue( "a-license-identity" );
 
         Assert.IsType<long>( stored );
-        Assert.Equal( auditTime, RegistryValueCodec.QWordToDateTime( stored )!.Value.ToUniversalTime() );
+        Assert.Equal( auditTime, RegistryValueConverters.QWordToDateTime( stored )!.Value.ToUniversalTime() );
     }
 
     /// <summary>
@@ -154,7 +154,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     [Fact]
     public void AnEntryOfTheOtherVersionIsNotCollected()
     {
-        this.AuditKey().SetQWordValue( "written-by-the-other-version", RegistryValueCodec.DateTimeToQWord( DateTime.UtcNow ) );
+        this.AuditKey().SetQWordValue( "written-by-the-other-version", RegistryValueConverters.DateTimeToQWord( DateTime.UtcNow ) );
 
         this.Update( c => c.SetLastAuditTime( "ours", DateTime.UtcNow ) );
 
@@ -169,7 +169,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     public void ANumericIdentityOfTheOtherVersionIsReadAsANumber()
     {
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
-        this.AuditKey().SetQWordValue( "22", RegistryValueCodec.DateTimeToQWord( auditTime ) );
+        this.AuditKey().SetQWordValue( "22", RegistryValueConverters.DateTimeToQWord( auditTime ) );
 
         var configuration = this.Read();
 

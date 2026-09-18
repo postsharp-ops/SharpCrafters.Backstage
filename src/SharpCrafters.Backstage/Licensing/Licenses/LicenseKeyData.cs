@@ -41,40 +41,6 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         [Obsolete]
         public bool IsLimitedByNamespace => !string.IsNullOrEmpty( this.Namespace );
 
-        /// <summary>
-        /// The first version of Metalama or of PostSharp that verifies an Elliptic Curve DSA signature, which is the
-        /// licensing authority added by issue #1864. An earlier version has no authority of the identifiers of the
-        /// keys of that algorithm, so it reports that the signature of the license key is invalid.
-        /// </summary>
-        /// <remarks>
-        /// The two families release under the same version numbers, so one value serves both.
-        /// </remarks>
-        internal static readonly Version FirstVersionSupportingECDsaSignature = new( 2027, 0 );
-
-        /// <summary>
-        /// Gets a value indicating whether the license key is signed with an Elliptic Curve DSA key, which only
-        /// <see cref="FirstVersionSupportingECDsaSignature"/> and later verify.
-        /// </summary>
-        /// <remarks>
-        /// The key 2 of <c>ProductionLicensingAuthorityProvider</c> and the key 254 of
-        /// <see cref="TestLicensingAuthorityProvider"/> are the Elliptic Curve DSA keys. The other identifiers are
-        /// those of the finite field DSA keys, which every version verifies.
-        /// </remarks>
-        internal bool IsSignedByECDsaKey => this.SignatureKeyId is 2 or TestLicensingAuthorityProvider.ECDsaTestKeyId;
-
-        /// <summary>
-        /// Gets the minimal version of Metalama that can consume the current license key, or <c>null</c> if every
-        /// version can consume it. The value is detected from the properties of the license key, so that it does not
-        /// depend on the license generator. Registration stores the license key in the group of that version, so that
-        /// the versions which cannot consume the license key never read it. See issue #1922.
-        /// </summary>
-        /// <remarks>
-        /// The licensing authority that signs the license key is the only property that decides the minimal version
-        /// today. A must-understand license field that an earlier version does not declare is the next property to
-        /// decide it.
-        /// </remarks>
-        public Version? MinMetalamaVersion => this.IsSignedByECDsaKey ? FirstVersionSupportingECDsaSignature : null;
-
         internal LicenseKeyData() : this( LicenseKeyDataSerializer.CurrentVersion, ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty ) { }
 
         internal LicenseKeyData( byte version, ImmutableSortedDictionary<LicenseFieldIndex, LicenseField> fields )

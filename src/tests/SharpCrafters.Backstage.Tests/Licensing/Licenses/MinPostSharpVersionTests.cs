@@ -72,7 +72,7 @@ public sealed class MinPostSharpVersionTests : TestsBase
     {
         var licenseKeyData = Deserialize( CreateBuilder( product ).SignAndSerialize( _licenseKeyProvider.Authority ) );
 
-        Assert.False( licenseKeyData.IsSignedByECDsaKey );
+        Assert.False( licenseKeyData.IsSignedByECDsaKey() );
         Assert.Equal( _firstTolerantVersion, licenseKeyData.GetMinPostSharpVersion() );
     }
 
@@ -88,7 +88,7 @@ public sealed class MinPostSharpVersionTests : TestsBase
     {
         var licenseKeyData = Deserialize( CreateBuilder( product ).SignAndSerialize( TestLicensingAuthorityProvider.ECDsaTestAuthority ) );
 
-        Assert.True( licenseKeyData.IsSignedByECDsaKey );
+        Assert.True( licenseKeyData.IsSignedByECDsaKey() );
         Assert.Equal( _firstVersionSupportingECDsa, licenseKeyData.GetMinPostSharpVersion() );
     }
 
@@ -117,7 +117,7 @@ public sealed class MinPostSharpVersionTests : TestsBase
     {
         var licenseKeyData = Deserialize( CreateBuilder().SignAndSerialize( TestLicensingAuthorityProvider.ECDsaTestAuthority ) );
 
-        Assert.Equal( licenseKeyData.MinMetalamaVersion, licenseKeyData.GetMinPostSharpVersion() );
+        Assert.Equal( licenseKeyData.GetMinMetalamaVersion(), licenseKeyData.GetMinPostSharpVersion() );
     }
 
     /// <summary>

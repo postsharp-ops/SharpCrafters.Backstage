@@ -278,7 +278,7 @@ internal sealed class PostSharpLicensingConfigurationSchema : RegistryConfigurat
     /// </remarks>
     private void BumpLicenseTimestamp( IRegistryKey key )
     {
-        var timestamp = RegistryValueCodec.DateTimeToQWord( this._dateTimeProvider.UtcNow );
+        var timestamp = RegistryValueConverters.DateTimeToQWord( this._dateTimeProvider.UtcNow );
 
         if ( key.GetValue( PostSharpRegistry.LicenseTimestampValueName ) is long storedTimestamp && storedTimestamp >= timestamp )
         {

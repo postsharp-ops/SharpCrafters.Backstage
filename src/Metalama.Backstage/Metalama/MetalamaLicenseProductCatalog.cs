@@ -91,7 +91,7 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     /// Metalama gives away its Community edition, and still registers the free edition that its earlier versions
     /// issued. The base class appends the trial.
     /// </remarks>
-    protected override ImmutableArray<SelfRegisteredEdition> CreateEditions()
+    protected override ImmutableArray<SelfRegisteredEdition> Editions
 #pragma warning disable CS0612 // Type or member is obsolete: the legacy edition is still registrable.
         => ImmutableArray.Create<SelfRegisteredEdition>( new MetalamaCommunityEdition(), new MetalamaLegacyFreeEdition() );
 #pragma warning restore CS0612

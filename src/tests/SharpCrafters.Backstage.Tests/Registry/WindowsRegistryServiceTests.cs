@@ -107,7 +107,7 @@ public sealed class WindowsRegistryServiceTests : IDisposable
 
     /// <summary>
     /// A number comes back with the width it was written with, which is what
-    /// <see cref="RegistryValueCodec"/> assumes: it reads a date as a <see cref="long"/> and a Boolean as an
+    /// <see cref="RegistryValueConverters"/> assumes: it reads a date as a <see cref="long"/> and a Boolean as an
     /// <see cref="int"/>, and treats anything else as absent.
     /// </summary>
     [SkippableFact]
@@ -141,9 +141,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
         Assert.NotNull( key );
 
-        key.SetQWordValue( "ADate", RegistryValueCodec.DateTimeToQWord( date ) );
+        key.SetQWordValue( "ADate", RegistryValueConverters.DateTimeToQWord( date ) );
 
-        Assert.Equal( date, RegistryValueCodec.QWordToDateTime( key.GetValue( "ADate" ) )!.Value.ToUniversalTime() );
+        Assert.Equal( date, RegistryValueConverters.QWordToDateTime( key.GetValue( "ADate" ) )!.Value.ToUniversalTime() );
     }
 
     /// <summary>

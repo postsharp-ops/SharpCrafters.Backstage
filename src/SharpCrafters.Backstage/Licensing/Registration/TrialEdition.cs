@@ -14,7 +14,7 @@ namespace SharpCrafters.Backstage.Licensing.Registration;
 /// <remarks>
 /// Every family offers a trial, on the same terms and for the same length, so it is declared here rather than by each
 /// of them. A family that wants different terms derives from this class and returns its own from
-/// <see cref="LicenseProductCatalog.CreateTrialEdition"/>.
+/// <c>LicenseProductCatalog.Trial</c>.
 /// </remarks>
 [PublicAPI]
 public class TrialEdition : SelfRegisteredEdition

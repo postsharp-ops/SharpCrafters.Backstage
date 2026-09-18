@@ -175,7 +175,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
     public void TheTrialStartDateIsTheEvaluationValue()
     {
         var startDate = new DateTime( 2026, 9, 18, 0, 0, 0, DateTimeKind.Utc );
-        this.RootKey().SetQWordValue( "Evaluation", RegistryValueCodec.DateTimeToQWord( startDate ) );
+        this.RootKey().SetQWordValue( "Evaluation", RegistryValueConverters.DateTimeToQWord( startDate ) );
 
         Assert.Equal( startDate, this.Read().LastEvaluationStartDate!.Value.ToUniversalTime() );
     }
@@ -256,7 +256,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
 
         var timestamp = this.RootKey().GetValue( "LicenseTimestamp" );
         Assert.IsType<long>( timestamp );
-        Assert.NotNull( RegistryValueCodec.QWordToDateTime( timestamp ) );
+        Assert.NotNull( RegistryValueConverters.QWordToDateTime( timestamp ) );
     }
 
     /// <summary>
@@ -327,7 +327,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
 
         var root = this.RootKey();
         root.SetStringValue( "LicenseKey", legacyKey );
-        root.SetQWordValue( "Evaluation", RegistryValueCodec.DateTimeToQWord( new DateTime( 2026, 8, 1, 0, 0, 0, DateTimeKind.Utc ) ) );
+        root.SetQWordValue( "Evaluation", RegistryValueConverters.DateTimeToQWord( new DateTime( 2026, 8, 1, 0, 0, 0, DateTimeKind.Utc ) ) );
 
         var licenseKeys = this.LicenseKeysKey();
         licenseKeys.SetStringValue( "0", currentKey );

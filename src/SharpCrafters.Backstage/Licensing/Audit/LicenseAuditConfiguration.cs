@@ -85,11 +85,19 @@ public record LicenseAuditConfiguration : ConfigurationFile
     /// Determines whether an identity is one that the versions reading this file as a number understand.
     /// </summary>
     /// <remarks>
-    /// The rendered form has to match the identity exactly, and not merely parse: an identity with a leading zero or
-    /// a sign parses to a number that is written back differently, and the entry would then be found under a name
-    /// other than the one it was stored under.
+    /// <para>
+    /// A leading sign is allowed, because the identity that the default provider gives is a hash rendered as a
+    /// <see cref="long"/> and about half of those are negative. Rejecting them would send half of the record of an
+    /// existing installation to <see cref="LastAuditTimesByKey"/>, where the versions this is meant to keep reading
+    /// it do not look — the opposite of the point.
+    /// </para>
+    /// <para>
+    /// The rendered form still has to match the identity exactly, and not merely parse: an identity with a leading
+    /// zero or a leading plus parses to a number that is written back differently, and the entry would then be looked
+    /// for under a name other than the one it was stored under.
+    /// </para>
     /// </remarks>
     private static bool TryParseNumericKey( string auditKey, out long numericKey )
-        => long.TryParse( auditKey, NumberStyles.None, CultureInfo.InvariantCulture, out numericKey )
+        => long.TryParse( auditKey, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out numericKey )
            && string.Equals( numericKey.ToString( CultureInfo.InvariantCulture ), auditKey, StringComparison.Ordinal );
 }

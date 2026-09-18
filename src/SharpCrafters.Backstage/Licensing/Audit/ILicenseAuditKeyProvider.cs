@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Consumption;
-using System.Globalization;
 
 namespace SharpCrafters.Backstage.Licensing.Audit;
 
@@ -37,29 +36,4 @@ public interface ILicenseAuditKeyProvider
     /// </param>
     /// <returns>The identity, which is the key under which the moment of the last audit is recorded.</returns>
     string GetAuditKey( LicenseConsumptionProperties license, long reportHashCode );
-}
-
-/// <summary>
-/// Throttles an audit by the content of its report, so that a report is sent again whenever anything in it changes.
-/// </summary>
-/// <remarks>
-/// This is the default, and it is what a product uses when it shares the record with nothing.
-/// </remarks>
-[PublicAPI]
-public sealed class ReportContentLicenseAuditKeyProvider : ILicenseAuditKeyProvider
-{
-    /// <summary>
-    /// Gets the single instance of the provider.
-    /// </summary>
-    public static ReportContentLicenseAuditKeyProvider Instance { get; } = new();
-
-    private ReportContentLicenseAuditKeyProvider() { }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// The hash is rendered in decimal, which is how it was written when this record was keyed by the number itself,
-    /// so an existing record keeps being read.
-    /// </remarks>
-    public string GetAuditKey( LicenseConsumptionProperties license, long reportHashCode )
-        => reportHashCode.ToString( CultureInfo.InvariantCulture );
 }

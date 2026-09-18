@@ -7,23 +7,6 @@ using JetBrains.Annotations;
 namespace SharpCrafters.Backstage.Configuration;
 
 /// <summary>
-/// The kind of store that holds a configuration object.
-/// </summary>
-[PublicAPI]
-public enum ConfigurationStoreKind
-{
-    /// <summary>
-    /// A JSON file under the application data directory of the product.
-    /// </summary>
-    File,
-
-    /// <summary>
-    /// A key of the Windows registry. PostSharp keeps the settings it shares with its earlier versions there.
-    /// </summary>
-    RegistryKey
-}
-
-/// <summary>
 /// Where a configuration object is stored. A caller that wants to show the location to the user, or to open it in an
 /// editor, needs to know which kind of store it is: a file path goes to the default editor of the user, whereas a
 /// registry key goes to <c>regedit</c>.

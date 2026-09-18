@@ -53,8 +53,8 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
             LastMatomoPostTime = key.GetDateTime( "LastMatomoPostTime" ),
             RetentionPeriodInDays = key.GetInt32( "RetentionPeriodInDays" ),
             Issues = ReadDictionary( key, _issuesKeyName, value => (ReportingStatus) (value as int? ?? 0) ),
-            IssuePrompts = ReadDictionaryOfValues( key, _issuePromptsKeyName, RegistryValueCodec.QWordToDateTime ),
-            Sessions = ReadDictionaryOfValues( key, _sessionsKeyName, RegistryValueCodec.QWordToDateTime ),
+            IssuePrompts = ReadDictionaryOfValues( key, _issuePromptsKeyName, RegistryValueConverters.QWordToDateTime ),
+            Sessions = ReadDictionaryOfValues( key, _sessionsKeyName, RegistryValueConverters.QWordToDateTime ),
             Version = key.GetInt32( PostSharpRegistry.ConfigurationVersionValueName )
         };
 

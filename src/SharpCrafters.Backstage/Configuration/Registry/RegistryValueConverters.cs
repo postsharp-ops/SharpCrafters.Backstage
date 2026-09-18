@@ -16,7 +16,7 @@ namespace SharpCrafters.Backstage.Configuration.Registry;
 /// same values beside this version. None of them may be changed.
 /// </remarks>
 [PublicAPI]
-public static class RegistryValueCodec
+public static class RegistryValueConverters
 {
     /// <summary>
     /// The instant from which a date is counted. It is a local-time-agnostic constant of PostSharp 2026.0 and is
@@ -41,8 +41,8 @@ public static class RegistryValueCodec
     /// </summary>
     /// <param name="value">The stored value, or <see langword="null"/> when the value is absent.</param>
     /// <returns>
-    /// The date, in local time as PostSharp 2026.0 returns it, or <see langword="null"/> when the value is absent or
-    /// outside the range that PostSharp 2026.0 accepts.
+    /// The date, in universal time, or <see langword="null"/> when the value is absent or outside the range that
+    /// PostSharp 2026.0 accepts.
     /// </returns>
     public static DateTime? QWordToDateTime( object? value )
     {
@@ -51,7 +51,12 @@ public static class RegistryValueCodec
             return null;
         }
 
-        return _referenceDate.AddMilliseconds( timestamp ).ToLocalTime();
+        // In universal time, which is what the stored number counts from and what every member holding one of these
+        // is compared against. PostSharp 2026.0 converts to local time here, and may: it compares against a local
+        // clock. This version compares against IDateTimeProvider.UtcNow, and the arithmetic of a DateTime ignores its
+        // kind, so a value converted to local time would be read as an instant offset by the time zone — a trial
+        // whose cool-off period ends an hour early, or late.
+        return _referenceDate.AddMilliseconds( timestamp );
     }
 
     /// <summary>

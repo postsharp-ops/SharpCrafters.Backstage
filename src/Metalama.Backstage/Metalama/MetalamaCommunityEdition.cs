@@ -22,7 +22,7 @@ internal sealed class MetalamaCommunityEdition : SelfRegisteredEdition
     public override string Description => "Switches to the Metalama Community edition, which is free and must be renewed every year.";
 
     /// <inheritdoc />
-    public override string SuccessMessage => "You are now using Metalama Community for Metalama 2025.1 and later.";
+    public override string SuccessMessage => "You are now using Metalama Community.";
 
     /// <inheritdoc />
     public override bool RequiresReason => true;

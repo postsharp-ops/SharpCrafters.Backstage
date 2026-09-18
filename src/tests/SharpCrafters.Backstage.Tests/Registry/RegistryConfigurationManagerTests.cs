@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using Metalama.Backstage;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
@@ -28,7 +29,13 @@ public sealed class RegistryConfigurationManagerTests : TestsBase
 
     private readonly TestRegistryService _registry = new();
 
-    public RegistryConfigurationManagerTests( ITestOutputHelper logger ) : base( logger ) { }
+    public RegistryConfigurationManagerTests( ITestOutputHelper logger )
+        : base(
+            logger,
+            new BackstageInitializationOptions( new TestApplicationInfo(), MetalamaProduct.Instance )
+            {
+                AutoUploadTelemetry = false, AdditionalJsonTypeInfoResolvers = [TestRegistryJsonContext.Default]
+            } ) { }
 
     protected override void ConfigureServices( ServiceProviderBuilder services )
     {
@@ -112,7 +119,7 @@ public sealed class RegistryConfigurationManagerTests : TestsBase
     {
         var key = this.SeedKey();
         key.SetStringValue( "Text", "written by the other version" );
-        key.SetQWordValue( "Date", RegistryValueCodec.DateTimeToQWord( new DateTime( 2026, 9, 18, 12, 0, 0, DateTimeKind.Utc ) ) );
+        key.SetQWordValue( "Date", RegistryValueConverters.DateTimeToQWord( new DateTime( 2026, 9, 18, 12, 0, 0, DateTimeKind.Utc ) ) );
         key.SetDWordValue( "IsEnabled", 0 );
         key.SetDWordValue( "Count", 42 );
 

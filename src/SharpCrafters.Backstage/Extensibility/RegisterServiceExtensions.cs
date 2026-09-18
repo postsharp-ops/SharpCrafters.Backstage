@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization.Metadata;
 
 namespace SharpCrafters.Backstage.Extensibility;
@@ -54,9 +55,12 @@ public static class RegisterServiceExtensions
 
         serviceProviderBuilder.AddCoreServices( coreOptions );
 
-        // A product that shares a configuration object with its earlier versions says where it lives; every other
-        // one keeps everything in files.
-        if ( product.CreateConfigurationSchemas is { } createConfigurationSchemas )
+        // A product that shares a configuration object with its earlier versions says where it lives; every other one
+        // keeps everything in files. So does every product away from Windows, where there is no registry to share:
+        // the registry services are not registered at all there, rather than registered and then found to have
+        // nothing to read, so that nothing of that layer is constructed or reachable on a platform that has none.
+        if ( product.CreateConfigurationSchemas is { } createConfigurationSchemas
+             && RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
             serviceProviderBuilder.AddRegistryConfigurationServices( createConfigurationSchemas );
         }

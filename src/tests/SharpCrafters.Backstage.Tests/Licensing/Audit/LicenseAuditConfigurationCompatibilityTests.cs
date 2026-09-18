@@ -133,7 +133,6 @@ public sealed class LicenseAuditConfigurationCompatibilityTests : JsonSerializat
     [Theory]
     [InlineData( "0123" )]
     [InlineData( "+123" )]
-    [InlineData( "-123" )]
     [InlineData( " 123" )]
     public void AnIdentityThatDoesNotRoundTripAsANumberGoesBeside( string auditKey )
     {
@@ -142,6 +141,23 @@ public sealed class LicenseAuditConfigurationCompatibilityTests : JsonSerializat
         Assert.Empty( configuration.LastAuditTimes );
         Assert.True( configuration.TryGetLastAuditTime( auditKey, out var lastAuditTime ) );
         Assert.Equal( _auditTime, lastAuditTime.ToUniversalTime() );
+    }
+
+    /// <summary>
+    /// A negative identity is a number like any other. The identity that the default provider gives is a hash
+    /// rendered as a <see cref="long"/>, so about half of the record of an existing installation looks like this, and
+    /// it has to stay where the versions that read it look.
+    /// </summary>
+    [Theory]
+    [InlineData( "-123" )]
+    [InlineData( "-9223372036854775808" )]
+    public void ANegativeIdentityIsStoredAsANumber( string auditKey )
+    {
+        var configuration = this.Roundtrip( new LicenseAuditConfiguration().SetLastAuditTime( auditKey, _auditTime ) );
+
+        Assert.Null( configuration.LastAuditTimesByKey );
+        Assert.Equal( _auditTime, Assert.Single( configuration.LastAuditTimes ).Value );
+        Assert.True( configuration.TryGetLastAuditTime( auditKey, out _ ) );
     }
 
     /// <summary>

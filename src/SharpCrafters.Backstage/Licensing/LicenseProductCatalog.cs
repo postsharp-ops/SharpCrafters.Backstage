@@ -110,7 +110,7 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
         // Built on first use rather than here, because an edition is given the catalog and this constructor would
         // give it one that is not finished. The delegate runs later, by which time it is.
         this._selfRegisteredEditions = new Lazy<ImmutableArray<SelfRegisteredEdition>>(
-            () => this.CreateEditions().Add( this.CreateTrialEdition() ),
+            () => this.Editions.Add( this.Trial ),
             LazyThreadSafetyMode.ExecutionAndPublication );
     }
 
@@ -124,22 +124,22 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions => this._selfRegisteredEditions.Value;
 
     /// <summary>
-    /// Creates the editions that the family gives away, other than the trial, in the order in which they are offered.
+    /// Gets the editions that the family gives away, other than the trial, in the order in which they are offered.
     /// </summary>
     /// <remarks>
     /// The default is that the family gives away nothing besides the trial, which is what a family that sells every
-    /// edition declares.
+    /// edition declares. It is read once, when <see cref="SelfRegisteredEditions"/> is first asked for.
     /// </remarks>
-    protected virtual ImmutableArray<SelfRegisteredEdition> CreateEditions() => ImmutableArray<SelfRegisteredEdition>.Empty;
+    protected virtual ImmutableArray<SelfRegisteredEdition> Editions => ImmutableArray<SelfRegisteredEdition>.Empty;
 
     /// <summary>
-    /// Creates the trial of the family.
+    /// Gets the trial of the family.
     /// </summary>
     /// <remarks>
     /// Every family offers one, so it is appended here rather than declared by each of them, and it comes last so that
     /// the setup pages offer the editions that cost nothing before the one that expires.
     /// </remarks>
-    protected virtual SelfRegisteredEdition CreateTrialEdition() => new TrialEdition( this );
+    protected virtual SelfRegisteredEdition Trial => new TrialEdition( this );
 
 #pragma warning restore CS0618
 }

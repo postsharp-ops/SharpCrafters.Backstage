@@ -124,7 +124,7 @@ public sealed class PostSharpTelemetryConfigurationSchemaTests : TestsBase
     public void TheRotationIsCountedFromTheSameMoment()
     {
         var moment = new DateTime( 2026, 9, 7, 10, 0, 0, DateTimeKind.Utc );
-        this.FeedbackKey().SetQWordValue( "DeviceIdTimestamp", RegistryValueCodec.DateTimeToQWord( moment ) );
+        this.FeedbackKey().SetQWordValue( "DeviceIdTimestamp", RegistryValueConverters.DateTimeToQWord( moment ) );
 
         Assert.Equal( moment, this.Read().LastSaltChangeTime!.Value.ToUniversalTime() );
     }

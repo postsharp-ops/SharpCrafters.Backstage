@@ -109,6 +109,6 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
     /// PostSharp gives away its Essentials edition, to everyone and asking nothing in return. The base class appends
     /// the trial.
     /// </remarks>
-    protected override ImmutableArray<SelfRegisteredEdition> CreateEditions()
+    protected override ImmutableArray<SelfRegisteredEdition> Editions
         => ImmutableArray.Create<SelfRegisteredEdition>( new PostSharpEssentialsEdition() );
 }
