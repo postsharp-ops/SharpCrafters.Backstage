@@ -55,19 +55,15 @@ public static class RegisterServiceExtensions
 
         serviceProviderBuilder.AddCoreServices( coreOptions );
 
-        // A product that shares a configuration object with its earlier versions says where it lives; every other one
-        // keeps everything in files. So does every product away from Windows, where there is no registry to share:
-        // the registry services are not registered at all there, rather than registered and then found to have
-        // nothing to read, so that nothing of that layer is constructed or reachable on a platform that has none.
-        if ( product.CreateConfigurationSchemas is { } createConfigurationSchemas
-             && RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
-        {
-            serviceProviderBuilder.AddRegistryConfigurationServices( createConfigurationSchemas );
-        }
-        else
-        {
-            serviceProviderBuilder.AddConfigurationServices();
-        }
+        // The services of the product are registered after those of this package, so that one of the same type
+        // replaces ours, and before the configuration services, so that a schema provider it registers is there to be
+        // found when the configuration manager is built.
+        product.RegisterServices?.Invoke( serviceProviderBuilder );
+
+        // Whether any configuration object lives in the registry is decided by whether the product registered a
+        // schema provider, and on Windows alone. A product that registered none, and every product away from Windows,
+        // gets the file-based manager and nothing of the registry layer.
+        serviceProviderBuilder.AddRegistryConfigurationServices();
 
         if ( options.AddSupportServices )
         {

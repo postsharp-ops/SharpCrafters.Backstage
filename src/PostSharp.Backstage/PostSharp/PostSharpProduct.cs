@@ -5,6 +5,7 @@
 using JetBrains.Annotations;
 using PostSharp.Backstage.Configuration;
 using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
@@ -117,7 +118,9 @@ public static class PostSharpProduct
     {
         // PostSharp shares the registered licenses, the telemetry consents, the leases and the record of the audits
         // with PostSharp 2026.0, through the registry keys that version reads and writes.
-        CreateConfigurationSchemas = serviceProvider =>
-            PostSharpConfigurationSchemas.Create( serviceProvider.GetRequiredBackstageService<IDateTimeProvider>() )
+        RegisterServices = services => services.AddService(
+            typeof(IRegistryConfigurationSchemaProvider),
+            serviceProvider => new PostSharpRegistryConfigurationSchemaProvider(
+                serviceProvider.GetRequiredBackstageService<IDateTimeProvider>() ) )
     };
 }

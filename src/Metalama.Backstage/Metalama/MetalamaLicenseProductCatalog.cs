@@ -23,7 +23,20 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     /// </summary>
     public static MetalamaLicenseProductCatalog Instance { get; } = new();
 
-    private MetalamaLicenseProductCatalog() { }
+    private MetalamaLicenseProductCatalog()
+    {
+        // Assigned here rather than from a property initializer, because an edition is given the catalog and a
+        // property initializer has no 'this' to give it. An edition only stores the catalog, so one that is still
+        // being constructed is no trouble.
+#pragma warning disable CS0612 // Type or member is obsolete: the legacy edition is still registrable.
+        this.SelfRegisteredEditions =
+        [
+            new MetalamaCommunityEdition(),
+            new MetalamaLegacyFreeEdition(),
+            new TrialEdition( this )
+        ];
+#pragma warning restore CS0612
+    }
 
 #pragma warning disable CS0618 // Type or member is obsolete: the catalog must name the products that are no longer offered.
 
@@ -99,12 +112,10 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     /// <inheritdoc />
     /// <remarks>
     /// Metalama gives away its Community edition, and still registers the free edition that its earlier versions
-    /// issued. The base class appends the trial.
+    /// issued. The trial comes last, so that the setup pages offer the editions that cost nothing before the one that
+    /// expires.
     /// </remarks>
-    protected override ImmutableArray<SelfRegisteredEdition> Editions
-#pragma warning disable CS0612 // Type or member is obsolete: the legacy edition is still registrable.
-        => ImmutableArray.Create<SelfRegisteredEdition>( new MetalamaCommunityEdition(), new MetalamaLegacyFreeEdition() );
-#pragma warning restore CS0612
+    public override ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
 
 #pragma warning restore CS0618
 }

@@ -119,43 +119,15 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     /// <inheritdoc />
     public abstract bool HasUnlicensedEdition { get; }
 
-    private readonly Lazy<ImmutableArray<SelfRegisteredEdition>> _selfRegisteredEditions;
-
-    protected LicenseProductCatalog()
-    {
-        // Built on first use rather than here, because an edition is given the catalog and this constructor would
-        // give it one that is not finished. The delegate runs later, by which time it is.
-        this._selfRegisteredEditions = new Lazy<ImmutableArray<SelfRegisteredEdition>>(
-            () => this.Editions.Add( this.Trial ),
-            LazyThreadSafetyMode.ExecutionAndPublication );
-    }
-
     /// <inheritdoc />
     /// <remarks>
-    /// Built exactly once, and not merely once per thread that asks first. An edition is compared by identity — it is
-    /// the object a caller passes back to <c>ILicenseRegistrationService.Register</c>, which checks that it belongs to
-    /// this family — so a second array of equivalent editions is not equivalent at all: a caller holding an edition of
-    /// the first array would be told that it is not an edition of this product.
+    /// Each family lists its own, trial included, and assigns the list in its constructor so that it is built once.
+    /// It has to be the same objects every time: an edition is compared by identity — it is the object a caller
+    /// passes back to <c>ILicenseRegistrationService.Register</c>, which checks that it belongs to this family — so a
+    /// second list of equivalent editions is not equivalent at all, and a caller holding one from the first would be
+    /// told that it is not an edition of this product.
     /// </remarks>
-    public ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions => this._selfRegisteredEditions.Value;
-
-    /// <summary>
-    /// Gets the editions that the family gives away, other than the trial, in the order in which they are offered.
-    /// </summary>
-    /// <remarks>
-    /// The default is that the family gives away nothing besides the trial, which is what a family that sells every
-    /// edition declares. It is read once, when <see cref="SelfRegisteredEditions"/> is first asked for.
-    /// </remarks>
-    protected virtual ImmutableArray<SelfRegisteredEdition> Editions => ImmutableArray<SelfRegisteredEdition>.Empty;
-
-    /// <summary>
-    /// Gets the trial of the family.
-    /// </summary>
-    /// <remarks>
-    /// Every family offers one, so it is appended here rather than declared by each of them, and it comes last so that
-    /// the setup pages offer the editions that cost nothing before the one that expires.
-    /// </remarks>
-    protected virtual SelfRegisteredEdition Trial => new TrialEdition( this );
+    public abstract ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
 
 #pragma warning restore CS0618
 }

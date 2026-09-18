@@ -23,7 +23,13 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
     /// </summary>
     public static PostSharpLicenseProductCatalog Instance { get; } = new();
 
-    private PostSharpLicenseProductCatalog() { }
+    private PostSharpLicenseProductCatalog()
+    {
+        // Assigned here rather than from a property initializer, because an edition is given the catalog and a
+        // property initializer has no 'this' to give it. An edition only stores the catalog, so one that is still
+        // being constructed is no trouble.
+        this.SelfRegisteredEditions = [new PostSharpEssentialsEdition(), new TrialEdition( this )];
+    }
 
     /// <summary>
     /// The products of the PostSharp family, in the order in which they are presented.
@@ -143,9 +149,8 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
 
     /// <inheritdoc />
     /// <remarks>
-    /// PostSharp gives away its Essentials edition, to everyone and asking nothing in return. The base class appends
-    /// the trial.
+    /// PostSharp gives away its Essentials edition, to everyone and asking nothing in return. The trial comes last,
+    /// so that the setup pages offer the edition that costs nothing before the one that expires.
     /// </remarks>
-    protected override ImmutableArray<SelfRegisteredEdition> Editions
-        => ImmutableArray.Create<SelfRegisteredEdition>( new PostSharpEssentialsEdition() );
+    public override ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
 }

@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Configuration.Registry;
+using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
@@ -31,20 +32,22 @@ public sealed record BackstageProduct(
     ILicenseProductCatalog LicenseProductCatalog )
 {
     /// <summary>
-    /// Gets the factory of the schemas that map the configuration objects the product keeps in the Windows registry,
-    /// or <see langword="null"/> when it keeps them all in files.
+    /// Gets the services that the product contributes, or <see langword="null"/> when it contributes none.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A product keeps a configuration object in the registry to share it with its earlier versions, which is what
-    /// PostSharp does. Declaring the schemas here rather than at each entry point means that every host of the
-    /// product reads and writes the same store: a host that forgot would quietly use files of its own and the two
-    /// versions would stop sharing anything.
+    /// This is where a product says the things only it knows. PostSharp registers an
+    /// <see cref="Configuration.Registry.IRegistryConfigurationSchemaProvider"/>, because it keeps several
+    /// configuration objects in the registry so as to share them with its earlier versions. Declaring the services
+    /// here rather than at each entry point means every host of the product gets the same answers: a host that forgot
+    /// would quietly get the defaults, and two versions of the product would stop agreeing about a store they share.
     /// </para>
     /// <para>
-    /// It is a factory over the service provider because a schema may need a service — the licensing one needs the
-    /// clock — and a product is described once, before any service exists.
+    /// They are registered after the services of this package, so a service registered here replaces the one of the
+    /// same type that this package registers. It is an action over a builder rather than a list of instances because
+    /// a service may need another service — a registry schema needs the clock — and a product is described once,
+    /// before any service exists.
     /// </para>
     /// </remarks>
-    public Func<IServiceProvider, IEnumerable<IRegistryConfigurationSchema>>? CreateConfigurationSchemas { get; init; }
+    public Action<ServiceProviderBuilder>? RegisterServices { get; init; }
 }
