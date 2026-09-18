@@ -6,7 +6,6 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Telemetry;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace PostSharp.Backstage.Configuration;

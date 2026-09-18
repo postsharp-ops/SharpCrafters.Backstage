@@ -4,6 +4,8 @@
 
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
+using System;
+using System.Collections.Generic;
 
 namespace SharpCrafters.Backstage.Configuration;
 
@@ -24,15 +26,19 @@ public static class RegisterConfigurationServices
     /// Windows registry service.
     /// </summary>
     /// <param name="serviceProviderBuilder">The builder.</param>
-    /// <param name="schemas">
-    /// Which configuration objects live in the registry, and where. They belong to the product, whose earlier
-    /// versions chose the names.
+    /// <param name="createSchemas">
+    /// Builds the schemas that say which configuration objects live in the registry, and where. They belong to the
+    /// product, whose earlier versions chose the names. It is a factory over the service provider because a schema
+    /// may need a service, and a product is described once, before any service exists.
     /// </param>
     public static ServiceProviderBuilder AddRegistryConfigurationServices(
         this ServiceProviderBuilder serviceProviderBuilder,
-        params IRegistryConfigurationSchema[] schemas )
+        Func<IServiceProvider, IEnumerable<IRegistryConfigurationSchema>> createSchemas )
         => serviceProviderBuilder
             .AddSingleton<IRegistryService>( _ => WindowsRegistryService.Instance )
             .AddSingleton<IConfigurationManager>(
-                serviceProvider => new RegistryConfigurationManager( serviceProvider, new ConfigurationManager( serviceProvider ), schemas ) );
+                serviceProvider => new RegistryConfigurationManager(
+                    serviceProvider,
+                    new ConfigurationManager( serviceProvider ),
+                    createSchemas( serviceProvider ) ) );
 }

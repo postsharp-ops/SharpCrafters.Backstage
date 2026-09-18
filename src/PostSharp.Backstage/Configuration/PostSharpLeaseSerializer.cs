@@ -68,7 +68,7 @@ internal static class PostSharpLeaseSerializer
 
         foreach ( var field in text!.Split( ';' ) )
         {
-            var separatorIndex = field.IndexOf( ':' );
+            var separatorIndex = field.IndexOf( ":", StringComparison.Ordinal );
 
             if ( separatorIndex < 0 )
             {

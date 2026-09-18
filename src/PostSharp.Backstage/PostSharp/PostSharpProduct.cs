@@ -3,8 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using PostSharp.Backstage.Configuration;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
@@ -101,7 +103,13 @@ public static class PostSharpProduct
     /// <summary>
     /// Gets the PostSharp product family, which binds the Backstage services to the values above.
     /// </summary>
-    public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog );
+    public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog )
+    {
+        // PostSharp shares the registered licenses, the telemetry consents, the leases and the record of the audits
+        // with PostSharp 2026.0, through the registry keys that version reads and writes.
+        CreateConfigurationSchemas = serviceProvider =>
+            PostSharpConfigurationSchemas.Create( serviceProvider.GetRequiredBackstageService<IDateTimeProvider>() )
+    };
 
     /// <summary>
     /// Reads the public key that encrypts the telemetry packages from the resources of the current assembly.
