@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -533,6 +533,96 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this.SetGitOutput( "" );
 
         Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+        Assert.Single( this.ProcessExecutor.StartedProcesses );
+    }
+
+    /// <summary>
+    /// Verifies that a caller which gives up while the record is being stored does not take the store down with it.
+    /// The record has been produced by a command that has already run, so abandoning the write would throw away work
+    /// the build has paid for and leave the next build node to repeat it.
+    /// </summary>
+    /// <remarks>
+    /// The write is what makes this possible: it is performed by the run, which carries no token, rather than by the
+    /// caller. A caller that could cancel the write would be cancelling it for every other caller as well, which is
+    /// the defect that <see cref="CancellingOneCallerDoesNotCancelTheOthers"/> covers on the waiting side and this
+    /// test covers on the storing side.
+    /// </remarks>
+    [Fact]
+    public async Task ACancelledCallerDoesNotAbandonTheStore()
+    {
+        this.CreateRepository( _repository );
+        var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
+        this.SetGitOutput( "" );
+
+        var service = this.CreateService();
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        this._sync.EnableSyncPoint( InsideCommand( _repository ) );
+        this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
+        this._sync.EnableSyncPoint( BeforeWritingFile( _repository ) );
+
+        // The first caller is held inside the command, so that the run is registered before the second caller looks
+        // for it. Without that, the second caller can arrive first and start a run of its own.
+        var cancelled = this.QueryAsync( service, file, cancellationTokenSource.Token );
+        await this.ReachedAsync( InsideCommand( _repository ) );
+
+        // A second caller joins the run. It is not the subject of the test: it is how the test observes that the
+        // write has finished, because the run publishes its result only after the record has been stored. Polling the
+        // file instead would make the assertion depend on a duration.
+        var joined = this.QueryAsync( service, file );
+        await this.ReachedAsync( JoinedQuery( _repository ) );
+        this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
+
+        this._sync.DisableSyncPoint( InsideCommand( _repository ) );
+        await this.ReachedAsync( BeforeWritingFile( _repository ) );
+
+        cancellationTokenSource.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>( async () => await this.WithTimeout( cancelled ) );
+
+        this._sync.DisableSyncPoint( BeforeWritingFile( _repository ) );
+
+        Assert.False( await this.WithTimeout( joined ) );
+
+        // A fresh instance stands for another build node: its memory layer is empty, so a hit here can only come from
+        // the file, and proves that the record of the cancelled caller was stored in full.
+        Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+        Assert.Single( this.ProcessExecutor.StartedProcesses );
+    }
+
+    /// <summary>
+    /// Verifies that a caller cancelled while the file layer is being read is reported as cancelled and leaves the
+    /// cache usable. The read belongs to the caller rather than to a shared run, so unlike the write it is cancelled
+    /// with the caller, and what has to be shown is that it leaves nothing behind.
+    /// </summary>
+    [Fact]
+    public async Task CancellingWhileReadingTheFileLeavesTheCacheUsable()
+    {
+        this.CreateRepository( _repository );
+        var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
+        this.SetGitOutput( "" );
+
+        // A first instance stores the record, so that the file layer has something for the next one to read.
+        Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+
+        // A second instance stands for another build node. Its memory layer is empty, so it reaches the file.
+        var second = this.CreateService();
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        this._sync.EnableSyncPoint( BeforeReadingFile( _repository ) );
+
+        var cancelled = this.QueryAsync( second, file, cancellationTokenSource.Token );
+        await this.ReachedAsync( BeforeReadingFile( _repository ) );
+
+        cancellationTokenSource.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>( async () => await this.WithTimeout( cancelled ) );
+
+        this._sync.DisableSyncPoint( BeforeReadingFile( _repository ) );
+
+        // The abandoned read stored nothing and spoiled nothing, so the same instance still obtains its verdict from
+        // the file rather than from a command of its own.
+        Assert.False( await this.WithTimeout( this.QueryAsync( second, file ) ) );
         Assert.Single( this.ProcessExecutor.StartedProcesses );
     }
 }
