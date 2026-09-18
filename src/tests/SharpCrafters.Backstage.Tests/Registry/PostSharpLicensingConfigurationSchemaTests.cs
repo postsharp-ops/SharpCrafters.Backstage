@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Testing;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Xunit;
@@ -96,7 +97,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         key.SetStringValue( "0", "first-key" );
         key.SetStringValue( "1", "second-key" );
 
-        Assert.Equal( ["first-key", "second-key"], this.Read().Licenses.ToArray() );
+        Assert.Equal<IEnumerable<string?>>( ["first-key", "second-key"], this.Read().Licenses.ToArray() );
     }
 
     /// <summary>
@@ -111,7 +112,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         key.SetStringValue( "2", "third-key" );
         key.SetStringValue( "0", "first-key" );
 
-        Assert.Equal( ["first-key", "third-key", "eleventh-key"], this.Read().Licenses.ToArray() );
+        Assert.Equal<IEnumerable<string?>>( ["first-key", "third-key", "eleventh-key"], this.Read().Licenses.ToArray() );
     }
 
     /// <summary>
@@ -125,7 +126,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         key.SetStringValue( "0", "first-key" );
         key.SetStringValue( "AddedByHand", "hand-written-key" );
 
-        Assert.Equal( ["first-key", "hand-written-key"], this.Read().Licenses.ToArray() );
+        Assert.Equal<IEnumerable<string?>>( ["first-key", "hand-written-key"], this.Read().Licenses.ToArray() );
     }
 
     /// <summary>
@@ -138,7 +139,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         key.SetStringValue( "0", "" );
         key.SetStringValue( "1", "a-key" );
 
-        Assert.Equal( ["a-key"], this.Read().Licenses.ToArray() );
+        Assert.Equal<IEnumerable<string?>>( ["a-key"], this.Read().Licenses.ToArray() );
     }
 
     /// <summary>
@@ -154,7 +155,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         var groups = this.Read().LicensesByMinimalVersion;
 
         Assert.NotNull( groups );
-        Assert.Equal( ["a-2027-key"], groups["2027.0.0"].ToArray() );
+        Assert.Equal<IEnumerable<string?>>( ["a-2027-key"], groups["2027.0.0"].ToArray() );
     }
 
     /// <summary>
@@ -218,7 +219,7 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         this.Update( c => c with { Licenses = ImmutableArray.Create<string?>( "second-key" ) } );
 
         var key = this.LicenseKeysKey();
-        Assert.Equal( ["second-key"], key.GetValueNames().Select( key.GetString ).ToArray() );
+        Assert.Equal<IEnumerable<string?>>( ["second-key"], key.GetValueNames().Select( key.GetString ).ToArray() );
     }
 
     /// <summary>
@@ -338,8 +339,8 @@ public sealed class PostSharpLicensingConfigurationSchemaTests : TestsBase
         var configuration = this.Read();
 
         Assert.Equal( legacyKey, configuration.LegacyLicense );
-        Assert.Equal( [currentKey, licenseServerUrl], configuration.Licenses.ToArray() );
-        Assert.Equal( [versionedKey], configuration.LicensesByMinimalVersion!["6.9.3"].ToArray() );
+        Assert.Equal<IEnumerable<string?>>( [currentKey, licenseServerUrl], configuration.Licenses.ToArray() );
+        Assert.Equal<IEnumerable<string?>>( [versionedKey], configuration.LicensesByMinimalVersion!["6.9.3"].ToArray() );
         Assert.Equal( new DateTime( 2026, 8, 1, 0, 0, 0, DateTimeKind.Utc ), configuration.LastEvaluationStartDate!.Value.ToUniversalTime() );
 
         // Every bucket reaches the consumer, in the order in which the buckets were introduced, and the license
