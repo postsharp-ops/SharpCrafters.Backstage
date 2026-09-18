@@ -26,9 +26,9 @@ public sealed class ReportContentLicenseAuditKeyProvider : ILicenseAuditKeyProvi
 
     /// <inheritdoc />
     /// <remarks>
-    /// The hash is rendered in decimal, which is how it was written when this record was keyed by the number itself,
-    /// so an existing record keeps being read.
+    /// The hash is the identity itself, and it goes in the record that every released version reads as numbers, which
+    /// is where this product has always written it.
     /// </remarks>
-    public string GetAuditKey( LicenseConsumptionProperties license, long reportHashCode )
-        => reportHashCode.ToString( CultureInfo.InvariantCulture );
+    public LicenseAuditKey GetAuditKey( LicenseConsumptionProperties license, long reportHashCode )
+        => LicenseAuditKey.FromNumber( reportHashCode );
 }

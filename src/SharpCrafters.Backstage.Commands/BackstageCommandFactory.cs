@@ -88,6 +88,10 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( "Displays the contents of a configuration file in the console." );
 
+                        config.AddCommand<DumpConfigurationCommand>( "dump" )
+                            .WithData( options )
+                            .WithDescription( "Writes every configuration, or one of them, to the console as a single JSON document." );
+
                         config.AddCommand<ValidateConfigurationCommand>( "validate" )
                             .WithData( options )
                             .WithDescription( "Validates a configuration file against its schema." );

@@ -21,6 +21,12 @@ internal abstract class ConfigurationFileCommandAdapter
 
     public virtual string? EnvironmentVariableName => null;
 
+    /// <summary>
+    /// Gets the type of the configuration object, so that a caller can read and serialize it through
+    /// <see cref="IConfigurationManager"/> without knowing that type at compile time.
+    /// </summary>
+    public abstract Type ConfigurationType { get; }
+
     public abstract void Print( ExtendedCommandContext context );
 
     public abstract void Reset( ExtendedCommandContext context );
@@ -51,6 +57,8 @@ internal sealed class ConfigurationFileCommandAdapter<T> : ConfigurationFileComm
     public override string? Description { get; }
 
     public override string? EnvironmentVariableName => this._attribute.EnvironmentVariableName;
+
+    public override Type ConfigurationType => typeof(T);
 
     public override void Print( ExtendedCommandContext context )
     {

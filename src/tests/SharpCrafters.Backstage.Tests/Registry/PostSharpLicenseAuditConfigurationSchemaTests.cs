@@ -13,6 +13,7 @@ using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Testing;
 using System;
+using System.Globalization;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -92,9 +93,29 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
 
         Assert.True( LicenseKeyData.TryDeserialize( licenseKey, out var licenseKeyData, out _ ) );
 
+        // Text, so that it is filed among the licences and not among the hashes of report content, whatever the
+        // identity happens to look like.
         Assert.Equal(
-            licenseKeyData.LicenseUniqueId,
+            LicenseAuditKey.FromText( licenseKeyData.LicenseUniqueId ),
             PostSharpLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( licenseKey ), 1234 ) );
+    }
+
+    /// <summary>
+    /// A licence whose key carries no globally unique identifier is identified by its number, and that number is
+    /// still a licence: it is given as text, so nothing can read it as a hash of report content.
+    /// </summary>
+    [Fact]
+    public void ALicenceIdentifiedByItsNumberIsStillALicence()
+    {
+        var licenseKey = new TestLicenseKeyProvider().PostSharpThreading;
+
+        Assert.True( LicenseKeyData.TryDeserialize( licenseKey, out var licenseKeyData, out _ ) );
+        Assert.Null( licenseKeyData.LicenseGuid );
+
+        var auditKey = PostSharpLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( licenseKey ), 1234 );
+
+        Assert.Equal( LicenseAuditKey.FromText( licenseKeyData.LicenseId.ToString( CultureInfo.InvariantCulture ) ), auditKey );
+        Assert.IsType<string>( auditKey.Value );
     }
 
     /// <summary>
@@ -104,8 +125,8 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     [Fact]
     public void ALicenseThatIsNotAKeyIsKeyedByItsReport()
     {
-        Assert.Equal( "1234", PostSharpLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( null ), 1234 ) );
-        Assert.Equal( "1234", PostSharpLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( "not-a-license-key" ), 1234 ) );
+        Assert.Equal( LicenseAuditKey.FromNumber( 1234 ), PostSharpLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( null ), 1234 ) );
+        Assert.Equal( LicenseAuditKey.FromNumber( 1234 ), PostSharpLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( "not-a-license-key" ), 1234 ) );
     }
 
     /// <summary>
@@ -114,7 +135,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     /// </summary>
     [Fact]
     public void TheDefaultThrottlesByTheReport()
-        => Assert.Equal( "-42", ReportContentLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( null ), -42 ) );
+        => Assert.Equal( LicenseAuditKey.FromNumber( -42 ), ReportContentLicenseAuditKeyProvider.Instance.GetAuditKey( ALicense( null ), -42 ) );
 
     /// <summary>
     /// A license that PostSharp 2026.0 has audited today is not audited again by this version.
@@ -125,7 +146,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
         this.AuditKey().SetQWordValue( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", RegistryValueConverters.DateTimeToQWord( auditTime ) );
 
-        Assert.True( this.Read().TryGetLastAuditTime( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", out var lastAuditTime ) );
+        Assert.True( this.Read().TryGetLastAuditTime( LicenseAuditKey.FromText( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f" ), out var lastAuditTime ) );
         Assert.Equal( auditTime, lastAuditTime.ToUniversalTime() );
     }
 
@@ -138,7 +159,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     {
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
 
-        this.Update( c => c.SetLastAuditTime( "a-license-identity", auditTime ) );
+        this.Update( c => c.SetLastAuditTime( LicenseAuditKey.FromText( "a-license-identity" ), auditTime ) );
 
         var stored = this.AuditKey().GetValue( "a-license-identity" );
 
@@ -156,25 +177,59 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     {
         this.AuditKey().SetQWordValue( "written-by-the-other-version", RegistryValueConverters.DateTimeToQWord( DateTime.UtcNow ) );
 
-        this.Update( c => c.SetLastAuditTime( "ours", DateTime.UtcNow ) );
+        this.Update( c => c.SetLastAuditTime( LicenseAuditKey.FromText( "ours" ), DateTime.UtcNow ) );
 
         Assert.NotNull( this.AuditKey().GetValue( "written-by-the-other-version" ) );
     }
 
     /// <summary>
-    /// A licence that the other version identifies by its number is read into the member that an earlier version of
-    /// this one reads, and not beside it.
+    /// A licence that the other version identifies by its number is still a licence, so it is read as one and not as
+    /// a hash of report content.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// PostSharp 2026.0 names a value after the identity of the licence, which is its number when the licence key
+    /// carries no globally unique identifier. Such a name looks exactly like the numbers of the other record, which
+    /// are hashes of the content of a report, and means something entirely different.
+    /// </para>
+    /// <para>
+    /// This was read as a hash until the identity was made to say which record it belongs to. On a real machine the
+    /// two were already mixed: the record there holds sixty-eight identifiers and three numbers, and the three are
+    /// licences.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public void ANumericIdentityOfTheOtherVersionIsReadAsANumber()
+    public void ANumericIdentityOfTheOtherVersionIsALicenceAndNotAHash()
     {
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
         this.AuditKey().SetQWordValue( "22", RegistryValueConverters.DateTimeToQWord( auditTime ) );
 
         var configuration = this.Read();
 
-        Assert.Equal( auditTime, configuration.LastAuditTimes[22].ToUniversalTime() );
-        Assert.Null( configuration.LastAuditTimesByKey );
+        Assert.Equal( auditTime, configuration.LastAuditTimesByString!["22"].ToUniversalTime() );
+        Assert.Empty( configuration.LastAuditTimesByLong );
+
+        // And it answers for the licence, not for a report that hashes to the same number.
+        Assert.True( configuration.TryGetLastAuditTime( LicenseAuditKey.FromText( "22" ), out _ ) );
+        Assert.False( configuration.TryGetLastAuditTime( LicenseAuditKey.FromNumber( 22 ), out _ ) );
+    }
+
+    /// <summary>
+    /// A registry key holds one namespace, so a licence identified by a number and a report hash of the same number
+    /// would be one value. This product never files a report hash, so the case cannot arise; a number that reached
+    /// the key before that was so is carried over to the record it belongs in rather than dropped.
+    /// </summary>
+    [Fact]
+    public void ANumberOfTheOtherRecordIsCarriedOver()
+    {
+        var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
+
+        this.Update( c => c.SetLastAuditTime( LicenseAuditKey.FromNumber( 4242 ), auditTime ) );
+
+        var configuration = this.Read();
+
+        Assert.Equal( auditTime, configuration.LastAuditTimesByString!["4242"].ToUniversalTime() );
+        Assert.Empty( configuration.LastAuditTimesByLong );
     }
 
     /// <summary>
@@ -191,7 +246,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
         var configuration = this.Read();
 
         Assert.Equal( auditTime, configuration.LastMatomoAuditTime!.Value.ToUniversalTime() );
-        Assert.Empty( configuration.LastAuditTimes );
-        Assert.Null( configuration.LastAuditTimesByKey );
+        Assert.Empty( configuration.LastAuditTimesByLong );
+        Assert.Null( configuration.LastAuditTimesByString );
     }
 }

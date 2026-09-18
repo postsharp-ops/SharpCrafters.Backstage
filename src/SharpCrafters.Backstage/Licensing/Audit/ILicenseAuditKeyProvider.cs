@@ -35,5 +35,11 @@ public interface ILicenseAuditKeyProvider
     /// version of the product, the build date or the consent to usage reporting changes.
     /// </param>
     /// <returns>The identity, which is the key under which the moment of the last audit is recorded.</returns>
-    string GetAuditKey( LicenseConsumptionProperties license, long reportHashCode );
+    /// <remarks>
+    /// The identity says which of the two records it belongs in, through
+    /// <see cref="LicenseAuditKey.FromNumber"/> or <see cref="LicenseAuditKey.FromText"/>. That is part of the answer
+    /// and not a detail of it: only the product knows whether what it returns is one of the numbers that every
+    /// released version reads, and an identity that merely looks like one is not.
+    /// </remarks>
+    LicenseAuditKey GetAuditKey( LicenseConsumptionProperties license, long reportHashCode );
 }

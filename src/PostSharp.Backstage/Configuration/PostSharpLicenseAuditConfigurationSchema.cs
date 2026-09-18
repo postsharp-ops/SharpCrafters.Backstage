@@ -55,7 +55,11 @@ internal sealed class PostSharpLicenseAuditConfigurationSchema : RegistryConfigu
 
                 if ( key.GetDateTime( name ) is { } lastAuditTime )
                 {
-                    configuration = configuration.SetLastAuditTime( name, lastAuditTime );
+                    // Every name is read as text, including the ones that are numbers. A licence of this product is
+                    // identified by its number when its key carries no globally unique identifier, and that number
+                    // identifies a licence and not a report, so it does not belong among the report hashes that the
+                    // other record holds. See PostSharpLicenseAuditKeyProvider.
+                    configuration = configuration.SetLastAuditTime( LicenseAuditKey.FromText( name ), lastAuditTime );
                 }
             }
         }
@@ -65,14 +69,17 @@ internal sealed class PostSharpLicenseAuditConfigurationSchema : RegistryConfigu
 
     protected override void Write( IRegistryKey key, LicenseAuditConfiguration configuration )
     {
-        foreach ( var lastAuditTime in configuration.LastAuditTimes )
-        {
-            key.SetDateTime( lastAuditTime.Key.ToString( CultureInfo.InvariantCulture ), lastAuditTime.Value );
-        }
-
-        foreach ( var lastAuditTime in configuration.LastAuditTimesByKey ?? ImmutableDictionary<string, DateTime>.Empty )
+        foreach ( var lastAuditTime in configuration.LastAuditTimesByString ?? ImmutableDictionary<string, DateTime>.Empty )
         {
             key.SetDateTime( lastAuditTime.Key, lastAuditTime.Value );
+        }
+
+        // The record of the report hashes is written too, although this product never adds to it: a registry key has
+        // one namespace, so an entry that reached it before this product stopped filing numbers there would otherwise
+        // be dropped on the next write. It is read back as text, so it moves to the other record and stays there.
+        foreach ( var lastAuditTime in configuration.LastAuditTimesByLong )
+        {
+            key.SetDateTime( lastAuditTime.Key.ToString( CultureInfo.InvariantCulture ), lastAuditTime.Value );
         }
 
         key.SetDateTime( _lastAggregateAuditValueName, configuration.LastMatomoAuditTime );

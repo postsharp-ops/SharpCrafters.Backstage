@@ -183,9 +183,9 @@ public sealed class RegistryConfigurationRoundTripTests : TestsBase
                 {
                     LastMatomoAuditTime = new DateTime( 2026, 9, 10, 9, 0, 0, DateTimeKind.Utc )
                 }
-                .SetLastAuditTime( "22", new DateTime( 2026, 9, 11, 9, 0, 0, DateTimeKind.Utc ) )
-                .SetLastAuditTime( "-987654321", new DateTime( 2026, 9, 12, 9, 0, 0, DateTimeKind.Utc ) )
-                .SetLastAuditTime( "063454dd-f597-4dd0-a943-ff78a78090c7", new DateTime( 2026, 9, 13, 9, 0, 0, DateTimeKind.Utc ) ) );
+                .SetLastAuditTime( LicenseAuditKey.FromText( "22" ), new DateTime( 2026, 9, 11, 9, 0, 0, DateTimeKind.Utc ) )
+                .SetLastAuditTime( LicenseAuditKey.FromText( "-987654321" ), new DateTime( 2026, 9, 12, 9, 0, 0, DateTimeKind.Utc ) )
+                .SetLastAuditTime( LicenseAuditKey.FromText( "063454dd-f597-4dd0-a943-ff78a78090c7" ), new DateTime( 2026, 9, 13, 9, 0, 0, DateTimeKind.Utc ) ) );
 
     /// <summary>
     /// Writing the same object twice leaves the store saying the same thing, and the second write reports that

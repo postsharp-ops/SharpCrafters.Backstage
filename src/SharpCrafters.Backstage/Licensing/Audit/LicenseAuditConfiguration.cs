@@ -16,28 +16,32 @@ namespace SharpCrafters.Backstage.Licensing.Audit;
 public record LicenseAuditConfiguration : ConfigurationFile
 {
     /// <summary>
-    /// Gets the moment of the last audit of each licence, keyed by the number that identifies it.
+    /// Gets the moment of the last audit of each audited thing that a number identifies, which is every one of them
+    /// for a product whose identities are hashes of the content of a report.
     /// </summary>
     /// <remarks>
-    /// Keyed by a number, and not by the string that <see cref="ILicenseAuditKeyProvider"/> returns, because every
-    /// version of the product reads this file and the versions released before that provider existed read the key as
-    /// a number. Writing something else here would make them fail to read a file this version has written, on a
-    /// machine where both are installed. An identity that is not a number goes to
-    /// <see cref="LastAuditTimesByKey"/>, which those versions ignore.
+    /// Keyed by a number because every version of the product reads this file, and the versions released before an
+    /// identity could be anything else read the key as a number. Writing something else here would make them fail to
+    /// read a file this version has written, on a machine where both are installed. An identity that is not one of
+    /// these numbers goes to <see cref="LastAuditTimesByString"/>, which those versions ignore — including an identity
+    /// that merely looks like a number, because it is not one of these.
     /// </remarks>
-    public ImmutableDictionary<long, DateTime> LastAuditTimes { get; init; } = ImmutableDictionary<long, DateTime>.Empty;
+    [JsonPropertyName( "LastAuditTimes" )]
+    public ImmutableDictionary<long, DateTime> LastAuditTimesByLong { get; init; } = ImmutableDictionary<long, DateTime>.Empty;
 
     /// <summary>
-    /// Gets the moment of the last audit of each audited thing that no number identifies, keyed by the identity that
-    /// <see cref="ILicenseAuditKeyProvider"/> gives it.
+    /// Gets the moment of the last audit of each audited thing that <see cref="ILicenseAuditKeyProvider"/> identifies
+    /// by something other than one of those numbers.
     /// </summary>
     /// <remarks>
-    /// What identifies an audit is a product decision, and not every product identifies it by a number: PostSharp
-    /// identifies a licence by a globally unique identifier when it has one. The member is absent from the file when
-    /// it is empty, so a product whose identities are all numbers writes the file it has always written.
+    /// What identifies an audit is a product decision: PostSharp identifies a licence by its globally unique
+    /// identifier, or by its number when the licence key carries none, and neither belongs among the hashes that
+    /// <see cref="LastAuditTimesByLong"/> holds. The member is absent from the file when it is empty, so a product whose
+    /// identities are all numbers writes the file it has always written.
     /// </remarks>
+    [JsonPropertyName( "LastAuditTimesByKey" )]
     [JsonIgnore( Condition = JsonIgnoreCondition.WhenWritingDefault )]
-    public ImmutableDictionary<string, DateTime>? LastAuditTimesByKey { get; init; }
+    public ImmutableDictionary<string, DateTime>? LastAuditTimesByString { get; init; }
 
     public DateTime? LastMatomoAuditTime { get; init; }
 
@@ -50,21 +54,22 @@ public record LicenseAuditConfiguration : ConfigurationFile
     /// <param name="auditKey">The identity that <see cref="ILicenseAuditKeyProvider"/> gives it.</param>
     /// <param name="lastAuditTime">The moment of the last audit.</param>
     /// <returns><see langword="false"/> when it has never been audited.</returns>
-    public bool TryGetLastAuditTime( string auditKey, out DateTime lastAuditTime )
+    public bool TryGetLastAuditTime( LicenseAuditKey auditKey, out DateTime lastAuditTime )
     {
-        if ( TryParseNumericKey( auditKey, out var numericKey ) )
+        if ( auditKey.Value is long number )
         {
-            return this.LastAuditTimes.TryGetValue( numericKey, out lastAuditTime );
+            return this.LastAuditTimesByLong.TryGetValue( number, out lastAuditTime );
         }
-
-        if ( this.LastAuditTimesByKey is { } byKey )
+        else if ( auditKey.Value is string text && this.LastAuditTimesByString is { } byKey )
         {
-            return byKey.TryGetValue( auditKey, out lastAuditTime );
+            return byKey.TryGetValue( text, out lastAuditTime );
         }
+        else
+        {
+            lastAuditTime = default;
 
-        lastAuditTime = default;
-
-        return false;
+            return false;
+        }
     }
 
     /// <summary>
@@ -72,32 +77,25 @@ public record LicenseAuditConfiguration : ConfigurationFile
     /// </summary>
     /// <param name="auditKey">The identity that <see cref="ILicenseAuditKeyProvider"/> gives it.</param>
     /// <param name="lastAuditTime">The moment of the audit.</param>
-    public LicenseAuditConfiguration SetLastAuditTime( string auditKey, DateTime lastAuditTime )
-        => TryParseNumericKey( auditKey, out var numericKey )
-            ? this with { LastAuditTimes = this.LastAuditTimes.SetItem( numericKey, lastAuditTime ) }
-            : this with
+    public LicenseAuditConfiguration SetLastAuditTime( LicenseAuditKey auditKey, DateTime lastAuditTime )
+    {
+        if ( auditKey.Value is long number )
+        {
+            return this with { LastAuditTimesByLong = this.LastAuditTimesByLong.SetItem( number, lastAuditTime ) };
+        }
+        else if ( auditKey.Value is string text )
+        {
+            return this with
             {
-                LastAuditTimesByKey = (this.LastAuditTimesByKey ?? ImmutableDictionary<string, DateTime>.Empty)
-                    .SetItem( auditKey, lastAuditTime )
+                LastAuditTimesByString = (this.LastAuditTimesByString ?? ImmutableDictionary<string, DateTime>.Empty)
+                    .SetItem( text, lastAuditTime )
             };
-
-    /// <summary>
-    /// Determines whether an identity is one that the versions reading this file as a number understand.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A leading sign is allowed, because the identity that the default provider gives is a hash rendered as a
-    /// <see cref="long"/> and about half of those are negative. Rejecting them would send half of the record of an
-    /// existing installation to <see cref="LastAuditTimesByKey"/>, where the versions this is meant to keep reading
-    /// it do not look — the opposite of the point.
-    /// </para>
-    /// <para>
-    /// The rendered form still has to match the identity exactly, and not merely parse: an identity with a leading
-    /// zero or a leading plus parses to a number that is written back differently, and the entry would then be looked
-    /// for under a name other than the one it was stored under.
-    /// </para>
-    /// </remarks>
-    private static bool TryParseNumericKey( string auditKey, out long numericKey )
-        => long.TryParse( auditKey, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out numericKey )
-           && string.Equals( numericKey.ToString( CultureInfo.InvariantCulture ), auditKey, StringComparison.Ordinal );
+        }
+        else
+        {
+            // A default instance identifies nothing, so there is no record to put it in. Recording it under some
+            // substitute would throttle the audit of every license that also failed to be identified.
+            throw new ArgumentException( "The audit key identifies nothing.", nameof(auditKey) );
+        }
+    }
 }

@@ -41,12 +41,16 @@ public sealed class PostSharpLicenseAuditKeyProvider : ILicenseAuditKeyProvider
     /// a test invents — has no identity of its own, and is throttled by the content of its report instead, which is
     /// the behaviour of every other product.
     /// </remarks>
-    public string GetAuditKey( LicenseConsumptionProperties license, long reportHashCode )
+    public LicenseAuditKey GetAuditKey( LicenseConsumptionProperties license, long reportHashCode )
     {
         if ( license.LicenseString != null
              && LicenseKeyData.TryDeserialize( license.LicenseString, out var licenseKeyData, out _ ) )
         {
-            return licenseKeyData.LicenseUniqueId;
+            // Text, and never a number, although the identity of a license that carries no globally unique identifier
+            // is its number: it belongs to the licenses of this product and not to the hashes of report content that
+            // the other record holds, and the two share no meaning. PostSharp 2026.0 names a registry value after
+            // this identity whatever its shape, so both shapes reach the same record and are read from it.
+            return LicenseAuditKey.FromText( licenseKeyData.LicenseUniqueId );
         }
 
         return ReportContentLicenseAuditKeyProvider.Instance.GetAuditKey( license, reportHashCode );
