@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -25,6 +25,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
     private readonly MatomoUploader? _matomoAuditUploader;
     private readonly BackstageBackgroundTasksService _backgroundTasksService;
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
+    private readonly ProductProfile _productProfile;
 
     public LicenseAuditManager( IServiceProvider serviceProvider )
     {
@@ -38,6 +39,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
         this._matomoAuditUploader = serviceProvider.GetBackstageService<MatomoUploader>();
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
+        this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
     }
 
     public void ReportLicense( LicenseConsumptionProperties license )
@@ -76,11 +78,13 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
             throw new InvalidOperationException( $"Version of '{report.ReportedComponent.Name}' application is unknown." );
         }
 
-        // Perform detailed audit.
+        // Perform detailed audit. What counts as the same audit is decided by the product: see ILicenseAuditKeyProvider.
+        var auditKey = this._productProfile.LicenseAuditKeyProvider.GetAuditKey( license, report.AuditHashCode );
+
         var mustPerformAudit = this._configurationManager.UpdateIf<LicenseAuditConfiguration>(
-            c => !c.LastAuditTimes.TryGetValue( report.AuditHashCode, out var lastReportTime )
+            c => !c.LastAuditTimes.TryGetValue( auditKey, out var lastReportTime )
                  || lastReportTime <= this._time.UtcNow.AddDays( -1 ),
-            c => c with { LastAuditTimes = c.LastAuditTimes.SetItem( report.AuditHashCode, this._time.UtcNow ) } );
+            c => c with { LastAuditTimes = c.LastAuditTimes.SetItem( auditKey, this._time.UtcNow ) } );
 
         if ( !mustPerformAudit )
         {

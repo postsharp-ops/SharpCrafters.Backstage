@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -420,8 +420,10 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
     {
         var input = new LicenseAuditConfiguration
         {
-            LastAuditTimes = ImmutableDictionary<long, DateTime>.Empty
-                .Add( 12345L, new DateTime( 2025, 1, 15, 10, 0, 0, DateTimeKind.Utc ) ),
+            // The key is a string, and the expected JSON below is unchanged: a number was written as its decimal
+            // form, which is what the default key provider still produces, so an existing file keeps being read.
+            LastAuditTimes = ImmutableDictionary<string, DateTime>.Empty
+                .Add( "12345", new DateTime( 2025, 1, 15, 10, 0, 0, DateTimeKind.Utc ) ),
             LastMatomoAuditTime = new DateTime( 2025, 1, 14, 8, 0, 0, DateTimeKind.Utc ),
             Version = 1
         };

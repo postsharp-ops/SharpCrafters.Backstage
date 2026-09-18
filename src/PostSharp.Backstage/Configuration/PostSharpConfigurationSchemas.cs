@@ -19,17 +19,9 @@ namespace PostSharp.Backstage.Configuration;
 /// this version invented has nothing to share and a file is the better store for it.
 /// </para>
 /// <para>
-/// Two objects that might be expected here are deliberately absent.
-/// </para>
-/// <para>
-/// The license audit throttle is not shared. PostSharp 2026.0 keys it by the identity of the license, and this
-/// version keys it by a hash of the audit report, so an entry of one would never match a lookup of the other; the
-/// two would write into one key and neither would read what the other wrote.
-/// </para>
-/// <para>
-/// The toast notifications are not shared. PostSharp 2026.0 has a handful of named settings for the questions it
-/// asks, and this version has a snooze and a mute for each kind of notification. The two do not correspond, and a
-/// mapping between them would be invented rather than observed.
+/// The toast notifications are deliberately absent. PostSharp 2026.0 has a handful of named settings for the
+/// questions it asks, and this version has a snooze and a mute for each kind of notification. The two do not
+/// correspond, and a mapping between them would be invented rather than observed. See metalama/Metalama#2038.
 /// </para>
 /// </remarks>
 [PublicAPI]
@@ -45,6 +37,7 @@ public static class PostSharpConfigurationSchemas
         [
             new PostSharpLicensingConfigurationSchema( dateTimeProvider ),
             new PostSharpTelemetryConfigurationSchema(),
-            new PostSharpLicenseServerConfigurationSchema()
+            new PostSharpLicenseServerConfigurationSchema(),
+            new PostSharpLicenseAuditConfigurationSchema()
         ];
 }

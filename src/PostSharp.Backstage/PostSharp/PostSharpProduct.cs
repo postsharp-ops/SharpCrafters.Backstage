@@ -58,7 +58,11 @@ public static class PostSharpProduct
     {
         LongName = "PostSharp",
         ToolAssemblyNamePrefix = "PostSharp.Backstage",
-        LogoName = "postsharp"
+        LogoName = "postsharp",
+
+        // PostSharp asks whether a license has been audited today, and not whether a report has been sent today,
+        // which is what lets the record be shared with PostSharp 2026.0.
+        LicenseAuditKeyProvider = PostSharpLicenseAuditKeyProvider.Instance
     };
 
     /// <summary>
