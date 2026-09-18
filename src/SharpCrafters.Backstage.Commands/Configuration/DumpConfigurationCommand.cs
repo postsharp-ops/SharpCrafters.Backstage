@@ -31,7 +31,8 @@ namespace SharpCrafters.Backstage.Commands.Configuration;
 /// </para>
 /// <para>
 /// The output goes to the console as one document rather than as a table, so that it can be redirected to a file and
-/// given to anything that reads JSON. <c>config print</c> remains the way to look at one configuration on its own.
+/// given to anything that reads JSON, and is indented so that it can also be read by eye. <c>config print</c> remains
+/// the way to look at one configuration on its own.
 /// </para>
 /// </remarks>
 internal sealed class DumpConfigurationCommand : BaseCommand<DumpConfigurationCommandSettings>
@@ -75,10 +76,14 @@ internal sealed class DumpConfigurationCommand : BaseCommand<DumpConfigurationCo
             {
                 var configuration = configurationManager.Get( adapter.ConfigurationType );
 
-                // Written as it was serialized rather than re-encoded, so that the dump of one configuration is
-                // exactly what 'config print' shows for it.
+                // Parsed and written through the writer rather than copied in as it was serialized, so that it is
+                // indented from its own key instead of carrying the indentation it was serialized with, which starts
+                // at the margin and leaves the document unreadable. Only the whitespace differs: the serializer and
+                // the writer escape by the same rules, so every value is written exactly as 'config print' writes it.
+                using var value = JsonDocument.Parse( jsonService.Serialize( configuration, adapter.ConfigurationType ) );
+
                 writer.WritePropertyName( adapter.Alias );
-                writer.WriteRawValue( jsonService.Serialize( configuration, adapter.ConfigurationType ) );
+                value.RootElement.WriteTo( writer );
             }
 
             writer.WriteEndObject();

@@ -82,6 +82,46 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands.Configuration
             Assert.False( configurations.GetProperty( "rss" ).TryGetProperty( "value", out _ ) );
         }
 
+        /// <summary>
+        /// Every line of a configuration is indented under its key, rather than starting at the margin.
+        /// </summary>
+        /// <remarks>
+        /// A configuration is serialized on its own, with its own indentation, and copying that in verbatim produced
+        /// a document that parsed but could not be read: each value opened at its key and then fell back to column
+        /// zero. The values themselves are unchanged, so this is about nothing but whitespace — which is the reason
+        /// it is worth a test, because nothing else would fail if it came back.
+        /// </remarks>
+        [Fact]
+        public async Task TheConfigurationsAreIndentedUnderTheirKey()
+        {
+            var output = await this.GetCommandOutputAsync( "config dump telemetry" );
+
+            var lines = output.Split( '\n' )
+                .Select( line => line.TrimEnd( '\r' ) )
+                .Where( line => line.Length > 0 )
+                .ToArray();
+
+            // "configurations" sits at one level, its one key at two, and the members of that configuration at three.
+            var configurationsLine = Assert.Single( lines.Where( l => l.Contains( "\"configurations\"", StringComparison.Ordinal ) ) );
+            var aliasLine = Assert.Single( lines.Where( l => l.Contains( "\"telemetry\"", StringComparison.Ordinal ) ) );
+
+            var indent = new Func<string, int>( line => line.Length - line.TrimStart( ' ' ).Length );
+
+            Assert.Equal( 2, indent( configurationsLine ) );
+            Assert.Equal( 4, indent( aliasLine ) );
+
+            // Nothing inside a configuration is at the margin or shallower than its key.
+            foreach ( var line in lines )
+            {
+                if ( line is "{" or "}" )
+                {
+                    continue;
+                }
+
+                Assert.True( indent( line ) >= 2, $"This line is not indented: '{line}'." );
+            }
+        }
+
         [Fact]
         public async Task TheConfigurationsAreSortedByAlias()
         {
