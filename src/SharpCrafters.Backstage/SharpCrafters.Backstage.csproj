@@ -49,9 +49,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- The Metalama composition and the test projects need the internal types. -->
-        <InternalsVisibleTo Include="Metalama.Backstage" />
-        <InternalsVisibleTo Include="PostSharp.Backstage" />
+        <!-- Only the test projects see the internal types. A product package is a consumer like any other and
+             uses the public API, so that what a product needs is what anyone can rely on. -->
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>

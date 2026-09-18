@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
@@ -32,7 +32,6 @@
 
     <ItemGroup>
         <!-- The Backstage packages form one family and share their internal types; the test projects need them too. -->
-        <InternalsVisibleTo Include="SharpCrafters.Backstage" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>

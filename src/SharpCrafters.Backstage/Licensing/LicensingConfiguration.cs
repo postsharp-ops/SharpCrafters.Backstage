@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using JetBrains.Annotations;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
@@ -15,8 +16,16 @@ using System.Text.Json.Serialization;
 
 namespace SharpCrafters.Backstage.Licensing;
 
+/// <summary>
+/// The license keys that the user has registered, and the state that goes with them.
+/// </summary>
+/// <remarks>
+/// Public because a product whose earlier versions keep these settings somewhere other than a file supplies the
+/// schema that maps them, and a schema is part of the product package rather than of the neutral services.
+/// </remarks>
 [ConfigurationFile( "licensing.json" )]
-internal sealed record LicensingConfiguration : ConfigurationFile
+[PublicAPI]
+public sealed record LicensingConfiguration : ConfigurationFile
 {
     /// <summary>
     /// Gets the date of the last evaluation period.
