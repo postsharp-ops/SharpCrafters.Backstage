@@ -58,18 +58,20 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
     private GitStatusService CreateService() => new( this.ServiceProvider );
 
-    private static string InsideCommand( string root ) => GitStatusService.GetSyncPointName( GitStatusService.InsideCommandLocation, root );
+    private static string InsideCommand( string root )
+        => TestSynchronizationPoints.ForService( TestSynchronizationPoints.InsideCommand, root );
 
-    private static string JoinedQuery( string root ) => GitStatusService.GetSyncPointName( GitStatusService.JoinedQueryLocation, root );
+    private static string JoinedQuery( string root )
+        => TestSynchronizationPoints.ForService( TestSynchronizationPoints.JoinedQuery, root );
 
     private static string BeforeRegistering( string root )
-        => GitStatusService.GetSyncPointName( GitStatusService.BeforeRegisteringQueryLocation, root );
+        => TestSynchronizationPoints.ForService( TestSynchronizationPoints.BeforeRegisteringQuery, root );
 
     private static string BeforeWritingFile( string root )
-        => VcsStatusCache.GetSyncPointName( VcsStatusCache.BeforeWritingFileLocation, root );
+        => TestSynchronizationPoints.ForCache( TestSynchronizationPoints.BeforeWritingFile, root );
 
     private static string BeforeReadingFile( string root )
-        => VcsStatusCache.GetSyncPointName( VcsStatusCache.BeforeReadingFileLocation, root );
+        => TestSynchronizationPoints.ForCache( TestSynchronizationPoints.BeforeReadingFile, root );
 
     private void CreateRepository( string root )
     {
@@ -327,6 +329,43 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         // A fresh caller has to obtain a verdict of its own. If the cancelled run were still registered, this would
         // join it and be cancelled too.
         Assert.False( await this.WithTimeout( this.QueryAsync( service, file ) ) );
+    }
+
+    /// <summary>
+    /// Verifies that cancelling one caller does not cancel the callers that joined its run. A run is shared, so a
+    /// token belonging to whichever caller happened to start it would cancel the work of projects that never asked to
+    /// be cancelled, and in a build those projects would fail.
+    /// </summary>
+    [Fact]
+    public async Task CancellingOneCallerDoesNotCancelTheOthers()
+    {
+        this.CreateRepository( _repository );
+        var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
+        this.SetGitOutput( "" );
+
+        var service = this.CreateService();
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        this._sync.EnableSyncPoint( InsideCommand( _repository ) );
+        this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
+
+        var cancelled = this.QueryAsync( service, file, cancellationTokenSource.Token );
+        await this.ReachedAsync( InsideCommand( _repository ) );
+
+        // The second caller joins the run started by the first, and carries no token of its own.
+        var joined = this.QueryAsync( service, file );
+        await this.ReachedAsync( JoinedQuery( _repository ) );
+        this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
+
+        // The caller that started the run gives up. The run belongs to no caller, so it continues.
+        cancellationTokenSource.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>( async () => await this.WithTimeout( cancelled ) );
+
+        this._sync.DisableSyncPoint( InsideCommand( _repository ) );
+
+        Assert.False( await this.WithTimeout( joined ) );
+        Assert.Single( this.ProcessExecutor.StartedProcesses );
     }
 
     /// <summary>

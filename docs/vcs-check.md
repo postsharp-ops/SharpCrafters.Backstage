@@ -31,9 +31,14 @@ Everything else does **not** count:
 
 The rule follows one distinction: whether the customer controls the condition and can act on it.
 
-A global failure is one the customer controls. Git is not installed, the command exits with a non-zero code
-or times out, the project belongs to no repository at all. The service reports the files as modified and
-licensing is enforced, which is what makes the condition visible and gets it fixed.
+A global failure is one the customer controls. Git is not installed, or the command exits with a non-zero
+code or times out. The service reports the files as modified and licensing is enforced, which is what makes
+the condition visible and gets it fixed.
+
+A project that belongs to no repository at all is not a failure of that kind and is not reported as a
+verdict either. The question has no answer, so `IsAnyFileModifiedAsync` throws `InvalidOperationException`
+and the caller decides. Metalama lets it fail the build, because a project configured to use the check and
+not kept in version control is a contradiction the user has to resolve.
 
 A file-specific inconsistency is one the customer does not control. A generated file appears in `obj`, a
 package ships a source file, a tool writes something the repository does not track. These are tolerated: a

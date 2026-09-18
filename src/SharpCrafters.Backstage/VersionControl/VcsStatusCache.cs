@@ -56,25 +56,6 @@ internal sealed class VcsStatusCache
     /// </summary>
     private static readonly TimeSpan _timestampMargin = TimeSpan.FromSeconds( 2 );
 
-    /// <summary>
-    /// Reached after the memory layer has missed and before the file layer is read, so that a test can let a writer
-    /// store a record in the middle of a read and observe which of the two the reader ends up with.
-    /// </summary>
-    internal const string BeforeReadingFileLocation = "BeforeReadingFile";
-
-    /// <summary>
-    /// Reached after a record has been placed in the memory layer and before it is written to the file layer, so that
-    /// a test can let another process-wide reader run while the file is not yet there.
-    /// </summary>
-    internal const string BeforeWritingFileLocation = "BeforeWritingFile";
-
-    /// <summary>
-    /// Composes the name of a synchronization point, following the <c>{ClassName}.{Location}:{Context}</c>
-    /// convention. The context is the repository root, so that a test can pin one repository.
-    /// </summary>
-    internal static string GetSyncPointName( string location, string repositoryRoot )
-        => string.Format( CultureInfo.InvariantCulture, "VcsStatusCache.{0}:{1}", location, repositoryRoot );
-
     private readonly IFileSystem _fileSystem;
     private readonly ILogger _logger;
 
@@ -132,7 +113,9 @@ internal sealed class VcsStatusCache
 
         if ( this._testSynchronizationProvider != null )
         {
-            await this._testSynchronizationProvider.SyncPointAsync( GetSyncPointName( BeforeReadingFileLocation, repositoryRoot ), cancellationToken );
+            await this._testSynchronizationProvider.SyncPointAsync(
+                TestSynchronizationPoints.ForCache( TestSynchronizationPoints.BeforeReadingFile, repositoryRoot ),
+                cancellationToken );
         }
 
         var stored = await this.TryReadAsync( repositoryRoot, cancellationToken );
@@ -159,7 +142,9 @@ internal sealed class VcsStatusCache
 
         if ( this._testSynchronizationProvider != null )
         {
-            await this._testSynchronizationProvider.SyncPointAsync( GetSyncPointName( BeforeWritingFileLocation, repositoryRoot ), cancellationToken );
+            await this._testSynchronizationProvider.SyncPointAsync(
+                TestSynchronizationPoints.ForCache( TestSynchronizationPoints.BeforeWritingFile, repositoryRoot ),
+                cancellationToken );
         }
 
         await this.TryWriteAsync( repositoryRoot, record, cancellationToken );

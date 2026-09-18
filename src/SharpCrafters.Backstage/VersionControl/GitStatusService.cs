@@ -8,7 +8,6 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Common;
 using System;
-using System.Globalization;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,32 +33,6 @@ internal sealed class GitStatusService : IVcsStatusService
     /// <c>METALAMA_GIT_PATH</c> for Metalama.
     /// </summary>
     internal const string GitPathVariableName = "GIT_PATH";
-
-    /// <summary>
-    /// Reached after the query of a repository has found no run in progress and before it registers its own, so that
-    /// a test can hold one caller here while another reaches the same point and exercise the registration race.
-    /// </summary>
-    internal const string BeforeRegisteringQueryLocation = "BeforeRegisteringQuery";
-
-    /// <summary>
-    /// Reached inside the run of the command, so that a test can hold the caller that started it while other callers
-    /// arrive and verify that they join the run instead of starting one of their own.
-    /// </summary>
-    internal const string InsideCommandLocation = "InsideCommand";
-
-    /// <summary>
-    /// Reached by a caller that has found a run in progress and is about to join it, so that a test can establish
-    /// that the caller joined rather than infer it from the number of commands.
-    /// </summary>
-    internal const string JoinedQueryLocation = "JoinedQuery";
-
-    /// <summary>
-    /// Composes the name of a synchronization point, following the <c>{ClassName}.{Location}:{Context}</c>
-    /// convention. The context is the repository root, so that a test can pin one repository without pinning
-    /// every other repository queried by the process.
-    /// </summary>
-    internal static string GetSyncPointName( string location, string repositoryRoot )
-        => string.Format( CultureInfo.InvariantCulture, "GitStatusService.{0}:{1}", location, repositoryRoot );
 
     /// <remarks>
     /// <para>
@@ -212,9 +185,11 @@ internal sealed class GitStatusService : IVcsStatusService
 
         if ( filesByRepository.Count == 0 )
         {
-            this._logger.Info?.Log( "The version control check did not run because no file belongs to a git repository." );
-
-            return true;
+            // None of the files is in a repository, so there is nothing this service can answer about. That is a
+            // condition of the machine or of the configuration rather than a property of the files, and the caller
+            // asked a question that cannot be answered, so it is reported as an error and not as a verdict.
+            throw new InvalidOperationException(
+                $"None of the {filePaths.Count} files belongs to a git repository, so the version control status cannot be determined." );
         }
 
         foreach ( var pair in filesByRepository )
@@ -262,18 +237,28 @@ internal sealed class GitStatusService : IVcsStatusService
         // A record that the command has just produced is authoritative by construction and is not submitted to the
         // staleness rule, which would otherwise reject it whenever the build has just written one of the files it
         // compiles, as it does for the sources it generates.
-        return await this.QueryAsync( repositoryRoot, cancellationToken );
+        //
+        // The caller waits with its own token. The run itself carries none, so that a caller which gives up abandons
+        // its wait without cancelling the run for the callers that did not.
+        return await WaitAsync( this.QueryAsync( repositoryRoot, cancellationToken ), cancellationToken );
     }
 
     /// <summary>
     /// Runs the command for a repository, or joins the run that another caller has already started for it.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The work is shared within the process only. Sharing it between processes would mean holding a machine-wide
     /// lock across the command, and a named lock has thread affinity and therefore cannot be held across an
-    /// <c>await</c>; running the command synchronously under such a lock instead would give up the cancellation that
-    /// the callers of this service require. The file layer of the cache already limits the cost to one command per
-    /// build node on a cold cache, and to none at all afterwards.
+    /// <c>await</c>. The file layer of the cache already limits the cost to one command per build node on a cold
+    /// cache, and to none at all afterwards.
+    /// </para>
+    /// <para>
+    /// The run carries no cancellation token. A run is shared, so a token would be the token of whichever caller
+    /// happened to start it, and cancelling that caller would cancel the run for every caller that joined it and
+    /// never asked to be cancelled. The command is bounded by its own timeout instead, and a caller that cancels
+    /// stops waiting at once, which is what its token is for.
+    /// </para>
     /// </remarks>
     private Task<VcsStatusRecord?> QueryAsync( string repositoryRoot, CancellationToken cancellationToken )
     {
@@ -281,38 +266,35 @@ internal sealed class GitStatusService : IVcsStatusService
         {
             if ( this._queriesInFlight.TryGetValue( repositoryRoot, out var running ) )
             {
-                this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( JoinedQueryLocation, repositoryRoot ), cancellationToken );
+                this._testSynchronizationProvider?.SyncPoint( TestSynchronizationPoints.ForService( TestSynchronizationPoints.JoinedQuery, repositoryRoot ), cancellationToken );
 
-                // The token of the caller that started the run is the one that governs it, so a cancellation cancels
-                // the query for everyone who joined it. That is the right behaviour here: the callers are the projects
-                // of one build, and a build is cancelled as a whole.
                 return running;
             }
 
             var query = new TaskCompletionSource<VcsStatusRecord?>( TaskCreationOptions.RunContinuationsAsynchronously );
 
-            this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( BeforeRegisteringQueryLocation, repositoryRoot ) );
+            this._testSynchronizationProvider?.SyncPoint( TestSynchronizationPoints.ForService( TestSynchronizationPoints.BeforeRegisteringQuery, repositoryRoot ) );
 
             // The loop repeats rather than reading the entry that won the race, because that entry can be removed
             // again between the failed insertion and the read.
             if ( this._queriesInFlight.TryAdd( repositoryRoot, query.Task ) )
             {
-                _ = this.RunQueryAsync( repositoryRoot, query, cancellationToken );
+                _ = this.RunQueryAsync( repositoryRoot, query );
 
                 return query.Task;
             }
         }
     }
 
-    private async Task RunQueryAsync( string repositoryRoot, TaskCompletionSource<VcsStatusRecord?> query, CancellationToken cancellationToken )
+    private async Task RunQueryAsync( string repositoryRoot, TaskCompletionSource<VcsStatusRecord?> query )
     {
         try
         {
-            var record = await this.RunGitAsync( repositoryRoot, cancellationToken );
+            var record = await this.RunGitAsync( repositoryRoot, CancellationToken.None );
 
             if ( record != null )
             {
-                await this._cache.SetAsync( repositoryRoot, record, cancellationToken );
+                await this._cache.SetAsync( repositoryRoot, record, CancellationToken.None );
             }
 
             query.TrySetResult( record );
@@ -331,6 +313,30 @@ internal sealed class GitStatusService : IVcsStatusService
             // the state of the repository at that later time rather than this one.
             this._queriesInFlight.TryRemove( repositoryRoot, out _ );
         }
+    }
+
+    /// <summary>
+    /// Awaits a task with a token that belongs to the caller rather than to the task, so that the caller stops waiting
+    /// without the task being cancelled for anybody else.
+    /// </summary>
+    private static async Task<T> WaitAsync<T>( Task<T> task, CancellationToken cancellationToken )
+    {
+        if ( task.IsCompleted || !cancellationToken.CanBeCanceled )
+        {
+            return await task;
+        }
+
+        var cancelled = new TaskCompletionSource<bool>( TaskCreationOptions.RunContinuationsAsynchronously );
+
+        using ( cancellationToken.Register( () => cancelled.TrySetCanceled( cancellationToken ) ) )
+        {
+            if ( await Task.WhenAny( task, cancelled.Task ) != task )
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
+        return await task;
     }
 
     private async Task<VcsStatusRecord?> RunGitAsync( string repositoryRoot, CancellationToken cancellationToken )
@@ -357,7 +363,9 @@ internal sealed class GitStatusService : IVcsStatusService
         {
             if ( this._testSynchronizationProvider != null )
             {
-                await this._testSynchronizationProvider.SyncPointAsync( GetSyncPointName( InsideCommandLocation, repositoryRoot ), cancellationToken );
+                await this._testSynchronizationProvider.SyncPointAsync(
+                    TestSynchronizationPoints.ForService( TestSynchronizationPoints.InsideCommand, repositoryRoot ),
+                    cancellationToken );
             }
 
             output = await this._processExecutor.TryExecuteAsync( startInfo, _commandTimeout, cancellationToken );

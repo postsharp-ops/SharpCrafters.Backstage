@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,9 +23,8 @@ namespace SharpCrafters.Backstage.VersionControl;
 /// </para>
 /// <para>
 /// The rule follows one distinction: whether the user controls the condition. A global failure, such as git not being
-/// installed or the project belonging to no repository, is reported as modified, which makes the condition visible.
-/// A file-specific inconsistency, such as a generated file or a file shipped by a package, is tolerated, because the
-/// user cannot act on it.
+/// installed, is reported as modified, which makes the condition visible. A file-specific inconsistency, such as a
+/// generated file or a file shipped by a package, is tolerated, because the user cannot act on it.
 /// </para>
 /// <para>
 /// The complete doctrine, the reasoning behind each rule and the accepted limits are in <c>docs/vcs-check.md</c>.
@@ -42,7 +42,10 @@ public interface IVcsStatusService : IBackstageService
     /// expected to pass absolute paths.</param>
     /// <param name="cancellationToken">A token that abandons the query, including the version control command that
     /// it runs.</param>
-    /// <returns><c>true</c> when at least one file is modified, when no file belongs to a repository, or when the
-    /// status could not be determined; <c>false</c> only when every file is known to be unmodified.</returns>
+    /// <returns><c>true</c> when at least one file is modified or when the status could not be determined;
+    /// <c>false</c> only when every file is known to be unmodified.</returns>
+    /// <exception cref="InvalidOperationException">None of the files belongs to a repository. The question then has no
+    /// answer at all, rather than an answer that happens to be unfavourable, so it is reported as an error and the
+    /// caller decides what to do about it.</exception>
     ValueTask<bool> IsAnyFileModifiedAsync( IReadOnlyCollection<string> filePaths, CancellationToken cancellationToken = default );
 }

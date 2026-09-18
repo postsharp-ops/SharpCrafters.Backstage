@@ -192,15 +192,18 @@ public sealed class GitStatusServiceTests : TestsBase
     }
 
     /// <summary>
-    /// Verifies that a source tree that is in no repository is reported as modified. Nothing is known about it, and
-    /// an unknown status must never waive licensing.
+    /// Verifies that a source tree that is in no repository is refused rather than answered. The caller has asked a
+    /// question that has no answer, which is a condition of the machine or of the configuration and not a property of
+    /// the files, so it is reported as an error and the caller decides what to do about it.
     /// </summary>
     [Fact]
-    public async Task FilesWithoutRepositoryAreModified()
+    public async Task FilesWithoutAnyRepositoryAreRefused()
     {
         var file = this.WriteFile( Path.Combine( Path.GetTempPath(), "loose", "Class1.cs" ) );
 
-        Assert.True( await this.CreateService().IsAnyFileModifiedAsync( [file] ) );
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await this.CreateService().IsAnyFileModifiedAsync( [file] ) );
+
         Assert.Empty( this.ProcessExecutor.StartedProcesses );
     }
 
@@ -392,14 +395,13 @@ public sealed class GitStatusServiceTests : TestsBase
     }
 
     /// <summary>
-    /// Verifies that a path given as relative is refused rather than resolved against whatever the current directory
-    /// of the process happens to be, which a build host changes from one project to the next.
+    /// Verifies that a path which cannot be resolved does not waive the check. It belongs to no repository, so the
+    /// query has nothing to answer about.
     /// </summary>
     [Fact]
     public async Task UnknownPathsDoNotWaiveTheCheck()
-    {
-        Assert.True( await this.CreateService().IsAnyFileModifiedAsync( [""] ) );
-    }
+        => await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await this.CreateService().IsAnyFileModifiedAsync( [""] ) );
 
     /// <summary>
     /// Verifies that a repository holding a path which is not legal on the current operating system leaves licensing
