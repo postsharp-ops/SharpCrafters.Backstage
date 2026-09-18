@@ -2,11 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Telemetry;
-using System;
-using System.Collections.Immutable;
 
 namespace PostSharp.Backstage.Configuration;
 
@@ -20,7 +17,7 @@ namespace PostSharp.Backstage.Configuration;
 /// is bookkeeping that 2026.0 does not have, and it goes into the same key under names of this version, which 2026.0
 /// ignores.
 /// </remarks>
-internal sealed class PostSharpTelemetryConfigurationSchema : IRegistryConfigurationSchema
+internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurationSchema<TelemetryConfiguration>
 {
     /// <summary>
     /// The sub-key that holds the decision taken for each issue, keyed by its hash.
@@ -36,13 +33,9 @@ internal sealed class PostSharpTelemetryConfigurationSchema : IRegistryConfigura
     private const string _issuePromptsKeyName = "IssuePrompts";
     private const string _sessionsKeyName = "Sessions";
 
-    public Type ConfigurationType => typeof(TelemetryConfiguration);
+    public override string KeyPath => PostSharpRegistry.FeedbackKeyPath;
 
-    public RegistryHiveKind Hive => RegistryHiveKind.CurrentUser;
-
-    public string KeyPath => PostSharpRegistry.FeedbackKeyPath;
-
-    public ConfigurationFile Read( IRegistryKey? key )
+    protected override TelemetryConfiguration Read( IRegistryKey? key )
         => new TelemetryConfiguration
         {
             // The two enumerations agree value by value: what PostSharp 2026.0 calls Ask, Yes and No are 0, 1 and 2,
@@ -60,50 +53,13 @@ internal sealed class PostSharpTelemetryConfigurationSchema : IRegistryConfigura
             LastMatomoPostTime = key.GetDateTime( "LastMatomoPostTime" ),
             RetentionPeriodInDays = key.GetInt32( "RetentionPeriodInDays" ),
             Issues = ReadDictionary( key, _issuesKeyName, value => (ReportingStatus) (value as int? ?? 0) ),
-            IssuePrompts = ReadDictionary( key, _issuePromptsKeyName, RegistryValueCodec.QWordToDateTime )
-                .RemoveNullValues(),
-            Sessions = ReadDictionary( key, _sessionsKeyName, RegistryValueCodec.QWordToDateTime ).RemoveNullValues(),
+            IssuePrompts = ReadDictionaryOfValues( key, _issuePromptsKeyName, RegistryValueCodec.QWordToDateTime ),
+            Sessions = ReadDictionaryOfValues( key, _sessionsKeyName, RegistryValueCodec.QWordToDateTime ),
             Version = key.GetInt32( PostSharpRegistry.ConfigurationVersionValueName )
         };
 
-    /// <summary>
-    /// Reads a value that holds a GUID in its textual form, which is how PostSharp 2026.0 stores the device
-    /// identifier.
-    /// </summary>
-    private static Guid? ReadGuid( IRegistryKey? key, string name )
-        => Guid.TryParse( key.GetString( name ), out var value ) ? value : null;
-
-    /// <summary>
-    /// Reads a sub-key as a dictionary, one entry per value.
-    /// </summary>
-    /// <remarks>
-    /// The comparison is case-insensitive, as it is in the file-based store: the names are hashes and session
-    /// identifiers, which are written in one case and read in another often enough to matter, and the registry
-    /// compares names that way in any case.
-    /// </remarks>
-    private static ImmutableDictionary<string, T> ReadDictionary<T>( IRegistryKey? key, string subKeyName, Func<object?, T> convert )
+    protected override void Write( IRegistryKey key, TelemetryConfiguration configuration )
     {
-        using var subKey = key?.OpenSubKey( subKeyName );
-
-        if ( subKey == null )
-        {
-            return ImmutableDictionary<string, T>.Empty.WithComparers( StringComparer.OrdinalIgnoreCase );
-        }
-
-        var builder = ImmutableDictionary.CreateBuilder<string, T>( StringComparer.OrdinalIgnoreCase );
-
-        foreach ( var name in subKey.GetValueNames() )
-        {
-            builder[name] = convert( subKey.GetValue( name ) );
-        }
-
-        return builder.ToImmutable();
-    }
-
-    public void Write( IRegistryKey key, ConfigurationFile value )
-    {
-        var configuration = (TelemetryConfiguration) value;
-
         key.SetInt32( PostSharpRegistry.UsageReportingActionValueName, (int) configuration.UsageConsent );
         key.SetInt32( PostSharpRegistry.ExceptionReportingActionValueName, (int) configuration.ExceptionConsent );
         key.SetInt32( PostSharpRegistry.PerformanceReportingActionValueName, (int) configuration.PerformanceProblemConsent );
@@ -125,63 +81,5 @@ internal sealed class PostSharpTelemetryConfigurationSchema : IRegistryConfigura
         {
             key.SetInt32( PostSharpRegistry.ConfigurationVersionValueName, configuration.Version.Value );
         }
-    }
-
-    /// <summary>
-    /// Makes the values of a sub-key be exactly the entries of a dictionary.
-    /// </summary>
-    /// <remarks>
-    /// Unlike the values of the key itself, which this version shares with the other one, the whole sub-key belongs
-    /// to this version, so an entry it no longer holds is removed. These dictionaries are pruned as they are
-    /// written, and a value left behind would grow the key without bound.
-    /// </remarks>
-    private static void WriteDictionary<T>(
-        IRegistryKey key,
-        string subKeyName,
-        ImmutableDictionary<string, T> entries,
-        Action<IRegistryKey, string, T> writeEntry )
-    {
-        using var subKey = key.CreateSubKey( subKeyName );
-
-        if ( subKey == null )
-        {
-            return;
-        }
-
-        foreach ( var entry in entries )
-        {
-            writeEntry( subKey, entry.Key, entry.Value );
-        }
-
-        foreach ( var name in subKey.GetValueNames() )
-        {
-            if ( !entries.ContainsKey( name ) )
-            {
-                subKey.DeleteValue( name );
-            }
-        }
-    }
-}
-
-/// <summary>
-/// Removes the entries whose value could not be read, so that a value the registry holds in a form this version does
-/// not understand is absent rather than being a default that would look like a real one.
-/// </summary>
-internal static class NullableDictionaryExtensions
-{
-    public static ImmutableDictionary<string, T> RemoveNullValues<T>( this ImmutableDictionary<string, T?> dictionary )
-        where T : struct
-    {
-        var builder = ImmutableDictionary.CreateBuilder<string, T>( StringComparer.OrdinalIgnoreCase );
-
-        foreach ( var entry in dictionary )
-        {
-            if ( entry.Value != null )
-            {
-                builder[entry.Key] = entry.Value.Value;
-            }
-        }
-
-        return builder.ToImmutable();
     }
 }

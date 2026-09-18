@@ -5,27 +5,8 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
 using System;
-using System.Collections.Generic;
 
 namespace SharpCrafters.Backstage.Configuration.Registry;
-
-/// <summary>
-/// The hive that holds a key.
-/// </summary>
-[PublicAPI]
-public enum RegistryHiveKind
-{
-    /// <summary>
-    /// The settings of the current user, <c>HKEY_CURRENT_USER</c>.
-    /// </summary>
-    CurrentUser,
-
-    /// <summary>
-    /// The settings of every user of the machine, <c>HKEY_LOCAL_MACHINE</c>. A product reads them and an
-    /// administrator writes them.
-    /// </summary>
-    LocalMachine
-}
 
 /// <summary>
 /// Reads and writes the Windows registry. It exists so that the components that store their configuration there can
@@ -82,69 +63,4 @@ public interface IRegistryService : IBackstageService
     /// both: the registered license keys live in a sub-key of the one that holds the rest of the licensing settings.
     /// </remarks>
     IDisposable? WatchChanges( RegistryHiveKind hive, string keyPath, Action onChanged );
-}
-
-/// <summary>
-/// An open key of the registry.
-/// </summary>
-[PublicAPI]
-public interface IRegistryKey : IDisposable
-{
-    /// <summary>
-    /// Gets the full path of the key as it is displayed.
-    /// </summary>
-    string DisplayPath { get; }
-
-    /// <summary>
-    /// Gets the value of a given name, or <see langword="null"/> when the value does not exist. A string comes back
-    /// as <see cref="string"/>, a <c>DWORD</c> as <see cref="int"/> and a <c>QWORD</c> as <see cref="long"/>.
-    /// </summary>
-    object? GetValue( string name );
-
-    /// <summary>
-    /// Writes a <c>REG_SZ</c> value.
-    /// </summary>
-    void SetStringValue( string name, string value );
-
-    /// <summary>
-    /// Writes a <c>REG_DWORD</c> value.
-    /// </summary>
-    void SetDWordValue( string name, int value );
-
-    /// <summary>
-    /// Writes a <c>REG_QWORD</c> value.
-    /// </summary>
-    void SetQWordValue( string name, long value );
-
-    /// <summary>
-    /// Deletes a value. Deleting a value that does not exist does nothing.
-    /// </summary>
-    void DeleteValue( string name );
-
-    /// <summary>
-    /// Gets the names of the values of this key, in no particular order.
-    /// </summary>
-    IReadOnlyList<string> GetValueNames();
-
-    /// <summary>
-    /// Gets the names of the immediate sub-keys of this key, in no particular order.
-    /// </summary>
-    IReadOnlyList<string> GetSubKeyNames();
-
-    /// <summary>
-    /// Opens a sub-key.
-    /// </summary>
-    /// <returns>The sub-key, or <see langword="null"/> when it does not exist.</returns>
-    IRegistryKey? OpenSubKey( string name, bool writable = false );
-
-    /// <summary>
-    /// Opens a sub-key, creating it when it does not exist.
-    /// </summary>
-    /// <returns>The sub-key, or <see langword="null"/> when it could not be created.</returns>
-    IRegistryKey? CreateSubKey( string name );
-
-    /// <summary>
-    /// Deletes a sub-key and everything below it. Deleting a sub-key that does not exist does nothing.
-    /// </summary>
-    void DeleteSubKeyTree( string name );
 }

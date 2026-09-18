@@ -11,7 +11,6 @@ using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
-using System.IO;
 
 namespace PostSharp.Backstage;
 
@@ -30,7 +29,13 @@ public static class PostSharpProduct
     /// <summary>
     /// The address of the RSS feed of the PostSharp articles.
     /// </summary>
-    public const string PostsFeedUrl = "https://blog.postsharp.net/feed.xml";
+    /// <remarks>
+    /// <c>blog.postsharp.net</c> redirects here: the blog was absorbed into the main site, its repository archived
+    /// and the application that served it deleted. The feed is the same one that <c>metalama.net</c> serves, because
+    /// the posts of both products were merged into one blog; the address of this product is used so that a reader
+    /// who looks at where the feed came from sees the product they installed.
+    /// </remarks>
+    public const string PostsFeedUrl = "https://postsharp.net/feed.xml";
 
     /// <summary>
     /// Gets the profile of the PostSharp product family. Its values are the names that every version of PostSharp has
@@ -81,14 +86,18 @@ public static class PostSharpProduct
     /// Gets the telemetry endpoints of PostSharp.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The upload address and the encryption key are those of the vendor and are shared with Metalama, because one
-    /// service receives the packages of both products. Only the analytics site identifier is specific to PostSharp.
+    /// service receives the packages of both products and one private key opens them.
+    /// </para>
+    /// <para>
+    /// The analytics site is the one thing here that is specific to PostSharp: it is what files the aggregate usage
+    /// and licence-audit pings under this product rather than under Metalama, which reports to site 6.
+    /// </para>
     /// </remarks>
-    public static TelemetryInitializationOptions TelemetryOptions { get; } = new(
-        new Uri( "https://bits.postsharp.net:44301/upload" ),
-        GetUploadEncryptionPublicKey )
+    public static TelemetryInitializationOptions TelemetryOptions { get; } = new( new Uri( "https://bits.postsharp.net:44301/upload" ) )
     {
-        AnalyticsUri = new Uri( "https://postsharp.matomo.cloud/matomo.php?idsite=1" )
+        AnalyticsUri = new Uri( "https://postsharp.matomo.cloud/matomo.php?idsite=11" )
     };
 
     /// <summary>
@@ -110,19 +119,4 @@ public static class PostSharpProduct
         CreateConfigurationSchemas = serviceProvider =>
             PostSharpConfigurationSchemas.Create( serviceProvider.GetRequiredBackstageService<IDateTimeProvider>() )
     };
-
-    /// <summary>
-    /// Reads the public key that encrypts the telemetry packages from the resources of the current assembly.
-    /// </summary>
-    /// <returns>The public key, in the <c>RSAKeyValue</c> XML format.</returns>
-    private static byte[] GetUploadEncryptionPublicKey()
-    {
-        using var keyStream = typeof(PostSharpProduct).Assembly.GetManifestResourceStream( "PostSharp.Backstage.Telemetry.public.key" )
-                              ?? throw new InvalidOperationException( "The public key that encrypts the telemetry packages was not found." );
-
-        using var memoryStream = new MemoryStream();
-        keyStream.CopyTo( memoryStream );
-
-        return memoryStream.ToArray();
-    }
 }

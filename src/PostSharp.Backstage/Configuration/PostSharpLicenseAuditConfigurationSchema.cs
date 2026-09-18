@@ -2,10 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Licensing.Audit;
 using System;
+using System.Globalization;
 using System.Collections.Immutable;
 
 namespace PostSharp.Backstage.Configuration;
@@ -19,7 +19,7 @@ namespace PostSharp.Backstage.Configuration;
 /// identity of the license: see <see cref="PostSharpLicenseAuditKeyProvider"/>. Keyed by anything else, the two
 /// versions would write into one key and neither would read what the other wrote.
 /// </remarks>
-internal sealed class PostSharpLicenseAuditConfigurationSchema : IRegistryConfigurationSchema
+internal sealed class PostSharpLicenseAuditConfigurationSchema : RegistryConfigurationSchema<LicenseAuditConfiguration>
 {
     private const string _licenseAuditKeyName = "LicenseAudit";
 
@@ -29,15 +29,18 @@ internal sealed class PostSharpLicenseAuditConfigurationSchema : IRegistryConfig
     /// </summary>
     private const string _lastAggregateAuditValueName = "LastAggregateAuditTime";
 
-    public Type ConfigurationType => typeof(LicenseAuditConfiguration);
+    public override string KeyPath => PostSharpRegistry.RootKeyPath + "\\" + _licenseAuditKeyName;
 
-    public RegistryHiveKind Hive => RegistryHiveKind.CurrentUser;
-
-    public string KeyPath => PostSharpRegistry.RootKeyPath + "\\" + _licenseAuditKeyName;
-
-    public ConfigurationFile Read( IRegistryKey? key )
+    protected override LicenseAuditConfiguration Read( IRegistryKey? key )
     {
-        var lastAuditTimes = ImmutableDictionary.CreateBuilder<string, DateTime>( StringComparer.OrdinalIgnoreCase );
+        // PostSharp 2026.0 names a value after the identity of the licence, which is its globally unique identifier
+        // when it has one and its number otherwise. Both forms are present in a key that has been in use for a while,
+        // so both are read, each into the dictionary that holds its form.
+        var configuration = new LicenseAuditConfiguration
+        {
+            LastMatomoAuditTime = key.GetDateTime( _lastAggregateAuditValueName ),
+            Version = key.GetInt32( PostSharpRegistry.ConfigurationVersionValueName )
+        };
 
         if ( key != null )
         {
@@ -52,24 +55,22 @@ internal sealed class PostSharpLicenseAuditConfigurationSchema : IRegistryConfig
 
                 if ( key.GetDateTime( name ) is { } lastAuditTime )
                 {
-                    lastAuditTimes[name] = lastAuditTime;
+                    configuration = configuration.SetLastAuditTime( name, lastAuditTime );
                 }
             }
         }
 
-        return new LicenseAuditConfiguration
-        {
-            LastAuditTimes = lastAuditTimes.ToImmutable(),
-            LastMatomoAuditTime = key.GetDateTime( _lastAggregateAuditValueName ),
-            Version = key.GetInt32( PostSharpRegistry.ConfigurationVersionValueName )
-        };
+        return configuration;
     }
 
-    public void Write( IRegistryKey key, ConfigurationFile value )
+    protected override void Write( IRegistryKey key, LicenseAuditConfiguration configuration )
     {
-        var configuration = (LicenseAuditConfiguration) value;
-
         foreach ( var lastAuditTime in configuration.LastAuditTimes )
+        {
+            key.SetDateTime( lastAuditTime.Key.ToString( CultureInfo.InvariantCulture ), lastAuditTime.Value );
+        }
+
+        foreach ( var lastAuditTime in configuration.LastAuditTimesByKey ?? ImmutableDictionary<string, DateTime>.Empty )
         {
             key.SetDateTime( lastAuditTime.Key, lastAuditTime.Value );
         }

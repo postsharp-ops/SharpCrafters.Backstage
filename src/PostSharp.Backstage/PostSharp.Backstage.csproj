@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
@@ -21,13 +21,6 @@
     <ItemGroup>
         <PackageReference Include="System.Collections.Immutable" />
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <!-- The key is the vendor's and is therefore a copy of the one in Metalama.Backstage: one service receives the
-             telemetry packages of both products. Rotating it means replacing both copies. -->
-        <None Remove="Telemetry\public.key" />
-        <EmbeddedResource Include="Telemetry\public.key" LogicalName="PostSharp.Backstage.Telemetry.public.key" />
     </ItemGroup>
 
     <ItemGroup>

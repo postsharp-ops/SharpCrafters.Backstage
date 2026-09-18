@@ -13,7 +13,6 @@ using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Testing;
 using System;
-using System.Collections.Immutable;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -126,7 +125,8 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
         this.AuditKey().SetQWordValue( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", RegistryValueCodec.DateTimeToQWord( auditTime ) );
 
-        Assert.Equal( auditTime, this.Read().LastAuditTimes["d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f"].ToUniversalTime() );
+        Assert.True( this.Read().TryGetLastAuditTime( "d3cf9b1e-6b17-4b0b-9f1c-0f3b9d0a1e2f", out var lastAuditTime ) );
+        Assert.Equal( auditTime, lastAuditTime.ToUniversalTime() );
     }
 
     /// <summary>
@@ -138,7 +138,7 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     {
         var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
 
-        this.Update( c => c with { LastAuditTimes = c.LastAuditTimes.Add( "a-license-identity", auditTime ) } );
+        this.Update( c => c.SetLastAuditTime( "a-license-identity", auditTime ) );
 
         var stored = this.AuditKey().GetValue( "a-license-identity" );
 
@@ -156,9 +156,25 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
     {
         this.AuditKey().SetQWordValue( "written-by-the-other-version", RegistryValueCodec.DateTimeToQWord( DateTime.UtcNow ) );
 
-        this.Update( c => c with { LastAuditTimes = ImmutableDictionary<string, DateTime>.Empty.Add( "ours", DateTime.UtcNow ) } );
+        this.Update( c => c.SetLastAuditTime( "ours", DateTime.UtcNow ) );
 
         Assert.NotNull( this.AuditKey().GetValue( "written-by-the-other-version" ) );
+    }
+
+    /// <summary>
+    /// A licence that the other version identifies by its number is read into the member that an earlier version of
+    /// this one reads, and not beside it.
+    /// </summary>
+    [Fact]
+    public void ANumericIdentityOfTheOtherVersionIsReadAsANumber()
+    {
+        var auditTime = new DateTime( 2026, 9, 18, 9, 0, 0, DateTimeKind.Utc );
+        this.AuditKey().SetQWordValue( "22", RegistryValueCodec.DateTimeToQWord( auditTime ) );
+
+        var configuration = this.Read();
+
+        Assert.Equal( auditTime, configuration.LastAuditTimes[22].ToUniversalTime() );
+        Assert.Null( configuration.LastAuditTimesByKey );
     }
 
     /// <summary>
@@ -176,5 +192,6 @@ public sealed class PostSharpLicenseAuditConfigurationSchemaTests : TestsBase
 
         Assert.Equal( auditTime, configuration.LastMatomoAuditTime!.Value.ToUniversalTime() );
         Assert.Empty( configuration.LastAuditTimes );
+        Assert.Null( configuration.LastAuditTimesByKey );
     }
 }

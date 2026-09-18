@@ -2,7 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
@@ -18,7 +17,7 @@ namespace PostSharp.Backstage.Configuration;
 /// Maps the registered license keys onto the registry keys that PostSharp 2026.0 reads and writes, so that a license
 /// registered in either version is seen by the other.
 /// </summary>
-internal sealed class PostSharpLicensingConfigurationSchema : IRegistryConfigurationSchema
+internal sealed class PostSharpLicensingConfigurationSchema : RegistryConfigurationSchema<LicensingConfiguration>
 {
     private readonly IDateTimeProvider _dateTimeProvider;
 
@@ -27,13 +26,9 @@ internal sealed class PostSharpLicensingConfigurationSchema : IRegistryConfigura
         this._dateTimeProvider = dateTimeProvider;
     }
 
-    public Type ConfigurationType => typeof(LicensingConfiguration);
+    public override string KeyPath => PostSharpRegistry.RootKeyPath;
 
-    public RegistryHiveKind Hive => RegistryHiveKind.CurrentUser;
-
-    public string KeyPath => PostSharpRegistry.RootKeyPath;
-
-    public ConfigurationFile Read( IRegistryKey? key )
+    protected override LicensingConfiguration Read( IRegistryKey? key )
     {
         var licenses = ImmutableArray<string?>.Empty;
         ImmutableDictionary<string, ImmutableArray<string?>>? licensesByMinimalVersion = null;
@@ -105,10 +100,8 @@ internal sealed class PostSharpLicensingConfigurationSchema : IRegistryConfigura
             .Where( licenseString => !string.IsNullOrWhiteSpace( licenseString ) )
             .ToImmutableArray();
 
-    public void Write( IRegistryKey key, ConfigurationFile value )
+    protected override void Write( IRegistryKey key, LicensingConfiguration configuration )
     {
-        var configuration = (LicensingConfiguration) value;
-
         var hasChanged = key.SetString( PostSharpRegistry.LegacyLicenseValueName, configuration.LegacyLicense );
         hasChanged |= key.SetDateTime( PostSharpRegistry.EvaluationValueName, configuration.LastEvaluationStartDate );
         hasChanged |= key.SetBoolean( PostSharpRegistry.AllowInsecureLicenseServerValueName, configuration.AllowInsecureLicenseServer );

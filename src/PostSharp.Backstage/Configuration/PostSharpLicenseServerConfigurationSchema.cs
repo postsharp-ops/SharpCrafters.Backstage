@@ -2,7 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
 using System;
@@ -18,8 +18,18 @@ namespace PostSharp.Backstage.Configuration;
 /// This is the one shared setting whose sharing the user can be charged for. A license server allocates a seat per
 /// lease, and a developer who builds with both versions would otherwise take two.
 /// </remarks>
-internal sealed class PostSharpLicenseServerConfigurationSchema : IRegistryConfigurationSchema
+internal sealed class PostSharpLicenseServerConfigurationSchema : RegistryConfigurationSchema<LicenseServerConfiguration>
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    /// <param name="dateTimeProvider">
+    /// The clock, which dates a lease whose stored text carries no start time.
+    /// </param>
+    public PostSharpLicenseServerConfigurationSchema( IDateTimeProvider dateTimeProvider )
+    {
+        this._dateTimeProvider = dateTimeProvider;
+    }
+
     /// <summary>
     /// The sub-key under which each server has a sub-key of its own, named after its address.
     /// </summary>
@@ -37,13 +47,9 @@ internal sealed class PostSharpLicenseServerConfigurationSchema : IRegistryConfi
     /// </remarks>
     private const string _leaseValueName = "";
 
-    public Type ConfigurationType => typeof(LicenseServerConfiguration);
+    public override string KeyPath => PostSharpRegistry.RootKeyPath + "\\" + _leasedLicensesKeyName;
 
-    public RegistryHiveKind Hive => RegistryHiveKind.CurrentUser;
-
-    public string KeyPath => PostSharpRegistry.RootKeyPath + "\\" + _leasedLicensesKeyName;
-
-    public ConfigurationFile Read( IRegistryKey? key )
+    protected override LicenseServerConfiguration Read( IRegistryKey? key )
     {
         var leases = ImmutableDictionary.CreateBuilder<string, LeaseConfiguration>( StringComparer.Ordinal );
 
@@ -53,7 +59,7 @@ internal sealed class PostSharpLicenseServerConfigurationSchema : IRegistryConfi
             {
                 using var serverKey = key.OpenSubKey( serverKeyName );
 
-                var lease = PostSharpLeaseSerializer.Deserialize( serverKey.GetString( _leaseValueName ) );
+                LeaseConfiguration.TryParse( serverKey.GetString( _leaseValueName ), this._dateTimeProvider.UtcNow, out var lease );
 
                 if ( lease != null )
                 {
@@ -70,15 +76,13 @@ internal sealed class PostSharpLicenseServerConfigurationSchema : IRegistryConfi
         };
     }
 
-    public void Write( IRegistryKey key, ConfigurationFile value )
+    protected override void Write( IRegistryKey key, LicenseServerConfiguration configuration )
     {
-        var configuration = (LicenseServerConfiguration) value;
-
         foreach ( var lease in configuration.Leases )
         {
             using var serverKey = key.CreateSubKey( lease.Key );
 
-            serverKey?.SetString( _leaseValueName, PostSharpLeaseSerializer.Serialize( lease.Value ) );
+            serverKey?.SetString( _leaseValueName, lease.Value.Serialize() );
         }
 
         // A lease the object no longer holds is blanked rather than having its key deleted, which is what PostSharp

@@ -9,7 +9,6 @@ using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
-using System.IO;
 
 namespace Metalama.Backstage;
 
@@ -71,8 +70,7 @@ public static class MetalamaProduct
     /// Gets the telemetry endpoints of Metalama.
     /// </summary>
     public static TelemetryInitializationOptions TelemetryOptions { get; } = new(
-        new Uri( "https://bits.postsharp.net:44301/upload" ),
-        GetUploadEncryptionPublicKey )
+        new Uri( "https://bits.postsharp.net:44301/upload" ) )
     {
         AnalyticsUri = new Uri( "https://postsharp.matomo.cloud/matomo.php?idsite=6" )
     };
@@ -89,19 +87,4 @@ public static class MetalamaProduct
     /// Gets the Metalama product family, which binds the Backstage services to the values above.
     /// </summary>
     public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog );
-
-    /// <summary>
-    /// Reads the public key that encrypts the telemetry packages from the resources of the current assembly.
-    /// </summary>
-    /// <returns>The public key, in the <c>RSAKeyValue</c> XML format.</returns>
-    private static byte[] GetUploadEncryptionPublicKey()
-    {
-        using var keyStream = typeof(MetalamaProduct).Assembly.GetManifestResourceStream( "Metalama.Backstage.Telemetry.public.key" )
-                              ?? throw new InvalidOperationException( "The public key that encrypts the telemetry packages was not found." );
-
-        using var memoryStream = new MemoryStream();
-        keyStream.CopyTo( memoryStream );
-
-        return memoryStream.ToArray();
-    }
 }

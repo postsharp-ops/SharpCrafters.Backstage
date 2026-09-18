@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
@@ -46,6 +46,11 @@
         <PackageReference Include="Microsoft.Win32.Registry" Condition="'$(TargetFramework)'=='netstandard2.0'" />
         <PackageReference Include="System.Threading.AccessControl" />
         <PackageReference Include="System.Threading.Tasks.Extensions" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Telemetry\public.key" />
+        <EmbeddedResource Include="Telemetry\public.key" LogicalName="SharpCrafters.Backstage.Telemetry.public.key" />
     </ItemGroup>
 
     <ItemGroup>

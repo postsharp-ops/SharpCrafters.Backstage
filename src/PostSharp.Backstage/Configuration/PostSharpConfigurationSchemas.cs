@@ -30,14 +30,15 @@ public static class PostSharpConfigurationSchemas
     /// <summary>
     /// Creates the schemas.
     /// </summary>
-    /// <param name="dateTimeProvider">The clock, which the licensing schema needs to write the timestamp that tells
-    /// PostSharp 2026.0 that the registered licenses have changed.</param>
+    /// <param name="dateTimeProvider">The clock. The licensing schema writes the timestamp that tells PostSharp
+    /// 2026.0 that the registered licenses have changed, and the license server schema dates a lease whose stored
+    /// text carries no start time.</param>
     public static IRegistryConfigurationSchema[] Create( IDateTimeProvider dateTimeProvider )
         =>
         [
             new PostSharpLicensingConfigurationSchema( dateTimeProvider ),
             new PostSharpTelemetryConfigurationSchema(),
-            new PostSharpLicenseServerConfigurationSchema(),
+            new PostSharpLicenseServerConfigurationSchema( dateTimeProvider ),
             new PostSharpLicenseAuditConfigurationSchema()
         ];
 }

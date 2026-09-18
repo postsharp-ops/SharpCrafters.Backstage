@@ -41,7 +41,7 @@ public sealed class PostSharpLicenseServerConfigurationSchemaTests : TestsBase
         => new(
             this.ServiceProvider,
             new InMemoryConfigurationManager( this.ServiceProvider ),
-            [new PostSharpLicenseServerConfigurationSchema()] );
+            [new PostSharpLicenseServerConfigurationSchema( this.Time )] );
 
     private IRegistryKey ServerKey( string url = _serverUrl )
         => this._registry.GetOrCreateKey( RegistryHiveKind.CurrentUser, _leasedLicensesKeyPath ).CreateSubKey( url )!;
@@ -92,6 +92,12 @@ public sealed class PostSharpLicenseServerConfigurationSchemaTests : TestsBase
     /// A lease acquired here is written in the same form, so that the other version finds it rather than taking a
     /// second seat.
     /// </summary>
+    /// <remarks>
+    /// The instants carry no fractional part, because that is how PostSharp 2026.0 writes them: it formats them with
+    /// <c>XmlConvert</c>. Writing the round-trip form instead would give the same instant in a different spelling, and
+    /// the value would then differ from the one that version wrote and be rewritten on every read of an unchanged
+    /// configuration.
+    /// </remarks>
     [Fact]
     public void ALeaseAcquiredHereIsWrittenInTheFormTheOtherVersionReads()
     {
@@ -100,7 +106,7 @@ public sealed class PostSharpLicenseServerConfigurationSchemaTests : TestsBase
         var stored = (string) this.ServerKey().GetValue( "" )!;
 
         Assert.Equal(
-            "License: a-leased-key; StartTime: 2026-09-01T08:00:00.0000000Z; EndTime: 2026-10-01T08:00:00.0000000Z; RenewTime: 2026-09-20T08:00:00.0000000Z",
+            "License: a-leased-key; StartTime: 2026-09-01T08:00:00Z; EndTime: 2026-10-01T08:00:00Z; RenewTime: 2026-09-20T08:00:00Z",
             stored );
     }
 
