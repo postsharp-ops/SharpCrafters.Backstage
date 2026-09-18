@@ -76,19 +76,23 @@ so a support case can see what happened.
 
 **2. A build of unmodified files reports nothing to the licence audit.** See the rule below.
 
-**3. The check does not run on an unattended build.** Under `AcquireLicenseOnChange` this is a performance
-decision and nothing more: an unattended process never takes a lease, as
-[license-server.md](license-server.md) records, so running the command there would cost time and change no
-outcome. A caller that wants it anyway asks for it: Metalama offers `MetalamaVcsCheckOnUnattendedBuild`,
-which its container tests use because they build in a container and still mean to exercise the check.
+**3. The check does not run on an unattended build, and there is no property to make it.** Under
+`AcquireLicenseOnChange` the exclusion is a performance decision and nothing more: an unattended process never
+takes a lease, as [license-server.md](license-server.md) records, so running the command there would cost time
+and change no outcome. Under `FailOnChange` it does change the outcome, so that mode enforces nothing on a
+build server. That is accepted rather than fixed with a property: a build-level switch that turned the check
+on for an unattended build would be a customer-facing knob whose only purpose was to serve our own tests.
 
-Under `FailOnChange` the same exclusion does change the outcome, because a modified file would have failed
-the build. The exclusion is applied to both modes all the same, so that the mode does not silently decide
-whether a rule runs on the build server. The consequence is that `FailOnChange` enforces nothing on an
-unattended build unless `MetalamaVcsCheckOnUnattendedBuild` is set with it, which is a sharp edge for the
-continuous integration build, where the rule is likeliest to matter. That is a deliberate choice, recorded
-here rather than papered over: a repository that wants the rule enforced on its build server sets both
-properties.
+What the tests use instead is the `METALAMA_FORCE_ATTENDED` environment variable, which `ApplicationInfoBase`
+reads and which makes the process answer that it is attended. It goes one way only. Attended is the stricter
+of the two answers — it withholds the unattended licence source and lets the licence audit run — so forcing it
+can take a licence away and never grant one. Forcing the opposite would hand the unattended licence to whoever
+set the variable, so the variable does not do it, whatever its value.
+
+The container tests pay for this: forcing the attended answer withholds the only licence they have, so every
+case in which licensing runs now fails to license. Those cases assert on what the check reported rather than
+on the build succeeding, which is the honest form of the assertion — the check is a feature of a developer
+machine, and a developer machine without a licence is what the container then imitates.
 
 ## The seat rule
 
