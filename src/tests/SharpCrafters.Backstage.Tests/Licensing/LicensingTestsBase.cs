@@ -30,29 +30,30 @@ namespace SharpCrafters.Backstage.Tests.Licensing
         protected ILicenseProductCatalog Catalog => this.ServiceProvider.GetRequiredBackstageService<ILicenseProductCatalog>();
 
         /// <summary>
-        /// Gets the edition that the family under test offers under an alias.
+        /// Gets the edition of a given kind that the family under test offers.
         /// </summary>
-        /// <exception cref="InvalidOperationException">The family offers no such edition.</exception>
-        protected SelfRegisteredEdition GetEdition( string alias )
-            => this.Catalog.SelfRegisteredEditions.Single( e => string.Equals( e.Alias, alias, StringComparison.OrdinalIgnoreCase ) );
+        /// <exception cref="InvalidOperationException">The family offers no edition of that kind, or more than one.</exception>
+        /// <remarks>
+        /// The kind and not the alias, because an alias is the verb of a command line and differs from one family to
+        /// the next — PostSharp calls its free edition <c>essentials</c> and Metalama calls its own <c>community</c> —
+        /// so a test naming one says which family it is testing twice, and a test written against the wrong family
+        /// fails by finding nothing rather than by saying so. A family offers at most one edition of each kind.
+        /// </remarks>
+        protected SelfRegisteredEdition GetEdition( SelfRegisteredEditionKind kind )
+            => this.Catalog.SelfRegisteredEditions.Single( e => e.Kind == kind );
 
         /// <summary>
-        /// Registers the edition that the family under test offers under an alias.
+        /// Registers the edition of a given kind that the family under test offers.
         /// </summary>
-        protected LicenseRegistrationResult RegisterEdition( string alias, CommunityLicenseReason reason = CommunityLicenseReason.None )
+        protected LicenseRegistrationResult RegisterEdition( SelfRegisteredEditionKind kind, CommunityLicenseReason reason = CommunityLicenseReason.None )
             => this.LicenseRegistrationService.Register(
-                this.GetEdition( alias ),
+                this.GetEdition( kind ),
                 new SelfRegisteredEditionOptions { CommunityLicenseReason = reason } );
 
         /// <summary>
         /// Registers the trial of the family under test.
         /// </summary>
-        protected LicenseRegistrationResult RegisterTrial() => this.RegisterEdition( TrialAlias );
-
-        /// <summary>
-        /// The alias under which every family offers its trial.
-        /// </summary>
-        protected const string TrialAlias = "try";
+        protected LicenseRegistrationResult RegisterTrial() => this.RegisterEdition( SelfRegisteredEditionKind.Trial );
 
         /// <summary>
         /// Creates the context that an edition is given, so that a test can ask an edition what it grants without

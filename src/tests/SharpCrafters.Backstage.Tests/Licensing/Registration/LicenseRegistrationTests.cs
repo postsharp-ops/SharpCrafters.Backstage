@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Testing;
 using System.Linq;
@@ -99,7 +100,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         {
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
-            Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.Free, CommunityLicenseReason.Individual ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
         }

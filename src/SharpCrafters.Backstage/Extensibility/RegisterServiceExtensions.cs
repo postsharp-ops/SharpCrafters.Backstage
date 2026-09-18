@@ -49,20 +49,10 @@ public static class RegisterServiceExtensions
 
         serviceProviderBuilder.AddCoreServices( coreOptions );
 
-        // The defaults of the services that a product may answer differently. They are registered first and the
-        // services of the product after them, so that one of the same type replaces the default: a product that says
-        // nothing gets these, and a product that says something gets what it said.
-        //
-        // The configurations go in files, which is what a product that shares nothing with an earlier version of
-        // itself wants. A product that shares some of them calls AddRegistryConfigurationServices itself.
-        serviceProviderBuilder.AddConfigurationServices();
-
-        // An audit is throttled by the content of its report, so that a report is sent again whenever anything in it
-        // changes. A product whose earlier versions keep the record and share it with this one has to key it the way
-        // they key it, and says so by registering its own.
-        serviceProviderBuilder.AddSingleton<ILicenseAuditKeyProvider>( _ => ReportContentLicenseAuditKeyProvider.Instance );
-
-        product.RegisterServices?.Invoke( serviceProviderBuilder );
+        // Everything that one product answers differently from another is registered here, by the product, and
+        // nothing of it is assumed on its behalf. Where the configurations live and how an audit is identified are
+        // both decided this way: see BackstageProduct.RegisterServices, which says which services a product owes.
+        product.RegisterServices.Invoke( serviceProviderBuilder );
 
         if ( options.AddSupportServices )
         {

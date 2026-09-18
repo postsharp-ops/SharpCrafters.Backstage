@@ -32,22 +32,32 @@ public sealed record BackstageProduct(
     ILicenseProductCatalog LicenseProductCatalog )
 {
     /// <summary>
-    /// Gets the services that the product contributes, or <see langword="null"/> when it contributes none.
+    /// Gets the services that the product contributes, which are every service this package does not answer for
+    /// itself.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This is where a product says the things only it knows. PostSharp registers an
-    /// <see cref="Configuration.Registry.IRegistryConfigurationSchemaProvider"/>, because it keeps several
-    /// configuration objects in the registry so as to share them with its earlier versions. Declaring the services
-    /// here rather than at each entry point means every host of the product gets the same answers: a host that forgot
-    /// would quietly get the defaults, and two versions of the product would stop agreeing about a store they share.
+    /// This is where a product says the things only it knows, and nothing of it is assumed on its behalf: a default
+    /// registered here would be one that a product could be given without having asked for it, and the product that
+    /// wanted something else would be relying on the order of two registrations to overrule it.
     /// </para>
     /// <para>
-    /// They are registered after the services of this package, so a service registered here replaces the one of the
-    /// same type that this package registers. It is an action over a builder rather than a list of instances because
-    /// a service may need another service — a registry schema needs the clock — and a product is described once,
-    /// before any service exists.
+    /// A product owes two of them. It registers an <see cref="IConfigurationManager"/>, by calling either
+    /// <see cref="RegisterConfigurationServices.AddConfigurationServices"/>, which keeps the configurations in files,
+    /// or <see cref="RegisterConfigurationServices.AddRegistryConfigurationServices"/>, which keeps in the Windows
+    /// registry the ones an <see cref="Configuration.Registry.IRegistryConfigurationSchemaProvider"/> names, so as to
+    /// share them with the earlier versions of the product. And it registers an
+    /// <see cref="Licensing.Audit.ILicenseAuditKeyProvider"/>, which says what makes two audits the same audit.
+    /// </para>
+    /// <para>
+    /// Declaring them here rather than at each entry point means every host of the product gets the same answers: a
+    /// host that forgot would read and write a store that the other version never looks at, and the two versions
+    /// would silently stop sharing anything.
+    /// </para>
+    /// <para>
+    /// It is an action over a builder rather than a list of instances because a service may need another service — a
+    /// registry schema needs the clock — and a product is described once, before any service exists.
     /// </para>
     /// </remarks>
-    public Action<ServiceProviderBuilder>? RegisterServices { get; init; }
+    public required Action<ServiceProviderBuilder> RegisterServices { get; init; }
 }

@@ -29,7 +29,7 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     {
         this.Time.Set( new DateTime( 2026, 9, 18, 12, 0, 0, DateTimeKind.Utc ) );
 
-        var license = this.GetEdition( "community" ).CreateLicense( this.CreateEditionContext() );
+        var license = this.GetEdition( SelfRegisteredEditionKind.Free ).CreateLicense( this.CreateEditionContext() );
 
         Assert.Equal( LicenseProduct.MetalamaCommunity, license.Product );
         Assert.Equal( LicenseType.Community, license.LicenseType );
@@ -43,7 +43,7 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     [Fact]
     public void TheCommunityEditionIsNotOfferedFromTheCommandLine()
     {
-        var edition = this.GetEdition( "community" );
+        var edition = this.GetEdition( SelfRegisteredEditionKind.Free );
 
         Assert.False( edition.IsAvailableFromCommandLine );
 
@@ -58,7 +58,7 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     [Fact]
     public void TheCommunityEditionIsRefusedWithoutAReason()
     {
-        var result = this.RegisterEdition( "community" );
+        var result = this.RegisterEdition( SelfRegisteredEditionKind.Free );
 
         Assert.False( result.IsSuccess );
         Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
@@ -70,7 +70,7 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     [Fact]
     public void TheCommunityEditionRecordsTheReason()
     {
-        Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
+        Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.Free, CommunityLicenseReason.Individual ).IsSuccess );
 
         Assert.Equal( "Metalama Community", this.LicenseRegistrationService.RegisteredLicenses.Single().Description );
         Assert.Equal( CommunityLicenseReason.Individual, this.ConfigurationManager!.Get<LicensingConfiguration>().CommunityLicenseReason );
@@ -83,7 +83,7 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     [Fact]
     public void TheLegacyFreeEditionNeverExpires()
     {
-        var edition = this.GetEdition( "free" );
+        var edition = this.GetEdition( SelfRegisteredEditionKind.LegacyFree );
 
         Assert.Equal( SelfRegisteredEditionKind.LegacyFree, edition.Kind );
 
@@ -99,7 +99,7 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     [Fact]
     public void TheLegacyFreeEditionRegisters()
     {
-        Assert.True( this.RegisterEdition( "free" ).IsSuccess );
+        Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.LegacyFree ).IsSuccess );
 
         Assert.Equal( "Metalama Free (legacy)", this.LicenseRegistrationService.RegisteredLicenses.Single().Description );
     }
@@ -112,12 +112,12 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     public void OnlyTheTrialIsOfferedDuringSetup()
     {
         Assert.Equal(
-            new[] { "free", TrialAlias },
-            this.Catalog.SelfRegisteredEditions.Where( e => e.IsAvailableFromCommandLine ).Select( e => e.Alias ).ToArray() );
+            new[] { SelfRegisteredEditionKind.LegacyFree, SelfRegisteredEditionKind.Trial },
+            this.Catalog.SelfRegisteredEditions.Where( e => e.IsAvailableFromCommandLine ).Select( e => e.Kind ).ToArray() );
 
         Assert.Equal(
-            new[] { TrialAlias },
-            this.Catalog.SelfRegisteredEditions.Where( e => e.SetupTitle != null ).Select( e => e.Alias ).ToArray() );
+            new[] { SelfRegisteredEditionKind.Trial },
+            this.Catalog.SelfRegisteredEditions.Where( e => e.SetupTitle != null ).Select( e => e.Kind ).ToArray() );
     }
 
     /// <summary>

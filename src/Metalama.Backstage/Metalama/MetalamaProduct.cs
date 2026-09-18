@@ -4,6 +4,8 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
@@ -97,5 +99,17 @@ public static class MetalamaProduct
     /// <summary>
     /// Gets the Metalama product family, which binds the Backstage services to the values above.
     /// </summary>
-    public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog );
+    public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog )
+    {
+        RegisterServices = services =>
+        {
+            // Metalama shares nothing with an earlier version of itself through a store of the operating system, so
+            // its configurations are files of its own.
+            services.AddConfigurationServices();
+
+            // An audit is throttled by the content of its report, so that a report is sent again whenever anything in
+            // it changes. Nothing else reads this record, so there is no other version to agree with.
+            services.AddService( typeof(ILicenseAuditKeyProvider), _ => ReportContentLicenseAuditKeyProvider.Instance );
+        }
+    };
 }

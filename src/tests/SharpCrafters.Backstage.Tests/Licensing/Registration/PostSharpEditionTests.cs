@@ -32,7 +32,7 @@ public sealed class PostSharpEditionTests : LicensingTestsBase
     [Fact]
     public void TheFreeEditionIsAnUltimateKeyOfTheCommunityType()
     {
-        var license = this.GetEdition( "essentials" ).CreateLicense( this.CreateEditionContext() );
+        var license = this.GetEdition( SelfRegisteredEditionKind.Free ).CreateLicense( this.CreateEditionContext() );
 
         Assert.Equal( LicenseProduct.PostSharpUltimate, license.Product );
         Assert.Equal( LicenseType.Community, license.LicenseType );
@@ -45,7 +45,7 @@ public sealed class PostSharpEditionTests : LicensingTestsBase
     /// </summary>
     [Fact]
     public void TheFreeEditionNamesItselfEssentials()
-        => Assert.Equal( "PostSharp Essentials", this.GetEdition( "essentials" ).DisplayName );
+        => Assert.Equal( "PostSharp Essentials", this.GetEdition( SelfRegisteredEditionKind.Free ).DisplayName );
 
     /// <summary>
     /// PostSharp never issued the legacy free edition that Metalama 2025.0 and earlier did.
@@ -63,7 +63,7 @@ public sealed class PostSharpEditionTests : LicensingTestsBase
     {
         this.Time.Set( new DateTime( 2026, 9, 18, 22, 30, 0, DateTimeKind.Utc ) );
 
-        var trial = this.GetEdition( TrialAlias ).CreateLicense( this.CreateEditionContext() );
+        var trial = this.GetEdition( SelfRegisteredEditionKind.Trial ).CreateLicense( this.CreateEditionContext() );
 
         Assert.Equal( LicenseProduct.PostSharpUltimate, trial.Product );
         Assert.Equal( LicenseType.Evaluation, trial.LicenseType );
@@ -90,5 +90,5 @@ public sealed class PostSharpEditionTests : LicensingTestsBase
     /// </summary>
     [Fact]
     public void TheTrialIsOfferedLast()
-        => Assert.Equal( TrialAlias, this.Catalog.SelfRegisteredEditions.Last().Alias );
+        => Assert.Equal( SelfRegisteredEditionKind.Trial, this.Catalog.SelfRegisteredEditions.Last().Kind );
 }
