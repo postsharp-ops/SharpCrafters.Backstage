@@ -25,8 +25,8 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         [Fact]
         public void RepeatedCommunityLicenseRegistrationKeepsSingleLicenseRegistered()
         {
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
             this.AssertSingleCommunityLicenseRegistered();
         }
 
@@ -36,7 +36,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
             var gotPropertyChanged = new TaskCompletionSource<bool>();
             this.LicenseRegistrationService.PropertyChanged += ( _, _ ) => gotPropertyChanged.TrySetResult( true );
 
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
 
             Assert.Equal( gotPropertyChanged.Task, await Task.WhenAny( gotPropertyChanged.Task, Task.Delay( 30000 ) ) );
         }

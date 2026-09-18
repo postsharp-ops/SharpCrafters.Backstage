@@ -1,20 +1,19 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Registration;
-using System;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing;
 
 /// <summary>
 /// Describes the products that a product family sells and the business rules attached to them: display names, default
-/// servicing phases, which products a license key of the family may name, and which products the unsigned licenses
-/// (community, evaluation) are issued for. The host product supplies the implementation, because these rules belong
-/// to the vendor and not to the licensing services.
+/// servicing phases, which products a license key of the family may name, and the editions that the family gives away.
+/// The host product supplies the implementation, because these rules belong to the vendor and not to the licensing
+/// services.
 /// </summary>
 /// <remarks>
 /// The wire format of a license key identifies a product by a byte, represented by <see cref="LicenseProduct"/>. The
@@ -120,36 +119,13 @@ public interface ILicenseProductCatalog : IBackstageService
     bool HasUnlicensedEdition { get; }
 
     /// <summary>
-    /// Describes the trial license of the family.
-    /// </summary>
-    /// <param name="utcNow">The current moment.</param>
-    UnsignedLicense CreateTrialLicense( DateTime utcNow );
-
-    /// <summary>
     /// Gets the editions that a user can obtain by asking for them rather than by buying them, in the order in which
-    /// they are offered. The result is empty when the family offers none.
+    /// they are offered.
     /// </summary>
     /// <remarks>
-    /// This is what the command line and the setup pages present. A family that has no free edition declares none,
-    /// and neither of them offers one.
+    /// This is what the command line and the setup pages present. Each edition says where it is offered, so a family
+    /// that has no free edition declares none and neither surface offers one. Every family offers a trial, so the list
+    /// always holds at least that.
     /// </remarks>
     ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
-
-    /// <summary>
-    /// Describes the free license that a user registers without buying anything, or returns <see langword="null"/>
-    /// when the family offers none.
-    /// </summary>
-    /// <param name="utcNow">The current moment.</param>
-    /// <remarks>
-    /// Returning <see langword="null"/> is how a family says that the edition does not exist, and it is what the
-    /// setup pages and the command line read to decide whether to offer it.
-    /// </remarks>
-    UnsignedLicense? CreateFreeLicense( DateTime utcNow );
-
-    /// <summary>
-    /// Describes the free license that earlier versions of the product issued, or returns <see langword="null"/>
-    /// when the family never had one.
-    /// </summary>
-    /// <param name="utcNow">The current moment.</param>
-    UnsignedLicense? CreateLegacyFreeLicense( DateTime utcNow );
 }

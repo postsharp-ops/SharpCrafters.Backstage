@@ -1,4 +1,4 @@
-﻿@page
+@page
 @using System.Linq
 @using SharpCrafters.Backstage.Licensing
 @using SharpCrafters.Backstage.Licensing.Registration
@@ -29,29 +29,28 @@
             </div>
         }
 
-        @* One choice per edition that the product family offers and that is worth offering during setup. A family
-           that has no free edition declares none, and nothing is shown. *@
-        @foreach (var edition in Catalog.SelfRegisteredEditions.Where(e => e.SetupTitle != null))
+        @* One choice per edition that the product family gives away and that is worth offering during setup, and
+           only while it can be registered: the trial disappears while one is running or its cool-off period has not
+           elapsed. A family that gives away nothing shows nothing here. *@
+        @foreach (var edition in LicenseRegistrationService.AvailableEditions.Where(e => e.SetupTitle != null))
         {
             <div onclick="submitForm('@("Register:" + edition.Alias)')">
                 <h4>@edition.SetupTitle</h4>
                 <p>@edition.Description</p>
-            </div>
-        }
 
-        @if (LicenseRegistrationService.CanRegisterTrialEdition)
-        {
-            <div onclick="submitForm('StartTrial')">
-                <h4>Start a 45-day Trial of @Catalog.GetDisplayName(Catalog.EvaluationProduct)</h4>
-                <p>Discover the full capabilities of @Catalog.GetDisplayName(Catalog.EvaluationProduct).</p>
-                <p>
-                    For teams with extended procurement processes, request a
-                    <a href="@Model.WebLinks.GetTeamTrial" target="_blank" onclick="event.stopPropagation()">
-                        60-day
-                        renewable team evaluation key
-                    </a>
-                    (available for teams of 5 or more developers).
-                </p>
+                @* The trial is the one edition whose offer does not fit in a sentence: a team that cannot buy within
+                   45 days needs the longer key, and this is where they look for it. *@
+                @if (edition.Kind == SelfRegisteredEditionKind.Trial)
+                {
+                    <p>
+                        For teams with extended procurement processes, request a
+                        <a href="@Model.WebLinks.GetTeamTrial" target="_blank" onclick="event.stopPropagation()">
+                            60-day
+                            renewable team evaluation key
+                        </a>
+                        (available for teams of 5 or more developers).
+                    </p>
+                }
             </div>
         }
 

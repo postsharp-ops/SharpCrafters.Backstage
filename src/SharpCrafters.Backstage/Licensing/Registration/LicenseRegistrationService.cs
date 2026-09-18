@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -6,15 +6,14 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +24,6 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
-    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IUserDeviceDetectionService _userDeviceDetectionService;
     private readonly IConfigurationManager _configurationManager;
     private readonly ProductProfile _productProfile;
@@ -42,7 +40,6 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         this._serviceProvider = serviceProvider;
         this._currentVersion = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication.GetLicensingVersion();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(LicenseRegistrationService) );
-        this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._userDeviceDetectionService = serviceProvider.GetRequiredBackstageService<IUserDeviceDetectionService>();
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
@@ -60,7 +57,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         {
             this.OnPropertyChanged( nameof(this.RegisteredLicenses) );
             this.OnPropertyChanged( nameof(this.UnsupportedRegisteredLicenseVersions) );
-            this.OnPropertyChanged( nameof(this.CanRegisterTrialEdition) );
+            this.OnPropertyChanged( nameof(this.AvailableEditions) );
         }
     }
 
@@ -80,128 +77,49 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         }
     }
 
-    /// <summary>
-    /// Attempts to register an unsigned Metalama Community license.
-    /// </summary>
-    /// <returns>
-    /// A value indicating whether the license has been registered.
-    /// Success is indicated when a new Metalama Community license is registered
-    /// as well as when an existing Metalama Community license is registered already.
-    /// </returns>
-    public LicenseRegistrationResult RegisterCommunityEdition( CommunityLicenseReason reason )
+    /// <inheritdoc />
+    public LicenseRegistrationResult Register( SelfRegisteredEdition edition, SelfRegisteredEditionOptions? options = null )
     {
+        // The gate stays here rather than on the edition: it reads a service that only this package can see, so an
+        // edition declared by a product package could not enforce it.
         if ( !this.RequireAttendedSession( out var errorMessage ) )
         {
             return LicenseRegistrationResult.Failure( errorMessage );
         }
 
-        if ( reason == CommunityLicenseReason.None )
+        // A caller holding the catalog of another family would otherwise register a key this product cannot consume.
+        if ( !this._catalog.SelfRegisteredEditions.Contains( edition ) )
         {
-            throw new ArgumentOutOfRangeException( nameof(reason), reason, "The community license reason is invalid." );
+            return LicenseRegistrationResult.Failure( $"'{edition.Alias}' is not an edition of {this._productProfile.Name}." );
         }
 
-        this._logger.Trace?.Log( $"Registering {this._productProfile.Name} Community." );
+        this._logger.Trace?.Log( $"Registering the '{edition.Alias}' edition of {this._productProfile.Name}." );
 
-        var factory = new UnsignedLicenseFactory( this._serviceProvider );
-        var communityLicense = factory.CreateCommunityLicense();
+        var result = edition.Register( this.CreateEditionContext( options ) );
 
-        if ( !this._configurationManager.Update<LicensingConfiguration>(
-                config => config.SetLicense( communityLicense, this._catalog ) with { CommunityLicenseReason = reason } ) )
+        if ( !result.IsSuccess )
         {
-            return LicenseRegistrationResult.Failure( $"{this._productProfile.Name} Community is already registered." );
+            this._logger.Warning?.Log( result.ErrorMessage );
         }
 
-        return LicenseRegistrationResult.Success( communityLicense );
+        return result;
     }
 
-    public LicenseRegistrationResult RegisterFreeEdition()
+    /// <inheritdoc />
+    public ImmutableArray<SelfRegisteredEdition> AvailableEditions
     {
-        if ( !this.RequireAttendedSession( out var errorMessage ) )
+        get
         {
-            return LicenseRegistrationResult.Failure( errorMessage );
+            // Materialized rather than deferred: a caller that asks whether there is any and then enumerates them
+            // would otherwise read the licensing configuration twice.
+            var context = this.CreateEditionContext( null );
+
+            return this._catalog.SelfRegisteredEditions.RemoveAll( e => !e.GetAvailability( context ).IsAvailable );
         }
-
-        this._logger.Trace?.Log( $"Registering the free edition of {this._productProfile.Name}." );
-
-        var factory = new UnsignedLicenseFactory( this._serviceProvider );
-        var freeLicense = factory.CreateCommunityLicense();
-
-        if ( !this._configurationManager.Update<LicensingConfiguration>( config => config.SetLicense( freeLicense, this._catalog ) ) )
-        {
-            return LicenseRegistrationResult.Failure( $"The free edition of {this._productProfile.Name} is already registered." );
-        }
-
-        return LicenseRegistrationResult.Success( freeLicense );
     }
 
-    [Obsolete]
-    public LicenseRegistrationResult RegisterLegacyFreeEdition()
-    {
-        if ( !this.RequireAttendedSession( out var errorMessage ) )
-        {
-            return LicenseRegistrationResult.Failure( errorMessage );
-        }
-
-        this._logger.Trace?.Log( $"Registering {this._productProfile.Name} Free." );
-
-        var factory = new UnsignedLicenseFactory( this._serviceProvider );
-        var communityLicense = factory.CreateLegacyFreeLicense();
-
-        this._configurationManager.Update<LicensingConfiguration>( config => config.SetLicense( communityLicense, this._catalog ) );
-
-        return LicenseRegistrationResult.Success( communityLicense );
-    }
-
-    public LicenseRegistrationResult RegisterTrialEdition()
-    {
-        if ( !this.RequireAttendedSession( out var errorMessage ) )
-        {
-            return LicenseRegistrationResult.Failure( errorMessage );
-        }
-
-        this._logger.Trace?.Log( "Attempting to register an evaluation license." );
-
-        if ( !this.CanRegisterTrialEditionCore( out errorMessage ) )
-        {
-            return LicenseRegistrationResult.Failure( errorMessage );
-        }
-
-        var factory = new UnsignedLicenseFactory( this._serviceProvider );
-        var evaluationLicense = factory.CreateEvaluationLicense();
-
-        this._configurationManager.Update<LicensingConfiguration>(
-            config => config.SetLicense( evaluationLicense, this._catalog ) with { LastEvaluationStartDate = this._dateTimeProvider.UtcNow } );
-
-        return LicenseRegistrationResult.Success( evaluationLicense );
-    }
-
-    private bool CanRegisterTrialEditionCore( [NotNullWhen( false )] out string? errorMessage )
-    {
-        var currentConfiguration = this._configurationManager.Get<LicensingConfiguration>();
-
-        if ( currentConfiguration.GetRegisteredLicenses( this._currentVersion )
-            .Any( l => l is { LicenseType: LicenseType.Evaluation } && l.ValidTo >= this._dateTimeProvider.UtcNow ) )
-        {
-            errorMessage = "The evaluation license is already active.";
-
-            return false;
-        }
-
-        var lastEvaluationStartDate = currentConfiguration.LastEvaluationStartDate ?? DateTime.MinValue;
-        var nextEvaluationStartDate = lastEvaluationStartDate + LicensingConstants.NoEvaluationPeriod + LicensingConstants.EvaluationPeriod;
-
-        if ( nextEvaluationStartDate > this._dateTimeProvider.UtcNow )
-        {
-            errorMessage = $"You cannot start a new trial period until {nextEvaluationStartDate}.";
-            this._logger.Warning?.Log( errorMessage );
-
-            return false;
-        }
-
-        errorMessage = null;
-
-        return true;
-    }
+    private SelfRegisteredEditionContext CreateEditionContext( SelfRegisteredEditionOptions? options )
+        => new( this._serviceProvider, this, options ?? new SelfRegisteredEditionOptions() );
 
     public ValueTask<LicenseRegistrationResult> RegisterLicenseAsync( string licenseString, CancellationToken cancellationToken = default )
         => this.RegisterLicenseCoreAsync( licenseString, false, cancellationToken );
@@ -353,8 +271,6 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         return LicenseRegistrationResult.Success( properties );
     }
-
-    public bool CanRegisterTrialEdition => this.CanRegisterTrialEditionCore( out _ );
 
     public void RemoveLicenses()
     {

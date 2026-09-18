@@ -71,7 +71,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing
             // The 'license register-trial' crash: CanRegisterTrialEditionCore enumerates GetRegisteredLicenses.
             this.ConfigurationManager!.Update<LicensingConfiguration>( c => c with { Licenses = default } );
 
-            Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+            Assert.True( this.RegisterTrial().IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
         }
 

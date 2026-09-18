@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,22 +16,27 @@ namespace SharpCrafters.Backstage.Licensing.Registration;
 [PublicAPI]
 public interface ILicenseRegistrationService : IBackstageService, INotifyPropertyChanged
 {
-    LicenseRegistrationResult RegisterCommunityEdition( CommunityLicenseReason reason );
+    /// <summary>
+    /// Registers one of the editions that the product family gives away.
+    /// </summary>
+    /// <param name="edition">One of <see cref="ILicenseProductCatalog.SelfRegisteredEditions"/>.</param>
+    /// <param name="options">What the user chose, such as why they are entitled to the edition.</param>
+    /// <remarks>
+    /// There is one method for every edition of every family, rather than one per edition, because the editions are
+    /// what a family declares and this interface knows no family. An edition carries its own procedure.
+    /// </remarks>
+    LicenseRegistrationResult Register( SelfRegisteredEdition edition, SelfRegisteredEditionOptions? options = null );
 
     /// <summary>
-    /// Registers the free edition of the product family without recording why the user is entitled to it.
+    /// Gets the editions that can be registered on this machine as things stand, in the order in which they are
+    /// offered.
     /// </summary>
     /// <remarks>
-    /// Metalama asks the question, because its Community edition is given on conditions. PostSharp does not, because
-    /// its Essentials edition is given to everyone, and a question whose answer nobody reads is a question not worth
-    /// asking.
+    /// An edition whose availability depends on the state of the machine is absent while it cannot be registered: the
+    /// trial is, for as long as one is running or its cool-off period has not elapsed. This is a property rather than
+    /// a method so that a user interface bound to it is told when the licensing configuration changes.
     /// </remarks>
-    LicenseRegistrationResult RegisterFreeEdition();
-
-    [Obsolete]
-    LicenseRegistrationResult RegisterLegacyFreeEdition();
-
-    LicenseRegistrationResult RegisterTrialEdition();
+    ImmutableArray<SelfRegisteredEdition> AvailableEditions { get; }
 
     /// <summary>
     /// Registers a license string, which is either a license key or the URL of a license server.
@@ -46,8 +52,6 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     /// <inheritdoc cref="RegisterLicenseAsync"/>
     [Obsolete( "Use RegisterLicenseAsync. This overload blocks the calling thread while a license server is contacted." )]
     LicenseRegistrationResult RegisterLicense( string licenseString );
-
-    bool CanRegisterTrialEdition { get; }
 
     /// <summary>
     /// Removes every registered license key and license server, and the leases held from those servers.

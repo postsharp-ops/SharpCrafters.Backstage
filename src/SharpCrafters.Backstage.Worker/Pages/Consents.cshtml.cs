@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -68,16 +68,6 @@ internal class ConsentsPageModel : PageModel
             case SelectedAction.OpenSource:
                 return this.Redirect( "/DoneOpenSource" );
 
-            case SelectedAction.Trial:
-                {
-                    if ( !ProcessRegistrationResult( this._licenseRegistrationService.RegisterTrialEdition() ) )
-                    {
-                        return this.Page();
-                    }
-
-                    break;
-                }
-
             case SelectedAction.SelfRegisteredEdition:
                 {
                     var edition = this._catalog.SelfRegisteredEditions
@@ -90,8 +80,9 @@ internal class ConsentsPageModel : PageModel
                         return this.Page();
                     }
 
-                    if ( !ProcessRegistrationResult(
-                            edition.RegisterAction( this._licenseRegistrationService, GlobalState.CommunityLicenseReason ) ) )
+                    var options = new SelfRegisteredEditionOptions { CommunityLicenseReason = GlobalState.CommunityLicenseReason };
+
+                    if ( !ProcessRegistrationResult( this._licenseRegistrationService.Register( edition, options ) ) )
                     {
                         return this.Page();
                     }

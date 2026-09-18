@@ -21,7 +21,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
 
         private void AssertEvaluationEligible()
         {
-            Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+            Assert.True( this.RegisterTrial().IsSuccess );
             var expectedStart = this.Time.UtcNow.Date;
             var expectedEnd = expectedStart + LicensingConstants.EvaluationPeriod;
 
@@ -35,7 +35,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
 
         private void AssertEvaluationNotEligible( string reason )
         {
-            Assert.False( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess, reason );
+            Assert.False( this.RegisterTrial().IsSuccess, reason );
         }
 
         [Fact]
@@ -161,12 +161,12 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         [Fact]
         public async Task NotifyPropertyChanged()
         {
-            Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+            Assert.True( this.RegisterTrial().IsSuccess );
 
             var gotPropertyChanged = new TaskCompletionSource<bool>();
             this.LicenseRegistrationService.PropertyChanged += ( _, _ ) => gotPropertyChanged.TrySetResult( true );
 
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
 
             Assert.Equal( gotPropertyChanged.Task, await Task.WhenAny( gotPropertyChanged.Task, Task.Delay( 30000 ) ) );
         }

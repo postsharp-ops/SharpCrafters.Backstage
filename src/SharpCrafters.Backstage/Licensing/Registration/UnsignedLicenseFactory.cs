@@ -10,17 +10,15 @@ using System;
 namespace SharpCrafters.Backstage.Licensing.Registration
 {
     /// <summary>
-    /// Builds the license keys that the product issues to itself, from the descriptions that the product family
-    /// gives.
+    /// Builds the license keys that the product issues to itself, from the descriptions that the editions give.
     /// </summary>
     /// <remarks>
-    /// The division of labour is deliberate. The family says what the license says, because it is the only one that
-    /// knows that the free edition of PostSharp is a PostSharp Ultimate key carrying the Community type. This class
-    /// says how a key is built, because that is the same everywhere.
+    /// The division of labour is deliberate. A <see cref="SelfRegisteredEdition"/> says what the license says, because
+    /// it is the only one that knows that the free edition of PostSharp is a PostSharp Ultimate key carrying the
+    /// Community type. This class says how a key is built, because that is the same everywhere.
     /// </remarks>
     internal sealed class UnsignedLicenseFactory
     {
-        private readonly IDateTimeProvider _time;
         private readonly RandomNumberGenerator _randomNumberGenerator;
         private readonly ILicenseProductCatalog _catalog;
 
@@ -30,39 +28,19 @@ namespace SharpCrafters.Backstage.Licensing.Registration
         /// <param name="services">Services.</param>
         public UnsignedLicenseFactory( IServiceProvider services )
         {
-            this._time = services.GetRequiredBackstageService<IDateTimeProvider>();
             this._randomNumberGenerator = services.GetRequiredBackstageService<RandomNumberGenerator>();
             this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
         }
 
         /// <summary>
-        /// Creates the trial license of the product family.
-        /// </summary>
-        public LicenseRegistrationProperties CreateEvaluationLicense() => this.Build( this._catalog.CreateTrialLicense( this._time.UtcNow ) );
-
-        /// <summary>
-        /// Creates the free license that a user registers without buying anything.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">The family offers no such edition.</exception>
-        public LicenseRegistrationProperties CreateCommunityLicense()
-            => this.Build(
-                this._catalog.CreateFreeLicense( this._time.UtcNow )
-                ?? throw new InvalidOperationException( "The product family has no free edition." ) );
-
-        /// <summary>
-        /// Creates the free license that earlier versions of the product issued.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">The family never had such an edition.</exception>
-        [Obsolete]
-        public LicenseRegistrationProperties CreateLegacyFreeLicense()
-            => this.Build(
-                this._catalog.CreateLegacyFreeLicense( this._time.UtcNow )
-                ?? throw new InvalidOperationException( "The product family has no legacy free edition." ) );
-
-        /// <summary>
         /// Builds and serializes the key of a described license.
         /// </summary>
-        private LicenseRegistrationProperties Build( UnsignedLicense license )
+        /// <remarks>
+        /// The key carries a random identifier instead of the identifier of a sold license, which is what marks it as
+        /// self-created, and it carries no signature: such a key is validated by the rules for self-created licenses
+        /// rather than against a licensing authority.
+        /// </remarks>
+        public LicenseRegistrationProperties CreateLicenseKey( UnsignedLicense license )
         {
             var licenseKeyData = new LicenseKeyDataBuilder
             {

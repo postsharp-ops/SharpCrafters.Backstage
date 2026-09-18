@@ -5,7 +5,6 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
-using System;
 using System.Collections.Immutable;
 
 namespace PostSharp.Backstage;
@@ -107,25 +106,9 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
 
     /// <inheritdoc />
     /// <remarks>
-    /// PostSharp offers its Essentials edition to everyone and asks nothing in return, so the command takes no
-    /// reason. It never had a legacy free edition.
+    /// PostSharp gives away its Essentials edition, to everyone and asking nothing in return. The base class appends
+    /// the trial.
     /// </remarks>
-    public override ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; } = ImmutableArray.Create(
-        new SelfRegisteredEdition(
-            "essentials",
-            "Switches to the PostSharp Essentials edition, which is free for everyone.",
-            ( service, _ ) => service.RegisterFreeEdition() )
-        {
-            SuccessMessage = "You are now using PostSharp Essentials.",
-            SetupTitle = "Start with PostSharp Essentials"
-        } );
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// PostSharp Essentials is a PostSharp Ultimate key carrying <see cref="LicenseType.Community"/>, which is how
-    /// PostSharp 2026.0 writes the key it generates, and the two versions share the registered keys. It does not
-    /// expire: the edition has always been perpetual, and a version that reads it has no way to renew it.
-    /// </remarks>
-    public override UnsignedLicense? CreateFreeLicense( DateTime utcNow )
-        => new( LicenseProduct.PostSharpUltimate, LicenseType.Community, utcNow );
+    protected override ImmutableArray<SelfRegisteredEdition> CreateEditions()
+        => ImmutableArray.Create<SelfRegisteredEdition>( new PostSharpEssentialsEdition() );
 }

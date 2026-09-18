@@ -1,10 +1,11 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.Worker.Pages.Shared;
 using System;
@@ -22,11 +23,13 @@ public class ChooseLicenseKindPageModel : PageModel
     private const string _editionActionPrefix = "Register:";
 
     private readonly ILicenseProductCatalog _catalog;
+    private readonly ILicenseRegistrationService _licenseRegistrationService;
 
-    public ChooseLicenseKindPageModel( IWebLinks webLinks, ILicenseProductCatalog catalog )
+    public ChooseLicenseKindPageModel( IWebLinks webLinks, ILicenseProductCatalog catalog, ILicenseRegistrationService licenseRegistrationService )
     {
         this.WebLinks = webLinks;
         this._catalog = catalog;
+        this._licenseRegistrationService = licenseRegistrationService;
     }
 
     public IWebLinks WebLinks { get; }
@@ -42,11 +45,6 @@ public class ChooseLicenseKindPageModel : PageModel
                 GlobalState.SelectedAction = SelectedAction.OpenSource;
 
                 return this.Redirect( "/DoneOpenSource" );
-
-            case "StartTrial":
-                GlobalState.SelectedAction = SelectedAction.Trial;
-
-                return this.Redirect( "/Consents" );
 
             case "Skip":
                 GlobalState.SelectedAction = SelectedAction.Skip;
@@ -65,7 +63,10 @@ public class ChooseLicenseKindPageModel : PageModel
         {
             var alias = action.Substring( _editionActionPrefix.Length );
 
-            var edition = this._catalog.SelfRegisteredEditions
+            // Looked up among the editions that can be registered now, and not merely among those the family
+            // declares, so that a request which does not come from the form cannot start a trial during its
+            // cool-off period.
+            var edition = this._licenseRegistrationService.AvailableEditions
                 .FirstOrDefault( e => e.SetupTitle != null && string.Equals( e.Alias, alias, StringComparison.OrdinalIgnoreCase ) );
 
             if ( edition != null )

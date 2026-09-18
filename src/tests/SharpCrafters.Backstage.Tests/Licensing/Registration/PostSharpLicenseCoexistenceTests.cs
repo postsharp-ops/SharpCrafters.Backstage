@@ -97,8 +97,8 @@ public sealed class PostSharpLicenseCoexistenceTests : LicensingTestsBase
     [Fact]
     public void RegisteringTheFreeEditionTwiceReplacesItsKey()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterFreeEdition().IsSuccess );
-        Assert.True( this.LicenseRegistrationService.RegisterFreeEdition().IsSuccess );
+        Assert.True( this.RegisterEdition( "essentials" ).IsSuccess );
+        Assert.True( this.RegisterEdition( "essentials" ).IsSuccess );
 
         Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
     }
@@ -109,7 +109,7 @@ public sealed class PostSharpLicenseCoexistenceTests : LicensingTestsBase
     [Fact]
     public async Task TheFreeEditionCoexistsWithAPatternLibrary()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterFreeEdition().IsSuccess );
+        Assert.True( this.RegisterEdition( "essentials" ).IsSuccess );
         await this.RegisterAsync( LicenseKeyProvider.PostSharpLogging );
 
         Assert.Equal( 2, this.LicenseRegistrationService.RegisteredLicenses.Count() );

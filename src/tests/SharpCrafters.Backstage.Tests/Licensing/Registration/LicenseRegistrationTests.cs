@@ -99,7 +99,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         {
             Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
 
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( "community", CommunityLicenseReason.Individual ).IsSuccess );
             Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
             Assert.Equal( LicenseProduct.MetalamaCommunity, this.LicenseRegistrationService.RegisteredLicenses.Single().Product );
         }

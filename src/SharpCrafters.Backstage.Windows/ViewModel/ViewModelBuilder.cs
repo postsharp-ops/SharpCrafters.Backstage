@@ -1,15 +1,17 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Toasts;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Backstage.Windows.Commands;
 using System;
+using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 
 namespace SharpCrafters.Backstage.Windows.ViewModel;
@@ -174,10 +176,13 @@ internal static class ViewModelBuilder
     /// </summary>
     private static string GetTrialExpiringText( string productName, ILicenseProductCatalog catalog )
     {
-        var freeLicense = catalog.CreateFreeLicense( DateTime.UtcNow );
+        // The edition names itself. Reading the product out of the key it grants named the premium product for a
+        // family whose free edition is expressed through the license type, and so invited a PostSharp user whose
+        // trial was ending to activate the edition they have to buy.
+        var freeEdition = catalog.SelfRegisteredEditions.FirstOrDefault( e => e.Kind == SelfRegisteredEditionKind.Free );
 
-        return freeLicense == null
+        return freeEdition == null
             ? $"Register a license key to keep using {productName}."
-            : $"Register a license key or activate {catalog.GetDisplayName( freeLicense.Product )}.";
+            : $"Register a license key or activate {freeEdition.DisplayName}.";
     }
 }

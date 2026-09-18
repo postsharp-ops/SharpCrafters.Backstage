@@ -1,10 +1,9 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Registration;
-using System;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing;
@@ -102,37 +101,44 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     /// <inheritdoc />
     public abstract bool HasUnlicensedEdition { get; }
 
+    private ImmutableArray<SelfRegisteredEdition> _selfRegisteredEditions;
+
     /// <inheritdoc />
     /// <remarks>
-    /// The trial is the same offer in every family — the premium product, for the period that
-    /// <see cref="LicensingConstants.EvaluationPeriod"/> gives — so it is described here rather than by each of
-    /// them. The subscription ends with the trial, so that a build made with a version released later is not
-    /// covered by it.
+    /// Built on first use rather than in the constructor, because an edition is given the catalog and a constructor
+    /// would give it one that is not finished. Two threads arriving together build two equal arrays and one of them
+    /// wins; the field holds a single reference, so no reader sees a torn value.
     /// </remarks>
-    public virtual UnsignedLicense CreateTrialLicense( DateTime utcNow )
+    public ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions
     {
-        // Counted from midnight, so that a trial started late in the evening is not a day shorter than one started
-        // in the morning.
-        var start = utcNow.Date;
-        var end = start + LicensingConstants.EvaluationPeriod;
+        get
+        {
+            if ( this._selfRegisteredEditions.IsDefault )
+            {
+                this._selfRegisteredEditions = this.CreateEditions().Add( this.CreateTrialEdition() );
+            }
 
-        return new UnsignedLicense( this.EvaluationProduct, LicenseType.Evaluation, start ) { ValidTo = end, SubscriptionEndDate = end };
+            return this._selfRegisteredEditions;
+        }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Creates the editions that the family gives away, other than the trial, in the order in which they are offered.
+    /// </summary>
     /// <remarks>
-    /// The default is that the family offers none, which is what a family that sells every edition declares.
+    /// The default is that the family gives away nothing besides the trial, which is what a family that sells every
+    /// edition declares.
     /// </remarks>
-    public virtual ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions => ImmutableArray<SelfRegisteredEdition>.Empty;
+    protected virtual ImmutableArray<SelfRegisteredEdition> CreateEditions() => ImmutableArray<SelfRegisteredEdition>.Empty;
 
-    /// <inheritdoc />
-    public abstract UnsignedLicense? CreateFreeLicense( DateTime utcNow );
-
-    /// <inheritdoc />
+    /// <summary>
+    /// Creates the trial of the family.
+    /// </summary>
     /// <remarks>
-    /// The default is that the family never issued one, which is the case of every family but Metalama.
+    /// Every family offers one, so it is appended here rather than declared by each of them, and it comes last so that
+    /// the setup pages offer the editions that cost nothing before the one that expires.
     /// </remarks>
-    public virtual UnsignedLicense? CreateLegacyFreeLicense( DateTime utcNow ) => null;
+    protected virtual SelfRegisteredEdition CreateTrialEdition() => new TrialEdition( this );
 
 #pragma warning restore CS0618
 }

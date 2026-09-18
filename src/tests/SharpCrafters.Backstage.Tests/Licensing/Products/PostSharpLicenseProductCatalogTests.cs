@@ -4,7 +4,6 @@
 
 using PostSharp.Backstage;
 using SharpCrafters.Backstage.Licensing;
-using System;
 using Xunit;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Products;
@@ -135,46 +134,6 @@ public sealed class PostSharpLicenseProductCatalogTests
     /// </summary>
     [Fact]
     public void PostSharpDoesNothingWithoutALicense() => Assert.False( _catalog.HasUnlicensedEdition );
-
-    /// <summary>
-    /// The free edition is a PostSharp Ultimate key carrying the Community type, which is the key that PostSharp
-    /// 2026.0 generates, and the two versions share the registered keys. It does not expire.
-    /// </summary>
-    [Fact]
-    public void TheFreeEditionIsAnUltimateKeyOfTheCommunityType()
-    {
-        var freeLicense = _catalog.CreateFreeLicense( new DateTime( 2026, 9, 18, 12, 0, 0, DateTimeKind.Utc ) );
-
-        Assert.NotNull( freeLicense );
-        Assert.Equal( LicenseProduct.PostSharpUltimate, freeLicense.Product );
-        Assert.Equal( LicenseType.Community, freeLicense.LicenseType );
-        Assert.Null( freeLicense.ValidTo );
-    }
-
-    /// <summary>
-    /// PostSharp never issued the legacy free edition that Metalama 2025.0 and earlier did, so the command that
-    /// registers it is not offered.
-    /// </summary>
-    [Fact]
-    public void ThereIsNoLegacyFreeEdition() => Assert.Null( _catalog.CreateLegacyFreeLicense( DateTime.UtcNow ) );
-
-    /// <summary>
-    /// The trial is PostSharp Ultimate for the period every family gives, and it carries a subscription that ends
-    /// with it, so that a build made with a version released later is not covered by it.
-    /// </summary>
-    [Fact]
-    public void TheTrialIsUltimateForFortyFiveDays()
-    {
-        var trial = _catalog.CreateTrialLicense( new DateTime( 2026, 9, 18, 22, 30, 0, DateTimeKind.Utc ) );
-
-        Assert.Equal( LicenseProduct.PostSharpUltimate, trial.Product );
-        Assert.Equal( LicenseType.Evaluation, trial.LicenseType );
-
-        // Counted from midnight, so that a trial started late in the evening is not a day shorter.
-        Assert.Equal( new DateTime( 2026, 9, 18 ), trial.ValidFrom );
-        Assert.Equal( new DateTime( 2026, 9, 18 ).AddDays( 45 ), trial.ValidTo );
-        Assert.Equal( trial.ValidTo, trial.SubscriptionEndDate );
-    }
 
     [Fact]
     public void DisplayNamesComeFromTheSharedCatalog()
