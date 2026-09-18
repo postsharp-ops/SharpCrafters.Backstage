@@ -128,7 +128,8 @@ internal sealed class LeasedLicense : AuditableLicense
             return innerResult;
         }
 
-        return LicenseRegistrationPropertiesResult.Success( ToLicenseServerProperties( innerResult.Properties!, this.LicenseServerUrl, leaseResult.Lease! ) );
+        return LicenseRegistrationPropertiesResult.Success(
+            ToLicenseServerProperties( innerResult.Properties!, this.LicenseServerUrl, leaseResult.Lease!, this._catalog ) );
     }
 
     /// <inheritdoc />
@@ -158,16 +159,19 @@ internal sealed class LeasedLicense : AuditableLicense
     internal static LicenseRegistrationProperties ToLicenseServerProperties(
         LicenseRegistrationProperties leasedKeyProperties,
         string licenseServerUrl,
-        LicenseLease lease )
+        LicenseLease lease,
+        ILicenseProductCatalog catalog )
         => leasedKeyProperties with
         {
             LicenseString = licenseServerUrl,
             LicenseServerUrl = licenseServerUrl,
             Lease = new LicenseLeaseProperties( lease.StartTime, lease.EndTime, lease.RenewTime ),
 
-            // A registered URL is stored in the group of the first version that understands a license server, whatever
-            // the product of the licence leased today, which the server may change tomorrow.
-            MinMetalamaVersion = LicensingConstants.MinimalLicenseServerVersion
+            // A registered URL is stored in the group of the first version of this family that understands a license
+            // server, whatever the product of the licence leased today, which the server may change tomorrow. The
+            // family is asked rather than the key, because a URL has no content to judge, and the families differ:
+            // PostSharp has had license servers since before it recorded which version was asking.
+            MinVersion = catalog.MinimalLicenseServerVersion
         };
 
     private async ValueTask<LicenseLeaseResult> ResolveAsync( bool forceDownload, CancellationToken cancellationToken )

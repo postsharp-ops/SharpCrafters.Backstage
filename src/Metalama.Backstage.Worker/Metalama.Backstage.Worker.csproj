@@ -41,21 +41,6 @@
         <None Remove="Properties\launchSettings.json" />
     </ItemGroup>
 
-    <Import Project="../../eng/DeterministicZip.tasks"/>
-
-    <Target Name="PackAndZip" AfterTargets="Build">
-
-        <!-- We need to create a web archive that contains static assets. The directory is deleted first, so that the
-             archive does not carry the files of an earlier build. -->
-        <RemoveDir Directories="$(OutputPath)Packed" />
-        <Exec Command="dotnet publish $(ProjectPath) --no-build -o $(OutputPath)Packed -c $(Configuration)" />
-
-        <ItemGroup>
-            <ZipInputFiles Include="$(OutputPath)Packed\**\*" />
-        </ItemGroup>
-
-        <CreateDeterministicZip SourceDirectory="$(OutputPath)Packed" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(BuildDate)" />
-        <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High" />
-    </Target>
+    <Import Project="../../eng/PackWorkerZip.targets"/>
 
 </Project>

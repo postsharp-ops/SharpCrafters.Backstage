@@ -27,7 +27,8 @@ namespace PostSharp.LicenseKeyGenerator
 
         private void OnSerializedButtonClicked( object sender, EventArgs e )
         {
-            var licenseKeyBuilder = (LicenseKeyDataBuilder) this._propertyGrid.SelectedObject;
+            var licenseKeyBuilder = this._propertyGrid.SelectedObject as LicenseKeyDataBuilder
+                                    ?? throw new InvalidOperationException( "There is no license key to sign." );
             var licenseKey = licenseKeyBuilder.SignAndSerialize( this._authorityProvider.GetAuthority( 0 ) );
 
             if ( !LicenseKeyData.TryDeserialize( licenseKey, out var deserializedLicenseKeyData, out var errorMessage ) )

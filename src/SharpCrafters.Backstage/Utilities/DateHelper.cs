@@ -8,12 +8,18 @@ namespace SharpCrafters.Backstage.Utilities;
 
 internal static class DateHelper
 {
+    /// <summary>
+    /// Gets the first Monday of the month that <paramref name="date"/> falls in, at midnight. The result keeps the
+    /// <see cref="DateTime.Kind"/> of <paramref name="date"/>, so that a moment in universal time yields a boundary
+    /// in universal time.
+    /// </summary>
     public static DateTime GetFirstMondayOfMonth( this DateTime date )
     {
-        var firstDayOfMonth = new DateTime( date.Year, date.Month, 1 );
+        var firstDayOfMonth = new DateTime( date.Year, date.Month, 1, 0, 0, 0, date.Kind );
 
         var offset = (DayOfWeek.Monday - firstDayOfMonth.DayOfWeek + 7) % 7;
 
         return firstDayOfMonth.AddDays( offset );
     }
+
 }

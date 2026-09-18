@@ -235,6 +235,16 @@ internal sealed class TelemetryConfigurationService : ITelemetryConfigurationSer
 
         // We rotate telemetry ids and salts on the first Monday of the month to make sure that
         // weekly aggregates are correct because they are the most important.
+        //
+        // The threshold is this month's first Monday, and deliberately not the latest one that has passed. After a
+        // long gap, taking the latest would rotate on the day the product is next used and then rotate again days
+        // later when this month's Monday arrives, giving one identifier a lifetime of a few days in the middle of a
+        // week -- which is what rotating on a Monday exists to avoid. Waiting instead means a rotation can be up to
+        // six days late, which costs nothing, because the identifier it holds on to was not used in the meantime.
+        //
+        // PostSharp answers this differently, in DeviceIdRotationPolicy.GetCurrentRotationDate, which falls back to
+        // the previous month's Monday and therefore rotates twice. The two products share the registry value that
+        // records the last rotation, so on a machine carrying both, a rotation by either satisfies the other.
         var firstOfMonth = this._dateTimeProvider.UtcNow.Date.GetFirstMondayOfMonth();
 
         var rotated = this._configurationManager.UpdateIf<TelemetryConfiguration>(

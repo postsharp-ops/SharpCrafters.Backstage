@@ -4,8 +4,12 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.Worker.Pages.Shared;
+using System;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Worker.Pages;
 
@@ -13,9 +17,19 @@ namespace SharpCrafters.Backstage.Worker.Pages;
 
 public class ChooseLicenseKindPageModel : PageModel
 {
-    public ChooseLicenseKindPageModel( IWebLinks webLinks )
+    /// <summary>
+    /// The prefix of the action that names an edition, which distinguishes it from the fixed choices.
+    /// </summary>
+    private const string _editionActionPrefix = "Register:";
+
+    private readonly ILicenseProductCatalog _catalog;
+    private readonly ILicenseRegistrationService _licenseRegistrationService;
+
+    public ChooseLicenseKindPageModel( IWebLinks webLinks, ILicenseProductCatalog catalog, ILicenseRegistrationService licenseRegistrationService )
     {
         this.WebLinks = webLinks;
+        this._catalog = catalog;
+        this._licenseRegistrationService = licenseRegistrationService;
     }
 
     public IWebLinks WebLinks { get; }
@@ -24,15 +38,13 @@ public class ChooseLicenseKindPageModel : PageModel
     {
         switch ( action )
         {
-            case "UseOpenSource":
+            // Checked here and not only where the choice is offered, because the page is reached over a local
+            // server and a request is not obliged to come from the form. A product that does nothing without a
+            // license must not be left believing that it has been set up.
+            case "UseOpenSource" when this._catalog.HasUnlicensedEdition:
                 GlobalState.SelectedAction = SelectedAction.OpenSource;
 
                 return this.Redirect( "/DoneOpenSource" );
-
-            case "StartTrial":
-                GlobalState.SelectedAction = SelectedAction.Trial;
-
-                return this.Redirect( "/Consents" );
 
             case "Skip":
                 GlobalState.SelectedAction = SelectedAction.Skip;
@@ -43,6 +55,27 @@ public class ChooseLicenseKindPageModel : PageModel
                 GlobalState.SelectedAction = SelectedAction.Register;
 
                 return this.Redirect( "/LicenseKey" );
+        }
+
+        // One of the editions that the product family offers, named by the alias that the choice carries. The alias
+        // is looked up rather than trusted, for the reason given above: a request need not come from the form.
+        if ( action?.StartsWith( _editionActionPrefix, StringComparison.Ordinal ) == true )
+        {
+            var alias = action.Substring( _editionActionPrefix.Length );
+
+            // Looked up among the editions that can be registered now, and not merely among those the family
+            // declares, so that a request which does not come from the form cannot start a trial during its
+            // cool-off period.
+            var edition = this._licenseRegistrationService.AvailableEditions
+                .FirstOrDefault( e => e.SetupTitle != null && string.Equals( e.Alias, alias, StringComparison.OrdinalIgnoreCase ) );
+
+            if ( edition != null )
+            {
+                GlobalState.SelectedAction = SelectedAction.SelfRegisteredEdition;
+                GlobalState.SelfRegisteredEditionAlias = edition.Alias;
+
+                return this.Redirect( "/Consents" );
+            }
         }
 
         return this.Page();

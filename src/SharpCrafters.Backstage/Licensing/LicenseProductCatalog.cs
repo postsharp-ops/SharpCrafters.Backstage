@@ -3,6 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Registration;
+using System;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing;
@@ -76,13 +79,28 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public abstract bool IsProductOfFamily( LicenseProduct product );
 
     /// <inheritdoc />
-    public abstract bool IsFreeProduct( LicenseProduct product );
+    public abstract bool IsFreeLicense( LicenseProduct product, LicenseType licenseType );
 
     /// <inheritdoc />
-    public abstract bool RequiresVersionSpecificRegistration( LicenseProduct product );
+    public abstract bool IsStoredInLicenseList( LicenseProduct product );
 
     /// <inheritdoc />
     public abstract ImmutableArray<LicenseProduct> GetProductsCoexistingWith( LicenseProduct product );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A family that does not override this answers that every one of its released versions can consume every key, so
+    /// no key is ever put out of their reach. That is the right answer until the family releases a reader which
+    /// refuses something a later key can carry.
+    /// </remarks>
+    public virtual Version? GetMinimalVersion( LicenseKeyData licenseKeyData ) => null;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The default is the version of this package that introduces license servers, which is the right answer for a
+    /// family whose license servers arrive with it. A family that had them before overrides this.
+    /// </remarks>
+    public virtual Version? MinimalLicenseServerVersion => LicensingConstants.MinimalLicenseServerVersion;
 
     /// <inheritdoc />
     public abstract string PremiumEditionDisplayName { get; }
@@ -98,10 +116,17 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public virtual LicenseProduct? LicenseServerProduct => this.EvaluationProduct;
 
     /// <inheritdoc />
-    public abstract LicenseProduct? CommunityProduct { get; }
+    public abstract bool HasUnlicensedEdition { get; }
 
     /// <inheritdoc />
-    public abstract LicenseProduct? LegacyFreeProduct { get; }
+    /// <remarks>
+    /// Each family lists its own, trial included, and assigns the list in its constructor so that it is built once.
+    /// It has to be the same objects every time: an edition is compared by identity — it is the object a caller
+    /// passes back to <c>ILicenseRegistrationService.Register</c>, which checks that it belongs to this family — so a
+    /// second list of equivalent editions is not equivalent at all, and a caller holding one from the first would be
+    /// told that it is not an edition of this product.
+    /// </remarks>
+    public abstract ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
 
 #pragma warning restore CS0618
 }

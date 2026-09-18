@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using JetBrains.Annotations;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
@@ -15,8 +16,16 @@ using System.Text.Json.Serialization;
 
 namespace SharpCrafters.Backstage.Licensing;
 
+/// <summary>
+/// The license keys that the user has registered, and the state that goes with them.
+/// </summary>
+/// <remarks>
+/// Public because a product whose earlier versions keep these settings somewhere other than a file supplies the
+/// schema that maps them, and a schema is part of the product package rather than of the neutral services.
+/// </remarks>
 [ConfigurationFile( "licensing.json" )]
-internal sealed record LicensingConfiguration : ConfigurationFile
+[PublicAPI]
+public sealed record LicensingConfiguration : ConfigurationFile
 {
     /// <summary>
     /// Gets the date of the last evaluation period.
@@ -107,17 +116,24 @@ internal sealed record LicensingConfiguration : ConfigurationFile
         var licenseString = license.LicenseString ?? throw new ArgumentNullException( nameof(license) );
 
         // Now we can add the new license, in the oldest group that can consume it.
-        if ( license.MinMetalamaVersion != null )
+        if ( license.MinVersion != null )
         {
-            return clone with
-            {
-                LicensesByMinimalVersion = ImmutableDictionary<string, ImmutableArray<string?>>.Empty
-                    .Add( license.MinMetalamaVersion.ToString(), ImmutableArray.Create<string?>( licenseString ) )
-            };
+            // Added to the group rather than put in its place, and the other groups are left alone, for the same
+            // reason as in the list below: in a family whose products co-exist, every key reaches a group, and
+            // replacing the groups would drop the keys that the registration is supposed to keep. The keys that do
+            // not co-exist with this one have already been removed above.
+            var groups = clone.LicensesByMinimalVersion ?? ImmutableDictionary<string, ImmutableArray<string?>>.Empty;
+            var groupName = license.MinVersion.ToString();
+            var group = groups.TryGetValue( groupName, out var existingGroup ) ? existingGroup : ImmutableArray<string?>.Empty;
+
+            return clone with { LicensesByMinimalVersion = groups.SetItem( groupName, group.Add( licenseString ) ) };
         }
-        else if ( catalog.RequiresVersionSpecificRegistration( license.Product ) )
+        else if ( catalog.IsStoredInLicenseList( license.Product ) )
         {
-            return clone with { Licenses = ImmutableArray.Create<string?>( licenseString ) };
+            // Added to the keys that survived, not put in their place: in a family whose products co-exist, the user
+            // registers them one after another, and each registration has to keep the ones registered before it. The
+            // keys that do not co-exist with this one have already been removed above.
+            return clone with { Licenses = clone.Licenses.Add( licenseString ) };
         }
         else
         {
@@ -130,25 +146,71 @@ internal sealed record LicensingConfiguration : ConfigurationFile
 
     private LicensingConfiguration RemoveAllLicensesExcept( ImmutableArray<LicenseProduct> products )
     {
-        // A license key of a group is never a license key of a product that has to co-exist, because the products
-        // that co-exist are consumed by every released version and therefore never reach a group.
-        var clone = this.LicensesByMinimalVersion == null ? this : this with { LicensesByMinimalVersion = null };
+        // The groups are filtered by the same rule as the two other slots, and not cleared. A family whose products
+        // co-exist and whose keys all reach a group -- which is PostSharp, whose every current key is kept from the
+        // versions that cannot read it -- would otherwise lose every key it is supposed to keep each time another
+        // one is registered.
+        var clone = this;
 
-        // A license server URL is removed whatever the products that co-exist: it is not a license key of any product,
-        // so the co-existence rules of the catalog cannot apply to it. It is spelled out rather than left to fall into
-        // the branch for a string that does not parse, so that the reason is visible.
-        if ( clone.LegacyLicense != null
-             && (LicenseServerUrl.IsLicenseServerUrl( clone.LegacyLicense )
-                 || GetLicenseKeyData( clone.LegacyLicense ) is not { } legacyLicense
-                 || !products.Contains( legacyLicense.Product )) )
+        if ( clone.LicensesByMinimalVersion is { } groups )
         {
-            return clone with { LegacyLicense = null };
+            var survivingGroups = ImmutableDictionary.CreateBuilder<string, ImmutableArray<string?>>();
+
+            foreach ( var group in groups )
+            {
+                var survivingGroup = group.Value.RemoveAll( license => !CoexistsWithRegisteredLicense( license, products ) );
+
+                // A group that nothing survives in is dropped rather than left empty, so that the configuration does
+                // not accumulate the name of every version a user has ever registered a key for.
+                if ( !survivingGroup.IsEmpty )
+                {
+                    survivingGroups.Add( group.Key, survivingGroup );
+                }
+            }
+
+            clone = clone with { LicensesByMinimalVersion = survivingGroups.Count == 0 ? null : survivingGroups.ToImmutable() };
         }
-        else
+
+        if ( clone.LegacyLicense != null && !CoexistsWithRegisteredLicense( clone.LegacyLicense, products ) )
         {
-            return clone;
+            clone = clone with { LegacyLicense = null };
         }
+
+        // The list is filtered by the same rule as the single slot. Leaving it out would keep a key of a product that
+        // the newly registered one replaces, and in a family that stores its keys in the list that is every key.
+        var survivingLicenses = clone.Licenses.RemoveAll( license => !CoexistsWithRegisteredLicense( license, products ) );
+
+        if ( survivingLicenses.Length != clone.Licenses.Length )
+        {
+            clone = clone with { Licenses = survivingLicenses };
+        }
+
+        return clone;
     }
+
+    /// <summary>
+    /// Determines whether an already registered license string survives the registration of a new license, given the
+    /// products that co-exist with the product being registered.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A license server URL is removed whatever the products that co-exist: it is not a license key of any product,
+    /// so the co-existence rules of the catalog cannot apply to it. It is spelled out rather than left to fall into
+    /// the branch for a string that does not parse, so that the reason is visible.
+    /// </para>
+    /// <para>
+    /// The product of the stored key is normalized before it is compared, because the set of products comes from the
+    /// catalog, which is asked about the normalized product of the license being registered. The two differ for the
+    /// editions that a family expresses through the license type: the free edition of PostSharp is a PostSharp
+    /// Ultimate key carrying the Essentials type, so comparing the product as written would read it as Ultimate,
+    /// find that Ultimate co-exists with the edition being registered, and keep a key that the new one replaces.
+    /// </para>
+    /// </remarks>
+    private static bool CoexistsWithRegisteredLicense( string? licenseString, ImmutableArray<LicenseProduct> products )
+        => licenseString != null
+           && !LicenseServerUrl.IsLicenseServerUrl( licenseString )
+           && GetLicenseKeyData( licenseString ) is { } licenseKeyData
+           && products.Contains( licenseKeyData.NormalizeProduct() );
 
     private static LicenseKeyData? GetLicenseKeyData( string? licenseKey, Action<LicensingMessage>? reportMessage = null )
     {

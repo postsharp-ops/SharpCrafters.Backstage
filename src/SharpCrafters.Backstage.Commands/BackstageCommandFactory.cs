@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -10,6 +10,7 @@ using SharpCrafters.Backstage.Commands.Rss;
 using SharpCrafters.Backstage.Commands.Telemetry;
 using SharpCrafters.Backstage.Commands.UserInterface;
 using Spectre.Console.Cli;
+using System.Linq;
 using System;
 
 namespace SharpCrafters.Backstage.Commands;
@@ -49,23 +50,18 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( "Acquires a lease from the registered license server and prints the license it leases." );
 
-                        license.AddCommand<RegisterTrialCommand>( "try" )
-                            .WithData( options )
-                            .WithDescription( $"Activates the {productName} trial period." );
-
-                        // TODO: The "community" and "free" commands, like the setup page that offers the open source option, are
-                        // specific to the Metalama editions: PostSharp has no community edition. The licensing options of a
-                        // product family need an abstraction that decides which commands and which setup choices are offered.
-                        // See #2018.
-                        license.AddCommand<RegisterCommunityCommand>( "community" )
-                            .WithData( options )
-                            .WithDescription( $"Switches to the {productName} Community edition." );
-
-#pragma warning disable CS0612 // Type or member is obsolete
-                        license.AddCommand<RegisterLegacyFreeCommand>( "free" )
-                            .WithData( options )
-                            .WithDescription( $"Registers the legacy {productName} Free license (for {productName} 2025.0 and earlier)." );
-#pragma warning restore CS0612 // Type or member is obsolete
+                        // One command per edition that the product family gives away and that a user registers by
+                        // hand, named by the alias the family gave it. The trial is one of them. An edition that
+                        // another program registers on the user's behalf declares that it is not offered here, so the
+                        // help does not describe something nobody obtains this way; and a family that gives away
+                        // nothing would otherwise advertise a command whose only outcome is an error.
+                        foreach ( var edition in options.Product.LicenseProductCatalog.SelfRegisteredEditions
+                                     .Where( e => e.IsAvailableFromCommandLine ) )
+                        {
+                            license.AddCommand<RegisterEditionCommand>( edition.Alias )
+                                .WithData( options )
+                                .WithDescription( edition.Description );
+                        }
 
                         configureBranch?.Invoke( "license", license );
                     } );
@@ -91,6 +87,10 @@ public static class BackstageCommandFactory
                         config.AddCommand<PrintConfigurationCommand>( "print" )
                             .WithData( options )
                             .WithDescription( "Displays the contents of a configuration file in the console." );
+
+                        config.AddCommand<DumpConfigurationCommand>( "dump" )
+                            .WithData( options )
+                            .WithDescription( "Writes every configuration, or one of them, to the console as a single JSON document." );
 
                         config.AddCommand<ValidateConfigurationCommand>( "validate" )
                             .WithData( options )

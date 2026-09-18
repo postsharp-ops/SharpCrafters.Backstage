@@ -4,11 +4,14 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Toasts;
 using SharpCrafters.Backstage.Worker.Pages.Shared;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Worker.Pages;
@@ -20,15 +23,18 @@ internal class ConsentsPageModel : PageModel
     private readonly ILicenseRegistrationService _licenseRegistrationService;
     private readonly IIdeExtensionStatusService? _ideExtensionStatusService;
     private readonly IToastNotificationStatusService _toastNotificationStatusService;
+    private readonly ILicenseProductCatalog _catalog;
 
     public ConsentsPageModel(
         ILicenseRegistrationService licenseRegistrationService,
         IToastNotificationStatusService toastNotificationStatusService,
+        ILicenseProductCatalog catalog,
         IIdeExtensionStatusService? ideExtensionStatusService = null )
     {
         this._licenseRegistrationService = licenseRegistrationService;
         this._ideExtensionStatusService = ideExtensionStatusService;
         this._toastNotificationStatusService = toastNotificationStatusService;
+        this._catalog = catalog;
     }
 
     public List<string> ErrorMessages { get; } = [];
@@ -62,9 +68,21 @@ internal class ConsentsPageModel : PageModel
             case SelectedAction.OpenSource:
                 return this.Redirect( "/DoneOpenSource" );
 
-            case SelectedAction.Trial:
+            case SelectedAction.SelfRegisteredEdition:
                 {
-                    if ( !ProcessRegistrationResult( this._licenseRegistrationService.RegisterTrialEdition() ) )
+                    var edition = this._catalog.SelfRegisteredEditions
+                        .FirstOrDefault( e => string.Equals( e.Alias, GlobalState.SelfRegisteredEditionAlias, StringComparison.OrdinalIgnoreCase ) );
+
+                    if ( edition == null )
+                    {
+                        this.ErrorMessages.Add( "No edition was chosen." );
+
+                        return this.Page();
+                    }
+
+                    var options = new SelfRegisteredEditionOptions { CommunityLicenseReason = GlobalState.CommunityLicenseReason };
+
+                    if ( !ProcessRegistrationResult( this._licenseRegistrationService.Register( edition, options ) ) )
                     {
                         return this.Page();
                     }

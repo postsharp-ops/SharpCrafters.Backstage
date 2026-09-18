@@ -13,12 +13,6 @@
   
     </PropertyGroup>
 
-    <PropertyGroup>
-        <EnableNETAnalyzers>true</EnableNETAnalyzers>
-        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-        <WarningLevel>4</WarningLevel>
-    </PropertyGroup>
-
     <ItemGroup>
         <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
@@ -30,8 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Metalama.Backstage.Tools\Metalama.Backstage.Tools.csproj" />
-        <ProjectReference Include="..\Metalama.Backstage\Metalama.Backstage.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
     </ItemGroup>
 
     <ItemGroup>

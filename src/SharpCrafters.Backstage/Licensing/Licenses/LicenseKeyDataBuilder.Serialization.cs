@@ -258,9 +258,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 Guid? licenseGuid = null;
 
                 // Parse the license key prefix.
-#pragma warning disable CA1307
-                var firstDash = licenseKey.IndexOf( '-' );
-#pragma warning restore CA1307
+                var firstDash = licenseKey.IndexOfOrdinal( '-' );
 
                 if ( firstDash < 0 )
                 {

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -14,9 +14,31 @@ namespace SharpCrafters.Backstage.Configuration
             where T : ConfigurationFile
             => (T) configurationManager.Get( typeof(T), ignoreCache );
 
+        public static ConfigurationStore GetStore<T>( this IConfigurationManager configurationManager )
+            where T : ConfigurationFile
+            => configurationManager.GetStore( typeof(T) );
+
+        /// <summary>
+        /// Gets the path of the file that holds a configuration object, for a caller that only works with a
+        /// file-based configuration manager.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The manager does not store this type in a file.</exception>
         public static string GetFilePath<T>( this IConfigurationManager configurationManager )
             where T : ConfigurationFile
             => configurationManager.GetFilePath( typeof(T) );
+
+        /// <inheritdoc cref="GetFilePath{T}"/>
+        public static string GetFilePath( this IConfigurationManager configurationManager, Type type )
+        {
+            var store = configurationManager.GetStore( type );
+
+            if ( store.Kind != ConfigurationStoreKind.File )
+            {
+                throw new InvalidOperationException( $"The configuration '{type.Name}' is stored in {store.Kind}, not in a file." );
+            }
+
+            return store.Path;
+        }
 
         /// <summary>
         /// Creates a configuration file with its default content if it does not exist yet.

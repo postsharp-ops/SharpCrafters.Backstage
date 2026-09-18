@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <OutputType>exe</OutputType>
+        <RootNamespace>PostSharp.Backstage</RootNamespace>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <!-- Embedded pdb seems to be incompatible with `dotnet pack`. -->
+        <DebugType>portable</DebugType>
+        <RollForward>Major</RollForward>
+    </PropertyGroup>
+
+    <!-- This project is the executable of the worker of PostSharp. The worker itself is the SharpCrafters.Backstage.Worker
+         library; this project binds it to the PostSharp product and packages it as the zip archive that
+         PostSharp.Backstage.Tools embeds. -->
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <UseAppHost>false</UseAppHost>
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+        <!-- This app should run on any .NET 6+ runtime. -->
+        <RollForward>Major</RollForward>
+        <OutputZipFile>bin\$(MSBuildProjectName).zip</OutputZipFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\PostSharp.Backstage\PostSharp.Backstage.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage.Worker\SharpCrafters.Backstage.Worker.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Properties\launchSettings.json" />
+    </ItemGroup>
+
+    <Import Project="../../eng/PackWorkerZip.targets"/>
+
+</Project>

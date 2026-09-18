@@ -22,8 +22,13 @@ public partial class LicenseKeyDataBuilder : ILicenseKeyData
         this._fields = ImmutableSortedDictionary<LicenseFieldIndex, LicenseField>.Empty.ToBuilder();
     }
 
-    internal LicenseKeyDataBuilder( ImmutableSortedDictionary<LicenseFieldIndex, LicenseField> fields )
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LicenseKeyDataBuilder"/> class that carries the fields and the
+    /// version of a license key that has already been read, so that the key can be written out again unchanged.
+    /// </summary>
+    internal LicenseKeyDataBuilder( byte version, ImmutableSortedDictionary<LicenseFieldIndex, LicenseField> fields )
     {
+        this.Version = version;
         this._fields = fields.ToBuilder();
     }
 

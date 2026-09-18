@@ -58,7 +58,7 @@ public sealed class LazyAuthorityCreationTests : LicensingTestsBase
     [Fact]
     public async Task TrialLicenseCreatesNoAuthority()
     {
-        Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+        Assert.True( this.RegisterTrial().IsSuccess );
 
         var consumer = await this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumerAsync();
 

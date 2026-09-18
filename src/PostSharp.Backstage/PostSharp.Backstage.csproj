@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
+        <!-- Packaging -->
+        <PackageDescription>The PostSharp customization of Backstage: the product profile, the web links, the license catalog and the telemetry key. This package should only be installed as a dependency.</PackageDescription>
+        <RootNamespace>PostSharp.Backstage</RootNamespace>
+    </PropertyGroup>
+
+    <!-- This project is the PostSharp composition of the Backstage services: it holds the PostSharp-specific values
+         and implementations over SharpCrafters.Backstage. -->
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="System.Collections.Immutable" />
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The Backstage packages form one family and share their internal types; the test projects need them too. -->
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
+    </ItemGroup>
+
+</Project>

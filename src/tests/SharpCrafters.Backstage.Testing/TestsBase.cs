@@ -13,6 +13,7 @@ using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
@@ -193,7 +194,11 @@ namespace SharpCrafters.Backstage.Testing
             _ = this.ServiceProvider;
         }
 
-        internal TestsBase( ITestOutputHelper logger, BackstageInitializationOptions? options )
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestsBase"/> class for a given product, which the test suite
+        /// of a product passes so that its own catalog and profile are the ones under test.
+        /// </summary>
+        protected TestsBase( ITestOutputHelper logger, BackstageInitializationOptions? options )
         {
             this.Logger = logger;
 
@@ -363,7 +368,12 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<ITelemetryUploader>( serviceProvider => new TelemetryUploader( serviceProvider ) )
                 .AddSingleton<TelemetryLogger>( serviceProvider => new TelemetryLogger( serviceProvider ) )
                 .AddSingleton<IRssClient>( serviceProvider => new RssClient( serviceProvider ) )
-                .AddSingleton<ILicensingAuthorityProvider>( this.CreateLicensingAuthorityProvider );
+                .AddSingleton<ILicensingAuthorityProvider>( this.CreateLicensingAuthorityProvider )
+
+                // The default that AddBackstageServices registers before the services of the product. This is not
+                // that method, so the product's own registrations are not run here: a test that wants the answer of a
+                // particular product registers it, and a test of the registration itself uses AddBackstageServices.
+                .AddSingleton<ILicenseAuditKeyProvider>( _ => ReportContentLicenseAuditKeyProvider.Instance );
 
             if ( options.OpenWelcomePage )
             {

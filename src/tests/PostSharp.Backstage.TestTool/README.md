@@ -1,0 +1,1 @@
+The `postsharp-backstage` tool hosts the Backstage commands with the PostSharp product, so that the commands can be exercised against the configuration that PostSharp shares with its earlier versions, without building the PostSharp repository. It is for internal testing only and is not published.

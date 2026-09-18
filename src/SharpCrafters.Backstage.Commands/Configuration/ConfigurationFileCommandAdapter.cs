@@ -1,8 +1,9 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Serialization;
 using System;
@@ -19,6 +20,12 @@ internal abstract class ConfigurationFileCommandAdapter
     public abstract string? Description { get; }
 
     public virtual string? EnvironmentVariableName => null;
+
+    /// <summary>
+    /// Gets the type of the configuration object, so that a caller can read and serialize it through
+    /// <see cref="IConfigurationManager"/> without knowing that type at compile time.
+    /// </summary>
+    public abstract Type ConfigurationType { get; }
 
     public abstract void Print( ExtendedCommandContext context );
 
@@ -51,6 +58,8 @@ internal sealed class ConfigurationFileCommandAdapter<T> : ConfigurationFileComm
 
     public override string? EnvironmentVariableName => this._attribute.EnvironmentVariableName;
 
+    public override Type ConfigurationType => typeof(T);
+
     public override void Print( ExtendedCommandContext context )
     {
         var configurationManager = context.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
@@ -74,12 +83,29 @@ internal sealed class ConfigurationFileCommandAdapter<T> : ConfigurationFileComm
     {
         var configurationManager = context.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
 
+        // The store is created with its default content first, so that the editor opens on something the user can
+        // read and change rather than on nothing at all.
         configurationManager.CreateIfMissing<T>();
 
-        var filePath = configurationManager.GetFilePath<T>();
-        context.Console.WriteSuccess( $"Opening '{filePath}' in the default editor." );
+        var store = configurationManager.GetStore<T>();
 
-        Process.Start( new ProcessStartInfo( filePath ) { UseShellExecute = true } );
+        switch ( store.Kind )
+        {
+            case ConfigurationStoreKind.File:
+                context.Console.WriteSuccess( $"Opening '{store.Path}' in the default editor." );
+                Process.Start( new ProcessStartInfo( store.Path ) { UseShellExecute = true } );
+
+                break;
+
+            case ConfigurationStoreKind.RegistryKey:
+                context.Console.WriteSuccess( $"Opening '{store.Path}' in the registry editor." );
+                RegistryEditor.Open( store.Path );
+
+                break;
+
+            default:
+                throw new InvalidOperationException( $"Cannot open a configuration store of kind {store.Kind}." );
+        }
     }
 
     public override void Validate( ExtendedCommandContext context )
@@ -91,7 +117,7 @@ internal sealed class ConfigurationFileCommandAdapter<T> : ConfigurationFileComm
 
         if ( context.Console is { HasErrors: false, HasWarnings: false } )
         {
-            context.Console.WriteSuccess( $"The file '{configurationManager.GetFilePath<T>()}' is correct." );
+            context.Console.WriteSuccess( $"The configuration '{configurationManager.GetStore<T>()}' is correct." );
         }
     }
 }

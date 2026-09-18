@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>PostSharp.Backstage.TestTool</RootNamespace>
+        <PackAsTool>true</PackAsTool>
+        <DebugType>portable</DebugType>
+        <ToolCommandName>postsharp-backstage</ToolCommandName>
+        <PackageDescription>A test tool that hosts the Backstage commands with the PostSharp product, for internal testing only.</PackageDescription>
+
+        <RollForward>Major</RollForward>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" />
+      <PackageReference Include="Spectre.Console.Cli" />
+      <PackageReference Include="Newtonsoft.Json" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\SharpCrafters.Backstage.Commands\SharpCrafters.Backstage.Commands.csproj" />
+      <ProjectReference Include="..\..\PostSharp.Backstage\PostSharp.Backstage.csproj" />
+      <ProjectReference Include="..\..\PostSharp.Backstage.Tools\PostSharp.Backstage.Tools.csproj" />
+    </ItemGroup>
+
+</Project>

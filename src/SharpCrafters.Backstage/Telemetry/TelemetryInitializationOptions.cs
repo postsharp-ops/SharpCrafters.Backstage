@@ -13,10 +13,20 @@ namespace SharpCrafters.Backstage.Telemetry;
 /// they belong to the product and not to the Backstage services.
 /// </summary>
 /// <param name="UploadUri">The address to which the encrypted telemetry packages are uploaded.</param>
-/// <param name="GetUploadEncryptionPublicKey">A delegate that returns the RSA public key, in the <c>RSAKeyValue</c> XML format, that encrypts the symmetric key of a telemetry package. It is invoked when a package is uploaded, not when the options are created.</param>
 [PublicAPI]
-public sealed record TelemetryInitializationOptions( Uri UploadUri, Func<byte[]> GetUploadEncryptionPublicKey ) : IBackstageService
+public sealed record TelemetryInitializationOptions( Uri UploadUri ) : IBackstageService
 {
+    /// <summary>
+    /// Gets a delegate that returns the RSA public key, in the <c>RSAKeyValue</c> XML format, that encrypts the
+    /// symmetric key of a telemetry package. It is invoked when a package is uploaded, not when the options are
+    /// created.
+    /// </summary>
+    /// <remarks>
+    /// The default is the key of the vendor, which is the only one the endpoint can open, so a product has no reason
+    /// to name another. See <see cref="TelemetryEncryptionKey"/>.
+    /// </remarks>
+    public Func<byte[]> GetUploadEncryptionPublicKey { get; init; } = TelemetryEncryptionKey.GetPublicKey;
+
     /// <summary>
     /// Gets the address of the web analytics endpoint that receives the usage and license audit events, including
     /// the site identifier, or <c>null</c> when these events are not sent.

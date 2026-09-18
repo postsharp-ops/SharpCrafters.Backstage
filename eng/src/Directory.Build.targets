@@ -1,2 +1,29 @@
 <Project>
+
+    <!-- This project is the bootstrapper: Build.ps1 builds it before anything else, and what it then runs is what
+         generates global.json. So at the moment it is built there is no global.json, and therefore no way to resolve
+         an MSBuild SDK — importing CodeQuality.targets from PostSharp.Engineering.Sdk here fails the whole build on a
+         clean checkout, where global.json is absent because it is generated and git-ignored. It only appears to work
+         in a working copy that has been built once before.
+
+         Code quality is still wanted here, because this project is analysed against the same .editorconfig as every
+         other project of the repository. So the properties that CodeQuality.targets sets are repeated verbatim rather
+         than imported. Keep them in step with that file. -->
+
+    <PropertyGroup>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+        <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(GenerateDocumentationFile)'!='False'">
+        <NoWarn>$(NoWarn);CS1591;CS1572;CS1573</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(ContinuousIntegrationBuild)'=='True'">
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
 </Project>

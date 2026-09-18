@@ -25,6 +25,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
     private readonly MatomoUploader? _matomoAuditUploader;
     private readonly BackstageBackgroundTasksService _backgroundTasksService;
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
+    private readonly ILicenseAuditKeyProvider _auditKeyProvider;
 
     public LicenseAuditManager( IServiceProvider serviceProvider )
     {
@@ -38,6 +39,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
         this._matomoAuditUploader = serviceProvider.GetBackstageService<MatomoUploader>();
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
+        this._auditKeyProvider = serviceProvider.GetRequiredBackstageService<ILicenseAuditKeyProvider>();
     }
 
     public void ReportLicense( LicenseConsumptionProperties license )
@@ -76,11 +78,12 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
             throw new InvalidOperationException( $"Version of '{report.ReportedComponent.Name}' application is unknown." );
         }
 
-        // Perform detailed audit.
+        // Perform detailed audit. What counts as the same audit is decided by the product: see ILicenseAuditKeyProvider.
+        var auditKey = this._auditKeyProvider.GetAuditKey( license, report.AuditHashCode );
+
         var mustPerformAudit = this._configurationManager.UpdateIf<LicenseAuditConfiguration>(
-            c => !c.LastAuditTimes.TryGetValue( report.AuditHashCode, out var lastReportTime )
-                 || lastReportTime <= this._time.UtcNow.AddDays( -1 ),
-            c => c with { LastAuditTimes = c.LastAuditTimes.SetItem( report.AuditHashCode, this._time.UtcNow ) } );
+            c => !c.TryGetLastAuditTime( auditKey, out var lastReportTime ) || lastReportTime <= this._time.UtcNow.AddDays( -1 ),
+            c => c.SetLastAuditTime( auditKey, this._time.UtcNow ) );
 
         if ( !mustPerformAudit )
         {
