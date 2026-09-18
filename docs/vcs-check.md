@@ -1,13 +1,30 @@
 # The version control check
 
-> Verified against the implementation on 2026-09-17.
+> Verified against the implementation on 2026-09-18.
 
 `IVcsStatusService` answers one question: are any of these files modified in version control? A product uses
 the answer to decide whether a build deserves the full licensing treatment. A source tree that nobody has
 touched is a source tree that nobody is developing, and compiling it should not cost a seat.
 
-The check is opt-in and off by default. Metalama enables it with the `MetalamaVcsCheckEnabled` MSBuild
-property.
+The check is opt-in and off by default. Metalama selects it with the `MetalamaVcsCheck` MSBuild property,
+which takes one of three modes:
+
+| Mode | An unmodified tree | A modified file |
+|---|---|---|
+| `Disabled` (default) | licensing runs | licensing runs |
+| `FailOnChange` | licensing waived | **the build fails** |
+| `AcquireLicenseOnChange` | licensing waived | licensing runs |
+
+The two modes that run the check agree about the unmodified tree, which is the case the feature exists for.
+They differ only in what a modification means, and that is a decision of the repository rather than of this
+service: `AcquireLicenseOnChange` treats it as a use to be licensed, while `FailOnChange` treats it as a
+mistake to be reported, for sources that are meant to be compiled as they are.
+
+`IVcsStatusService` itself knows none of this. It answers whether the files are modified; the mode is applied
+by the product, in Metalama's case by the `VerifyMetalamaLicense` task.
+
+An unrecognized value fails the build rather than falling back to a mode. It is a typo in a build script, and
+either fallback would be wrong for somebody.
 
 This document is the doctrine. The XML documentation of `IVcsStatusService` states the rule; the reasoning
 and the accepted limits are here.
@@ -59,11 +76,19 @@ so a support case can see what happened.
 
 **2. A build of unmodified files reports nothing to the licence audit.** See the rule below.
 
-**3. The check does not run on an unattended build.** This is a performance decision and nothing more. An
-unattended process never takes a lease, as [license-server.md](license-server.md) records, so running the
-command there would cost time and change no outcome. A caller that wants it anyway asks for it: Metalama
-offers `MetalamaVcsCheckOnUnattendedBuild`, which its container tests use because they build in a container
-and still mean to exercise the check.
+**3. The check does not run on an unattended build.** Under `AcquireLicenseOnChange` this is a performance
+decision and nothing more: an unattended process never takes a lease, as
+[license-server.md](license-server.md) records, so running the command there would cost time and change no
+outcome. A caller that wants it anyway asks for it: Metalama offers `MetalamaVcsCheckOnUnattendedBuild`,
+which its container tests use because they build in a container and still mean to exercise the check.
+
+Under `FailOnChange` the same exclusion does change the outcome, because a modified file would have failed
+the build. The exclusion is applied to both modes all the same, so that the mode does not silently decide
+whether a rule runs on the build server. The consequence is that `FailOnChange` enforces nothing on an
+unattended build unless `MetalamaVcsCheckOnUnattendedBuild` is set with it, which is a sharp edge for the
+continuous integration build, where the rule is likeliest to matter. That is a deliberate choice, recorded
+here rather than papered over: a repository that wants the rule enforced on its build server sets both
+properties.
 
 ## The seat rule
 
