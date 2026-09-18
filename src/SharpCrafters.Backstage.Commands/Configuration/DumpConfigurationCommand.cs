@@ -20,10 +20,14 @@ namespace SharpCrafters.Backstage.Commands.Configuration;
 /// <remarks>
 /// <para>
 /// The values are read through <see cref="IConfigurationManager"/> and not from the stores directly, so what is
-/// printed is what the product itself sees. Each configuration is reported with the store it came from, which is what
-/// makes the dump comparable with the store read by other means: on Windows, several of these configurations live in
-/// the registry key that PostSharp 2026.0 shares, and exporting that key and comparing it with this dump shows whether
-/// the two versions agree about what is stored there.
+/// printed is what the product itself sees. That is what makes the dump comparable with a store read by other means:
+/// on Windows, several of these configurations live in the registry key that PostSharp 2026.0 shares, and exporting
+/// that key and comparing it with this dump shows whether the two versions agree about what is stored there.
+/// </para>
+/// <para>
+/// The configurations are a dictionary keyed by alias and sorted by it, rather than a list of entries describing
+/// themselves: the values are the point, and a dump that repeats the type and the store of each one buries them. The
+/// store of a configuration is shown by <c>config list</c>.
 /// </para>
 /// <para>
 /// The output goes to the console as one document rather than as a table, so that it can be redirected to a file and
@@ -65,31 +69,19 @@ internal sealed class DumpConfigurationCommand : BaseCommand<DumpConfigurationCo
         {
             writer.WriteStartObject();
             writer.WriteString( "product", context.BackstageCommandOptions.ProductProfile.Name );
-            writer.WriteStartArray( "configurations" );
+            writer.WriteStartObject( "configurations" );
 
             foreach ( var adapter in selected.OrderBy( a => a.Alias, StringComparer.Ordinal ) )
             {
-                writer.WriteStartObject();
-                writer.WriteString( "alias", adapter.Alias );
-                writer.WriteString( "type", adapter.ConfigurationType.FullName );
-
-                var store = configurationManager.GetStore( adapter.ConfigurationType );
-                writer.WriteStartObject( "store" );
-                writer.WriteString( "kind", store.Kind.ToString() );
-                writer.WriteString( "path", store.Path );
-                writer.WriteEndObject();
-
                 var configuration = configurationManager.Get( adapter.ConfigurationType );
 
                 // Written as it was serialized rather than re-encoded, so that the dump of one configuration is
                 // exactly what 'config print' shows for it.
-                writer.WritePropertyName( "value" );
+                writer.WritePropertyName( adapter.Alias );
                 writer.WriteRawValue( jsonService.Serialize( configuration, adapter.ConfigurationType ) );
-
-                writer.WriteEndObject();
             }
 
-            writer.WriteEndArray();
+            writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
