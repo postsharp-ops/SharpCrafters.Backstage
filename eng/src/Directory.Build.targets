@@ -1,2 +1,10 @@
 <Project>
+
+    <!-- This project is deliberately isolated from the build logic of the repository it builds, so it does not chain
+         up to the Directory.Build.targets of the root. Code quality is the one thing it does take from there: every
+         project of this repository is analysed against the same .editorconfig, and this one is a project like any
+         other. It is imported from the SDK rather than through the root file, which would also bring in targets that
+         expect properties this project never defines. -->
+    <Import Sdk="PostSharp.Engineering.Sdk" Project="CodeQuality.targets"/>
+
 </Project>

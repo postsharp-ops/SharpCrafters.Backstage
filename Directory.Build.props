@@ -16,9 +16,12 @@
         <SuppressNETCoreSdkPreviewMessage>True</SuppressNETCoreSdkPreviewMessage>
 
         <!-- CS8002: the Spectre.Console assemblies are not strong-named.
-             IDE0028: collection initialization can be simplified. The findings are not resolved yet.
-             IDE0031 and IDE0032: features of the C# 14 compiler that are disabled while the SDK is not stable. -->
-        <NoWarn>$(NoWarn);SA0001;CS8002;IDE0028;IDE0031;IDE0032</NoWarn>
+             IDE0032: use an auto-property. The 88 findings are not resolved yet, and each one removes a field that a
+             debugger watch or a conditional breakpoint may name, so they are worth a change of their own rather than
+             a line in a build file.
+             IDE0028 and IDE0031 were suppressed here too and no longer need to be, because nothing raises them any
+             more. They are left enabled so that a new one is reported rather than accumulated. -->
+        <NoWarn>$(NoWarn);SA0001;CS8002;IDE0032</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
