@@ -193,7 +193,11 @@ namespace SharpCrafters.Backstage.Testing
             _ = this.ServiceProvider;
         }
 
-        internal TestsBase( ITestOutputHelper logger, BackstageInitializationOptions? options )
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TestsBase"/> class for a given product, which the test suite
+        /// of a product passes so that its own catalog and profile are the ones under test.
+        /// </summary>
+        protected TestsBase( ITestOutputHelper logger, BackstageInitializationOptions? options )
         {
             this.Logger = logger;
 
