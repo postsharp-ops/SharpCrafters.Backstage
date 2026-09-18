@@ -56,10 +56,21 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
 
     /// <inheritdoc />
     /// <remarks>
-    /// PostSharp gates a license key on the <c>MinPostSharpVersion</c> field of the key itself, never on its product,
-    /// so no product of this family requires a version-specific registration.
+    /// <para>
+    /// Every product of this family is stored in the list, for two reasons. The first is that the products co-exist:
+    /// a user holds an edition and the pattern libraries that complement it, and the single slot holds one key, so
+    /// registering the second would drop the first.
+    /// </para>
+    /// <para>
+    /// The second is where the other version writes. The list is the <c>LicenseKeys</c> sub-key, which is where
+    /// PostSharp 2026.0 registers its own keys and which it calls the standard location. The single slot is the root
+    /// <c>LicenseKey</c> value, which it calls the location compatible with PostSharp 3.0: it reads that value, so a
+    /// key written there does work, but it only ever deletes it and never writes it. Registering into a value the
+    /// other version treats as a leftover to clean up would leave the two versions disagreeing about where a license
+    /// belongs.
+    /// </para>
     /// </remarks>
-    public override bool RequiresVersionSpecificRegistration( LicenseProduct product ) => false;
+    public override bool IsStoredInLicenseList( LicenseProduct product ) => true;
 
     /// <inheritdoc />
     /// <remarks>
@@ -67,10 +78,14 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
     /// editions and the pattern libraries are complementary and a user may hold several at once. The exception is
     /// PostSharp Ultimate, which covers everything the others do and therefore replaces them all.
     /// </remarks>
+    /// <returns>
+    /// The other products whose keys survive, which never includes <paramref name="product"/> itself: registering a
+    /// product replaces the key of that same product rather than adding a second one beside it.
+    /// </returns>
     public override ImmutableArray<LicenseProduct> GetProductsCoexistingWith( LicenseProduct product )
         => product == LicenseProduct.PostSharpUltimate || product == LicenseProduct.PostSharpUltimate1
             ? ImmutableArray<LicenseProduct>.Empty
-            : _familyProducts;
+            : _familyProducts.Remove( product );
 #pragma warning restore CS0618
 
     /// <inheritdoc />

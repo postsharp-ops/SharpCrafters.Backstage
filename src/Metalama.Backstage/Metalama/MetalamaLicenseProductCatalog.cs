@@ -57,8 +57,10 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     /// <inheritdoc />
     /// <remarks>
     /// Metalama Community was introduced in Metalama 2025.1, so its keys are stored where earlier versions do not read.
+    /// Every other product of the family is consumed by every version, and a user holds one key of them at a time, so
+    /// the single slot is enough and is what the earlier versions read.
     /// </remarks>
-    public override bool RequiresVersionSpecificRegistration( LicenseProduct product ) => product is LicenseProduct.MetalamaCommunity;
+    public override bool IsStoredInLicenseList( LicenseProduct product ) => product is LicenseProduct.MetalamaCommunity;
 
     /// <inheritdoc />
     /// <remarks>

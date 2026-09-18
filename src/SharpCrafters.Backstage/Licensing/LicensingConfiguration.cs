@@ -124,9 +124,12 @@ public sealed record LicensingConfiguration : ConfigurationFile
                     .Add( license.MinMetalamaVersion.ToString(), ImmutableArray.Create<string?>( licenseString ) )
             };
         }
-        else if ( catalog.RequiresVersionSpecificRegistration( license.Product ) )
+        else if ( catalog.IsStoredInLicenseList( license.Product ) )
         {
-            return clone with { Licenses = ImmutableArray.Create<string?>( licenseString ) };
+            // Added to the keys that survived, not put in their place: in a family whose products co-exist, the user
+            // registers them one after another, and each registration has to keep the ones registered before it. The
+            // keys that do not co-exist with this one have already been removed above.
+            return clone with { Licenses = clone.Licenses.Add( licenseString ) };
         }
         else
         {
@@ -143,21 +146,46 @@ public sealed record LicensingConfiguration : ConfigurationFile
         // that co-exist are consumed by every released version and therefore never reach a group.
         var clone = this.LicensesByMinimalVersion == null ? this : this with { LicensesByMinimalVersion = null };
 
-        // A license server URL is removed whatever the products that co-exist: it is not a license key of any product,
-        // so the co-existence rules of the catalog cannot apply to it. It is spelled out rather than left to fall into
-        // the branch for a string that does not parse, so that the reason is visible.
-        if ( clone.LegacyLicense != null
-             && (LicenseServerUrl.IsLicenseServerUrl( clone.LegacyLicense )
-                 || GetLicenseKeyData( clone.LegacyLicense ) is not { } legacyLicense
-                 || !products.Contains( legacyLicense.Product )) )
+        if ( clone.LegacyLicense != null && !CoexistsWithRegisteredLicense( clone.LegacyLicense, products ) )
         {
-            return clone with { LegacyLicense = null };
+            clone = clone with { LegacyLicense = null };
         }
-        else
+
+        // The list is filtered by the same rule as the single slot. Leaving it out would keep a key of a product that
+        // the newly registered one replaces, and in a family that stores its keys in the list that is every key.
+        var survivingLicenses = clone.Licenses.RemoveAll( license => !CoexistsWithRegisteredLicense( license, products ) );
+
+        if ( survivingLicenses.Length != clone.Licenses.Length )
         {
-            return clone;
+            clone = clone with { Licenses = survivingLicenses };
         }
+
+        return clone;
     }
+
+    /// <summary>
+    /// Determines whether an already registered license string survives the registration of a new license, given the
+    /// products that co-exist with the product being registered.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A license server URL is removed whatever the products that co-exist: it is not a license key of any product,
+    /// so the co-existence rules of the catalog cannot apply to it. It is spelled out rather than left to fall into
+    /// the branch for a string that does not parse, so that the reason is visible.
+    /// </para>
+    /// <para>
+    /// The product of the stored key is normalized before it is compared, because the set of products comes from the
+    /// catalog, which is asked about the normalized product of the license being registered. The two differ for the
+    /// editions that a family expresses through the license type: the free edition of PostSharp is a PostSharp
+    /// Ultimate key carrying the Essentials type, so comparing the product as written would read it as Ultimate,
+    /// find that Ultimate co-exists with the edition being registered, and keep a key that the new one replaces.
+    /// </para>
+    /// </remarks>
+    private static bool CoexistsWithRegisteredLicense( string? licenseString, ImmutableArray<LicenseProduct> products )
+        => licenseString != null
+           && !LicenseServerUrl.IsLicenseServerUrl( licenseString )
+           && GetLicenseKeyData( licenseString ) is { } licenseKeyData
+           && products.Contains( licenseKeyData.NormalizeProduct() );
 
     private static LicenseKeyData? GetLicenseKeyData( string? licenseKey, Action<LicensingMessage>? reportMessage = null )
     {

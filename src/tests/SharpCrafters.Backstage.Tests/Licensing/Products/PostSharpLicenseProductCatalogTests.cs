@@ -60,9 +60,20 @@ public sealed class PostSharpLicenseProductCatalogTests
     {
         var coexisting = _catalog.GetProductsCoexistingWith( product );
 
-        Assert.Contains( LicenseProduct.PostSharpUltimate, coexisting );
-        Assert.Contains( LicenseProduct.PostSharpFramework, coexisting );
-        Assert.Contains( LicenseProduct.PostSharpCachingLibrary, coexisting );
+        foreach ( var otherProduct in new[]
+                  {
+                      LicenseProduct.PostSharpUltimate, LicenseProduct.PostSharpFramework, LicenseProduct.PostSharpEssentials,
+                      LicenseProduct.PostSharpCachingLibrary, LicenseProduct.PostSharpDiagnosticsLibrary, LicenseProduct.PostSharpModelLibrary,
+                      LicenseProduct.PostSharpThreadingLibrary
+                  } )
+        {
+            if ( otherProduct == product )
+            {
+                continue;
+            }
+
+            Assert.Contains( otherProduct, coexisting );
+        }
     }
 
     /// <summary>
@@ -89,15 +100,27 @@ public sealed class PostSharpLicenseProductCatalogTests
         => Assert.Equal( expected, _catalog.IsFreeLicense( product, licenseType ) );
 
     /// <summary>
-    /// PostSharp gates a key on its own <c>MinPostSharpVersion</c> field, so a key is never stored in a
-    /// version-specific bucket because of its product.
+    /// Every product is stored in the list, which is the <c>LicenseKeys</c> sub-key. The single slot holds one key,
+    /// and the products of this family co-exist, so storing them there would drop every key but the last.
     /// </summary>
     [Theory]
     [InlineData( LicenseProduct.PostSharpUltimate )]
     [InlineData( LicenseProduct.PostSharpFramework )]
     [InlineData( LicenseProduct.PostSharpEssentials )]
-    public void NoProductRequiresVersionSpecificRegistration( LicenseProduct product )
-        => Assert.False( _catalog.RequiresVersionSpecificRegistration( product ) );
+    [InlineData( LicenseProduct.PostSharpCachingLibrary )]
+    public void EveryProductIsStoredInTheLicenseList( LicenseProduct product )
+        => Assert.True( _catalog.IsStoredInLicenseList( product ) );
+
+    /// <summary>
+    /// Registering a product replaces the key of that same product rather than adding a second one beside it, so a
+    /// product never co-exists with itself.
+    /// </summary>
+    [Theory]
+    [InlineData( LicenseProduct.PostSharpFramework )]
+    [InlineData( LicenseProduct.PostSharpEssentials )]
+    [InlineData( LicenseProduct.PostSharpCachingLibrary )]
+    public void AProductDoesNotCoexistWithItself( LicenseProduct product )
+        => Assert.DoesNotContain( product, _catalog.GetProductsCoexistingWith( product ) );
 
     /// <summary>
     /// PostSharp 2026.0 generates the trial key as PostSharp Ultimate, and the two versions share the registry, so a

@@ -81,7 +81,7 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public abstract bool IsFreeLicense( LicenseProduct product, LicenseType licenseType );
 
     /// <inheritdoc />
-    public abstract bool RequiresVersionSpecificRegistration( LicenseProduct product );
+    public abstract bool IsStoredInLicenseList( LicenseProduct product );
 
     /// <inheritdoc />
     public abstract ImmutableArray<LicenseProduct> GetProductsCoexistingWith( LicenseProduct product );

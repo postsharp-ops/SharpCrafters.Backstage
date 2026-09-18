@@ -61,10 +61,24 @@ public interface ILicenseProductCatalog : IBackstageService
     bool IsFreeLicense( LicenseProduct product, LicenseType licenseType );
 
     /// <summary>
-    /// Determines whether a registered license key of a product must be stored in the group of keys that only the
-    /// versions supporting that product read, rather than in the legacy location that every version reads.
+    /// Determines whether a registered license key of a product is stored in <see cref="LicensingConfiguration.Licenses"/>,
+    /// which holds any number of keys, rather than in <see cref="LicensingConfiguration.LegacyLicense"/>, which holds one.
     /// </summary>
-    bool RequiresVersionSpecificRegistration( LicenseProduct product );
+    /// <remarks>
+    /// <para>
+    /// The two slots differ in how many keys they hold and in which versions read them, and a family may choose the
+    /// list for either reason. Metalama chooses it for the second: a key of a product that its earlier versions do
+    /// not know has to stay out of the single slot those versions read. PostSharp chooses it for the first: its
+    /// editions and pattern libraries are complementary, so a user holds several keys at once and one slot cannot
+    /// hold them.
+    /// </para>
+    /// <para>
+    /// Answering <see langword="false"/> for a family whose products co-exist loses keys, because each registration
+    /// overwrites the single slot, and <see cref="GetProductsCoexistingWith"/> then keeps products that nothing can
+    /// store.
+    /// </para>
+    /// </remarks>
+    bool IsStoredInLicenseList( LicenseProduct product );
 
     /// <summary>
     /// Gets the products whose registered license keys are kept when a license key of a given product is registered.
