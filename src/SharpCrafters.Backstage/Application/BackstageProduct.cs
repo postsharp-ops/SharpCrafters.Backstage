@@ -3,13 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
-using System.Collections.Generic;
 
 namespace SharpCrafters.Backstage.Application;
 
@@ -42,11 +40,12 @@ public sealed record BackstageProduct(
     /// wanted something else would be relying on the order of two registrations to overrule it.
     /// </para>
     /// <para>
-    /// A product owes two of them. It registers an <see cref="IConfigurationManager"/>, by calling either
-    /// <see cref="RegisterConfigurationServices.AddConfigurationServices"/>, which keeps the configurations in files,
-    /// or <see cref="RegisterConfigurationServices.AddRegistryConfigurationServices"/>, which keeps in the Windows
-    /// registry the ones an <see cref="Configuration.Registry.IRegistryConfigurationSchemaProvider"/> names, so as to
-    /// share them with the earlier versions of the product. And it registers an
+    /// A product owes two of them. It registers an <see cref="Configuration.IConfigurationManager"/>, by calling
+    /// either <see cref="Configuration.RegisterConfigurationServices.AddConfigurationServices"/>, which keeps the
+    /// configurations in files, or
+    /// <see cref="Configuration.RegisterConfigurationServices.AddRegistryConfigurationServices"/>, which keeps in the
+    /// Windows registry the ones an <see cref="Configuration.Registry.IRegistryConfigurationSchemaProvider"/> names,
+    /// so as to share them with the earlier versions of the product. And it registers an
     /// <see cref="Licensing.Audit.ILicenseAuditKeyProvider"/>, which says what makes two audits the same audit.
     /// </para>
     /// <para>

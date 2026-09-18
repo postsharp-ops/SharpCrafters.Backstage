@@ -102,8 +102,8 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands.Configuration
                 .ToArray();
 
             // "configurations" sits at one level, its one key at two, and the members of that configuration at three.
-            var configurationsLine = Assert.Single( lines.Where( l => l.Contains( "\"configurations\"", StringComparison.Ordinal ) ) );
-            var aliasLine = Assert.Single( lines.Where( l => l.Contains( "\"telemetry\"", StringComparison.Ordinal ) ) );
+            var configurationsLine = Assert.Single( lines, l => l.Contains( "\"configurations\"", StringComparison.Ordinal ) );
+            var aliasLine = Assert.Single( lines, l => l.Contains( "\"telemetry\"", StringComparison.Ordinal ) );
 
             var indent = new Func<string, int>( line => line.Length - line.TrimStart( ' ' ).Length );
 

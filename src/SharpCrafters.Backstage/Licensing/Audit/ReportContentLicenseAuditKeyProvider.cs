@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Consumption;
-using System.Globalization;
 
 namespace SharpCrafters.Backstage.Licensing.Audit;
 

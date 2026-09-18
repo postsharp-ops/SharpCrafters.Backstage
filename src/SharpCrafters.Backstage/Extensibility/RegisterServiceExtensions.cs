@@ -4,13 +4,11 @@
 
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing;
-using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text.Json.Serialization.Metadata;
 
 namespace SharpCrafters.Backstage.Extensibility;

@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
-using System.Threading;
 
 namespace SharpCrafters.Backstage.Licensing;
 

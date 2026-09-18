@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Licensing.Audit;
 
 namespace SharpCrafters.Backstage.Application;
 

@@ -6,7 +6,6 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Configuration;
 using System;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Text.Json.Serialization;
 
 namespace SharpCrafters.Backstage.Licensing.Audit;
