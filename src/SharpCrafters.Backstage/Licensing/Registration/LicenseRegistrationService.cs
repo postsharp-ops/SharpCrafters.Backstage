@@ -319,7 +319,8 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
             return LeasedLicense.ToLicenseServerProperties(
                 leasedKeyData.ToLicenseRegistrationProperties( this._catalog, lease.LicenseKey ),
                 licenseServerUrl,
-                lease );
+                lease,
+                this._catalog );
         }
 
         // No lease has been acquired yet, or the stored one cannot be read. The URL is all that is known, and

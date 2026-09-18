@@ -110,6 +110,20 @@ public interface ILicenseProductCatalog : IBackstageService
     Version? GetMinimalVersion( LicenseKeyData licenseKeyData );
 
     /// <summary>
+    /// Gets the earliest version of this family that understands a registered license server, or
+    /// <see langword="null"/> when every released version understands one. A registered license server URL is stored
+    /// in the group of that version.
+    /// </summary>
+    /// <remarks>
+    /// This is asked instead of <see cref="GetMinimalVersion"/> for a license server, because what is registered is a
+    /// URL and not a license key: it has no content to judge, and the licence it leases today is not the one it will
+    /// lease tomorrow. It is a property of the family for the same reason as <see cref="GetMinimalVersion"/>, and the
+    /// two families answer differently: PostSharp has had license servers since before it recorded which version was
+    /// asking, and Metalama has them from the version that introduces them.
+    /// </remarks>
+    Version? MinimalLicenseServerVersion { get; }
+
+    /// <summary>
     /// Gets the display name of the edition that the user is invited to try or to buy when a component is not
     /// licensed, for instance <c>Metalama Professional</c>.
     /// </summary>

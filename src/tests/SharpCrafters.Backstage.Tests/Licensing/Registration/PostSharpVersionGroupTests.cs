@@ -152,6 +152,19 @@ public sealed class PostSharpVersionGroupTests : LicensingTestsBase
     }
 
     /// <summary>
+    /// A registered license server is not put in a group at all, so that every installed version of PostSharp sees
+    /// the server the user configured.
+    /// </summary>
+    /// <remarks>
+    /// A URL is not a license key and has no content to judge, so the family answers for it rather than the key: the
+    /// licence the server leases today is not the one it will lease tomorrow. PostSharp answers that there is no
+    /// floor, which is also what PostSharp 2026.0 does — it stores the URL as a plain value beside the keys, because
+    /// the code that chooses a group runs only for something that parsed as a license key.
+    /// </remarks>
+    [Fact]
+    public void ALicenseServerIsNotPutInAGroup() => Assert.Null( this.Catalog.MinimalLicenseServerVersion );
+
+    /// <summary>
     /// A key signed by the Elliptic Curve DSA authority is put in the group of the version that introduces that
     /// authority, because no earlier version can verify its signature whatever else it carries.
     /// </summary>

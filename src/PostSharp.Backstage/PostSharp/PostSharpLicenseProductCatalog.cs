@@ -116,6 +116,15 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// No version at all. PostSharp has had license servers for long enough that no version anyone still runs is
+    /// without them, so there is no floor worth naming, and naming one would hide a user's license server from the
+    /// versions that want it. PostSharp 2026.0 stores the URL as a plain value beside the license keys, and this
+    /// keeps it there.
+    /// </remarks>
+    public override Version? MinimalLicenseServerVersion => null;
+
+    /// <inheritdoc />
     public override string PremiumEditionDisplayName => "PostSharp Ultimate";
 
     /// <inheritdoc />

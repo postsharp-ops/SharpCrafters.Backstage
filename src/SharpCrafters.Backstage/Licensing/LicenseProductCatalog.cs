@@ -97,6 +97,13 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public virtual Version? GetMinimalVersion( LicenseKeyData licenseKeyData ) => null;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The default is the version of this package that introduces license servers, which is the right answer for a
+    /// family whose license servers arrive with it. A family that had them before overrides this.
+    /// </remarks>
+    public virtual Version? MinimalLicenseServerVersion => LicensingConstants.MinimalLicenseServerVersion;
+
+    /// <inheritdoc />
     public abstract string PremiumEditionDisplayName { get; }
 
     /// <inheritdoc />
