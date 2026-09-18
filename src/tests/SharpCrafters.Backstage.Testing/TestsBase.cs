@@ -27,6 +27,7 @@ using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Rss;
 using SharpCrafters.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.VersionControl;
 using SharpCrafters.Backstage.Welcome;
 using System;
 using System.Collections.Immutable;
@@ -312,6 +313,7 @@ namespace SharpCrafters.Backstage.Testing
                     } )
                 .AddSingleton<IDateTimeProvider>( this.Time )
                 .AddSingleton<IProcessExecutor>( this.ProcessExecutor )
+                .AddSingleton<IVcsStatusService>( serviceProvider => new GitStatusService( serviceProvider ) )
                 .AddSingleton<IRuntimeInformation>( _ => new TestRuntimeInformation() )
                 .AddSingleton<IMachineIdProvider>( this.MachineIdProvider )
                 .AddSingleton<IUserIdentityProvider>( this.UserIdentity )
