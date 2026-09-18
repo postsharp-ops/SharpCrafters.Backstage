@@ -1,9 +1,10 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using System;
 using System.Collections.Immutable;
 
 namespace Metalama.Backstage;
@@ -46,7 +47,11 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
         };
 
     /// <inheritdoc />
-    public override bool IsFreeProduct( LicenseProduct product ) => product is LicenseProduct.MetalamaCommunity or LicenseProduct.MetalamaFree;
+    /// <remarks>
+    /// Metalama expresses the free edition through the product, so the license type is not read.
+    /// </remarks>
+    public override bool IsFreeLicense( LicenseProduct product, LicenseType licenseType )
+        => product is LicenseProduct.MetalamaCommunity or LicenseProduct.MetalamaFree;
 
     /// <inheritdoc />
     /// <remarks>
@@ -74,10 +79,25 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     public override LicenseProduct EvaluationProduct => LicenseProduct.MetalamaProfessional;
 
     /// <inheritdoc />
-    public override LicenseProduct? CommunityProduct => LicenseProduct.MetalamaCommunity;
+    /// <remarks>
+    /// Metalama runs without a license, with the feature set of the open source edition.
+    /// </remarks>
+    public override bool HasUnlicensedEdition => true;
 
     /// <inheritdoc />
-    public override LicenseProduct? LegacyFreeProduct => LicenseProduct.MetalamaFree;
+    /// <remarks>
+    /// Metalama Community must be renewed yearly, which is what limits an edition given away for nothing.
+    /// </remarks>
+    public override UnsignedLicense? CreateFreeLicense( DateTime utcNow )
+        => new( LicenseProduct.MetalamaCommunity, LicenseType.Community, utcNow ) { ValidTo = utcNow.AddYears( 1 ) };
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Metalama Free is the edition that Metalama 2025.0 and earlier issued. It never expires, because a version
+    /// that reads it has no way to renew it.
+    /// </remarks>
+    public override UnsignedLicense? CreateLegacyFreeLicense( DateTime utcNow )
+        => new( LicenseProduct.MetalamaFree, LicenseType.Community, utcNow );
 
 #pragma warning restore CS0618
 }

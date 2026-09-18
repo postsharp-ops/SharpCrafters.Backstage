@@ -1,9 +1,10 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
+using System;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing;
@@ -49,9 +50,14 @@ public interface ILicenseProductCatalog : IBackstageService
     bool IsProductOfFamily( LicenseProduct product );
 
     /// <summary>
-    /// Determines whether a product is a free edition, which has no subscription to renew.
+    /// Determines whether a license is a free edition, which has no subscription to renew.
     /// </summary>
-    bool IsFreeProduct( LicenseProduct product );
+    /// <remarks>
+    /// The license type is read as well as the product, because a family may express the free edition through it:
+    /// the free edition of PostSharp is a PostSharp Ultimate key carrying the Community type, and the product alone
+    /// would not tell it from a key the user has paid for.
+    /// </remarks>
+    bool IsFreeLicense( LicenseProduct product, LicenseType licenseType );
 
     /// <summary>
     /// Determines whether a registered license key of a product must be stored in the group of keys that only the
@@ -88,14 +94,37 @@ public interface ILicenseProductCatalog : IBackstageService
     LicenseProduct? LicenseServerProduct { get; }
 
     /// <summary>
-    /// Gets the product for which a community license is issued, or <c>null</c> when the family has no community
-    /// edition.
+    /// Gets a value indicating whether the product can be used without registering anything at all, which is what
+    /// the setup pages offer as staying with the open source edition.
     /// </summary>
-    LicenseProduct? CommunityProduct { get; }
+    /// <remarks>
+    /// This is not the same as having a free edition. Metalama has both: it runs unlicensed with a reduced feature
+    /// set, and it also issues a Community key that unlocks more. PostSharp has the second and not the first, so a
+    /// user who registers nothing can build nothing.
+    /// </remarks>
+    bool HasUnlicensedEdition { get; }
 
     /// <summary>
-    /// Gets the product for which the legacy free license is issued, or <c>null</c> when the family has no such
-    /// edition.
+    /// Describes the trial license of the family.
     /// </summary>
-    LicenseProduct? LegacyFreeProduct { get; }
+    /// <param name="utcNow">The current moment.</param>
+    UnsignedLicense CreateTrialLicense( DateTime utcNow );
+
+    /// <summary>
+    /// Describes the free license that a user registers without buying anything, or returns <see langword="null"/>
+    /// when the family offers none.
+    /// </summary>
+    /// <param name="utcNow">The current moment.</param>
+    /// <remarks>
+    /// Returning <see langword="null"/> is how a family says that the edition does not exist, and it is what the
+    /// setup pages and the command line read to decide whether to offer it.
+    /// </remarks>
+    UnsignedLicense? CreateFreeLicense( DateTime utcNow );
+
+    /// <summary>
+    /// Describes the free license that earlier versions of the product issued, or returns <see langword="null"/>
+    /// when the family never had one.
+    /// </summary>
+    /// <param name="utcNow">The current moment.</param>
+    UnsignedLicense? CreateLegacyFreeLicense( DateTime utcNow );
 }

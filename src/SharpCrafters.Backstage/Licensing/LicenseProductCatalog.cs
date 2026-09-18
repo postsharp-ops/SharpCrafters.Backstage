@@ -1,8 +1,10 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Licensing.Registration;
+using System;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing;
@@ -76,7 +78,7 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public abstract bool IsProductOfFamily( LicenseProduct product );
 
     /// <inheritdoc />
-    public abstract bool IsFreeProduct( LicenseProduct product );
+    public abstract bool IsFreeLicense( LicenseProduct product, LicenseType licenseType );
 
     /// <inheritdoc />
     public abstract bool RequiresVersionSpecificRegistration( LicenseProduct product );
@@ -98,10 +100,33 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public virtual LicenseProduct? LicenseServerProduct => this.EvaluationProduct;
 
     /// <inheritdoc />
-    public abstract LicenseProduct? CommunityProduct { get; }
+    public abstract bool HasUnlicensedEdition { get; }
 
     /// <inheritdoc />
-    public abstract LicenseProduct? LegacyFreeProduct { get; }
+    /// <remarks>
+    /// The trial is the same offer in every family — the premium product, for the period that
+    /// <see cref="LicensingConstants.EvaluationPeriod"/> gives — so it is described here rather than by each of
+    /// them. The subscription ends with the trial, so that a build made with a version released later is not
+    /// covered by it.
+    /// </remarks>
+    public virtual UnsignedLicense CreateTrialLicense( DateTime utcNow )
+    {
+        // Counted from midnight, so that a trial started late in the evening is not a day shorter than one started
+        // in the morning.
+        var start = utcNow.Date;
+        var end = start + LicensingConstants.EvaluationPeriod;
+
+        return new UnsignedLicense( this.EvaluationProduct, LicenseType.Evaluation, start ) { ValidTo = end, SubscriptionEndDate = end };
+    }
+
+    /// <inheritdoc />
+    public abstract UnsignedLicense? CreateFreeLicense( DateTime utcNow );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The default is that the family never issued one, which is the case of every family but Metalama.
+    /// </remarks>
+    public virtual UnsignedLicense? CreateLegacyFreeLicense( DateTime utcNow ) => null;
 
 #pragma warning restore CS0618
 }

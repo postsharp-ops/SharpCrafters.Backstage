@@ -1,4 +1,4 @@
-@page
+﻿@page
 @using SharpCrafters.Backstage.Licensing
 @using SharpCrafters.Backstage.Licensing.Registration
 @model ChooseLicenseKindPageModel
@@ -16,17 +16,17 @@
     <input type="hidden" id="action" name="action" value=""/>
 
     <div class="arrow-buttons">
-        @* TODO: The open source option is specific to Metalama: PostSharp has no such edition. The licensing options of a
-           product family need an abstraction that decides which choices are offered here and which commands the
-           command line offers. See #2018. *@
-        <div onclick="submitForm('UseOpenSource')">
-            <h4>Stay with @Profile.Name Open Source</h4>
-            <p>
-                @Profile.Name Open Source is free for everyone, but you won't be able to use the advanced features of Visual
-                Studio Tools for @Profile.Name, architecture validation, or custom code fixes. Ideal for an initial foray,
-                with an easy upgrade path when you're ready for more.
-            </p>
-        </div>
+        @if (Catalog.HasUnlicensedEdition)
+        {
+            <div onclick="submitForm('UseOpenSource')">
+                <h4>Stay with @Profile.Name Open Source</h4>
+                <p>
+                    @Profile.Name Open Source is free for everyone, but you won't be able to use the advanced features of Visual
+                    Studio Tools for @Profile.Name, architecture validation, or custom code fixes. Ideal for an initial foray,
+                    with an easy upgrade path when you're ready for more.
+                </p>
+            </div>
+        }
 
         @if (LicenseRegistrationService.CanRegisterTrialEdition)
         {

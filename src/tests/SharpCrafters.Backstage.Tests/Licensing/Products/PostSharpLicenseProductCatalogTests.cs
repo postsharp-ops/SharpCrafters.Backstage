@@ -4,6 +4,7 @@
 
 using PostSharp.Backstage;
 using SharpCrafters.Backstage.Licensing;
+using System;
 using Xunit;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Products;
@@ -75,12 +76,17 @@ public sealed class PostSharpLicenseProductCatalogTests
 
     /// <summary>
     /// The free edition of PostSharp is expressed by <see cref="LicenseType.Community"/> on a PostSharp Ultimate key,
-    /// not by a product of its own, so no product of the family is free by itself.
+    /// so it is the license type that makes a license free and not the product: the same product, bought, is not.
     /// </summary>
     [Theory]
-    [InlineData( LicenseProduct.PostSharpUltimate )]
-    [InlineData( LicenseProduct.PostSharpEssentials )]
-    public void NoProductIsFreeOnItsOwn( LicenseProduct product ) => Assert.False( _catalog.IsFreeProduct( product ) );
+    [InlineData( LicenseProduct.PostSharpUltimate, LicenseType.Community, true )]
+    [InlineData( LicenseProduct.PostSharpEssentials, LicenseType.Community, true )]
+    [InlineData( LicenseProduct.PostSharpEssentials, LicenseType.Business, true )]
+    [InlineData( LicenseProduct.PostSharpUltimate, LicenseType.Business, false )]
+    [InlineData( LicenseProduct.PostSharpUltimate, LicenseType.Site, false )]
+    [InlineData( LicenseProduct.PostSharpFramework, LicenseType.Business, false )]
+    public void OnlyACommunityLicenseIsFree( LicenseProduct product, LicenseType licenseType, bool expected )
+        => Assert.Equal( expected, _catalog.IsFreeLicense( product, licenseType ) );
 
     /// <summary>
     /// PostSharp gates a key on its own <c>MinPostSharpVersion</c> field, so a key is never stored in a
@@ -101,14 +107,50 @@ public sealed class PostSharpLicenseProductCatalogTests
     public void TrialIsUltimate() => Assert.Equal( LicenseProduct.PostSharpUltimate, _catalog.EvaluationProduct );
 
     /// <summary>
-    /// PostSharp has neither the community edition nor the legacy free edition of Metalama. The setup pages and the
-    /// command line read these to decide which self-registered editions to offer.
+    /// PostSharp does nothing without a license, so the setup pages must not offer to stay unlicensed. This is what
+    /// keeps the page from offering an open source edition that PostSharp does not have.
     /// </summary>
     [Fact]
-    public void ThereIsNoCommunityOrLegacyFreeProduct()
+    public void PostSharpDoesNothingWithoutALicense() => Assert.False( _catalog.HasUnlicensedEdition );
+
+    /// <summary>
+    /// The free edition is a PostSharp Ultimate key carrying the Community type, which is the key that PostSharp
+    /// 2026.0 generates, and the two versions share the registered keys. It does not expire.
+    /// </summary>
+    [Fact]
+    public void TheFreeEditionIsAnUltimateKeyOfTheCommunityType()
     {
-        Assert.Null( _catalog.CommunityProduct );
-        Assert.Null( _catalog.LegacyFreeProduct );
+        var freeLicense = _catalog.CreateFreeLicense( new DateTime( 2026, 9, 18, 12, 0, 0, DateTimeKind.Utc ) );
+
+        Assert.NotNull( freeLicense );
+        Assert.Equal( LicenseProduct.PostSharpUltimate, freeLicense.Product );
+        Assert.Equal( LicenseType.Community, freeLicense.LicenseType );
+        Assert.Null( freeLicense.ValidTo );
+    }
+
+    /// <summary>
+    /// PostSharp never issued the legacy free edition that Metalama 2025.0 and earlier did, so the command that
+    /// registers it is not offered.
+    /// </summary>
+    [Fact]
+    public void ThereIsNoLegacyFreeEdition() => Assert.Null( _catalog.CreateLegacyFreeLicense( DateTime.UtcNow ) );
+
+    /// <summary>
+    /// The trial is PostSharp Ultimate for the period every family gives, and it carries a subscription that ends
+    /// with it, so that a build made with a version released later is not covered by it.
+    /// </summary>
+    [Fact]
+    public void TheTrialIsUltimateForFortyFiveDays()
+    {
+        var trial = _catalog.CreateTrialLicense( new DateTime( 2026, 9, 18, 22, 30, 0, DateTimeKind.Utc ) );
+
+        Assert.Equal( LicenseProduct.PostSharpUltimate, trial.Product );
+        Assert.Equal( LicenseType.Evaluation, trial.LicenseType );
+
+        // Counted from midnight, so that a trial started late in the evening is not a day shorter.
+        Assert.Equal( new DateTime( 2026, 9, 18 ), trial.ValidFrom );
+        Assert.Equal( new DateTime( 2026, 9, 18 ).AddDays( 45 ), trial.ValidTo );
+        Assert.Equal( trial.ValidTo, trial.SubscriptionEndDate );
     }
 
     [Fact]

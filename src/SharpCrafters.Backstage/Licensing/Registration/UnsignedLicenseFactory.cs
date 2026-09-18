@@ -10,8 +10,14 @@ using System;
 namespace SharpCrafters.Backstage.Licensing.Registration
 {
     /// <summary>
-    /// Creates unsigned licenses for self-registration.
+    /// Builds the license keys that the product issues to itself, from the descriptions that the product family
+    /// gives.
     /// </summary>
+    /// <remarks>
+    /// The division of labour is deliberate. The family says what the license says, because it is the only one that
+    /// knows that the free edition of PostSharp is a PostSharp Ultimate key carrying the Community type. This class
+    /// says how a key is built, because that is the same everywhere.
+    /// </remarks>
     internal sealed class UnsignedLicenseFactory
     {
         private readonly IDateTimeProvider _time;
@@ -30,74 +36,46 @@ namespace SharpCrafters.Backstage.Licensing.Registration
         }
 
         /// <summary>
-        /// Creates an unsigned evaluation license.
+        /// Creates the trial license of the product family.
         /// </summary>
-        /// <returns>The unsigned evaluation license.</returns>
-        public LicenseRegistrationProperties CreateEvaluationLicense()
-        {
-            var start = this._time.UtcNow.Date;
-            var end = start + LicensingConstants.EvaluationPeriod;
+        public LicenseRegistrationProperties CreateEvaluationLicense() => this.Build( this._catalog.CreateTrialLicense( this._time.UtcNow ) );
 
-            var licenseKeyData = new LicenseKeyDataBuilder()
+        /// <summary>
+        /// Creates the free license that a user registers without buying anything.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The family offers no such edition.</exception>
+        public LicenseRegistrationProperties CreateCommunityLicense()
+            => this.Build(
+                this._catalog.CreateFreeLicense( this._time.UtcNow )
+                ?? throw new InvalidOperationException( "The product family has no free edition." ) );
+
+        /// <summary>
+        /// Creates the free license that earlier versions of the product issued.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The family never had such an edition.</exception>
+        [Obsolete]
+        public LicenseRegistrationProperties CreateLegacyFreeLicense()
+            => this.Build(
+                this._catalog.CreateLegacyFreeLicense( this._time.UtcNow )
+                ?? throw new InvalidOperationException( "The product family has no legacy free edition." ) );
+
+        /// <summary>
+        /// Builds and serializes the key of a described license.
+        /// </summary>
+        private LicenseRegistrationProperties Build( UnsignedLicense license )
+        {
+            var licenseKeyData = new LicenseKeyDataBuilder
             {
                 Generation = LicenseGeneration.Current,
                 LicenseGuid = this._randomNumberGenerator.NextGuid(),
-                Product = this._catalog.EvaluationProduct,
-                LicenseType = LicenseType.Evaluation,
-                ValidFrom = start,
-                ValidTo = end,
-                SubscriptionEndDate = end
+                Product = license.Product,
+                LicenseType = license.LicenseType,
+                ValidFrom = license.ValidFrom,
+                ValidTo = license.ValidTo,
+                SubscriptionEndDate = license.SubscriptionEndDate
             };
 
             return licenseKeyData.Build().ToLicenseRegistrationProperties( this._catalog, licenseKeyData.Serialize() );
-        }
-
-        /// <summary>
-        /// Creates an unsigned Metalama Community license.
-        /// </summary>
-        /// <returns>The unsigned Metalama Community license.</returns>
-        public LicenseRegistrationProperties CreateCommunityLicense()
-        {
-            var start = this._time.UtcNow;
-
-            var licenseKeyData = new LicenseKeyDataBuilder()
-            {
-                Generation = LicenseGeneration.Current,
-                LicenseGuid = this._randomNumberGenerator.NextGuid(),
-                Product = this._catalog.CommunityProduct ?? throw new InvalidOperationException( "The product family has no community edition." ),
-                LicenseType = LicenseType.Community,
-                ValidFrom = start,
-
-                // Must be renewed yearly.
-                ValidTo = start.AddYears( 1 )
-            };
-
-            var licenseRegistrationData = licenseKeyData.Build().ToLicenseRegistrationProperties( this._catalog, licenseKeyData.Serialize() );
-
-            return licenseRegistrationData;
-        }
-
-        /// <summary>
-        /// Creates an unsigned legacy Metalama Free license.
-        /// </summary>
-        /// <returns>The unsigned Metalama Community license.</returns>
-        [Obsolete]
-        public LicenseRegistrationProperties CreateLegacyFreeLicense()
-        {
-            var start = this._time.UtcNow;
-
-            var licenseKeyData = new LicenseKeyDataBuilder()
-            {
-                Generation = LicenseGeneration.Current,
-                LicenseGuid = this._randomNumberGenerator.NextGuid(),
-                Product = this._catalog.LegacyFreeProduct ?? throw new InvalidOperationException( "The product family has no legacy free edition." ),
-                LicenseType = LicenseType.Community,
-                ValidFrom = start
-            };
-
-            var licenseRegistrationData = licenseKeyData.Build().ToLicenseRegistrationProperties( this._catalog, licenseKeyData.Serialize() );
-
-            return licenseRegistrationData;
         }
     }
 }

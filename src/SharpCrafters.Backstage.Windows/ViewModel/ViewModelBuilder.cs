@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Toasts;
 using SharpCrafters.Backstage.Utilities;
@@ -23,13 +24,14 @@ internal static class ViewModelBuilder
         var activationArguments = new ActivationArguments( settings );
         var webLinks = serviceProvider.GetRequiredBackstageService<IWebLinks>();
         var productName = serviceProvider.GetRequiredBackstageService<ProductProfile>().Name;
+        var catalog = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>();
 
         if ( settings.Kind == ToastNotificationKinds.RequiresLicense.Name )
         {
             viewModel = new NotificationViewModel(
                 settings.Kind,
-                $"{productName} Professional",
-                $"This project uses a premium {productName} feature. Try {productName} Professional for 45 days or register a license key.",
+                catalog.PremiumEditionDisplayName,
+                $"This project uses a premium {productName} feature. Try {catalog.PremiumEditionDisplayName} for 45 days or register a license key.",
                 new CommandActionViewModel( "Options", activationArguments.Setup ) );
 
             return true;
@@ -61,7 +63,7 @@ internal static class ViewModelBuilder
             viewModel = new NotificationViewModel(
                 settings.Kind,
                 settings.Title ?? $"Your {productName} trial is expiring",
-                settings.Text ?? $"Register a license key or activate {productName} Free.",
+                settings.Text ?? GetTrialExpiringText( productName, catalog ),
                 new CommandActionViewModel( "Open", activationArguments.Setup ) );
 
             return true;
@@ -164,5 +166,18 @@ internal static class ViewModelBuilder
 
             return false;
         }
+    }
+
+    /// <summary>
+    /// Says what a user whose trial is expiring can do, which depends on whether the product family has a free
+    /// edition to fall back to.
+    /// </summary>
+    private static string GetTrialExpiringText( string productName, ILicenseProductCatalog catalog )
+    {
+        var freeLicense = catalog.CreateFreeLicense( DateTime.UtcNow );
+
+        return freeLicense == null
+            ? $"Register a license key to keep using {productName}."
+            : $"Register a license key or activate {catalog.GetDisplayName( freeLicense.Product )}.";
     }
 }

@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using System;
 using System.Collections.Immutable;
 
 namespace PostSharp.Backstage;
@@ -44,11 +45,13 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
 
     /// <inheritdoc />
     /// <remarks>
-    /// PostSharp Essentials is the free edition, but a key of it carries <see cref="LicenseProduct.PostSharpUltimate"/>
-    /// with <see cref="LicenseType.Community"/>: the edition is expressed by the license type and not by the product.
-    /// No PostSharp product is therefore free on its own.
+    /// The free edition of PostSharp is a PostSharp Ultimate key carrying <see cref="LicenseType.Community"/>, so it
+    /// is the license type that makes it free and not the product. A key normalized to
+    /// <see cref="LicenseProduct.PostSharpEssentials"/> is the same edition under the name it is given once it has
+    /// been read.
     /// </remarks>
-    public override bool IsFreeProduct( LicenseProduct product ) => false;
+    public override bool IsFreeLicense( LicenseProduct product, LicenseType licenseType )
+        => licenseType == LicenseType.Community || product == LicenseProduct.PostSharpEssentials;
 
     /// <inheritdoc />
     /// <remarks>
@@ -81,11 +84,17 @@ public sealed class PostSharpLicenseProductCatalog : LicenseProductCatalog
 
     /// <inheritdoc />
     /// <remarks>
-    /// PostSharp has no community edition in the sense Metalama has: its free edition is PostSharp Essentials, which
-    /// is registered as a license type rather than as a product of its own.
+    /// PostSharp does nothing without a license. A user who registers nothing can build nothing, so the setup pages
+    /// must not offer to stay unlicensed.
     /// </remarks>
-    public override LicenseProduct? CommunityProduct => null;
+    public override bool HasUnlicensedEdition => false;
 
     /// <inheritdoc />
-    public override LicenseProduct? LegacyFreeProduct => null;
+    /// <remarks>
+    /// PostSharp Essentials is a PostSharp Ultimate key carrying <see cref="LicenseType.Community"/>, which is how
+    /// PostSharp 2026.0 writes the key it generates, and the two versions share the registered keys. It does not
+    /// expire: the edition has always been perpetual, and a version that reads it has no way to renew it.
+    /// </remarks>
+    public override UnsignedLicense? CreateFreeLicense( DateTime utcNow )
+        => new( LicenseProduct.PostSharpUltimate, LicenseType.Community, utcNow );
 }
