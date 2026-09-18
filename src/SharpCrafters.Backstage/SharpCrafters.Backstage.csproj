@@ -51,6 +51,7 @@
     <ItemGroup>
         <!-- The Metalama composition and the test projects need the internal types. -->
         <InternalsVisibleTo Include="Metalama.Backstage" />
+        <InternalsVisibleTo Include="PostSharp.Backstage" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>
