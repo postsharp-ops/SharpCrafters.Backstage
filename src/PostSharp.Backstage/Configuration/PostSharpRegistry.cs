@@ -68,6 +68,39 @@ public static class PostSharpRegistry
     public const string CommunityLicenseReasonValueName = "CommunityLicenseReason";
 
     /// <summary>
+    /// The value that says whether anonymous usage statistics are collected.
+    /// </summary>
+    public const string UsageReportingActionValueName = "UsageReportingAction";
+
+    /// <summary>
+    /// The value that says what happens when an unexpected problem occurs. PostSharp 2026.0 keeps an older value
+    /// named <c>ErrorReportingAction</c> beside it, which it forces to "ask" once the user has touched the new
+    /// settings, and which this version therefore neither reads nor writes.
+    /// </summary>
+    public const string ExceptionReportingActionValueName = "NewExceptionReportingAction";
+
+    /// <summary>
+    /// The value that says what happens when a performance problem occurs.
+    /// </summary>
+    public const string PerformanceReportingActionValueName = "NewPerformanceProblemReportingAction";
+
+    /// <summary>
+    /// The value that holds the random identifier of the device, in the textual form of a GUID.
+    /// </summary>
+    public const string DeviceIdValueName = "DeviceId";
+
+    /// <summary>
+    /// The value that holds the moment at which the device identifier was generated, which is what the monthly
+    /// rotation is counted from. This version rotates the salts at the same moment and keeps them together.
+    /// </summary>
+    public const string DeviceIdTimestampValueName = "DeviceIdTimestamp";
+
+    /// <summary>
+    /// The value that holds the moment of the last upload, which throttles it to once a day.
+    /// </summary>
+    public const string LastUploadTimeValueName = "LastUploadTime";
+
+    /// <summary>
     /// The value that counts the writes made to a configuration object. PostSharp 2026.0 has no such value and
     /// ignores it.
     /// </summary>

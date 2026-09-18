@@ -57,6 +57,11 @@ public static class RegistryConfigurationValues
     public static int? GetInt32( this IRegistryKey? key, string name ) => key?.GetValue( name ) as int?;
 
     /// <summary>
+    /// Reads a 64-bit integer, which is <see langword="null"/> when the value is absent.
+    /// </summary>
+    public static long? GetInt64( this IRegistryKey? key, string name ) => key?.GetValue( name ) as long?;
+
+    /// <summary>
     /// Writes a string, or deletes the value when the string is <see langword="null"/>.
     /// </summary>
     /// <returns><see langword="true"/> if the key was touched.</returns>
@@ -143,6 +148,55 @@ public static class RegistryConfigurationValues
         }
 
         key.SetDWordValue( name, value );
+
+        return true;
+    }
+
+    /// <summary>
+    /// Writes a 32-bit integer, or deletes the value when it is <see langword="null"/>.
+    /// </summary>
+    /// <returns><see langword="true"/> if the key was touched.</returns>
+    public static bool SetInt32( this IRegistryKey key, string name, int? value )
+    {
+        if ( value != null )
+        {
+            return key.SetInt32( name, value.Value );
+        }
+
+        if ( key.GetValue( name ) == null )
+        {
+            return false;
+        }
+
+        key.DeleteValue( name );
+
+        return true;
+    }
+
+    /// <summary>
+    /// Writes a 64-bit integer, or deletes the value when it is <see langword="null"/>.
+    /// </summary>
+    /// <returns><see langword="true"/> if the key was touched.</returns>
+    public static bool SetInt64( this IRegistryKey key, string name, long? value )
+    {
+        if ( value == null )
+        {
+            if ( key.GetValue( name ) == null )
+            {
+                return false;
+            }
+
+            key.DeleteValue( name );
+
+            return true;
+        }
+
+        if ( key.GetValue( name ) is long storedValue && storedValue == value.Value )
+        {
+            return false;
+        }
+
+        key.SetQWordValue( name, value.Value );
 
         return true;
     }

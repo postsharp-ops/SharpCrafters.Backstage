@@ -17,7 +17,7 @@ namespace SharpCrafters.Backstage.Licensing.LicenseServer;
 /// from <see cref="ConfigurationObject"/> so that a member written by a later version of the product survives a
 /// rewrite by this one.
 /// </remarks>
-internal sealed record LeaseConfiguration : ConfigurationObject
+public sealed record LeaseConfiguration : ConfigurationObject
 {
     /// <summary>
     /// Gets the licence key that the server allocated. It is temporary and is never presented to the user as a
@@ -35,9 +35,11 @@ internal sealed record LeaseConfiguration : ConfigurationObject
     [JsonPropertyName( "renewTime" )]
     public DateTime RenewTime { get; init; }
 
-    public LicenseLease ToLicenseLease() => new( this.LicenseKey, this.StartTime, this.EndTime, this.RenewTime );
+    // Internal, unlike the members above: a schema that maps this object onto another store needs its data, not the
+    // wire type that a license server speaks, which stays an implementation detail.
+    internal LicenseLease ToLicenseLease() => new( this.LicenseKey, this.StartTime, this.EndTime, this.RenewTime );
 
-    public static LeaseConfiguration FromLicenseLease( LicenseLease lease )
+    internal static LeaseConfiguration FromLicenseLease( LicenseLease lease )
         => new()
         {
             LicenseKey = lease.LicenseKey, StartTime = lease.StartTime, EndTime = lease.EndTime, RenewTime = lease.RenewTime

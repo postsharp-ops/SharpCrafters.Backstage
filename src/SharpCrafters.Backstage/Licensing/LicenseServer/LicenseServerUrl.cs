@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using JetBrains.Annotations;
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -11,11 +12,18 @@ namespace SharpCrafters.Backstage.Licensing.LicenseServer;
 /// Recognizes the license strings that are the URL of a license server rather than a license key.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This class depends on nothing, because the question "is this string a license server URL?" is asked by the
 /// licensing configuration, by the license sources and by the registration service, none of which has any business
 /// with HTTP or with a service provider.
+/// </para>
+/// <para>
+/// It is public because a product that keeps its leases in a store of its own has to key a server the way the rest
+/// of the product keys it, and two spellings of one address must not become two servers.
+/// </para>
 /// </remarks>
-internal static class LicenseServerUrl
+[PublicAPI]
+public static class LicenseServerUrl
 {
     /// <summary>
     /// Determines whether a license string is the URL of a license server.
