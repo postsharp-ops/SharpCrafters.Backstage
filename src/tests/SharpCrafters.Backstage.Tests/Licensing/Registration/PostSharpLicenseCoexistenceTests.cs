@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -114,6 +114,29 @@ public sealed class PostSharpLicenseCoexistenceTests : LicensingTestsBase
         await this.RegisterAsync( LicenseKeyProvider.PostSharpLogging );
 
         Assert.Equal( 2, this.LicenseRegistrationService.RegisteredLicenses.Count() );
+    }
+
+    /// <summary>
+    /// A pattern library registered before the free edition survives it, which is the same rule read in the other
+    /// direction.
+    /// </summary>
+    /// <remarks>
+    /// The free edition is a PostSharp Ultimate key, and PostSharp Ultimate co-exists with nothing, so the order in
+    /// which the two are registered is exactly what tells whether the product is read as written or normalized. The
+    /// forward order above passes either way: it asks the catalog about the pattern library, which co-exists with
+    /// everything. This order asks it about the free edition, and reading its key as Ultimate would drop the pattern
+    /// library the user has paid for.
+    /// </remarks>
+    [Fact]
+    public async Task APatternLibraryRegisteredBeforeTheFreeEditionSurvivesIt()
+    {
+        await this.RegisterAsync( LicenseKeyProvider.PostSharpLogging );
+        Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.Free ).IsSuccess );
+
+        var registered = this.LicenseRegistrationService.RegisteredLicenses.Select( l => l.LicenseString ).ToArray();
+
+        Assert.Equal( 2, registered.Length );
+        Assert.Contains( LicenseKeyProvider.PostSharpLogging, registered );
     }
 
     /// <summary>

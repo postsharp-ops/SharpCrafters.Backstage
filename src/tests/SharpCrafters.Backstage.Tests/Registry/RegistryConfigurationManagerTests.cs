@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -297,6 +297,35 @@ public sealed class RegistryConfigurationManagerTests : TestsBase
         this.SeedKey().SetStringValue( "Text", "changed by the other version" );
 
         Assert.Equal( "changed by the other version", manager.Get<TestRegistryConfiguration>().Text );
+    }
+
+    /// <summary>
+    /// A write the registry refuses is reported as a failure, and nothing is announced.
+    /// </summary>
+    /// <remarks>
+    /// A user may hold a key they can read and not write, and the answer that matters is the one the caller gets:
+    /// reporting a success would have license registration tell the user their key is registered, and raise the
+    /// change event, while the key still holds what it held before.
+    /// </remarks>
+    [Fact]
+    public void AWriteTheRegistryRefusesIsReportedAsAFailure()
+    {
+        using var manager = this.CreateManager();
+
+        var announced = new List<ConfigurationFile>();
+        manager.ConfigurationFileChanged += announced.Add;
+
+        this._registry.FailWrites = true;
+
+        Assert.Equal(
+            ConfigurationUpdateOutcome.WriteFailed,
+            Update<TestRegistryConfiguration>( manager, c => c with { Text = "hello" } ) );
+
+        Assert.Empty( announced );
+
+        // The object is unchanged, because the write that would have changed it did not happen.
+        this._registry.FailWrites = false;
+        Assert.NotEqual( "hello", manager.Get<TestRegistryConfiguration>().Text );
     }
 
     /// <summary>

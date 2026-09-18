@@ -16,6 +16,7 @@
             <Using Namespace="System" />
             <Using Namespace="System.Diagnostics" />
             <Using Namespace="System.Threading" />
+            <Using Namespace="System.Threading.Tasks" />
             <Code Type="Fragment" Language="cs">
                 <![CDATA[
                 // The worker executables of the products publish the same SharpCrafters.Backstage.Worker library, and a
@@ -57,10 +58,17 @@
 
                             using ( var process = Process.Start( startInfo ) )
                             {
-                                // Read both streams to the end before waiting, so that the child cannot block on a
-                                // full pipe while this task waits for it to exit.
-                                var output = process.StandardOutput.ReadToEnd();
-                                var error = process.StandardError.ReadToEnd();
+                                // Both streams are drained at once. Reading one to the end before starting the
+                                // other deadlocks whenever the child fills the pipe of the other: it blocks
+                                // writing, so it never closes the stream being read, so this task never returns
+                                // from the read and the build hangs. Which stream is read first does not matter,
+                                // only that the second one is not left unattended while the first is read.
+                                var outputTask = process.StandardOutput.ReadToEndAsync();
+                                var errorTask = process.StandardError.ReadToEndAsync();
+
+                                var output = outputTask.Result;
+                                var error = errorTask.Result;
+
                                 process.WaitForExit();
 
                                 if ( process.ExitCode != 0 )

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -46,6 +46,13 @@ public sealed class TestRegistryService : IRegistryService
     /// holds the wanted content is skipped.
     /// </summary>
     public int WriteCount { get; private set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether every write fails, which stands for a key the user may read but not
+    /// write. The real implementation raises <see cref="UnauthorizedAccessException"/> there and lets it out, so this
+    /// one does the same.
+    /// </summary>
+    public bool FailWrites { get; set; }
 
     private void CountWrite() => this.WriteCount++;
 
@@ -184,6 +191,11 @@ public sealed class TestRegistryService : IRegistryService
 
         private void SetValue( string name, object value )
         {
+            if ( this._service is { FailWrites: true } )
+            {
+                throw new UnauthorizedAccessException( $@"'{this.DisplayPath}\{name}' cannot be written." );
+            }
+
             this._values[name] = value;
             this._service?.CountWrite();
         }

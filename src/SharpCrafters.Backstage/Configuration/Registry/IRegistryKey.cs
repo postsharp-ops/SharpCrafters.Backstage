@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -28,6 +28,19 @@ public interface IRegistryKey : IDisposable
     /// <summary>
     /// Writes a <c>REG_SZ</c> value.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This and the other methods that change the registry throw when the change does not happen, where the methods
+    /// that read it answer <see langword="null"/> or an empty list. The asymmetry is deliberate: an absent value is
+    /// an answer a reader can act on, and a write that silently did nothing is not — the caller would report a
+    /// success and announce a change while the key still holds what it held.
+    /// </para>
+    /// <para>
+    /// The caller is <see cref="RegistryConfigurationManager"/>, which catches these and returns
+    /// <see cref="ConfigurationUpdateOutcome.WriteFailed"/>. So nothing above it fails over a registry the user
+    /// cannot write to; it is only told the truth about it.
+    /// </para>
+    /// </remarks>
     void SetStringValue( string name, string value );
 
     /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -151,29 +151,16 @@ internal sealed class WindowsRegistryService : IRegistryService
 
         public void SetQWordValue( string name, long value ) => this.SetValue( name, value, RegistryValueKind.QWord );
 
-        private void SetValue( string name, object value, RegistryValueKind kind )
-        {
-            try
-            {
-                this._key.SetValue( name, value, kind );
-            }
-            catch ( Exception e ) when ( IsRecoverable( e ) )
-            {
-                // The caller has no way to obtain the permission it lacks, and a build must not fail over it.
-            }
-        }
+        // A failed write is not swallowed here, unlike a failed read. A read that fails has an answer that means
+        // something — the value is absent — and every caller already handles it. A write that fails has none: the
+        // key keeps the value it had, and a caller told nothing goes on to announce a change that did not happen.
+        // RegistryConfigurationManager.UpdateWithinLock catches these and returns WriteFailed, which is the outcome
+        // it already defines for exactly this, so the exception reaches the one place that can report it and no
+        // build fails over it either.
+        private void SetValue( string name, object value, RegistryValueKind kind ) => this._key.SetValue( name, value, kind );
 
-        public void DeleteValue( string name )
-        {
-            try
-            {
-                this._key.DeleteValue( name, false );
-            }
-            catch ( Exception e ) when ( IsRecoverable( e ) )
-            {
-                // As above.
-            }
-        }
+        /// <remarks>As <see cref="SetValue"/>: a failed delete is a failed write and is reported as one.</remarks>
+        public void DeleteValue( string name ) => this._key.DeleteValue( name, false );
 
         public IReadOnlyList<string> GetValueNames()
         {
@@ -213,31 +200,20 @@ internal sealed class WindowsRegistryService : IRegistryService
             }
         }
 
+        /// <remarks>
+        /// As <see cref="SetValue"/>. This is the other half of it: a sub-key that cannot be created is a write that
+        /// did not happen, and returning <see langword="null"/> here would put the silence back that removing the
+        /// catch from the setters took away, because the schemas reach a sub-key before they write into it.
+        /// </remarks>
         public IRegistryKey? CreateSubKey( string name )
         {
-            try
-            {
-                var subKey = this._key.CreateSubKey( name, true );
+            var subKey = this._key.CreateSubKey( name, true );
 
-                return subKey == null ? null : new WindowsRegistryKey( subKey, this.DisplayPath + "\\" + name );
-            }
-            catch ( Exception e ) when ( IsRecoverable( e ) )
-            {
-                return null;
-            }
+            return subKey == null ? null : new WindowsRegistryKey( subKey, this.DisplayPath + "\\" + name );
         }
 
-        public void DeleteSubKeyTree( string name )
-        {
-            try
-            {
-                this._key.DeleteSubKeyTree( name, false );
-            }
-            catch ( Exception e ) when ( IsRecoverable( e ) )
-            {
-                // As above.
-            }
-        }
+        /// <remarks>As <see cref="SetValue"/>: a failed delete is a failed write and is reported as one.</remarks>
+        public void DeleteSubKeyTree( string name ) => this._key.DeleteSubKeyTree( name, false );
 
         public void Dispose() => this._key.Dispose();
     }

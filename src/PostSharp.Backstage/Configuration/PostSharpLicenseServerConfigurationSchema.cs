@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -76,6 +76,20 @@ internal sealed class PostSharpLicenseServerConfigurationSchema : RegistryConfig
         };
     }
 
+    /// <remarks>
+    /// <para>
+    /// A sub-key is named by the store key, which is the URL with its path left as the user registered it, because
+    /// <c>/TeamA</c> and <c>/teama</c> may be two applications with two pools of seats. A registry key name is
+    /// case-insensitive, so those two do collide here: one sub-key holds whichever lease was written last, and a
+    /// build of either server can be licensed from the lease of the other.
+    /// </para>
+    /// <para>
+    /// It is left that way. PostSharp 2026.0 names this sub-key with the URL exactly as registered and normalizes
+    /// nothing at all, so it collides in the same place, and encoding or hashing the name here would put the leases
+    /// of this version somewhere that version never looks — which is the one thing this schema exists to prevent.
+    /// Two license servers differing only by the case of their path is what it would take to see it.
+    /// </para>
+    /// </remarks>
     protected override void Write( IRegistryKey key, LicenseServerConfiguration configuration )
     {
         foreach ( var lease in configuration.Leases )
