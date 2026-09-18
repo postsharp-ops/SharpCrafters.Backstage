@@ -64,6 +64,24 @@ public interface IRegistryService : IBackstageService
     /// <c>HKEY_CURRENT_USER\Software\SharpCrafters\PostSharp 3</c>.
     /// </summary>
     string GetDisplayPath( RegistryHiveKind hive, string keyPath );
+
+    /// <summary>
+    /// Watches a key and everything below it, and calls back when anything changes.
+    /// </summary>
+    /// <param name="hive">The hive of the key.</param>
+    /// <param name="keyPath">The path of the key inside the hive.</param>
+    /// <param name="onChanged">
+    /// Called after a change. It says that something changed and not what, so the caller re-reads what it cares
+    /// about. It may be called when nothing the caller cares about has changed, and it may coalesce several changes
+    /// into one call.
+    /// </param>
+    /// <returns>An object that stops the watch when it is disposed, or <see langword="null"/> when the key cannot be
+    /// watched.</returns>
+    /// <remarks>
+    /// The sub-keys are watched as well as the key, because a configuration object of this product spreads over
+    /// both: the registered license keys live in a sub-key of the one that holds the rest of the licensing settings.
+    /// </remarks>
+    IDisposable? WatchChanges( RegistryHiveKind hive, string keyPath, Action onChanged );
 }
 
 /// <summary>

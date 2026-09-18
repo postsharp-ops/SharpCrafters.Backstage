@@ -57,6 +57,65 @@ public sealed class TestRegistryService : IRegistryService
 
     public string GetDisplayPath( RegistryHiveKind hive, string keyPath ) => this._hives[hive].DisplayPath + "\\" + keyPath;
 
+    private readonly List<(RegistryHiveKind Hive, string KeyPath, Action OnChanged)> _watchers = [];
+
+    /// <summary>
+    /// Gets or sets a value indicating whether a key can be watched. A test sets it to <see langword="false"/> to
+    /// stand for a platform, or a key, where the notification cannot be asked for.
+    /// </summary>
+    public bool CanWatchChanges { get; set; } = true;
+
+    /// <summary>
+    /// Gets the number of watches currently in place, which a test reads to prove that a watch was started and that
+    /// it was stopped.
+    /// </summary>
+    public int WatcherCount => this._watchers.Count;
+
+    public IDisposable? WatchChanges( RegistryHiveKind hive, string keyPath, Action onChanged )
+    {
+        if ( !this.IsSupported || !this.CanWatchChanges )
+        {
+            return null;
+        }
+
+        var watcher = (hive, keyPath, onChanged);
+        this._watchers.Add( watcher );
+
+        return new Watcher( this, watcher );
+    }
+
+    /// <summary>
+    /// Announces a change to the watchers of a key, which stands for the change that another process would have
+    /// made. The real notification says that something changed and not what, so this one does the same.
+    /// </summary>
+    public void NotifyChange( RegistryHiveKind hive, string keyPath )
+    {
+        foreach ( var watcher in this._watchers.ToList() )
+        {
+            // A watch covers the key and everything below it.
+            if ( watcher.Hive == hive
+                 && (keyPath.Equals( watcher.KeyPath, StringComparison.OrdinalIgnoreCase )
+                     || keyPath.StartsWith( watcher.KeyPath + "\\", StringComparison.OrdinalIgnoreCase )) )
+            {
+                watcher.OnChanged();
+            }
+        }
+    }
+
+    private sealed class Watcher : IDisposable
+    {
+        private readonly TestRegistryService _service;
+        private readonly (RegistryHiveKind Hive, string KeyPath, Action OnChanged) _entry;
+
+        public Watcher( TestRegistryService service, (RegistryHiveKind Hive, string KeyPath, Action OnChanged) entry )
+        {
+            this._service = service;
+            this._entry = entry;
+        }
+
+        public void Dispose() => this._service._watchers.Remove( this._entry );
+    }
+
     /// <summary>
     /// Gets the key at a given path, creating it and its ancestors, so that a test can seed the hive with the values
     /// that another version of the product would have written.

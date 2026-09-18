@@ -82,6 +82,34 @@ internal sealed class WindowsRegistryService : IRegistryService
 
     public string GetDisplayPath( RegistryHiveKind hive, string keyPath ) => GetDisplayPathCore( hive, keyPath );
 
+    public IDisposable? WatchChanges( RegistryHiveKind hive, string keyPath, Action onChanged )
+    {
+        if ( !this.IsSupported )
+        {
+            return null;
+        }
+
+        try
+        {
+            // Created rather than opened, because a key cannot be watched before it exists and the product would
+            // otherwise notice nothing until its next start on a machine where it has never run. The keys are the
+            // ones this product owns, and an empty one is harmless; a write creates them in any case.
+            using var baseKey = OpenBaseKey( hive );
+            var key = baseKey.CreateSubKey( keyPath, false );
+
+            if ( key == null )
+            {
+                return null;
+            }
+
+            return RegistryChangeWatcher.Create( key, onChanged );
+        }
+        catch ( Exception e ) when ( IsRecoverable( e ) )
+        {
+            return null;
+        }
+    }
+
     private static string GetDisplayPathCore( RegistryHiveKind hive, string keyPath )
         => (hive == RegistryHiveKind.LocalMachine ? "HKEY_LOCAL_MACHINE" : "HKEY_CURRENT_USER") + "\\" + keyPath;
 

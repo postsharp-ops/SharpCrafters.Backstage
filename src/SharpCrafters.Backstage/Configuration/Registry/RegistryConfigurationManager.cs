@@ -3,12 +3,14 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Threading;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Configuration.Registry;
 
@@ -43,6 +45,21 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
     private readonly Dictionary<Type, IRegistryConfigurationSchema> _schemas = [];
     private readonly Dictionary<string, INamedLock> _locks = new( StringComparer.OrdinalIgnoreCase );
     private readonly object _locksSync = new();
+    private readonly List<IDisposable> _watchers = [];
+
+    /// <summary>
+    /// The value last read or written for each type, which is what tells a notification that something this manager
+    /// cares about has changed.
+    /// </summary>
+    /// <remarks>
+    /// This is not a read cache. <see cref="Get"/> always reads the registry; it only records what it read, so that
+    /// a notification has something to compare against. The registry says that something under a key changed and not
+    /// what, and a key holds the values of another version of the product as well as ours, so without this every
+    /// change to anything would be announced as a change to everything.
+    /// </remarks>
+    private readonly Dictionary<Type, ConfigurationFile> _lastKnownValues = [];
+
+    private readonly object _lastKnownValuesSync = new();
 
     private int _isDisposed;
 
@@ -63,6 +80,8 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this.Logger = serviceProvider.GetRequiredBackstageService<EarlyLoggerFactory>().GetLogger( "Configuration" );
 
+        var applicationInfo = serviceProvider.GetBackstageService<IApplicationInfoProvider>()?.CurrentApplication;
+
         // The registry is not available on every platform, and a schema that cannot be reached is worse than no
         // schema: it would answer every read with a default and swallow every write.
         if ( this._registryService.IsSupported )
@@ -76,6 +95,129 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
         // Announcing a change of a file-based object as our own, so that a subscriber sees one event stream
         // whichever store the object came from.
         this._fileConfigurationManager.ConfigurationFileChanged += this.OnFileConfigurationChanged;
+
+        // A process that ends in a moment learns nothing from a notification, and asking for one costs a handle and
+        // a registration. This matches the file-based manager, which watches only for such a process.
+        if ( applicationInfo is { IsLongRunningProcess: true } )
+        {
+            this.StartWatching();
+        }
+    }
+
+    /// <summary>
+    /// Asks to be told when a key that holds one of our objects changes.
+    /// </summary>
+    /// <remarks>
+    /// One watch per key rather than one per object, because two objects may share a key, and because a watch covers
+    /// the sub-keys as well: the key that holds the licensing settings is the parent of the one that holds the
+    /// registered license keys.
+    /// </remarks>
+    private void StartWatching()
+    {
+        foreach ( var keyGroup in this._schemas.Values.GroupBy( schema => (schema.Hive, schema.KeyPath) ) )
+        {
+            var typesAtKey = keyGroup.Select( schema => schema.ConfigurationType ).ToList();
+
+            // Read once, so that the first notification has something to compare against. Without it, the first
+            // change to anything under the key -- including a setting of the other version of the product, which
+            // this one never reads -- would be announced as a change to every object held there.
+            foreach ( var type in typesAtKey )
+            {
+                this.RememberValue( type, this.Get( type ) );
+            }
+
+            var watcher = this._registryService.WatchChanges(
+                keyGroup.Key.Hive,
+                keyGroup.Key.KeyPath,
+                () => this.OnRegistryChanged( typesAtKey ) );
+
+            if ( watcher != null )
+            {
+                this._watchers.Add( watcher );
+            }
+            else
+            {
+                this.Logger.Trace?.Log(
+                    "Cannot watch " + this._registryService.GetDisplayPath( keyGroup.Key.Hive, keyGroup.Key.KeyPath ) + " for changes." );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Re-reads the objects held at a key that has changed, and announces the ones that differ from what was last
+    /// read or written.
+    /// </summary>
+    /// <remarks>
+    /// The notification says that something under the key changed and not what, and the key holds the settings of
+    /// another version of the product beside ours, so most notifications concern nothing of ours. Comparing is what
+    /// keeps a change of theirs from being announced as a change of ours.
+    /// </remarks>
+    private void OnRegistryChanged( IReadOnlyList<Type> types )
+    {
+        foreach ( var type in types )
+        {
+            ConfigurationFile currentValue;
+
+            try
+            {
+                currentValue = this.Get( type );
+            }
+            catch ( Exception e )
+            {
+                this.Logger.LogException( e, "Cannot read " + type.Name + " after a change of the registry" );
+
+                continue;
+            }
+
+            bool hasChanged;
+
+            lock ( this._lastKnownValuesSync )
+            {
+                hasChanged = !this._lastKnownValues.TryGetValue( type, out var lastKnownValue ) || !StructurallyEquals( currentValue, lastKnownValue );
+                this._lastKnownValues[type] = currentValue;
+            }
+
+            if ( hasChanged )
+            {
+                ConfigurationUpdateScope.RaiseConfigurationFileChanged( this.ConfigurationFileChanged, currentValue, this.Logger );
+            }
+        }
+    }
+
+    /// <summary>
+    /// A moment that stands for every moment, so that two values read at different times can be compared on their
+    /// content.
+    /// </summary>
+    private static readonly DateTime _anyMoment = new( 2000, 1, 1, 0, 0, 0, DateTimeKind.Utc );
+
+    /// <summary>
+    /// Determines whether two configuration objects hold the same content.
+    /// </summary>
+    /// <remarks>
+    /// The moment at which an object was read, and the number of writes made to it, are the bookkeeping of the store
+    /// and not content. They are part of the object and therefore of its equality, so two reads of a key that nobody
+    /// has touched are never equal, and a notification would announce a change every time it arrived.
+    /// </remarks>
+    private static bool StructurallyEquals( ConfigurationFile a, ConfigurationFile b )
+    {
+        var normalizedA = a with { Version = null };
+        var normalizedB = b with { Version = null };
+
+        normalizedA.SetFileSystemTimestamp( _anyMoment );
+        normalizedB.SetFileSystemTimestamp( _anyMoment );
+
+        return normalizedA.Equals( normalizedB );
+    }
+
+    /// <summary>
+    /// Records the value that a notification will compare against.
+    /// </summary>
+    private void RememberValue( Type type, ConfigurationFile value )
+    {
+        lock ( this._lastKnownValuesSync )
+        {
+            this._lastKnownValues[type] = value;
+        }
     }
 
     /// <inheritdoc />
@@ -169,6 +311,10 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
 
         if ( valueToAnnounce != null )
         {
+            // Recorded before the event, so that the notification which this write itself triggers finds the value
+            // unchanged and does not announce it a second time.
+            this.RememberValue( type, valueToAnnounce );
+
             ConfigurationUpdateScope.RaiseConfigurationFileChanged( this.ConfigurationFileChanged, valueToAnnounce, this.Logger );
         }
 
@@ -304,6 +450,13 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
         }
 
         this._fileConfigurationManager.ConfigurationFileChanged -= this.OnFileConfigurationChanged;
+
+        foreach ( var watcher in this._watchers )
+        {
+            watcher.Dispose();
+        }
+
+        this._watchers.Clear();
 
         foreach ( var namedLock in locksToDispose )
         {
