@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Consumption;
 
 namespace SharpCrafters.Backstage.Licensing.Audit;
@@ -24,7 +25,7 @@ namespace SharpCrafters.Backstage.Licensing.Audit;
 /// </para>
 /// </remarks>
 [PublicAPI]
-public interface ILicenseAuditKeyProvider
+public interface ILicenseAuditKeyProvider : IBackstageService
 {
     /// <summary>
     /// Gets the identity under which the audit of a license is throttled.

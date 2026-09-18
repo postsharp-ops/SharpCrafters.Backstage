@@ -87,17 +87,6 @@ public sealed record ProductProfile(
     public string LogoName { get; init; } = Name.ToLowerInvariant();
 
     /// <summary>
-    /// Gets the object that decides the identity under which a license audit is throttled. The default throttles by
-    /// the content of the report, so that a report is sent again whenever anything in it changes.
-    /// </summary>
-    /// <remarks>
-    /// It belongs to the profile because it is a property of the product family and not of the auditing services: a
-    /// product whose earlier versions keep the record of the audits, and share it with this one, has to key that
-    /// record the way they key it.
-    /// </remarks>
-    public ILicenseAuditKeyProvider LicenseAuditKeyProvider { get; init; } = ReportContentLicenseAuditKeyProvider.Instance;
-
-    /// <summary>
     /// Gets the full name of an environment variable of the product by prepending <see cref="EnvironmentVariablePrefix"/>
     /// to its name.
     /// </summary>

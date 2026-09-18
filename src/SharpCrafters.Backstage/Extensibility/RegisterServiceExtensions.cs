@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
@@ -14,13 +15,6 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace SharpCrafters.Backstage.Extensibility;
 
-/// <summary>
-/// Extension methods for setting up the Backstage services in a <see cref="ServiceProviderBuilder" />. This is the
-/// umbrella over the registration methods of the core package: <see cref="RegisterCoreServices.AddCoreServices"/>,
-/// <see cref="RegisterConfigurationServices.AddConfigurationServices"/>,
-/// <see cref="RegisterTelemetryServices.AddTelemetryServices"/>, <see cref="RegisterLicensingServices.AddLicensingServices"/>
-/// and <see cref="RegisterUserInterfaceServices.AddUserInterfaceServices"/>.
-/// </summary>
 /// <summary>
 /// Extension methods for setting up the Backstage services in a <see cref="ServiceProviderBuilder" />. This is the
 /// umbrella over the registration methods of the packages: <see cref="RegisterCoreServices.AddCoreServices"/>,
@@ -55,15 +49,20 @@ public static class RegisterServiceExtensions
 
         serviceProviderBuilder.AddCoreServices( coreOptions );
 
-        // The services of the product are registered after those of this package, so that one of the same type
-        // replaces ours, and before the configuration services, so that a schema provider it registers is there to be
-        // found when the configuration manager is built.
-        product.RegisterServices?.Invoke( serviceProviderBuilder );
+        // The defaults of the services that a product may answer differently. They are registered first and the
+        // services of the product after them, so that one of the same type replaces the default: a product that says
+        // nothing gets these, and a product that says something gets what it said.
+        //
+        // The configurations go in files, which is what a product that shares nothing with an earlier version of
+        // itself wants. A product that shares some of them calls AddRegistryConfigurationServices itself.
+        serviceProviderBuilder.AddConfigurationServices();
 
-        // Whether any configuration object lives in the registry is decided by whether the product registered a
-        // schema provider, and on Windows alone. A product that registered none, and every product away from Windows,
-        // gets the file-based manager and nothing of the registry layer.
-        serviceProviderBuilder.AddRegistryConfigurationServices();
+        // An audit is throttled by the content of its report, so that a report is sent again whenever anything in it
+        // changes. A product whose earlier versions keep the record and share it with this one has to key it the way
+        // they key it, and says so by registering its own.
+        serviceProviderBuilder.AddSingleton<ILicenseAuditKeyProvider>( _ => ReportContentLicenseAuditKeyProvider.Instance );
+
+        product.RegisterServices?.Invoke( serviceProviderBuilder );
 
         if ( options.AddSupportServices )
         {

@@ -8,6 +8,7 @@ using PostSharp.Backstage;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Testing;
 using System;
 using System.Runtime.InteropServices;
@@ -96,4 +97,26 @@ public sealed class ProductServiceRegistrationTests
 
         Assert.Equal( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), registryService != null );
     }
+
+    /// <summary>
+    /// A product that says nothing about how an audit is identified gets the default, which throttles by the content
+    /// of the report.
+    /// </summary>
+    [Fact]
+    public void TheDefaultAuditKeyProviderThrottlesByTheReport()
+        => Assert.IsType<ReportContentLicenseAuditKeyProvider>(
+            BuildServices( MetalamaProduct.Instance ).GetRequiredBackstageService<ILicenseAuditKeyProvider>() );
+
+    /// <summary>
+    /// A product that says something gets what it said. PostSharp throttles by the identity of the licence, which is
+    /// what lets the record be shared with PostSharp 2026.0.
+    /// </summary>
+    /// <remarks>
+    /// This is the case that a default registered after the services of the product would break: the product would
+    /// have said something and been overruled, and the two versions would each audit what the other had just audited.
+    /// </remarks>
+    [Fact]
+    public void AProductCanReplaceTheDefaultAuditKeyProvider()
+        => Assert.IsType<PostSharpLicenseAuditKeyProvider>(
+            BuildServices( PostSharpProduct.Instance ).GetRequiredBackstageService<ILicenseAuditKeyProvider>() );
 }

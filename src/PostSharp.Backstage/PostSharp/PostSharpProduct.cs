@@ -5,10 +5,12 @@
 using JetBrains.Annotations;
 using PostSharp.Backstage.Configuration;
 using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
@@ -70,11 +72,7 @@ public static class PostSharpProduct
     {
         LongName = "PostSharp",
         ToolAssemblyNamePrefix = "PostSharp.Backstage",
-        LogoName = "postsharp",
-
-        // PostSharp asks whether a license has been audited today, and not whether a report has been sent today,
-        // which is what lets the record be shared with PostSharp 2026.0.
-        LicenseAuditKeyProvider = PostSharpLicenseAuditKeyProvider.Instance
+        LogoName = "postsharp"
     };
 
     /// <summary>
@@ -116,11 +114,23 @@ public static class PostSharpProduct
     /// </summary>
     public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog )
     {
-        // PostSharp shares the registered licenses, the telemetry consents, the leases and the record of the audits
-        // with PostSharp 2026.0, through the registry keys that version reads and writes.
-        RegisterServices = services => services.AddService(
-            typeof(IRegistryConfigurationSchemaProvider),
-            serviceProvider => new PostSharpRegistryConfigurationSchemaProvider(
-                serviceProvider.GetRequiredBackstageService<IDateTimeProvider>() ) )
+        RegisterServices = services =>
+        {
+            // PostSharp shares the registered licenses, the telemetry consents, the leases and the record of the
+            // audits with PostSharp 2026.0, through the registry keys that version reads and writes. The schemas say
+            // which objects those are and where they live, and asking for the registry configuration services is what
+            // puts them there instead of in files of this version's own.
+            services.AddService(
+                typeof(IRegistryConfigurationSchemaProvider),
+                serviceProvider => new PostSharpRegistryConfigurationSchemaProvider(
+                    serviceProvider.GetRequiredBackstageService<IDateTimeProvider>() ) );
+
+            services.AddRegistryConfigurationServices();
+
+            // PostSharp asks whether a license has been audited today, and not whether a report has been sent today,
+            // which is the other half of sharing that record: keyed by anything else, the two versions would write
+            // into one key and neither would read what the other wrote.
+            services.AddService( typeof(ILicenseAuditKeyProvider), _ => PostSharpLicenseAuditKeyProvider.Instance );
+        }
     };
 }

@@ -25,7 +25,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
     private readonly MatomoUploader? _matomoAuditUploader;
     private readonly BackstageBackgroundTasksService _backgroundTasksService;
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
-    private readonly ProductProfile _productProfile;
+    private readonly ILicenseAuditKeyProvider _auditKeyProvider;
 
     public LicenseAuditManager( IServiceProvider serviceProvider )
     {
@@ -39,7 +39,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
         this._matomoAuditUploader = serviceProvider.GetBackstageService<MatomoUploader>();
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
-        this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
+        this._auditKeyProvider = serviceProvider.GetRequiredBackstageService<ILicenseAuditKeyProvider>();
     }
 
     public void ReportLicense( LicenseConsumptionProperties license )
@@ -79,7 +79,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
         }
 
         // Perform detailed audit. What counts as the same audit is decided by the product: see ILicenseAuditKeyProvider.
-        var auditKey = this._productProfile.LicenseAuditKeyProvider.GetAuditKey( license, report.AuditHashCode );
+        var auditKey = this._auditKeyProvider.GetAuditKey( license, report.AuditHashCode );
 
         var mustPerformAudit = this._configurationManager.UpdateIf<LicenseAuditConfiguration>(
             c => !c.TryGetLastAuditTime( auditKey, out var lastReportTime ) || lastReportTime <= this._time.UtcNow.AddDays( -1 ),
