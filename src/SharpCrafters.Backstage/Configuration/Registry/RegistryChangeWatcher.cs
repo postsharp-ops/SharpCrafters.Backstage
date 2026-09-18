@@ -24,6 +24,7 @@ namespace SharpCrafters.Backstage.Configuration.Registry;
 /// description of what changed, only that something did, so the caller re-reads what it cares about.
 /// </para>
 /// </remarks>
+#pragma warning disable CA1416 // The registry is reached only where IsSupported reports one.
 internal sealed class RegistryChangeWatcher : IDisposable
 {
     private const int _errorSuccess = 0;
@@ -154,3 +155,4 @@ internal sealed class RegistryChangeWatcher : IDisposable
         this._changed.Dispose();
     }
 }
+#pragma warning restore CA1416

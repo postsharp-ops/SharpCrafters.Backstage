@@ -63,7 +63,7 @@ public sealed class RegistryValueCodecTests
     [InlineData( 0L )]
     [InlineData( -1L )]
     [InlineData( long.MinValue )]
-    [InlineData( 1000L * 60 * 60 * 24 * 365 * 1000 + 1 )]
+    [InlineData( (1000L * 60 * 60 * 24 * 365 * 1000) + 1 )]
     [InlineData( long.MaxValue )]
     public void ADateOutsideTheAcceptedRangeIsAbsent( long stored ) => Assert.Null( RegistryValueCodec.QWordToDateTime( stored ) );
 

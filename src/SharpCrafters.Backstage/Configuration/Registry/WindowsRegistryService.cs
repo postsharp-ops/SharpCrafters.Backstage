@@ -27,6 +27,7 @@ namespace SharpCrafters.Backstage.Configuration.Registry;
 /// Licensing must not fail a build because a registry key is unreadable.
 /// </para>
 /// </remarks>
+#pragma warning disable CA1416 // The registry is reached only where IsSupported reports one.
 internal sealed class WindowsRegistryService : IRegistryService
 {
     public static WindowsRegistryService Instance { get; } = new();
@@ -241,3 +242,4 @@ internal sealed class WindowsRegistryService : IRegistryService
         public void Dispose() => this._key.Dispose();
     }
 }
+#pragma warning restore CA1416
