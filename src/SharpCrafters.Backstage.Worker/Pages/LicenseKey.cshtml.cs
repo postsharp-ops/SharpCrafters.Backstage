@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -25,8 +25,16 @@ public class LicenseKeyPageModel : PageModel
         this._licenseRegistrationService = licenseRegistrationService;
     }
 
+    /// <summary>
+    /// Gets or sets the license string that the user typed, which is a license key or the address of a license
+    /// server.
+    /// </summary>
+    /// <remarks>
+    /// The page has always accepted either — both go through the same validation and the same registration — and
+    /// only the wording said otherwise.
+    /// </remarks>
     [BindProperty]
-    [Required]
+    [Required( ErrorMessage = "Please provide a license key or the address of a license server." )]
     [SuppressMessage( "Performance", "CA1822:Mark members as static", Justification = "The model binder requires an instance property." )]
     public string? LicenseKey
     {
