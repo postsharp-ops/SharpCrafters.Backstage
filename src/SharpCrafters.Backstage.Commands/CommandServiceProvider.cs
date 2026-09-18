@@ -2,7 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using Metalama.Backstage.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using SharpCrafters.Backstage.Application;
@@ -16,11 +15,13 @@ namespace SharpCrafters.Backstage.Commands
     {
         private readonly IApplicationInfo _applicationInfo;
         private readonly BackstageProduct _product;
+        private readonly Action<ServiceProviderBuilder>? _addToolsExtractor;
 
-        public CommandServiceProvider( IApplicationInfo applicationInfo, BackstageProduct product )
+        public CommandServiceProvider( IApplicationInfo applicationInfo, BackstageProduct product, Action<ServiceProviderBuilder>? addToolsExtractor )
         {
             this._applicationInfo = applicationInfo;
             this._product = product;
+            this._addToolsExtractor = addToolsExtractor;
         }
 
         public IServiceProvider GetServiceProvider( CommandServiceProviderArgs args )
@@ -42,7 +43,7 @@ namespace SharpCrafters.Backstage.Commands
                 DiagnosticsOptions = new DiagnosticsInitializationOptions { CreateLoggingFactory = _ => loggerFactory },
                 IsDevelopmentEnvironment = args.Settings.IsDevelopmentEnvironment,
                 AddUserInterface = args.Settings.AddUserInterface,
-                AddToolsExtractor = b => b.AddTools()
+                AddToolsExtractor = this._addToolsExtractor
             };
 
             initializationOptions = args.TransformOptions( initializationOptions );

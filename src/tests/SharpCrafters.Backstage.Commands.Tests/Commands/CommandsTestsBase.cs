@@ -1,8 +1,9 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using Metalama.Backstage;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Testing;
@@ -47,7 +48,7 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands
             this._logger.Trace?.Log( $">> {string.Join( " ", commandLine )}" );
 
             var commandApp = new CommandApp();
-            BackstageCommandFactory.ConfigureCommandApp( commandApp, new BackstageCommandOptions( this, output, output, AnsiSupport.No ) );
+            BackstageCommandFactory.ConfigureCommandApp( commandApp, new BackstageCommandOptions( this, MetalamaProduct.Instance, output, output, AnsiSupport.No ) );
             var exitCode = await commandApp.RunAsync( commandLine );
 
             var outputString = output.ToString();

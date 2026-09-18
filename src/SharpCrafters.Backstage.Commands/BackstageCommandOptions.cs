@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using Metalama.Backstage;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Commands.Configuration;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface.Rss;
 using SharpCrafters.Backstage.UserInterface.Toasts;
@@ -23,33 +23,33 @@ public sealed class BackstageCommandOptions
     private readonly AnsiSupport _ansiSupport;
     private readonly Dictionary<string, ConfigurationFileCommandAdapter> _configurationFileCommandAdapters = [];
 
-    public BackstageCommandOptions(
-        IApplicationInfo applicationInfo,
-        TextWriter? standardOutput = null,
-        TextWriter? errorOutput = null,
-        AnsiSupport ansiSupport = AnsiSupport.Detect ) : this( applicationInfo, MetalamaProduct.Instance, standardOutput, errorOutput, ansiSupport ) { }
-
     /// <summary>
     /// Initializes a new instance of the <see cref="BackstageCommandOptions"/> class for a given product.
     /// </summary>
+    /// <param name="applicationInfo">The description of the host process.</param>
+    /// <param name="product">The product family that hosts the commands.</param>
+    /// <param name="addToolsExtractor">
+    /// Registers the extractor of the tool applications of the product, which the product ships in a package of its
+    /// own, for instance <c>builder => builder.AddTools()</c>. It is <see langword="null"/> when the host has no such
+    /// package, and the commands that start a tool application then report that the tool is unavailable.
+    /// </param>
     public BackstageCommandOptions(
         IApplicationInfo applicationInfo,
         BackstageProduct product,
+        Action<ServiceProviderBuilder>? addToolsExtractor = null,
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
         AnsiSupport ansiSupport = AnsiSupport.Detect ) : this(
-        new CommandServiceProvider( applicationInfo, product ),
+        new CommandServiceProvider( applicationInfo, product, addToolsExtractor ),
+        product,
         standardOutput,
         errorOutput,
-        ansiSupport )
-    {
-        this.Product = product;
-    }
+        ansiSupport ) { }
 
     /// <summary>
     /// Gets the product family that hosts the commands.
     /// </summary>
-    public BackstageProduct Product { get; } = MetalamaProduct.Instance;
+    public BackstageProduct Product { get; }
 
     /// <summary>
     /// Gets the profile of the product, whose name appears in the descriptions of the commands.
@@ -58,11 +58,13 @@ public sealed class BackstageCommandOptions
 
     internal BackstageCommandOptions(
         ICommandServiceProviderProvider serviceProvider,
+        BackstageProduct product,
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
         AnsiSupport ansiSupport = AnsiSupport.Detect )
     {
         this._ansiSupport = ansiSupport;
+        this.Product = product;
         this.ServiceProvider = serviceProvider;
         this.StandardOutput = standardOutput ?? Console.Out;
         this.ErrorOutput = errorOutput ?? Console.Error;
