@@ -13,6 +13,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Infrastructure
 {
@@ -315,33 +317,73 @@ namespace SharpCrafters.Backstage.Infrastructure
                     {
                         File.WriteAllText( tempPath, content );
 
-                        var destinationExists = File.Exists( path );
-
-                        this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( BeforeSubstitutionLocation, path ) );
-
-                        if ( destinationExists )
-                        {
-                            // File.Replace requires the destination to exist, and preserves its access control list.
-                            // It fails while a reader holds the destination open without FileShare.Delete, which is
-                            // the race the retry is there to absorb.
-                            File.Replace( tempPath, path, destinationBackupFileName: null );
-                        }
-                        else
-                        {
-                            // File.Move throws when the destination exists, which is what makes this branch safe: if
-                            // the destination appeared between the test above and this call, the next attempt finds
-                            // it and substitutes it properly instead of this one failing to create it.
-                            File.Move( tempPath, path );
-                        }
+                        this.Substitute( tempPath, path );
                     }
                     finally
                     {
-                        if ( File.Exists( tempPath ) )
-                        {
-                            File.Delete( tempPath );
-                        }
+                        DeleteTemporaryFile( tempPath );
                     }
                 } );
+
+        /// <inheritdoc />
+        public Task WriteAllTextAtomicallyAsync( string path, string? content, CancellationToken cancellationToken )
+            => RetryHelper.RetryAsync(
+                async () =>
+                {
+                    var tempPath = GetTemporarySiblingPath( path );
+
+                    try
+                    {
+                        await WriteAllTextAsyncCore( tempPath, content, cancellationToken );
+
+                        // The substitution itself has no asynchronous form in System.IO, and the cancellation is
+                        // observed before it rather than during it, so that the destination is never left holding a
+                        // half-substituted state.
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        this.Substitute( tempPath, path );
+                    }
+                    finally
+                    {
+                        DeleteTemporaryFile( tempPath );
+                    }
+                },
+                cancellationToken: cancellationToken );
+
+        /// <summary>
+        /// Substitutes a temporary file that holds the new content for the destination, in a single operation. This is
+        /// the step that <see cref="WriteAllTextAtomically"/> and <see cref="WriteAllTextAtomicallyAsync"/> share, so
+        /// that the two paths cannot drift apart in the part that provides the atomicity.
+        /// </summary>
+        private void Substitute( string tempPath, string path )
+        {
+            var destinationExists = File.Exists( path );
+
+            this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( BeforeSubstitutionLocation, path ) );
+
+            if ( destinationExists )
+            {
+                // File.Replace requires the destination to exist, and preserves its access control list.
+                // It fails while a reader holds the destination open without FileShare.Delete, which is
+                // the race the retry is there to absorb.
+                File.Replace( tempPath, path, destinationBackupFileName: null );
+            }
+            else
+            {
+                // File.Move throws when the destination exists, which is what makes this branch safe: if
+                // the destination appeared between the test above and this call, the next attempt finds
+                // it and substitutes it properly instead of this one failing to create it.
+                File.Move( tempPath, path );
+            }
+        }
+
+        private static void DeleteTemporaryFile( string tempPath )
+        {
+            if ( File.Exists( tempPath ) )
+            {
+                File.Delete( tempPath );
+            }
+        }
 
         /// <summary>
         /// Returns the path of a file that does not exist, located in the same directory as <paramref name="path"/>.
@@ -353,6 +395,55 @@ namespace SharpCrafters.Backstage.Infrastructure
         /// </remarks>
         private static string GetTemporarySiblingPath( string path )
             => Path.Combine( Path.GetDirectoryName( path ) ?? ".", $".{Path.GetFileName( path )}.{Guid.NewGuid():N}.tmp" );
+
+        /// <inheritdoc />
+        public Task<string> ReadAllTextAsync( string path, CancellationToken cancellationToken )
+        {
+#if NET5_0_OR_GREATER
+            return File.ReadAllTextAsync( path, cancellationToken );
+#else
+            return ReadAllTextAsyncCore( path, cancellationToken );
+#endif
+        }
+
+#if !NET5_0_OR_GREATER
+
+        /// <summary>
+        /// Reads a text file without blocking the calling thread on the platforms where <c>File.ReadAllTextAsync</c>
+        /// does not exist. The stream is opened with <see cref="FileOptions.Asynchronous"/>, otherwise the read would
+        /// be a blocking one behind an asynchronous signature.
+        /// </summary>
+        private static async Task<string> ReadAllTextAsyncCore( string path, CancellationToken cancellationToken )
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            using var stream = new FileStream(
+                path,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete,
+                4096,
+                FileOptions.Asynchronous );
+
+            using var reader = new StreamReader( stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true );
+
+            return await reader.ReadToEndAsync();
+        }
+#endif
+
+        private static async Task WriteAllTextAsyncCore( string path, string? content, CancellationToken cancellationToken )
+        {
+#if NET5_0_OR_GREATER
+            await File.WriteAllTextAsync( path, content, cancellationToken );
+#else
+            cancellationToken.ThrowIfCancellationRequested();
+
+            using var stream = new FileStream( path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous );
+            using var writer = new StreamWriter( stream );
+
+            await writer.WriteAsync( content ?? string.Empty );
+#endif
+        }
 
         /// <inheritdoc />
         public string[] ReadAllLines( string path )

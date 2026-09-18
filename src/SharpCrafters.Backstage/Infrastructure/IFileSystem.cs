@@ -10,6 +10,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Infrastructure
 {
@@ -528,6 +530,29 @@ namespace SharpCrafters.Backstage.Infrastructure
         /// </para>
         /// </remarks>
         void WriteAllTextAtomically( string path, string? content );
+
+        /// <summary>
+        /// Opens a text file, asynchronously reads all text of the file, and then closes the file.
+        /// </summary>
+        /// <param name="path">The file to read from.</param>
+        /// <param name="cancellationToken">A token that abandons the read.</param>
+        /// <returns>A string containing all lines of the file.</returns>
+        Task<string> ReadAllTextAsync( string path, CancellationToken cancellationToken );
+
+        /// <summary>
+        /// The asynchronous counterpart of <see cref="WriteAllTextAtomically"/>, with the same guarantee: a concurrent
+        /// reader observes either the whole previous content of the file or the whole new content, but never a
+        /// partially written one.
+        /// </summary>
+        /// <param name="path">The file to write to.</param>
+        /// <param name="content">The string to write to the file.</param>
+        /// <param name="cancellationToken">A token that abandons the write. The destination is left untouched when the
+        /// write is abandoned before the substitution.</param>
+        /// <remarks>
+        /// The remarks of <see cref="WriteAllTextAtomically"/> apply here as well, in particular that this method is
+        /// not a substitute for mutual exclusion between writers.
+        /// </remarks>
+        Task WriteAllTextAtomicallyAsync( string path, string? content, CancellationToken cancellationToken );
 
         /// <summary>
         /// Opens a text file, reads all lines of the file, and then closes the file.
