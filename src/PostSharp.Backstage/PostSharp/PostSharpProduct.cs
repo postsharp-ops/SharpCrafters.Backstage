@@ -104,8 +104,10 @@ public static class PostSharpProduct
     /// Gets the user interface addresses of PostSharp.
     /// </summary>
     /// <remarks>
-    /// <see cref="UserInterfaceInitializationOptions.BriefsFeedUrl"/> is left unset because PostSharp publishes no
-    /// feed of short news, only the articles of its blog.
+    /// <see cref="UserInterfaceInitializationOptions.BriefsFeedUrl"/> is left unset, which is not to say that no such
+    /// feed exists: <c>postsharp.net/briefs.xml</c> is published and is titled for both products. Turning it on shows
+    /// the user a kind of notification they do not get today, so it waits on the decision that also settles which
+    /// posts each product should show, the two post feeds being the same document. See metalama/Metalama#2040.
     /// </remarks>
     public static UserInterfaceInitializationOptions UserInterfaceOptions { get; } = new() { PostsFeedUrl = PostsFeedUrl };
 

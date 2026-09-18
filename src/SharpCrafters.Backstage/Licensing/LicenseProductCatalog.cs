@@ -4,7 +4,9 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Registration;
+using System;
 using System.Collections.Immutable;
+using System.Threading;
 
 namespace SharpCrafters.Backstage.Licensing;
 
@@ -101,26 +103,25 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     /// <inheritdoc />
     public abstract bool HasUnlicensedEdition { get; }
 
-    private ImmutableArray<SelfRegisteredEdition> _selfRegisteredEditions;
+    private readonly Lazy<ImmutableArray<SelfRegisteredEdition>> _selfRegisteredEditions;
+
+    protected LicenseProductCatalog()
+    {
+        // Built on first use rather than here, because an edition is given the catalog and this constructor would
+        // give it one that is not finished. The delegate runs later, by which time it is.
+        this._selfRegisteredEditions = new Lazy<ImmutableArray<SelfRegisteredEdition>>(
+            () => this.CreateEditions().Add( this.CreateTrialEdition() ),
+            LazyThreadSafetyMode.ExecutionAndPublication );
+    }
 
     /// <inheritdoc />
     /// <remarks>
-    /// Built on first use rather than in the constructor, because an edition is given the catalog and a constructor
-    /// would give it one that is not finished. Two threads arriving together build two equal arrays and one of them
-    /// wins; the field holds a single reference, so no reader sees a torn value.
+    /// Built exactly once, and not merely once per thread that asks first. An edition is compared by identity — it is
+    /// the object a caller passes back to <c>ILicenseRegistrationService.Register</c>, which checks that it belongs to
+    /// this family — so a second array of equivalent editions is not equivalent at all: a caller holding an edition of
+    /// the first array would be told that it is not an edition of this product.
     /// </remarks>
-    public ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions
-    {
-        get
-        {
-            if ( this._selfRegisteredEditions.IsDefault )
-            {
-                this._selfRegisteredEditions = this.CreateEditions().Add( this.CreateTrialEdition() );
-            }
-
-            return this._selfRegisteredEditions;
-        }
-    }
+    public ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions => this._selfRegisteredEditions.Value;
 
     /// <summary>
     /// Creates the editions that the family gives away, other than the trial, in the order in which they are offered.
