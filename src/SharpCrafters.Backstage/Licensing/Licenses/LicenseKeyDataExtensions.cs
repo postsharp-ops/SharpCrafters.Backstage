@@ -71,10 +71,17 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// </para>
         /// <para>
         /// The <see cref="LicenseKeyData.MinPostSharpVersion"/> field is deliberately not read as the answer, only as
-        /// evidence that the key was issued in the era that introduced it. The field is not a reliable statement of
-        /// the requirement: it is absent from every key issued before PostSharp 5.0, it appears on Metalama keys that
-        /// no PostSharp reads, and the generator writes a constant 6.9.3 on the modern keys rather than the version
-        /// each one truly needs.
+        /// evidence that the key was issued in the era that introduced it. The field answers the opposite question.
+        /// It looks forward: it lets the generator of a key say that no version below the one it names can use the
+        /// key, so that a version reading it can refuse the key with a message that names the version to upgrade to,
+        /// rather than with whatever its validation happens to report. What is computed here looks backward: which of
+        /// the versions already released accept a key, which is what decides where the key is stored so that the
+        /// versions that would choke on it never read it.
+        /// </para>
+        /// <para>
+        /// Nothing reads the field for its own purpose today, so a key that requires a later version still fails with
+        /// a message that does not name it. That message would be worth having, and the field is the means to it; it
+        /// is a nice-to-have rather than a gap in what is computed here.
         /// </para>
         /// <para>
         /// A key signed by the Elliptic Curve DSA authority raises the result, because a reader that does not know

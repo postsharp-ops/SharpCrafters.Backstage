@@ -15,10 +15,16 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Licenses;
 /// Tests the minimal version of PostSharp that can consume a license key.
 /// </summary>
 /// <remarks>
-/// The versions of PostSharp released before the Elliptic Curve DSA licensing authority of #1864 have no authority of
-/// the identifiers of the keys of that algorithm, so they report the signature as invalid whatever the rest of the key
-/// says. The minimal version therefore comes from the signature as well as from the field the key carries, exactly as
-/// it does for Metalama in <see cref="LicenseKeyData.MinMetalamaVersion"/>.
+/// <para>
+/// The question is which of the versions already released accept a key, which is what decides where the key is stored
+/// so that the versions choking on it never read it. It is answered from the content of the key: a reader released
+/// before a field existed rejects a key carrying that field, and a reader that does not know the Elliptic Curve DSA
+/// licensing authority of #1864 reports the signature as invalid whatever the rest of the key says.
+/// </para>
+/// <para>
+/// This is not the <see cref="LicenseKeyData.MinPostSharpVersion"/> field, which looks the other way: it lets a key
+/// declare the version to upgrade to, for a message that names it.
+/// </para>
 /// </remarks>
 #pragma warning disable CS0618 // Type or member is obsolete: the rules must name the products no longer issued.
 
@@ -27,11 +33,11 @@ public sealed class MinPostSharpVersionTests : TestsBase
     private static readonly Version _firstVersionSupportingECDsa = new( 2027, 0 );
 
     /// <summary>
-    /// The version that a license key of a PostSharp product carries once it is serialized. Serialization writes the
-    /// field, because the validation of the minimal version was removed in that version, so it is what the logic
-    /// preceding the detection of the signature returns for every key built here.
+    /// The first reader that skips a field it does not know instead of rejecting the key. Every key of the current
+    /// generation carries the generation and the servicing phase, which are length-prefixed fields, so this is what
+    /// such a key needs before its signature is taken into account.
     /// </summary>
-    private static readonly Version _versionCarriedByTheKey = new( 6, 9, 3 );
+    private static readonly Version _firstTolerantVersion = new( 6, 9, 3 );
 
     private static readonly TestLicenseKeyProvider _licenseKeyProvider = new();
 
@@ -55,24 +61,24 @@ public sealed class MinPostSharpVersionTests : TestsBase
     }
 
     /// <summary>
-    /// A key signed by the finite field DSA authority keeps the version that the key itself carries, because every
+    /// A key signed by the finite field DSA authority needs only the version that its content asks for, because every
     /// version verifies that signature. This is the case that must not change.
     /// </summary>
     [Theory]
     [InlineData( LicenseProduct.PostSharpUltimate )]
     [InlineData( LicenseProduct.PostSharpFramework )]
     [InlineData( LicenseProduct.PostSharpCachingLibrary )]
-    public void ADsaSignedKeyKeepsTheVersionItCarries( LicenseProduct product )
+    public void ADsaSignedKeyNeedsOnlyWhatItsContentAsksFor( LicenseProduct product )
     {
         var licenseKeyData = Deserialize( CreateBuilder( product ).SignAndSerialize( _licenseKeyProvider.Authority ) );
 
         Assert.False( licenseKeyData.IsSignedByECDsaKey );
-        Assert.Equal( _versionCarriedByTheKey, licenseKeyData.GetMinPostSharpVersion() );
+        Assert.Equal( _firstTolerantVersion, licenseKeyData.GetMinPostSharpVersion() );
     }
 
     /// <summary>
     /// A key signed by the Elliptic Curve DSA authority requires the first version that verifies that signature,
-    /// which is later than the version the key carries.
+    /// which is later than the version its content asks for.
     /// </summary>
     [Theory]
     [InlineData( LicenseProduct.PostSharpUltimate )]
@@ -98,7 +104,7 @@ public sealed class MinPostSharpVersionTests : TestsBase
         var ecdsaVersion = Deserialize( CreateBuilder().SignAndSerialize( TestLicensingAuthorityProvider.ECDsaTestAuthority ) )
             .GetMinPostSharpVersion();
 
-        Assert.Equal( _versionCarriedByTheKey, dsaVersion );
+        Assert.Equal( _firstTolerantVersion, dsaVersion );
         Assert.Equal( _firstVersionSupportingECDsa, ecdsaVersion );
         Assert.True( ecdsaVersion > dsaVersion, "The signature must raise the requirement, never lower it." );
     }
@@ -125,7 +131,7 @@ public sealed class MinPostSharpVersionTests : TestsBase
         var licenseKeyData = Deserialize( CreateBuilder().SignAndSerialize( _licenseKeyProvider.Authority ) );
 
         Assert.True( licenseKeyData.HasLengthPrefixedField );
-        Assert.Equal( _versionCarriedByTheKey, licenseKeyData.GetMinPostSharpVersion() );
+        Assert.Equal( _firstTolerantVersion, licenseKeyData.GetMinPostSharpVersion() );
     }
 
     /// <summary>

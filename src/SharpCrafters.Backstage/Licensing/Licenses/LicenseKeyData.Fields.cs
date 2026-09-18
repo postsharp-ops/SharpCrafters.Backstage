@@ -168,6 +168,24 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 _ => throw new InvalidCastException( "Invalid generation." )
             };
 
+        /// <summary>
+        /// Gets the version below which the license key is declared unusable, as the key itself states it, or
+        /// <see langword="null"/> when the key states nothing.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is a forward-compatibility device: it lets whoever generates a key tell a version that cannot use it
+        /// which version can, so that the reader can refuse the key with a message naming the version to upgrade to
+        /// instead of a message about whatever its validation happened to notice first. Nothing acts on it today, so
+        /// that message is not produced; it would be worth having.
+        /// </para>
+        /// <para>
+        /// It is not the answer to the opposite question, which is which of the versions already released accept a
+        /// key. That one is computed from the content of the key by
+        /// <c>LicenseKeyDataExtensions.GetMinPostSharpVersion</c>, because the field is absent from every key issued
+        /// before PostSharp 5.0 and carries a constant on the keys issued since 2025.
+        /// </para>
+        /// </remarks>
         public Version? MinPostSharpVersion
         {
             get
