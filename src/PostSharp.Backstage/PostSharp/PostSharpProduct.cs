@@ -30,12 +30,16 @@ public static class PostSharpProduct
     /// The address of the RSS feed of the PostSharp articles.
     /// </summary>
     /// <remarks>
-    /// <c>blog.postsharp.net</c> redirects here: the blog was absorbed into the main site, its repository archived
-    /// and the application that served it deleted. The feed is the same one that <c>metalama.net</c> serves, because
-    /// the posts of both products were merged into one blog; the address of this product is used so that a reader
-    /// who looks at where the feed came from sees the product they installed.
+    /// The posts of both products live in one blog, and this is the view of it that carries the posts categorized for
+    /// PostSharp. The merged feed stays at <c>postsharp.net/feed.xml</c> for whoever else reads it, so the address of
+    /// a product names the folder of that product rather than the root. See metalama/Metalama#2040.
     /// </remarks>
-    public const string PostsFeedUrl = "https://postsharp.net/feed.xml";
+    public const string PostsFeedUrl = "https://postsharp.net/postsharp/feed.xml";
+
+    /// <summary>
+    /// The address of the RSS feed of the short PostSharp news.
+    /// </summary>
+    public const string BriefsFeedUrl = "https://postsharp.net/postsharp/briefs.xml";
 
     /// <summary>
     /// Gets the profile of the PostSharp product family. Its values are the names that every version of PostSharp has
@@ -103,13 +107,8 @@ public static class PostSharpProduct
     /// <summary>
     /// Gets the user interface addresses of PostSharp.
     /// </summary>
-    /// <remarks>
-    /// <see cref="UserInterfaceInitializationOptions.BriefsFeedUrl"/> is left unset, which is not to say that no such
-    /// feed exists: <c>postsharp.net/briefs.xml</c> is published and is titled for both products. Turning it on shows
-    /// the user a kind of notification they do not get today, so it waits on the decision that also settles which
-    /// posts each product should show, the two post feeds being the same document. See metalama/Metalama#2040.
-    /// </remarks>
-    public static UserInterfaceInitializationOptions UserInterfaceOptions { get; } = new() { PostsFeedUrl = PostsFeedUrl };
+    public static UserInterfaceInitializationOptions UserInterfaceOptions { get; } =
+        new() { PostsFeedUrl = PostsFeedUrl, BriefsFeedUrl = BriefsFeedUrl };
 
     /// <summary>
     /// Gets the PostSharp product family, which binds the Backstage services to the values above.

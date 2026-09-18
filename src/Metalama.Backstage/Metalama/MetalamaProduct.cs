@@ -27,12 +27,23 @@ public static class MetalamaProduct
     /// <summary>
     /// The address of the RSS feed of the short Metalama news.
     /// </summary>
-    public const string BriefsFeedUrl = "https://metalama.net/briefs.xml";
+    /// <remarks>
+    /// On the other product's host, which is not a mistake: one site serves both products, and this is the address
+    /// the feed gives for itself. <c>metalama.net/briefs.xml</c> reaches the same file, but only because that one
+    /// path is mapped to it, and the neighbouring <c>metalama.net/feed.xml</c> is not mapped the same way. Naming the
+    /// file rather than the alias makes the two feeds of this product, and the two products, agree.
+    /// </remarks>
+    public const string BriefsFeedUrl = "https://postsharp.net/metalama/briefs.xml";
 
     /// <summary>
     /// The address of the RSS feed of the Metalama articles.
     /// </summary>
-    public const string PostsFeedUrl = "https://metalama.net/feed.xml";
+    /// <remarks>
+    /// The posts of both products live in one blog, and this is the view of it that carries the posts categorized for
+    /// Metalama. The merged feed stays at <c>postsharp.net/feed.xml</c> for whoever else reads it. See
+    /// metalama/Metalama#2040.
+    /// </remarks>
+    public const string PostsFeedUrl = "https://postsharp.net/metalama/feed.xml";
 
     /// <summary>
     /// Gets the profile of the Metalama product family. Its values are the names that every version of Metalama has
