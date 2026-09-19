@@ -15,11 +15,13 @@ namespace Metalama.Framework.CompilerExtensions;
 // ReSharper disable UnusedMember.Global
 
 /// <summary>
-/// Enumerates the kinds of process that Metalama runs in.
+/// Enumerates the kinds of process that a product built on these services runs in.
 /// </summary>
 /// <remarks>
 /// The members are named in <c>diagnostics.json</c> and in telemetry, so a member is not removed when the
 /// corresponding host leaves the supported set. Removing one would make an existing configuration file invalid.
+/// A new member is appended for the same reason, rather than placed next to the ones it resembles, so that the
+/// ordinal of an existing member does not move.
 /// </remarks>
 public enum ProcessKind
 {
@@ -110,5 +112,29 @@ public enum ProcessKind
     /// <summary>
     /// The <c>dotnet format</c> command.
     /// </summary>
-    Format
+    Format,
+
+    /// <summary>
+    /// The PostSharp compiler: the native host <c>postsharp-x86|x64|arm64</c> of the .NET Framework build, and
+    /// <c>PostSharp.Compiler.Hosting.CommandLine</c> of the .NET build.
+    /// </summary>
+    /// <remarks>
+    /// It is a different kind from <see cref="Compiler"/>, which is the Metalama compiler. The two are separate
+    /// products, a developer may have both on one machine, and this enumeration is what <c>diagnostics.json</c>
+    /// names to turn logging, a debugger or a crash dump on for one kind of process: a single member would make a
+    /// setting meant for one of them apply to the other.
+    /// </remarks>
+    PostSharpCompiler,
+
+    /// <summary>
+    /// The PostSharp pipe server, <c>postsharp-x86|x64|arm64-srv</c>, which compiles each project of a solution
+    /// build in a pooled application domain of its own.
+    /// </summary>
+    /// <remarks>
+    /// The server itself compiles nothing, and a compilation reports itself as
+    /// <see cref="PostSharpCompiler"/> even when it runs in one of those domains, because that is the kind the
+    /// setting of a user who wants to see a compilation would name. What this kind is for is the server process:
+    /// its own log, its own crash dump, and the debugger a support case attaches to it.
+    /// </remarks>
+    PostSharpPipeServer
 }

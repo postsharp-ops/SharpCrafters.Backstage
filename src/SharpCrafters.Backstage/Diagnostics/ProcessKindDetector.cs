@@ -37,6 +37,11 @@ namespace Metalama.Framework.CompilerExtensions;
 /// <see cref="ProcessKind.VisualStudioMac"/> until 2027.0. Visual Studio for Mac is sunset and PB-2027.0 does not
 /// include it, so no process is classified as that kind any more.
 /// </para>
+/// <para>
+/// The table serves more than one product. The PostSharp arms are here and not in a table of their own because
+/// the kind is a property of the process, several of these hosts can load either product, and a support report
+/// has to name the host whichever product wrote it.
+/// </para>
 /// </remarks>
 public static class ProcessKindDetector
 {
@@ -142,6 +147,13 @@ public static class ProcessKindDetector
                     // The dotnet format command.
                     return ProcessKind.Format;
                 }
+                else if ( normalizedCommandLine.Contains( "postsharp.compiler.hosting.commandline.dll" ) )
+                {
+                    // The PostSharp compiler of the .NET build. It has no native host of its own: the MSBuild
+                    // task starts it as an assembly, so the command line is what identifies it. There is no
+                    // counterpart for the pipe server, which exists only on .NET Framework.
+                    return ProcessKind.PostSharpCompiler;
+                }
                 else
                 {
                     return ProcessKind.Other;
@@ -153,6 +165,16 @@ public static class ProcessKindDetector
                 if ( normalizedProcessName.StartsWith( "linqpad", StringComparison.Ordinal ) )
                 {
                     return ProcessKind.LinqPad;
+                }
+
+                // The native hosts of the PostSharp compiler, whose name carries the processor architecture and,
+                // for the pipe server, a suffix. The server is tested first, because its name begins with the
+                // name of the compiler that serves the same architecture.
+                else if ( normalizedProcessName.StartsWith( "postsharp-", StringComparison.Ordinal ) )
+                {
+                    return normalizedProcessName.EndsWith( "-srv", StringComparison.Ordinal )
+                        ? ProcessKind.PostSharpPipeServer
+                        : ProcessKind.PostSharpCompiler;
                 }
                 else
                 {
