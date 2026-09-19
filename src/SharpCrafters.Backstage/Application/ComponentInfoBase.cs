@@ -9,12 +9,51 @@ using System.Reflection;
 
 namespace SharpCrafters.Backstage.Application;
 
+/// <summary>
+/// Describes a component of a product from the metadata of one of its assemblies.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <strong>What the assembly of a product must carry.</strong> A product built on these services has to produce
+/// three things at build time, and none of them fails loudly when it is missing, so a product that adopts these
+/// services checks all three before anything else:
+/// </para>
+/// <list type="number">
+/// <item>
+/// <description>
+/// <c>[assembly: AssemblyMetadata( "PackageVersion", … )]</c>, the version of the package the assembly ships in.
+/// A version-limited licence key is compared against it, and a usage report is grouped by it.
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <c>[assembly: AssemblyMetadata( "PackageBuildDate", … )]</c>, in a format
+/// <see cref="DateTime.Parse(string, IFormatProvider)"/> reads under the invariant culture. This one is not
+/// decorative: the end date of a subscription is compared against the build date, and a licence is refused with
+/// an exception when the application cannot say when it was built, so an absent attribute turns every licensed
+/// build of the product into a crash.
+/// </description>
+/// </item>
+/// <item>
+/// <description>
+/// <c>[assembly: AssemblyCompany( … )]</c> equal to <see cref="ProductProfile.Company"/>. Licensing finds the most
+/// recently built component of the vendor by filtering the components of the application on that string, so a
+/// company that does not match makes the search find nothing and the subscription date is compared against the
+/// wrong component.
+/// </description>
+/// </item>
+/// </list>
+/// <para>
+/// The environment variables named below override two of these for testing. They are named after the product, so
+/// <c>METALAMA_BUILD_DATE</c> and <c>POSTSHARP_BUILD_DATE</c> are different variables.
+/// </para>
+/// </remarks>
 public abstract class ComponentInfoBase : IComponentInfo
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ComponentInfoBase"/> class.
     /// </summary>
-    /// <param name="metadataAssembly">The assembly whose metadata describes the component.</param>
+    /// <param name="metadataAssembly">The assembly whose metadata describes the component. It must carry the three attributes listed on this class.</param>
     /// <param name="productProfile">The profile of the product family, which names the environment variables that override the prerelease flag and the build date at build time.</param>
     protected ComponentInfoBase( Assembly metadataAssembly, ProductProfile productProfile )
     {
