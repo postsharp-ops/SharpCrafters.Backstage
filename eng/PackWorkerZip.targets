@@ -1,99 +1,9 @@
 <Project>
 
     <!-- Publishes a worker executable and packs the result into the deterministic zip archive that the tools package
-         of the product embeds. It is shared by the worker executable of every product, because the target has to be
-         the same for all of them: see the lock below. -->
+         of the product embeds. It is imported by the worker executable of every product. -->
 
     <Import Project="$(MSBuildThisFileDirectory)DeterministicZip.tasks" />
-
-    <UsingTask TaskName="PublishExclusively" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
-        <ParameterGroup>
-            <ProjectPath ParameterType="System.String" Required="true" />
-            <OutputDirectory ParameterType="System.String" Required="true" />
-            <Configuration ParameterType="System.String" Required="true" />
-        </ParameterGroup>
-        <Task>
-            <Using Namespace="System" />
-            <Using Namespace="System.Diagnostics" />
-            <Using Namespace="System.Threading" />
-            <Using Namespace="System.Threading.Tasks" />
-            <Code Type="Fragment" Language="cs">
-                <![CDATA[
-                // The worker executables of the products publish the same SharpCrafters.Backstage.Worker library, and a
-                // publish writes into the intermediate directory of that library, which all of them share. Two
-                // publishes running at once therefore read and write the same files under `obj\...\compressed\`, and
-                // the build fails intermittently with a sharing violation. MSBuild builds the worker executables in
-                // parallel because nothing relates them, so the exclusion has to be taken here rather than expressed
-                // as a dependency between two products that have none.
-                //
-                // The lock is machine-wide rather than process-wide because each publish is a separate `dotnet`
-                // process, and two builds of two working copies of this repository are enough to collide.
-                using ( var mutex = new Mutex( false, @"Global\SharpCrafters.Backstage.PublishWorker" ) )
-                {
-                    var acquired = false;
-
-                    try
-                    {
-                        try
-                        {
-                            acquired = mutex.WaitOne( TimeSpan.FromMinutes( 10 ) );
-                        }
-                        catch ( AbandonedMutexException )
-                        {
-                            // The build that held the lock was killed. Its output is incomplete, but this publish
-                            // rewrites what it needs, so the lock is ours and the exception is not a failure.
-                            acquired = true;
-                        }
-
-                        if ( !acquired )
-                        {
-                            Log.LogError( "Timed out waiting for another build to finish publishing a worker." );
-                        }
-                        else
-                        {
-                            var startInfo = new ProcessStartInfo( "dotnet", string.Format( "publish \"{0}\" --no-build -o \"{1}\" -c {2}", ProjectPath, OutputDirectory, Configuration ) )
-                            {
-                                UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true
-                            };
-
-                            using ( var process = Process.Start( startInfo ) )
-                            {
-                                // Both streams are drained at once. Reading one to the end before starting the
-                                // other deadlocks whenever the child fills the pipe of the other: it blocks
-                                // writing, so it never closes the stream being read, so this task never returns
-                                // from the read and the build hangs. Which stream is read first does not matter,
-                                // only that the second one is not left unattended while the first is read.
-                                var outputTask = process.StandardOutput.ReadToEndAsync();
-                                var errorTask = process.StandardError.ReadToEndAsync();
-
-                                var output = outputTask.Result;
-                                var error = errorTask.Result;
-
-                                process.WaitForExit();
-
-                                if ( process.ExitCode != 0 )
-                                {
-                                    Log.LogError( "Publishing '{0}' failed with exit code {1}.{2}{3}{4}", ProjectPath, process.ExitCode, Environment.NewLine, output, error );
-                                }
-                                else
-                                {
-                                    Log.LogMessage( MessageImportance.Low, output );
-                                }
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        if ( acquired )
-                        {
-                            mutex.ReleaseMutex();
-                        }
-                    }
-                }
-                ]]>
-            </Code>
-        </Task>
-    </UsingTask>
 
     <Target Name="PackAndZip" AfterTargets="Build">
 
@@ -101,7 +11,11 @@
              archive does not carry the files of an earlier build. -->
         <RemoveDir Directories="$(OutputPath)Packed" />
 
-        <PublishExclusively ProjectPath="$(ProjectPath)" OutputDirectory="$(OutputPath)Packed" Configuration="$(Configuration)" />
+        <!-- Node reuse is turned off for the publish. The publish runs an MSBuild of its own, whose worker nodes are
+             reusable by default; those nodes inherit the output streams that this task redirects and outlive the
+             publish, so the streams never reach their end and the build hangs here. -->
+        <Exec Command="dotnet publish &quot;$(ProjectPath)&quot; --no-build -o &quot;$(OutputPath)Packed&quot; -c $(Configuration)"
+              EnvironmentVariables="MSBUILDDISABLENODEREUSE=1" />
 
         <CreateDeterministicZip SourceDirectory="$(OutputPath)Packed" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(BuildDate)" />
         <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High" />
