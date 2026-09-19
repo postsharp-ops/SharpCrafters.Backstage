@@ -15,9 +15,8 @@ project {
     buildType(ReleaseBuild)
     buildType(PublicBuild)
     buildType(PublicDeployment)
-    buildType(VersionBump)
 
-    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment,VersionBump)
+    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment)
 
 }
 
@@ -432,87 +431,6 @@ object PublicDeployment : BuildType({
             artifactRules = "+:artifacts/publish/public/**/*=>artifacts/publish/public\n+:artifacts/publish/private/**/*=>artifacts/publish/private"
         }
      }
-
-})
-
-object VersionBump : BuildType({
-
-    name = "Version Bump"
-
-    params {
-        text(
-            "Bump.Arguments", 
-            "", 
-            label ="DockerBuild.ps1 Arguments",
-            description = "Arguments to append to the 'Bump' build step.", allowEmpty = true)
-        param("Bump.Timeout", "15")
-    }
-
-    vcs {
-        root(AbsoluteId("Backstage_Backstage20270"))
-     checkoutMode = CheckoutMode.ON_AGENT
-    }
-
-    steps {
-        powerShell {
-            name = "Clean NuGet cache of produced and dependency packages"
-            id = "CleanNuGetCache"
-            edition = PowerShellStep.Edition.Core
-            scriptMode = script {
-                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
-            }
-            noProfile = false
-        }
-        powerShell {
-            name = "Prepare Docker image backstage-2027.0"
-            id = "PrepareImage"
-            edition = PowerShellStep.Edition.Core
-            scriptMode = file {
-                path = "DockerBuild.ps1"
-            }
-            noProfile = false
-            scriptArgs = "-BuildImage -ImageName backstage-2027.0 "
-        }
-        powerShell {
-            name = "Bump"
-            id = "Bump"
-            edition = PowerShellStep.Edition.Core
-            scriptMode = file {
-                path = "DockerBuild.ps1"
-            }
-            noProfile = false
-            scriptArgs = "-Script Build.ps1 -ImageName backstage-2027.0 -NoBuildImage -Label %system.teamcity.buildType.id%_%build.number% bump --timeout %Bump.Timeout% %Bump.Arguments%"
-        }
-        powerShell {
-            name = "Cleanup Docker containers"
-            id = "DockerCleanup"
-            executionMode = BuildStep.ExecutionMode.ALWAYS
-            edition = PowerShellStep.Edition.Core
-            scriptMode = script {
-                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }"
-            }
-            noProfile = false
-        }
-    }
-
-    requirements {
-        matches("teamcity.agent.jvm.os.family", "Windows")
-        matches("teamcity.agent.jvm.os.arch", "amd64")
-        equals("env.BuildAgentType", "docker-win-x64-md")
-    }
-
-    features {
-        swabra {
-            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
-            lockingProcesses = Swabra.LockingProcessPolicy.KILL
-            verbose = true
-        }
-        gitHubAppBuildScopedToken {
-            parameterName = "env.GITHUB_TOKEN"
-            connectionId = "%GITHUB_CONNECTION_POSTSHARP_OPS%"
-            targetRepositories = "SharpCrafters.Backstage"
-        }
-    }
 
 })
 
