@@ -15,6 +15,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Infrastructure_IFileSystem = SharpCrafters.Backstage.Infrastructure.IFileSystem;
 
 namespace SharpCrafters.Backstage.Testing
@@ -358,6 +359,31 @@ namespace SharpCrafters.Backstage.Testing
         /// </remarks>
         public void WriteAllTextAtomically( string path, string? content )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.WriteAllText( path, content ) );
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// The mock file system is in memory, so there is nothing to await. The method is nevertheless the one the
+        /// code under test calls, so that the asynchronous path is the one exercised by the tests.
+        /// </remarks>
+        public Task<string> ReadAllTextAsync( string path, CancellationToken cancellationToken )
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            return Task.FromResult( this.ReadAllText( path ) );
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// The remarks of <see cref="WriteAllTextAtomically"/> apply here as well, and there is nothing to await.
+        /// </remarks>
+        public Task WriteAllTextAtomicallyAsync( string path, string? content, CancellationToken cancellationToken )
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            this.WriteAllTextAtomically( path, content );
+
+            return Task.CompletedTask;
+        }
 
         public string[] ReadAllLines( string path ) => this._file.Execute( ExecutionKind.Read, 0, path, f => f.ReadAllLines( path ) );
 

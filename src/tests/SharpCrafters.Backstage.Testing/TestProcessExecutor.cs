@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Testing;
 
@@ -24,7 +26,7 @@ public class TestProcessExecutor : IProcessExecutor
 
     /// <summary>
     /// Gets or sets the function that returns the standard output of a process started by
-    /// <see cref="TryReadStandardOutput"/>, or <c>null</c> when the process is expected to fail. The default value
+    /// <see cref="TryExecute"/>, or <c>null</c> when the process is expected to fail. The default value
     /// returns <c>null</c> for every process.
     /// </summary>
     /// <remarks>
@@ -32,6 +34,13 @@ public class TestProcessExecutor : IProcessExecutor
     /// so that the code under test observes the output of that command without the command being executed.
     /// </remarks>
     public Func<ProcessStartInfo, string?> StandardOutputProvider { get; set; } = _ => null;
+
+    /// <summary>
+    /// Gets or sets the function that serves <see cref="TryExecuteAsync"/>, so that a test can make the call
+    /// block and observe what happens when it is cancelled. The default value is <c>null</c>, in which case
+    /// <see cref="StandardOutputProvider"/> serves the asynchronous path too and it completes immediately.
+    /// </summary>
+    public Func<ProcessStartInfo, CancellationToken, Task<string?>>? AsyncStandardOutputProvider { get; set; }
 
     public IProcess Start( ProcessStartInfo startInfo )
     {
@@ -45,7 +54,7 @@ public class TestProcessExecutor : IProcessExecutor
         return new TestProcess();
     }
 
-    public bool TryReadStandardOutput( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
+    public bool TryExecute( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
     {
         if ( this.ExceptionToThrow != null )
         {
@@ -57,6 +66,25 @@ public class TestProcessExecutor : IProcessExecutor
         standardOutput = this.StandardOutputProvider( startInfo );
 
         return standardOutput != null;
+    }
+
+    public Task<string?> TryExecuteAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if ( this.ExceptionToThrow != null )
+        {
+            throw this.ExceptionToThrow;
+        }
+
+        this.StartedProcesses.Add( startInfo );
+
+        if ( this.AsyncStandardOutputProvider != null )
+        {
+            return this.AsyncStandardOutputProvider( startInfo, cancellationToken );
+        }
+
+        return Task.FromResult( this.StandardOutputProvider( startInfo ) );
     }
 
     private sealed class TestProcess : IProcess

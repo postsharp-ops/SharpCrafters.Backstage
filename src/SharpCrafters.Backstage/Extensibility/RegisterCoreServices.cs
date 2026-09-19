@@ -12,6 +12,7 @@ using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.Utilities;
+using SharpCrafters.Backstage.VersionControl;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -70,6 +71,7 @@ public static class RegisterCoreServices
             .AddSingleton<IFileSystem>( serviceProvider => new FileSystem( serviceProvider ) )
             .AddSingleton<IStandardDirectories>( serviceProvider => new StandardDirectories( serviceProvider ) )
             .AddSingleton<IProcessExecutor>( _ => new ProcessExecutor() )
+            .AddSingleton<IVcsStatusService>( serviceProvider => new GitStatusService( serviceProvider ) )
             .AddSingleton<IHttpClientFactory>( _ => new HttpClientFactory() )
             .AddSingleton<IJsonSerializationService>( _ => new JsonSerializationService( options.JsonTypeInfoResolvers ) )
             .AddSingleton<INamedLockService>( CreateNamedLockService )

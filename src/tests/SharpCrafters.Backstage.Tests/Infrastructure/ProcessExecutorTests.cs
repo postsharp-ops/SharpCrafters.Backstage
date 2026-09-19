@@ -63,7 +63,7 @@ public sealed class ProcessExecutorTests : TestsBase
     [Fact]
     public void StandardOutputIsRead()
     {
-        Assert.True( new ProcessExecutor().TryReadStandardOutput( CreateShellStartInfo( "echo Metalama" ), _longTimeout, out var standardOutput ) );
+        Assert.True( new ProcessExecutor().TryExecute( CreateShellStartInfo( "echo Metalama" ), _longTimeout, out var standardOutput ) );
 
         Assert.Equal( "Metalama", standardOutput?.Trim() );
     }
@@ -74,7 +74,7 @@ public sealed class ProcessExecutorTests : TestsBase
     [Fact]
     public void NonZeroExitCodeIsReportedAsAFailure()
     {
-        Assert.False( new ProcessExecutor().TryReadStandardOutput( CreateShellStartInfo( "exit 3" ), _longTimeout, out var standardOutput ) );
+        Assert.False( new ProcessExecutor().TryExecute( CreateShellStartInfo( "exit 3" ), _longTimeout, out var standardOutput ) );
 
         Assert.Null( standardOutput );
     }
@@ -92,7 +92,7 @@ public sealed class ProcessExecutorTests : TestsBase
     {
         var stopwatch = Stopwatch.StartNew();
 
-        Assert.False( new ProcessExecutor().TryReadStandardOutput( CreateNonTerminatingProcessStartInfo(), _shortTimeout, out var standardOutput ) );
+        Assert.False( new ProcessExecutor().TryExecute( CreateNonTerminatingProcessStartInfo(), _shortTimeout, out var standardOutput ) );
 
         var elapsed = stopwatch.Elapsed;
         this.Logger.WriteLine( $"The method returned after {elapsed}." );
@@ -125,7 +125,7 @@ public sealed class ProcessExecutorTests : TestsBase
             var startInfo = CreateNonTerminatingProcessStartInfo();
             startInfo.WorkingDirectory = workingDirectory;
 
-            Assert.False( new ProcessExecutor().TryReadStandardOutput( startInfo, _shortTimeout, out _ ) );
+            Assert.False( new ProcessExecutor().TryExecute( startInfo, _shortTimeout, out _ ) );
 
             // The deletion is attempted repeatedly, because the handle of the process is released a short time after
             // the process has been terminated. The waiting time is far below the time that the process runs when it
