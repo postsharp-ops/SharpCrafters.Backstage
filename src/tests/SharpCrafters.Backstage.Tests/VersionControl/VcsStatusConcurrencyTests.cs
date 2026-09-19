@@ -118,7 +118,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
     /// <summary>
     /// Starts a query on a dedicated thread. See the remarks on this class for why the thread pool is not used.
     /// </summary>
-    private Task<bool> QueryAsync( GitStatusService service, string file, CancellationToken cancellationToken = default )
+    private static Task<bool> QueryAsync( GitStatusService service, string file, CancellationToken cancellationToken = default )
         => Task.Factory.StartNew(
                 () => service.IsAnyFileModifiedAsync( [file], cancellationToken ).AsTask(),
                 CancellationToken.None,
@@ -174,11 +174,11 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
         this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
 
-        var first = this.QueryAsync( service, file );
+        var first = QueryAsync( service, file );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
         // The first caller is now inside the command. The second must find the run in progress and join it.
-        var second = this.QueryAsync( service, file );
+        var second = QueryAsync( service, file );
         await this.ReachedAsync( JoinedQuery( _repository ) );
 
         this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
@@ -209,10 +209,10 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         // Both callers are held after their lookup has missed and before either has registered, which is the
         // interleaving that the repeated lookup exists for and that does not reproduce on demand otherwise.
-        var first = this.QueryAsync( service, file );
+        var first = QueryAsync( service, file );
         await this.ReachedAsync( BeforeRegistering( _repository ) );
 
-        var second = this.QueryAsync( service, file );
+        var second = QueryAsync( service, file );
         await this.ReachedAsync( BeforeRegistering( _repository ) );
 
         this._sync.DisableSyncPoint( BeforeRegistering( _repository ) );
@@ -249,10 +249,10 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
         this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
 
-        var first = this.QueryAsync( service, file );
+        var first = QueryAsync( service, file );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
-        var others = Enumerable.Range( 0, joiners ).Select( _ => this.QueryAsync( service, file ) ).ToList();
+        var others = Enumerable.Range( 0, joiners ).Select( _ => QueryAsync( service, file ) ).ToList();
 
         for ( var i = 0; i < joiners; i++ )
         {
@@ -289,11 +289,11 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
 
-        var blocked = this.QueryAsync( service, file );
+        var blocked = QueryAsync( service, file );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
         // This has to complete while the other repository is still held inside its command.
-        Assert.False( await this.WithTimeout( this.QueryAsync( service, otherFile ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( service, otherFile ) ) );
 
         this._sync.DisableSyncPoint( InsideCommand( _repository ) );
 
@@ -318,7 +318,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
 
-        var cancelled = this.QueryAsync( service, file, cancellationTokenSource.Token );
+        var cancelled = QueryAsync( service, file, cancellationTokenSource.Token );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
         cancellationTokenSource.Cancel();
@@ -328,7 +328,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         // A fresh caller has to obtain a verdict of its own. If the cancelled run were still registered, this would
         // join it and be cancelled too.
-        Assert.False( await this.WithTimeout( this.QueryAsync( service, file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( service, file ) ) );
     }
 
     /// <summary>
@@ -350,11 +350,11 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
         this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
 
-        var cancelled = this.QueryAsync( service, file, cancellationTokenSource.Token );
+        var cancelled = QueryAsync( service, file, cancellationTokenSource.Token );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
         // The second caller joins the run started by the first, and carries no token of its own.
-        var joined = this.QueryAsync( service, file );
+        var joined = QueryAsync( service, file );
         await this.ReachedAsync( JoinedQuery( _repository ) );
         this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
 
@@ -384,14 +384,14 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         this._sync.EnableSyncPoint( BeforeWritingFile( _repository ) );
 
-        var write = this.QueryAsync( writer, file );
+        var write = QueryAsync( writer, file );
         await this.ReachedAsync( BeforeWritingFile( _repository ) );
 
         // A second instance stands for another build node: its memory layer is empty and the file is not there yet, so
         // it has to run a command of its own rather than report an answer it does not have. It is observed at the same
         // synchronization point, which is named after the repository rather than after the instance, and which it
         // therefore reaches once its own command has produced a record.
-        var second = this.QueryAsync( this.CreateService(), file );
+        var second = QueryAsync( this.CreateService(), file );
         await this.ReachedAsync( BeforeWritingFile( _repository ) );
 
         Assert.Equal( 2, this.ProcessExecutor.StartedProcesses.Count );
@@ -417,10 +417,10 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this._sync.EnableSyncPoint( BeforeWritingFile( _repository ) );
 
         // Both instances have run their command and are about to write.
-        var first = this.QueryAsync( this.CreateService(), file );
+        var first = QueryAsync( this.CreateService(), file );
         await this.ReachedAsync( BeforeWritingFile( _repository ) );
 
-        var second = this.QueryAsync( this.CreateService(), file );
+        var second = QueryAsync( this.CreateService(), file );
         await this.ReachedAsync( BeforeWritingFile( _repository ) );
 
         this._sync.DisableSyncPoint( BeforeWritingFile( _repository ) );
@@ -430,7 +430,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         Assert.Equal( 2, this.ProcessExecutor.StartedProcesses.Count );
 
         // A third instance reads what the two of them left and runs no command of its own.
-        Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( this.CreateService(), file ) ) );
         Assert.Equal( 2, this.ProcessExecutor.StartedProcesses.Count );
     }
 
@@ -452,10 +452,10 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
         this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
 
-        var modified = this.QueryAsync( service, modifiedFile );
+        var modified = QueryAsync( service, modifiedFile );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
-        var unmodified = this.QueryAsync( service, unmodifiedFile );
+        var unmodified = QueryAsync( service, unmodifiedFile );
         await this.ReachedAsync( JoinedQuery( _repository ) );
 
         this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
@@ -484,10 +484,10 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this._sync.EnableSyncPoint( InsideCommand( _repository ) );
         this._sync.EnableSyncPoint( JoinedQuery( _repository ) );
 
-        var first = this.QueryAsync( service, file );
+        var first = QueryAsync( service, file );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
-        var second = this.QueryAsync( service, file );
+        var second = QueryAsync( service, file );
         await this.ReachedAsync( JoinedQuery( _repository ) );
 
         this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
@@ -511,13 +511,13 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         var service = this.CreateService();
 
-        Assert.False( await this.WithTimeout( this.QueryAsync( service, file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( service, file ) ) );
 
         // The state of the repository changes, which invalidates the stored record.
         this.FileSystem.SetFileLastWriteTime( Path.Combine( _repository, ".git", "index" ), this.Time.UtcNow.ToLocalTime() );
         this.SetGitOutput( " M src/Class1.cs\0" );
 
-        Assert.True( await this.WithTimeout( this.QueryAsync( service, file ) ) );
+        Assert.True( await this.WithTimeout( QueryAsync( service, file ) ) );
         Assert.Equal( 2, this.ProcessExecutor.StartedProcesses.Count );
     }
 
@@ -532,7 +532,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
         this.SetGitOutput( "" );
 
-        Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( this.CreateService(), file ) ) );
         Assert.Single( this.ProcessExecutor.StartedProcesses );
     }
 
@@ -564,13 +564,13 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         // The first caller is held inside the command, so that the run is registered before the second caller looks
         // for it. Without that, the second caller can arrive first and start a run of its own.
-        var cancelled = this.QueryAsync( service, file, cancellationTokenSource.Token );
+        var cancelled = QueryAsync( service, file, cancellationTokenSource.Token );
         await this.ReachedAsync( InsideCommand( _repository ) );
 
         // A second caller joins the run. It is not the subject of the test: it is how the test observes that the
         // write has finished, because the run publishes its result only after the record has been stored. Polling the
         // file instead would make the assertion depend on a duration.
-        var joined = this.QueryAsync( service, file );
+        var joined = QueryAsync( service, file );
         await this.ReachedAsync( JoinedQuery( _repository ) );
         this._sync.DisableSyncPoint( JoinedQuery( _repository ) );
 
@@ -586,7 +586,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         // A fresh instance stands for another build node: its memory layer is empty, so a hit here can only come from
         // the file, and proves that the record of the cancelled caller was stored in full.
-        Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( this.CreateService(), file ) ) );
         Assert.Single( this.ProcessExecutor.StartedProcesses );
     }
 
@@ -603,7 +603,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
         this.SetGitOutput( "" );
 
         // A first instance stores the record, so that the file layer has something for the next one to read.
-        Assert.False( await this.WithTimeout( this.QueryAsync( this.CreateService(), file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( this.CreateService(), file ) ) );
 
         // A second instance stands for another build node. Its memory layer is empty, so it reaches the file.
         var second = this.CreateService();
@@ -612,7 +612,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         this._sync.EnableSyncPoint( BeforeReadingFile( _repository ) );
 
-        var cancelled = this.QueryAsync( second, file, cancellationTokenSource.Token );
+        var cancelled = QueryAsync( second, file, cancellationTokenSource.Token );
         await this.ReachedAsync( BeforeReadingFile( _repository ) );
 
         cancellationTokenSource.Cancel();
@@ -622,7 +622,7 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
 
         // The abandoned read stored nothing and spoiled nothing, so the same instance still obtains its verdict from
         // the file rather than from a command of its own.
-        Assert.False( await this.WithTimeout( this.QueryAsync( second, file ) ) );
+        Assert.False( await this.WithTimeout( QueryAsync( second, file ) ) );
         Assert.Single( this.ProcessExecutor.StartedProcesses );
     }
 }
