@@ -369,29 +369,26 @@ public sealed class GitStatusServiceTests : TestsBase
     }
 
     /// <summary>
-    /// Verifies that a cancellation during the command is reported to the caller rather than being turned into a
-    /// verdict. A query that was abandoned has no answer, and answering "modified" would enforce licensing on a build
-    /// that the user has stopped.
+    /// Verifies that a token which is already cancelled when the query starts is reported before anything is run.
     /// </summary>
+    /// <remarks>
+    /// The case of a token cancelled while the command is running belongs to
+    /// <see cref="VcsStatusConcurrencyTests.ACancelledCallerIsNotGivenAVerdict"/>, because reporting it requires the
+    /// command to be held for the duration, which only a synchronization point can do.
+    /// </remarks>
     [Fact]
-    public async Task CancellationIsReported()
+    public async Task ACancelledTokenIsReportedBeforeTheCommandRuns()
     {
         this.CreateRepository( _repository );
         var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
 
         using var cancellationTokenSource = new CancellationTokenSource();
-
-        this.ProcessExecutor.AsyncStandardOutputProvider = async ( _, cancellationToken ) =>
-        {
-            cancellationTokenSource.Cancel();
-            await Task.Yield();
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return "";
-        };
+        cancellationTokenSource.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             async () => await this.CreateService().IsAnyFileModifiedAsync( [file], cancellationTokenSource.Token ) );
+
+        Assert.Empty( this.ProcessExecutor.StartedProcesses );
     }
 
     /// <summary>

@@ -302,6 +302,42 @@ public sealed class VcsStatusConcurrencyTests : TestsBase, IDisposable
     }
 
     /// <summary>
+    /// Verifies that a caller cancelled while the command is running is told so, rather than being handed the verdict
+    /// that the run is about to produce. A query that was abandoned has no answer: reporting "modified" would enforce
+    /// licensing on a build the user has stopped, and reporting "not modified", which is what the command here would
+    /// say, would waive it on the strength of an answer nobody waited for.
+    /// </summary>
+    /// <remarks>
+    /// The command is held at a synchronization point for the whole of the cancellation, which is what makes the
+    /// outcome the same on every machine. An earlier version of this test cancelled from inside the process executor
+    /// and let the command complete immediately afterwards, so the caller reported the cancellation only when it
+    /// happened to observe the token before the run completed, and the test failed on whichever machine lost that
+    /// race.
+    /// </remarks>
+    [Fact]
+    public async Task ACancelledCallerIsNotGivenAVerdict()
+    {
+        this.CreateRepository( _repository );
+        var file = this.CreateSourceFile( _repository, "src/Class1.cs" );
+
+        // The command would answer "not modified", which is the verdict the cancelled caller must not receive.
+        this.SetGitOutput( "" );
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+
+        this._sync.EnableSyncPoint( InsideCommand( _repository ) );
+
+        var cancelled = QueryAsync( this.CreateService(), file, cancellationTokenSource.Token );
+        await this.ReachedAsync( InsideCommand( _repository ) );
+
+        cancellationTokenSource.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>( async () => await this.WithTimeout( cancelled ) );
+
+        this._sync.DisableSyncPoint( InsideCommand( _repository ) );
+    }
+
+    /// <summary>
     /// Verifies that a cancelled query leaves nothing behind that a later caller would join. A caller that joined a
     /// cancelled run would be told the build was cancelled when it was not.
     /// </summary>
