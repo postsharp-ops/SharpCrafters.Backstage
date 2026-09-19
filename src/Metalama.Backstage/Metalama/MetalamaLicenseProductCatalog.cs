@@ -4,6 +4,9 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.Licensing.Registration;
+using System;
 using System.Collections.Immutable;
 
 namespace Metalama.Backstage;
@@ -20,7 +23,20 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
     /// </summary>
     public static MetalamaLicenseProductCatalog Instance { get; } = new();
 
-    private MetalamaLicenseProductCatalog() { }
+    private MetalamaLicenseProductCatalog()
+    {
+        // Assigned here rather than from a property initializer, because an edition is given the catalog and a
+        // property initializer has no 'this' to give it. An edition only stores the catalog, so one that is still
+        // being constructed is no trouble.
+#pragma warning disable CS0612 // Type or member is obsolete: the legacy edition is still registrable.
+        this.SelfRegisteredEditions =
+        [
+            new MetalamaCommunityEdition(),
+            new MetalamaLegacyFreeEdition(),
+            new TrialEdition( this )
+        ];
+#pragma warning restore CS0612
+    }
 
 #pragma warning disable CS0618 // Type or member is obsolete: the catalog must name the products that are no longer offered.
 
@@ -46,13 +62,19 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
         };
 
     /// <inheritdoc />
-    public override bool IsFreeProduct( LicenseProduct product ) => product is LicenseProduct.MetalamaCommunity or LicenseProduct.MetalamaFree;
+    /// <remarks>
+    /// Metalama expresses the free edition through the product, so the license type is not read.
+    /// </remarks>
+    public override bool IsFreeLicense( LicenseProduct product, LicenseType licenseType )
+        => product is LicenseProduct.MetalamaCommunity or LicenseProduct.MetalamaFree;
 
     /// <inheritdoc />
     /// <remarks>
     /// Metalama Community was introduced in Metalama 2025.1, so its keys are stored where earlier versions do not read.
+    /// Every other product of the family is consumed by every version, and a user holds one key of them at a time, so
+    /// the single slot is enough and is what the earlier versions read.
     /// </remarks>
-    public override bool RequiresVersionSpecificRegistration( LicenseProduct product ) => product is LicenseProduct.MetalamaCommunity;
+    public override bool IsStoredInLicenseList( LicenseProduct product ) => product is LicenseProduct.MetalamaCommunity;
 
     /// <inheritdoc />
     /// <remarks>
@@ -68,16 +90,32 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
         };
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Every released version of Metalama steps over a field it does not know, so the content of a key never puts it
+    /// out of reach of one. Its signature can: a version released before the Elliptic Curve DSA authority reports a
+    /// key signed by it as invalid, whatever else the key says.
+    /// </remarks>
+    public override Version? GetMinimalVersion( LicenseKeyData licenseKeyData ) => licenseKeyData.GetMinMetalamaVersion();
+
+    /// <inheritdoc />
     public override string PremiumEditionDisplayName => "Metalama Professional";
 
     /// <inheritdoc />
     public override LicenseProduct EvaluationProduct => LicenseProduct.MetalamaProfessional;
 
     /// <inheritdoc />
-    public override LicenseProduct? CommunityProduct => LicenseProduct.MetalamaCommunity;
+    /// <remarks>
+    /// Metalama runs without a license, with the feature set of the open source edition.
+    /// </remarks>
+    public override bool HasUnlicensedEdition => true;
 
     /// <inheritdoc />
-    public override LicenseProduct? LegacyFreeProduct => LicenseProduct.MetalamaFree;
+    /// <remarks>
+    /// Metalama gives away its Community edition, and still registers the free edition that its earlier versions
+    /// issued. The trial comes last, so that the setup pages offer the editions that cost nothing before the one that
+    /// expires.
+    /// </remarks>
+    public override ImmutableArray<SelfRegisteredEdition> SelfRegisteredEditions { get; }
 
 #pragma warning restore CS0618
 }

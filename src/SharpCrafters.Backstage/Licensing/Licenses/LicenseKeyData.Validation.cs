@@ -50,11 +50,20 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         /// <param name="errorMessage">At output, the reason why the signature was not verified, or <c>null</c> if it was.</param>
         /// <returns><c>true</c> if the current license key requires no signature or if its signature is valid, otherwise <c>false</c>.</returns>
         /// <remarks>
+        /// <para>
         /// The signature algorithm of a license key is chosen when the license key is issued, so a license key can
         /// require an algorithm that the current platform does not implement. Finite field DSA, which signs every
         /// license key issued until 2026, is unavailable on macOS since .NET 11. That case is reported through
         /// <paramref name="errorMessage"/> and is not raised as an exception, because it is a property of the license
         /// key and of the platform, not a defect of the product.
+        /// </para>
+        /// <para>
+        /// The same holds of the key that signed it. A license key issued after the signing key is next rotated names
+        /// an authority that no version released before the rotation has, and every one of them will read such a key:
+        /// a key reaches this method from an environment variable, a project file or a license server without having
+        /// passed through the registration that would have kept it away from them. It is reported like any other key
+        /// this version cannot verify.
+        /// </para>
         /// </remarks>
         public bool TryVerifySignature(
             ILicensingAuthorityProvider licensingAuthorityProvider,
@@ -74,6 +83,13 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 if ( this.Signature == null || this.SignatureKeyId == null )
                 {
                     errorMessage = invalidSignature;
+
+                    return false;
+                }
+
+                if ( !licensingAuthorityProvider.KeyIds.Contains( this.SignatureKeyId.Value ) )
+                {
+                    errorMessage = "the license key is signed by a licensing authority that this version does not know";
 
                     return false;
                 }

@@ -15,6 +15,36 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
 
         IReadOnlyDictionary<LicenseFieldIndex, LicenseField> ILicenseKeyData.Fields => this._fields;
 
+        /// <summary>
+        /// Determines whether the license key carries a field, whatever its value.
+        /// </summary>
+        /// <remarks>
+        /// The presence of a field dates a license key, because a reader released before the field existed rejects a
+        /// key that carries it. That is what the minimal version is derived from, rather than from the value of any
+        /// one field.
+        /// </remarks>
+        internal bool HasField( LicenseFieldIndex index ) => this._fields.ContainsKey( index );
+
+        /// <summary>
+        /// Gets a value indicating whether the license key carries a field that is prefixed by its length, which only
+        /// the tolerant readers skip over.
+        /// </summary>
+        internal bool HasLengthPrefixedField
+        {
+            get
+            {
+                foreach ( var index in this._fields.Keys )
+                {
+                    if ( index.IsPrefixedByLength() )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         private object? GetFieldValue( LicenseFieldIndex index )
         {
             if ( this._fields.TryGetValue( index, out var licenseField ) )
@@ -138,6 +168,24 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 _ => throw new InvalidCastException( "Invalid generation." )
             };
 
+        /// <summary>
+        /// Gets the version below which the license key is declared unusable, as the key itself states it, or
+        /// <see langword="null"/> when the key states nothing.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is a forward-compatibility device: it lets whoever generates a key tell a version that cannot use it
+        /// which version can, so that the reader can refuse the key with a message naming the version to upgrade to
+        /// instead of a message about whatever its validation happened to notice first. Nothing acts on it today, so
+        /// that message is not produced; it would be worth having.
+        /// </para>
+        /// <para>
+        /// It is not the answer to the opposite question, which is which of the versions already released accept a
+        /// key. That one is computed from the content of the key by
+        /// <c>LicenseKeyDataExtensions.GetMinPostSharpVersion</c>, because the field is absent from every key issued
+        /// before PostSharp 5.0 and carries a constant on the keys issued since 2025.
+        /// </para>
+        /// </remarks>
         public Version? MinPostSharpVersion
         {
             get
@@ -148,7 +196,20 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             }
         }
 
+        /// <summary>
+        /// Creates a builder holding everything the current license key holds, so that changing one thing about a
+        /// key does not silently drop the rest of it.
+        /// </summary>
+        /// <remarks>
+        /// The fields are carried over, and not only the four properties that have a name of their own. A builder
+        /// without them writes a key that has lost its dates, its licensee, its signature and any field belonging to
+        /// a version other than this one, which still serializes and still reads, and is wrong in a way that only
+        /// the signature would catch.
+        /// </remarks>
         internal LicenseKeyDataBuilder ToBuilder()
-            => new() { Product = this.Product, LicenseId = this.LicenseId, LicenseType = this.LicenseType, LicenseGuid = this.LicenseGuid };
+            => new( this.Version, this._fields )
+            {
+                Product = this.Product, LicenseId = this.LicenseId, LicenseType = this.LicenseType, LicenseGuid = this.LicenseGuid
+            };
     }
 }

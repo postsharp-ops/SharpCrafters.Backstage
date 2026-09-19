@@ -5,6 +5,7 @@
 using Metalama.Backstage;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Requirements;
 using SharpCrafters.Backstage.Testing;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -102,7 +103,7 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ) ) );
     }
 
     [Theory]
@@ -131,7 +132,7 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ) ) );
     }
 
     [Theory]
@@ -159,7 +160,7 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ) ) );
     }
 
     [Theory]
@@ -173,7 +174,7 @@ public sealed class LicenseRequirementTests : LicenseConsumptionServiceTestsBase
         var licenseKey = LicenseKeyProvider.GetLicenseKey( licenseKeyName );
         var license = this.CreateInstrumentedLicenseWrapper( licenseKey );
         var consumer = await this.CreateConsumptionService( license ).CreateConsumerAsync();
-        Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaToolingLicenseRequirement() ) );
+        Assert.Equal( expectedResult, consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ) ) );
     }
 
     [Theory]

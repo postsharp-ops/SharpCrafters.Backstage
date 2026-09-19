@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -387,9 +387,16 @@ namespace SharpCrafters.Backstage.Configuration
 
         public ILogger Logger { get; }
 
-        public string GetFilePath( string fileName ) => Path.Combine( this.ApplicationDataDirectory, fileName );
+        /// <inheritdoc />
+        public ConfigurationStore GetStore( Type type ) => new( ConfigurationStoreKind.File, this.GetFilePath( type ) );
 
-        public string GetFilePath( Type type )
+        private string GetFilePath( string fileName ) => Path.Combine( this.ApplicationDataDirectory, fileName );
+
+        /// <summary>
+        /// Gets the path of the file that holds a configuration object. It is the internal counterpart of
+        /// <see cref="GetStore"/>, for the members of this class, which know that this manager stores files.
+        /// </summary>
+        internal string GetFilePath( Type type )
         {
             var attribute = type.GetCustomAttribute<ConfigurationFileAttribute>()
                             ?? throw new InvalidOperationException(

@@ -10,11 +10,15 @@ using System;
 namespace SharpCrafters.Backstage.Licensing.Registration
 {
     /// <summary>
-    /// Creates unsigned licenses for self-registration.
+    /// Builds the license keys that the product issues to itself, from the descriptions that the editions give.
     /// </summary>
+    /// <remarks>
+    /// The division of labour is deliberate. A <see cref="SelfRegisteredEdition"/> says what the license says, because
+    /// it is the only one that knows that the free edition of PostSharp is a PostSharp Ultimate key carrying the
+    /// Community type. This class says how a key is built, because that is the same everywhere.
+    /// </remarks>
     internal sealed class UnsignedLicenseFactory
     {
-        private readonly IDateTimeProvider _time;
         private readonly RandomNumberGenerator _randomNumberGenerator;
         private readonly ILicenseProductCatalog _catalog;
 
@@ -24,80 +28,32 @@ namespace SharpCrafters.Backstage.Licensing.Registration
         /// <param name="services">Services.</param>
         public UnsignedLicenseFactory( IServiceProvider services )
         {
-            this._time = services.GetRequiredBackstageService<IDateTimeProvider>();
             this._randomNumberGenerator = services.GetRequiredBackstageService<RandomNumberGenerator>();
             this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
         }
 
         /// <summary>
-        /// Creates an unsigned evaluation license.
+        /// Builds and serializes the key of a described license.
         /// </summary>
-        /// <returns>The unsigned evaluation license.</returns>
-        public LicenseRegistrationProperties CreateEvaluationLicense()
+        /// <remarks>
+        /// The key carries a random identifier instead of the identifier of a sold license, which is what marks it as
+        /// self-created, and it carries no signature: such a key is validated by the rules for self-created licenses
+        /// rather than against a licensing authority.
+        /// </remarks>
+        public LicenseRegistrationProperties CreateLicenseKey( UnsignedLicense license )
         {
-            var start = this._time.UtcNow.Date;
-            var end = start + LicensingConstants.EvaluationPeriod;
-
-            var licenseKeyData = new LicenseKeyDataBuilder()
+            var licenseKeyData = new LicenseKeyDataBuilder
             {
                 Generation = LicenseGeneration.Current,
                 LicenseGuid = this._randomNumberGenerator.NextGuid(),
-                Product = this._catalog.EvaluationProduct,
-                LicenseType = LicenseType.Evaluation,
-                ValidFrom = start,
-                ValidTo = end,
-                SubscriptionEndDate = end
+                Product = license.Product,
+                LicenseType = license.LicenseType,
+                ValidFrom = license.ValidFrom,
+                ValidTo = license.ValidTo,
+                SubscriptionEndDate = license.SubscriptionEndDate
             };
 
             return licenseKeyData.Build().ToLicenseRegistrationProperties( this._catalog, licenseKeyData.Serialize() );
-        }
-
-        /// <summary>
-        /// Creates an unsigned Metalama Community license.
-        /// </summary>
-        /// <returns>The unsigned Metalama Community license.</returns>
-        public LicenseRegistrationProperties CreateCommunityLicense()
-        {
-            var start = this._time.UtcNow;
-
-            var licenseKeyData = new LicenseKeyDataBuilder()
-            {
-                Generation = LicenseGeneration.Current,
-                LicenseGuid = this._randomNumberGenerator.NextGuid(),
-                Product = this._catalog.CommunityProduct ?? throw new InvalidOperationException( "The product family has no community edition." ),
-                LicenseType = LicenseType.Community,
-                ValidFrom = start,
-
-                // Must be renewed yearly.
-                ValidTo = start.AddYears( 1 )
-            };
-
-            var licenseRegistrationData = licenseKeyData.Build().ToLicenseRegistrationProperties( this._catalog, licenseKeyData.Serialize() );
-
-            return licenseRegistrationData;
-        }
-
-        /// <summary>
-        /// Creates an unsigned legacy Metalama Free license.
-        /// </summary>
-        /// <returns>The unsigned Metalama Community license.</returns>
-        [Obsolete]
-        public LicenseRegistrationProperties CreateLegacyFreeLicense()
-        {
-            var start = this._time.UtcNow;
-
-            var licenseKeyData = new LicenseKeyDataBuilder()
-            {
-                Generation = LicenseGeneration.Current,
-                LicenseGuid = this._randomNumberGenerator.NextGuid(),
-                Product = this._catalog.LegacyFreeProduct ?? throw new InvalidOperationException( "The product family has no legacy free edition." ),
-                LicenseType = LicenseType.Community,
-                ValidFrom = start
-            };
-
-            var licenseRegistrationData = licenseKeyData.Build().ToLicenseRegistrationProperties( this._catalog, licenseKeyData.Serialize() );
-
-            return licenseRegistrationData;
         }
     }
 }

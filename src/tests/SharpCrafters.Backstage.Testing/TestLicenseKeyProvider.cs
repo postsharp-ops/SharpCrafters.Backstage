@@ -92,7 +92,33 @@ public sealed class TestLicenseKeyProvider
 
     public string PostSharpUltimate => this.GenerateLicenseKey( 3, LicenseProduct.PostSharpUltimate );
 
+    /// <summary>
+    /// Gets a PostSharp Ultimate key that carries no signature, which stands for a key that a user has altered.
+    /// </summary>
+    public string PostSharpUltimateUnsigned => this.GenerateLicenseKey( 3, LicenseProduct.PostSharpUltimate, sign: false );
+
     public string PostSharpUltimateWithLongTermSupport => this.GenerateLicenseKey( 3, LicenseProduct.PostSharpUltimate, servicing: ServicingPhase.LongTerm );
+
+    /// <summary>
+    /// Gets a license key of the PostSharp Logging pattern library. A key of a pattern library grants that library
+    /// and the free edition, and nothing else, which is what makes the PostSharp requirements worth testing.
+    /// </summary>
+    public string PostSharpLogging => this.GenerateLicenseKey( 20, LicenseProduct.PostSharpDiagnosticsLibrary );
+
+    /// <summary>
+    /// Gets a license key of the PostSharp MVVM pattern library.
+    /// </summary>
+    public string PostSharpMvvm => this.GenerateLicenseKey( 21, LicenseProduct.PostSharpModelLibrary );
+
+    /// <summary>
+    /// Gets a license key of the PostSharp Threading pattern library.
+    /// </summary>
+    public string PostSharpThreading => this.GenerateLicenseKey( 22, LicenseProduct.PostSharpThreadingLibrary );
+
+    /// <summary>
+    /// Gets a license key of the PostSharp Caching pattern library.
+    /// </summary>
+    public string PostSharpCaching => this.GenerateLicenseKey( 23, LicenseProduct.PostSharpCachingLibrary );
 
     public const string PostSharpUltimateOpenSourceRedistributionNamespace = "Oss";
 

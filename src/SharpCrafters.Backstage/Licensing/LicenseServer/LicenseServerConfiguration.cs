@@ -28,7 +28,7 @@ namespace SharpCrafters.Backstage.Licensing.LicenseServer;
 /// </remarks>
 [ConfigurationFile( "licenseServer.json" )]
 [Description( "Licenses leased from license servers." )]
-internal sealed record LicenseServerConfiguration : ConfigurationFile
+public sealed record LicenseServerConfiguration : ConfigurationFile
 {
     /// <remarks>
     /// The keys are compared ordinally, and <see cref="LicenseServerUrl.GetStoreKey"/> is what makes two spellings of

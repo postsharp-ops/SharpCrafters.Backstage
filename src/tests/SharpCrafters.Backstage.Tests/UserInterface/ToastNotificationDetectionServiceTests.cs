@@ -117,7 +117,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         this.UserDeviceDetection.IsInteractiveDevice = true;
 
         // Register a trial version.
-        Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+        Assert.True( this.RegisterTrial().IsSuccess );
 
         // Move the clock.
         this.Time.AddTime( LicensingConstants.EvaluationPeriod - TimeSpan.FromDays( daysBeforeExpiration + 1 ) );
@@ -183,7 +183,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         this.ServiceProvider.GetRequiredBackstageService<IIdeExtensionStatusService>().IsVisualStudioExtensionInstalled = extensionInstalled;
 
         // Register a trial version.
-        Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+        Assert.True( this.RegisterTrial().IsSuccess );
 
         // Detect notifications.
         await this.DetectToastNotificationsAsync();
@@ -279,7 +279,7 @@ public sealed class ToastNotificationDetectionServiceTests : LicensingTestsBase
         this.ServiceProvider.GetRequiredBackstageService<IIdeExtensionStatusService>().IsVisualStudioExtensionInstalled = false;
 
         // Register a trial version.
-        Assert.True( this.LicenseRegistrationService.RegisterTrialEdition().IsSuccess );
+        Assert.True( this.RegisterTrial().IsSuccess );
 
         await this.DetectToastNotificationsAsync();
 

@@ -35,11 +35,16 @@ namespace SharpCrafters.Backstage.Licensing.Registration
         ServicingPhase ServicingPhase )
     {
         /// <summary>
-        /// Gets the minimal version of Metalama that can consume the license key, or <c>null</c> if every version can
-        /// consume it. The registration stores the license key in the group of that version, so that the versions
-        /// which cannot consume it never read it.
+        /// Gets the minimal version of the current product family that can consume the license key, or <c>null</c> if
+        /// every version can consume it. The registration stores the license key in the group of that version, so that
+        /// the versions which cannot consume it never read it.
         /// </summary>
-        public Version? MinMetalamaVersion { get; init; }
+        /// <remarks>
+        /// The value comes from <see cref="ILicenseProductCatalog.GetMinimalVersion"/>, because the answer belongs to
+        /// the family: the two families have released different readers, so a key that one of them must keep out of
+        /// reach of its earlier versions is one the other hands to all of its own.
+        /// </remarks>
+        public Version? MinVersion { get; init; }
 
         /// <summary>
         /// Gets the URL of the license server that leases the licence, or <c>null</c> when the licence is a key.

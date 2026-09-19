@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Licensing;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,8 +26,8 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
         [Fact]
         public void RepeatedCommunityLicenseRegistrationKeepsSingleLicenseRegistered()
         {
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.Free, CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.Free, CommunityLicenseReason.Individual ).IsSuccess );
             this.AssertSingleCommunityLicenseRegistered();
         }
 
@@ -36,7 +37,7 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Registration
             var gotPropertyChanged = new TaskCompletionSource<bool>();
             this.LicenseRegistrationService.PropertyChanged += ( _, _ ) => gotPropertyChanged.TrySetResult( true );
 
-            Assert.True( this.LicenseRegistrationService.RegisterCommunityEdition( CommunityLicenseReason.Individual ).IsSuccess );
+            Assert.True( this.RegisterEdition( SelfRegisteredEditionKind.Free, CommunityLicenseReason.Individual ).IsSuccess );
 
             Assert.Equal( gotPropertyChanged.Task, await Task.WhenAny( gotPropertyChanged.Task, Task.Delay( 30000 ) ) );
         }

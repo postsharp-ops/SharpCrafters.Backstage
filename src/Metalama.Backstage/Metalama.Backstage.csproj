@@ -35,13 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Remove="Telemetry\public.key" />
-        <EmbeddedResource Include="$(MetalamaBackstageDirectory)\Telemetry\public.key" LogicalName="Metalama.Backstage.Telemetry.public.key" />
-    </ItemGroup>
-
-    <ItemGroup>
         <!-- The Backstage packages form one family and share their internal types; the test projects need them too. -->
-        <InternalsVisibleTo Include="SharpCrafters.Backstage" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>

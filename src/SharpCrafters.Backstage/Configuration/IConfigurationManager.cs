@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -14,9 +14,17 @@ namespace SharpCrafters.Backstage.Configuration
     {
         ILogger Logger { get; }
 
-        string GetFilePath( string fileName );
-
-        string GetFilePath( Type type );
+        /// <summary>
+        /// Gets the location of the configuration object of a given type: which kind of store holds it, and where.
+        /// </summary>
+        /// <param name="type">The type of the configuration object.</param>
+        /// <returns>The location of the store.</returns>
+        /// <remarks>
+        /// The kind matters because not every product keeps its configuration in a file. PostSharp reads and writes
+        /// the registry keys that its earlier versions use, so a caller that shows the location, or opens it in an
+        /// editor, has to know which one it is holding.
+        /// </remarks>
+        ConfigurationStore GetStore( Type type );
 
         ConfigurationFile Get( Type type, bool ignoreCache = false );
 

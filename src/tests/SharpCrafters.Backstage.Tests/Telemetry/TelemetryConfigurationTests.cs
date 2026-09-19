@@ -73,6 +73,90 @@ public sealed class TelemetryConfigurationTests : TestsBase
         Assert.NotEqual( initialSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
     }
 
+    /// <summary>
+    /// A salt that is several boundaries old is rotated once, on the next first Monday, and not on the first run
+    /// after the gap.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A machine left unused comes back with a salt older than one boundary. We wait for this month's first Monday
+    /// rather than rotating at once against the previous month's, so the rotation can be up to six days late. That
+    /// costs nothing: the identifier it holds on to was not used during the gap either. Rotating at once would cost
+    /// something, because the next first Monday is days away and would rotate it a second time, giving one
+    /// identifier a lifetime of a few days in the middle of a week -- which is what rotating on a Monday exists to
+    /// avoid.
+    /// </para>
+    /// <para>
+    /// PostSharp answers this differently: <c>DeviceIdRotationPolicy.GetCurrentRotationDate</c> falls back to the
+    /// previous month's Monday, so it rotates at once and again days later. The two products share the registry
+    /// value recording the last rotation, so on a machine carrying both, whichever rotates first satisfies the
+    /// other, and the difference is in how soon rather than in how often.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void SaltRotatesOnceOnTheNextFirstMondayAfterAGap()
+    {
+        // Activated on the first Monday of April 2025.
+        this.Time.Set( new DateTime( 2025, 4, 7, 0, 0, 0, DateTimeKind.Utc ) );
+        this.TelemetryConfigurationService.EnsureActivated();
+        var initialSalt = this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo );
+
+        // Not used again until the 1st of June, a Sunday. June's first Monday is the 2nd and has not arrived, so the
+        // salt is held although May's boundary went by unobserved.
+        this.Time.Set( new DateTime( 2025, 6, 1, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.Equal( initialSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
+
+        // June's first Monday rotates it, once.
+        this.Time.Set( new DateTime( 2025, 6, 2, 0, 0, 0, DateTimeKind.Utc ) );
+        var rotatedSalt = this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo );
+        Assert.NotEqual( initialSalt, rotatedSalt );
+
+        // And it stays rotated for the rest of the month, so the gap costs one rotation and not two.
+        this.Time.Set( new DateTime( 2025, 6, 30, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.Equal( rotatedSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
+    }
+
+    /// <summary>
+    /// A salt renewed on a first Monday is held until the next one, including through the days at the start of the
+    /// following month that precede it.
+    /// </summary>
+    [Fact]
+    public void SaltIsHeldUntilTheNextFirstMonday()
+    {
+        // Activated on the first Monday of May 2025.
+        this.Time.Set( new DateTime( 2025, 5, 5, 0, 0, 0, DateTimeKind.Utc ) );
+        this.TelemetryConfigurationService.EnsureActivated();
+        var initialSalt = this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo );
+
+        this.Time.Set( new DateTime( 2025, 5, 31, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.Equal( initialSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
+
+        this.Time.Set( new DateTime( 2025, 6, 1, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.Equal( initialSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
+
+        this.Time.Set( new DateTime( 2025, 6, 2, 0, 0, 0, DateTimeKind.Utc ) );
+        Assert.NotEqual( initialSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
+    }
+
+    /// <summary>
+    /// The device identifier is rotated with the salts and not separately, so that the hashes derived from it and
+    /// the salted hashes always belong to the same period.
+    /// </summary>
+    [Fact]
+    public void TheDeviceIdRotatesWithTheSalts()
+    {
+        this.Time.Set( new DateTime( 2025, 4, 7, 0, 0, 0, DateTimeKind.Utc ) );
+        this.TelemetryConfigurationService.EnsureActivated();
+
+        var initialDeviceId = this.TelemetryConfigurationService.DeviceId;
+        var initialSalt = this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo );
+
+        this.Time.Set( new DateTime( 2025, 5, 5, 0, 0, 0, DateTimeKind.Utc ) );
+
+        Assert.NotEqual( initialSalt, this.TelemetryConfigurationService.GetSalt( TelemetrySaltKind.Matomo ) );
+        Assert.NotEqual( initialDeviceId, this.TelemetryConfigurationService.DeviceId );
+    }
+
     [Theory]
     [InlineData( false )]
     [InlineData( true )]

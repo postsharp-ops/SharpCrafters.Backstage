@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -484,14 +484,14 @@ public sealed class LicenseGroupTests : LicensingTestsBase
         var ecdsaLicenseKey = CreateLicenseKeySignedByECDsaAuthority();
 
         Assert.True( LicenseKeyData.TryDeserialize( ecdsaLicenseKey, out var ecdsaLicenseKeyData, out var errorMessage ), errorMessage );
-        Assert.Equal( _ecdsaMinimalVersion, ecdsaLicenseKeyData.MinMetalamaVersion );
+        Assert.Equal( _ecdsaMinimalVersion, ecdsaLicenseKeyData.GetMinMetalamaVersion() );
         Assert.True( ecdsaLicenseKeyData.ValidateFields( out errorMessage ), errorMessage );
         Assert.True( ecdsaLicenseKeyData.TryVerifySignature( this.LicensingAuthorityProvider, out errorMessage ), errorMessage );
 
         var dsaLicenseKey = CreateLicenseKeyDataBuilder().SignAndSerialize( LicenseKeyProvider.Authority );
 
         Assert.True( LicenseKeyData.TryDeserialize( dsaLicenseKey, out var dsaLicenseKeyData, out errorMessage ), errorMessage );
-        Assert.Null( dsaLicenseKeyData.MinMetalamaVersion );
+        Assert.Null( dsaLicenseKeyData.GetMinMetalamaVersion() );
     }
 
     /// <summary>

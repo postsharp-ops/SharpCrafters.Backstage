@@ -4,12 +4,13 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
-using System.IO;
 
 namespace Metalama.Backstage;
 
@@ -28,12 +29,23 @@ public static class MetalamaProduct
     /// <summary>
     /// The address of the RSS feed of the short Metalama news.
     /// </summary>
-    public const string BriefsFeedUrl = "https://metalama.net/briefs.xml";
+    /// <remarks>
+    /// On the other product's host, which is not a mistake: one site serves both products, and this is the address
+    /// the feed gives for itself. <c>metalama.net/briefs.xml</c> reaches the same file, but only because that one
+    /// path is mapped to it, and the neighbouring <c>metalama.net/feed.xml</c> is not mapped the same way. Naming the
+    /// file rather than the alias makes the two feeds of this product, and the two products, agree.
+    /// </remarks>
+    public const string BriefsFeedUrl = "https://postsharp.net/metalama/briefs.xml";
 
     /// <summary>
     /// The address of the RSS feed of the Metalama articles.
     /// </summary>
-    public const string PostsFeedUrl = "https://metalama.net/feed.xml";
+    /// <remarks>
+    /// The posts of both products live in one blog, and this is the view of it that carries the posts categorized for
+    /// Metalama. The merged feed stays at <c>postsharp.net/feed.xml</c> for whoever else reads it. See
+    /// metalama/Metalama#2040.
+    /// </remarks>
+    public const string PostsFeedUrl = "https://postsharp.net/metalama/feed.xml";
 
     /// <summary>
     /// Gets the profile of the Metalama product family. Its values are the names that every version of Metalama has
@@ -71,8 +83,7 @@ public static class MetalamaProduct
     /// Gets the telemetry endpoints of Metalama.
     /// </summary>
     public static TelemetryInitializationOptions TelemetryOptions { get; } = new(
-        new Uri( "https://bits.postsharp.net:44301/upload" ),
-        GetUploadEncryptionPublicKey )
+        new Uri( "https://bits.postsharp.net:44301/upload" ) )
     {
         AnalyticsUri = new Uri( "https://postsharp.matomo.cloud/matomo.php?idsite=6" )
     };
@@ -88,20 +99,17 @@ public static class MetalamaProduct
     /// <summary>
     /// Gets the Metalama product family, which binds the Backstage services to the values above.
     /// </summary>
-    public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog );
-
-    /// <summary>
-    /// Reads the public key that encrypts the telemetry packages from the resources of the current assembly.
-    /// </summary>
-    /// <returns>The public key, in the <c>RSAKeyValue</c> XML format.</returns>
-    private static byte[] GetUploadEncryptionPublicKey()
+    public static BackstageProduct Instance { get; } = new( Profile, WebLinks, TelemetryOptions, UserInterfaceOptions, LicenseProductCatalog )
     {
-        using var keyStream = typeof(MetalamaProduct).Assembly.GetManifestResourceStream( "Metalama.Backstage.Telemetry.public.key" )
-                              ?? throw new InvalidOperationException( "The public key that encrypts the telemetry packages was not found." );
+        RegisterServices = services =>
+        {
+            // Metalama shares nothing with an earlier version of itself through a store of the operating system, so
+            // its configurations are files of its own.
+            services.AddConfigurationServices();
 
-        using var memoryStream = new MemoryStream();
-        keyStream.CopyTo( memoryStream );
-
-        return memoryStream.ToArray();
-    }
+            // An audit is throttled by the content of its report, so that a report is sent again whenever anything in
+            // it changes. Nothing else reads this record, so there is no other version to agree with.
+            services.AddService( typeof(ILicenseAuditKeyProvider), _ => ReportContentLicenseAuditKeyProvider.Instance );
+        }
+    };
 }

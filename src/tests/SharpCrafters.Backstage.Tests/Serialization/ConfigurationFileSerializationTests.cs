@@ -420,12 +420,14 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
     {
         var input = new LicenseAuditConfiguration
         {
-            LastAuditTimes = ImmutableDictionary<long, DateTime>.Empty
-                .Add( 12345L, new DateTime( 2025, 1, 15, 10, 0, 0, DateTimeKind.Utc ) ),
+            LastAuditTimesByLong = ImmutableDictionary<long, DateTime>.Empty
+                .Add( 12345, new DateTime( 2025, 1, 15, 10, 0, 0, DateTimeKind.Utc ) ),
             LastMatomoAuditTime = new DateTime( 2025, 1, 14, 8, 0, 0, DateTimeKind.Utc ),
             Version = 1
         };
 
+        // The member was renamed after the type of its keys; the name in the file is the one already written there,
+        // which every installed version reads.
         const string expectedJson = """
                                     {
                                       "LastAuditTimes": {

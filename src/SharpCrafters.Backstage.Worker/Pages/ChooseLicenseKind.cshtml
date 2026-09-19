@@ -1,4 +1,5 @@
 @page
+@using System.Linq
 @using SharpCrafters.Backstage.Licensing
 @using SharpCrafters.Backstage.Licensing.Registration
 @model ChooseLicenseKindPageModel
@@ -16,37 +17,49 @@
     <input type="hidden" id="action" name="action" value=""/>
 
     <div class="arrow-buttons">
-        @* TODO: The open source option is specific to Metalama: PostSharp has no such edition. The licensing options of a
-           product family need an abstraction that decides which choices are offered here and which commands the
-           command line offers. See #2018. *@
-        <div onclick="submitForm('UseOpenSource')">
-            <h4>Stay with @Profile.Name Open Source</h4>
-            <p>
-                @Profile.Name Open Source is free for everyone, but you won't be able to use the advanced features of Visual
-                Studio Tools for @Profile.Name, architecture validation, or custom code fixes. Ideal for an initial foray,
-                with an easy upgrade path when you're ready for more.
-            </p>
-        </div>
-
-        @if (LicenseRegistrationService.CanRegisterTrialEdition)
+        @if (Catalog.HasUnlicensedEdition)
         {
-            <div onclick="submitForm('StartTrial')">
-                <h4>Start a 45-day Trial of @Catalog.GetDisplayName(Catalog.EvaluationProduct)</h4>
-                <p>Discover the full capabilities of @Catalog.GetDisplayName(Catalog.EvaluationProduct).</p>
+            <div onclick="submitForm('UseOpenSource')">
+                <h4>Stay with @Profile.Name Open Source</h4>
                 <p>
-                    For teams with extended procurement processes, request a
-                    <a href="@Model.WebLinks.GetTeamTrial" target="_blank" onclick="event.stopPropagation()">
-                        60-day
-                        renewable team evaluation key
-                    </a>
-                    (available for teams of 5 or more developers).
+                    @Profile.Name Open Source is free for everyone, but you won't be able to use the advanced features of Visual
+                    Studio Tools for @Profile.Name, architecture validation, or custom code fixes. Ideal for an initial foray,
+                    with an easy upgrade path when you're ready for more.
                 </p>
             </div>
         }
 
+        @* One choice per edition that the product family gives away and that is worth offering during setup, and
+           only while it can be registered: the trial disappears while one is running or its cool-off period has not
+           elapsed. A family that gives away nothing shows nothing here. *@
+        @foreach (var edition in LicenseRegistrationService.AvailableEditions.Where(e => e.SetupTitle != null))
+        {
+            <div onclick="submitForm('@("Register:" + edition.Alias)')">
+                <h4>@edition.SetupTitle</h4>
+                <p>@edition.Description</p>
+
+                @* The trial is the one edition whose offer does not fit in a sentence: a team that cannot buy within
+                   45 days needs the longer key, and this is where they look for it. *@
+                @if (edition.Kind == SelfRegisteredEditionKind.Trial)
+                {
+                    <p>
+                        For teams with extended procurement processes, request a
+                        <a href="@Model.WebLinks.GetTeamTrial" target="_blank" onclick="event.stopPropagation()">
+                            60-day
+                            renewable team evaluation key
+                        </a>
+                        (available for teams of 5 or more developers).
+                    </p>
+                }
+            </div>
+        }
+
         <div onclick="submitForm('RegisterKey')">
-            <h4>Activate Your License Key</h4>
-            <p>Register your license key and associate it with your user profile on this device.</p>
+            <h4>Activate Your License</h4>
+            <p>
+                Register a license key, or the address of a license server, and associate it with your user profile on
+                this device.
+            </p>
         </div>
 
         <div onclick="submitForm('Skip')">

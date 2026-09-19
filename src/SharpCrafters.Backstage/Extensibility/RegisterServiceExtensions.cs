@@ -15,13 +15,6 @@ namespace SharpCrafters.Backstage.Extensibility;
 
 /// <summary>
 /// Extension methods for setting up the Backstage services in a <see cref="ServiceProviderBuilder" />. This is the
-/// umbrella over the registration methods of the core package: <see cref="RegisterCoreServices.AddCoreServices"/>,
-/// <see cref="RegisterConfigurationServices.AddConfigurationServices"/>,
-/// <see cref="RegisterTelemetryServices.AddTelemetryServices"/>, <see cref="RegisterLicensingServices.AddLicensingServices"/>
-/// and <see cref="RegisterUserInterfaceServices.AddUserInterfaceServices"/>.
-/// </summary>
-/// <summary>
-/// Extension methods for setting up the Backstage services in a <see cref="ServiceProviderBuilder" />. This is the
 /// umbrella over the registration methods of the packages: <see cref="RegisterCoreServices.AddCoreServices"/>,
 /// <see cref="RegisterConfigurationServices.AddConfigurationServices"/>,
 /// <see cref="RegisterTelemetryServices.AddTelemetryServices"/>, <see cref="RegisterLicensingServices.AddLicensingServices"/>
@@ -52,9 +45,12 @@ public static class RegisterServiceExtensions
             JsonTypeInfoResolvers = jsonTypeInfoResolvers
         };
 
-        serviceProviderBuilder
-            .AddCoreServices( coreOptions )
-            .AddConfigurationServices();
+        serviceProviderBuilder.AddCoreServices( coreOptions );
+
+        // Everything that one product answers differently from another is registered here, by the product, and
+        // nothing of it is assumed on its behalf. Where the configurations live and how an audit is identified are
+        // both decided this way: see BackstageProduct.RegisterServices, which says which services a product owes.
+        product.RegisterServices.Invoke( serviceProviderBuilder );
 
         if ( options.AddSupportServices )
         {

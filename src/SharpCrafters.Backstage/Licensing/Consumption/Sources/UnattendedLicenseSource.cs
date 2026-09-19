@@ -19,6 +19,13 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
     private readonly ILogger _logger;
     private readonly IApplicationInfo _applicationInfo;
 
+    /// <summary>
+    /// The product that the unattended license names. It is the premium product of the product family, because an
+    /// unattended build is entitled to everything the family offers, and it has to be a product of that family: a
+    /// requirement rejects a license whose product it does not recognize.
+    /// </summary>
+    private readonly LicenseProduct _product;
+
     public string Description => "unattended license source";
 
     public LicenseSourceKind Kind => LicenseSourceKind.Unattended;
@@ -28,6 +35,7 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         this._serviceProvider = serviceProvider;
         this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
+        this._product = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>().EvaluationProduct;
     }
 
     /// <inheritdoc />
@@ -54,7 +62,7 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
         => new(
             LicenseConsumptionResult.Success(
                 new LicenseConsumptionProperties(
-                    LicenseProduct.MetalamaProfessional,
+                    this._product,
                     LicenseType.Unattended,
                     null,
                     "Unattended Process License",
