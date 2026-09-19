@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -34,13 +34,32 @@ internal sealed class VcsStatusRecord
     public DateTime Timestamp { get; }
 
     /// <summary>
-    /// The full paths of the files that the query reported as modified, in the spelling of the caller.
+    /// How the paths of a record are compared. It is defined here rather than by the caller, so that the set below
+    /// and every lookup against it cannot disagree about what makes two paths the same file.
     /// </summary>
-    public IReadOnlyCollection<string> ModifiedFiles { get; }
+    public static StringComparer PathComparer => StringComparer.OrdinalIgnoreCase;
 
-    public VcsStatusRecord( DateTime timestamp, IReadOnlyCollection<string> modifiedFiles )
+    private readonly HashSet<string> _modifiedFiles;
+
+    /// <summary>
+    /// The full paths of the files that the query reported as modified, in the spelling of the caller. This is for
+    /// storing the record; a caller asking about one file uses <see cref="IsModified"/>.
+    /// </summary>
+    public IReadOnlyCollection<string> ModifiedFiles => this._modifiedFiles;
+
+    /// <summary>
+    /// Determines whether the query reported the given file as modified.
+    /// </summary>
+    /// <remarks>
+    /// The set is built once, when the record is made, rather than by each caller asking about a file. A record is
+    /// shared: it is kept for a repository and answers every project of a build compiled by this process, so a set
+    /// built per call would be rebuilt once per project for an answer that does not change between them.
+    /// </remarks>
+    public bool IsModified( string path ) => this._modifiedFiles.Contains( path );
+
+    public VcsStatusRecord( DateTime timestamp, IEnumerable<string> modifiedFiles )
     {
         this.Timestamp = timestamp;
-        this.ModifiedFiles = modifiedFiles;
+        this._modifiedFiles = new HashSet<string>( modifiedFiles, PathComparer );
     }
 }

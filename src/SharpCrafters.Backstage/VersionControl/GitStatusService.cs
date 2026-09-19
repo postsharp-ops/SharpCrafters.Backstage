@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -98,7 +98,7 @@ internal sealed class GitStatusService : IVcsStatusService
     /// ignores it would fail to match a genuinely modified file, and would waive the enforcement. The cost of the
     /// first mistake is borne by us, the cost of the second by the customer.
     /// </remarks>
-    internal static StringComparer PathComparer => StringComparer.OrdinalIgnoreCase;
+    internal static StringComparer PathComparer => VcsStatusRecord.PathComparer;
 
     public GitStatusService( IServiceProvider serviceProvider )
     {
@@ -204,11 +204,9 @@ internal sealed class GitStatusService : IVcsStatusService
                 return true;
             }
 
-            var modifiedFiles = new HashSet<string>( record.ModifiedFiles, PathComparer );
-
             foreach ( var file in pair.Value )
             {
-                if ( modifiedFiles.Contains( file ) )
+                if ( record.IsModified( file ) )
                 {
                     this._logger.Info?.Log( $"The file '{file}' is modified in the git repository '{pair.Key}'." );
 
