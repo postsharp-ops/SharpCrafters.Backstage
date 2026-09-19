@@ -35,13 +35,6 @@ public class TestProcessExecutor : IProcessExecutor
     /// </remarks>
     public Func<ProcessStartInfo, string?> StandardOutputProvider { get; set; } = _ => null;
 
-    /// <summary>
-    /// Gets or sets the function that serves <see cref="TryExecuteAsync"/>, so that a test can make the call
-    /// block and observe what happens when it is cancelled. The default value is <c>null</c>, in which case
-    /// <see cref="StandardOutputProvider"/> serves the asynchronous path too and it completes immediately.
-    /// </summary>
-    public Func<ProcessStartInfo, CancellationToken, Task<string?>>? AsyncStandardOutputProvider { get; set; }
-
     public IProcess Start( ProcessStartInfo startInfo )
     {
         if ( this.ExceptionToThrow != null )
@@ -79,11 +72,10 @@ public class TestProcessExecutor : IProcessExecutor
 
         this.StartedProcesses.Add( startInfo );
 
-        if ( this.AsyncStandardOutputProvider != null )
-        {
-            return this.AsyncStandardOutputProvider( startInfo, cancellationToken );
-        }
-
+        // The asynchronous path completes at once. A test that needs the command to still be running while something
+        // else happens holds the code under test at one of its synchronization points, rather than making this
+        // method block: an executor that blocks leaves the test racing whatever it does next against the completion
+        // of the call, and the outcome then depends on the machine.
         return Task.FromResult( this.StandardOutputProvider( startInfo ) );
     }
 

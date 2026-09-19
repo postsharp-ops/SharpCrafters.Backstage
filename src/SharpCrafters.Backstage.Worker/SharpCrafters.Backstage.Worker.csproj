@@ -30,4 +30,138 @@
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Worker.Tests" />
     </ItemGroup>
 
+    <!-- ===================================================================================================
+         Serialization of the publish-time compression of the static assets of this library.
+
+         Publishing a project that references this library makes the .NET SDK compress this library's static
+         assets, and it writes them into the intermediate directory of THIS project rather than of the
+         project being published:
+
+             ResolvePublishCompressedStaticWebAssetsConfiguration runs BrotliCompress, which writes
+             obj\$(Configuration)\$(TargetFramework)\compressed\publish\*.br ;
+             ResolvePublishCompressedStaticWebAssets then reads those files back through
+             DefineStaticWebAssets.
+
+         Both worker executables of this repository reference this library, so both of their publishes make
+         this happen, in the same directory. When the two publishes overlap, one of them fails with
+
+             Microsoft.NET.Sdk.StaticWebAssets.Compression.targets(359,5): error : System.IO.IOException:
+             The process cannot access the file '...\compressed\publish\....br'
+             because it is being used by another process.
+
+         This is a defect of the SDK, reported and open:
+         https://github.com/dotnet/aspnetcore/issues/62565
+         https://github.com/dotnet/aspnetcore/issues/64352
+         In the second one the owner of the feature describes this exact shape, "a diamond dependency and as
+         a result a shared project is being built in parallel by two or more consuming projects", and offers
+         no remedy other than not building in parallel.
+
+         SIDE EFFECT, STATED PLAINLY: the target below sleeps. It takes a machine-wide mutex, sleeps while
+         holding it, and releases it. It does not protect the compression itself, because a mutex cannot be
+         held across MSBuild targets and the SDK offers no place to bracket them. What it does is separate
+         the two publishes in time: the second one cannot enter before the first has left, and it then waits
+         another full period, by which time the compression of the first is over. The period therefore has
+         to exceed the duration of the compression. That duration was measured at 780 ms on a developer
+         machine with a cold intermediate directory, and the default below is about four times that. Raise
+         the property on a slower machine.
+
+         The cost is one period per publish, paid even when nothing else is building.
+
+         The mutex is named after the directory being written, so that two working copies of this repository
+         do not wait for each other. It is machine-wide because each publish is a separate process.
+         ==================================================================================================== -->
+
+    <PropertyGroup>
+        <StaticWebAssetCompressionStaggerMilliseconds Condition="'$(StaticWebAssetCompressionStaggerMilliseconds)' == ''">3000</StaticWebAssetCompressionStaggerMilliseconds>
+    </PropertyGroup>
+
+    <UsingTask TaskName="StaggerPublishCompression" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <CompressionDirectory ParameterType="System.String" Required="true" />
+            <PeriodMilliseconds ParameterType="System.Int32" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Using Namespace="System" />
+            <Using Namespace="System.Globalization" />
+            <Using Namespace="System.Security.Cryptography" />
+            <Using Namespace="System.Text" />
+            <Using Namespace="System.Threading" />
+            <Code Type="Fragment" Language="cs">
+                <![CDATA[
+                // The name of a mutex cannot contain a directory separator, so the directory is hashed. The
+                // comparison is case-insensitive, like the file system this runs on.
+                string name;
+
+                using ( var algorithm = SHA256.Create() )
+                {
+                    var hash = algorithm.ComputeHash( Encoding.UTF8.GetBytes( CompressionDirectory.ToUpperInvariant() ) );
+                    var text = new StringBuilder( @"Global\SharpCrafters.Backstage.PublishCompression." );
+
+                    for ( var i = 0; i < 8; i++ )
+                    {
+                        text.Append( hash[i].ToString( "x2", CultureInfo.InvariantCulture ) );
+                    }
+
+                    name = text.ToString();
+                }
+
+                using ( var mutex = new Mutex( false, name ) )
+                {
+                    var acquired = false;
+
+                    try
+                    {
+                        try
+                        {
+                            acquired = mutex.WaitOne( TimeSpan.FromMinutes( 5 ) );
+                        }
+                        catch ( AbandonedMutexException )
+                        {
+                            // The build that held the mutex was killed. Nothing of ours is left half-written,
+                            // because the mutex guards a delay and not a modification.
+                            acquired = true;
+                        }
+
+                        if ( !acquired )
+                        {
+                            // The compression runs anyway. A publish that is slow enough to hold the mutex for
+                            // five minutes is a machine in trouble, and failing the build over the delay that
+                            // guards against a race would be worse than running into the race.
+                            Log.LogWarning( "Waited five minutes for another publish to pass the compression of the static assets, and gave up waiting." );
+                        }
+                        else
+                        {
+                            Log.LogMessage(
+                                MessageImportance.Low,
+                                "Holding '{0}' for {1} ms, so that another publish of this library does not compress its static assets at the same time.",
+                                name,
+                                PeriodMilliseconds );
+
+                            Thread.Sleep( PeriodMilliseconds );
+                        }
+                    }
+                    finally
+                    {
+                        if ( acquired )
+                        {
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                }
+                ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <!-- The target runs before the configuration target and not before ResolvePublishCompressedStaticWebAssets,
+         because the configuration target is the one that writes the files; the target named after it only reads
+         them back. -->
+    <Target Name="StaggerPublishCompressionOfStaticAssets"
+            BeforeTargets="ResolvePublishCompressedStaticWebAssetsConfiguration"
+            Condition="'$(StaticWebAssetCompressionStaggerMilliseconds)' != '0'">
+
+        <StaggerPublishCompression CompressionDirectory="$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))"
+                                   PeriodMilliseconds="$(StaticWebAssetCompressionStaggerMilliseconds)" />
+    </Target>
+
 </Project>
