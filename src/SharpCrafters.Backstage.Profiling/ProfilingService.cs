@@ -8,6 +8,7 @@
 
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using System;
 
@@ -19,9 +20,9 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 #endif
 
-namespace SharpCrafters.Backstage.Diagnostics;
+namespace SharpCrafters.Backstage.Profiling;
 
-internal sealed class ProfilingService : IProfilingService
+public sealed class ProfilingService : IProfilingService
 {
 #if PROFILING_ENABLED
     private static int _isProfiling;

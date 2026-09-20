@@ -40,4 +40,15 @@ public interface IRuntimeInformation : IBackstageService
     /// abstracted so a fake can simulate a host without depending on the real process name.
     /// </summary>
     ProcessKind ProcessKind { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the current process runs inside a container.
+    /// </summary>
+    /// <remarks>
+    /// A container is one of the reasons why a process is unattended, and
+    /// <see cref="SharpCrafters.Backstage.Application.IApplicationInfo.IsUnattendedProcess"/> is the question most
+    /// callers have. This one is here because a caller may need the container itself: a Windows container has no
+    /// just-in-time debugger, whether or not somebody is watching the build.
+    /// </remarks>
+    bool IsRunningInContainer { get; }
 }

@@ -186,7 +186,10 @@ public static class RegisterCoreServices
                 return loggerFactory;
             } );
 
-        serviceProviderBuilder.AddSingleton<IProfilingService>( serviceProvider => new ProfilingService( serviceProvider ) );
+        // The profiling feature is not registered here. It lives in SharpCrafters.Backstage.Profiling, because it
+        // is the only thing in this repository that needs JetBrains.Profiler.SelfApi and that package brings four
+        // assemblies every consumer would otherwise publish. A product that wants it calls AddProfiling; the
+        // initializer resolves the service optionally and does nothing when it is absent.
     }
 
     /// <summary>

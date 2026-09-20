@@ -21,6 +21,9 @@ public sealed class TestRuntimeInformation : IRuntimeInformation
 
     public ProcessKind? TestProcessKind { get; set; }
 
+    // ReSharper disable once InconsistentNaming
+    public bool? TestIsRunningInContainer { get; set; }
+
     public bool IsOSPlatform( OSPlatform osPlatform )
     {
         if ( this.Platform == null )
@@ -36,4 +39,6 @@ public sealed class TestRuntimeInformation : IRuntimeInformation
     public Architecture OSArchitecture => this.TestOSArchitecture ?? this._defaultValues.OSArchitecture;
 
     public ProcessKind ProcessKind => this.TestProcessKind ?? this._defaultValues.ProcessKind;
+
+    public bool IsRunningInContainer => this.TestIsRunningInContainer ?? this._defaultValues.IsRunningInContainer;
 }

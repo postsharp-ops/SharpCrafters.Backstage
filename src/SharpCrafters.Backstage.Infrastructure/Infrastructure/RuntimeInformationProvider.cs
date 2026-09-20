@@ -15,6 +15,8 @@ internal sealed class RuntimeInformationProvider : IRuntimeInformation
 {
     public bool IsOSPlatform( OSPlatform osPlatform ) => RuntimeInformation.IsOSPlatform( osPlatform );
 
+    public bool IsRunningInContainer => ProcessUtilities.IsRunningInContainer( NullLogger.Instance );
+
     public Architecture ProcessArchitecture => RuntimeInformation.ProcessArchitecture;
 
     public Architecture OSArchitecture => RuntimeInformation.OSArchitecture;

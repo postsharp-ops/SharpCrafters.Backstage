@@ -59,6 +59,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Sha
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Infrastructure", "src\SharpCrafters.Backstage.Infrastructure\SharpCrafters.Backstage.Infrastructure.csproj", "{3E6C6356-DD38-4ADA-A520-96123B1148D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Profiling", "src\SharpCrafters.Backstage.Profiling\SharpCrafters.Backstage.Profiling.csproj", "{F220C55B-427F-49AE-B08E-A7B00125697E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -369,6 +371,18 @@ Global
 		{3E6C6356-DD38-4ADA-A520-96123B1148D0}.Release|x64.Build.0 = Release|Any CPU
 		{3E6C6356-DD38-4ADA-A520-96123B1148D0}.Release|x86.ActiveCfg = Release|Any CPU
 		{3E6C6356-DD38-4ADA-A520-96123B1148D0}.Release|x86.Build.0 = Release|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Debug|x64.Build.0 = Debug|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Debug|x86.Build.0 = Debug|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Release|x64.ActiveCfg = Release|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Release|x64.Build.0 = Release|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Release|x86.ActiveCfg = Release|Any CPU
+		{F220C55B-427F-49AE-B08E-A7B00125697E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -391,6 +405,7 @@ Global
 		{F08B0E67-A9AB-4132-B222-60F4EBD8A2AC} = {9D6FD712-60EF-4B8A-95EE-0143DF7E4B97}
 		{361BE24F-C850-44F1-AFDD-055B522329AB} = {9D6FD712-60EF-4B8A-95EE-0143DF7E4B97}
 		{3E6C6356-DD38-4ADA-A520-96123B1148D0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{F220C55B-427F-49AE-B08E-A7B00125697E} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8AA8827C-CABA-4539-ABED-306BD5240FE1}
