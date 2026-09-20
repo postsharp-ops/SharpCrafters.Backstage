@@ -5,6 +5,7 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using System;
+using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption;
 
@@ -12,6 +13,20 @@ namespace SharpCrafters.Backstage.Licensing.Consumption;
 public sealed record LicenseConsumptionOptions
 {
     public string? ProjectLicenseKey { get; init; }
+
+    /// <summary>
+    /// Gets the licenses that the application supplies for the project, each with a description of where the
+    /// application read it from. They are considered in the order of this list and before
+    /// <see cref="ProjectLicenseKey"/>. Like <see cref="ProjectLicenseKey"/>, they are of kind
+    /// <see cref="LicenseSourceKind.Project"/> and <see cref="IgnoredLicenseSources"/> does not apply to them: the
+    /// application supplied them for this call, so it can leave out what it does not want considered.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ProjectLicenseKey"/> is the short form of this list, for an application that reads its licenses from
+    /// one place only. An application that has several places, such as a command-line argument and a configuration
+    /// file, uses this list so that a message about an unusable license names the place the license came from.
+    /// </remarks>
+    public ImmutableArray<ExplicitLicense> ExplicitLicenses { get; init; } = ImmutableArray<ExplicitLicense>.Empty;
 
     public string? ProjectName { get; init; }
 

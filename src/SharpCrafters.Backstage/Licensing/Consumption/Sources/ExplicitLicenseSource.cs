@@ -14,9 +14,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 internal sealed class ExplicitLicenseSource : LicenseSourceBase
 {
     private readonly string _licenseString;
-    private readonly string _licensePropertyName;
 
-    public override string Description => $"the MSBuild property or environment variable named {this._licensePropertyName}";
+    public override string Description { get; }
 
     public override LicenseSourceKind Kind { get; }
 
@@ -40,11 +39,27 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
         return [this._licenseString];
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExplicitLicenseSource"/> class that describes itself as the license
+    /// property of the product, which is where an application that has one license property reads its license from.
+    /// </summary>
     public ExplicitLicenseSource( string licenseString, LicenseSourceKind kind, IServiceProvider services )
+        : this(
+            licenseString,
+            $"the MSBuild property or environment variable named {services.GetRequiredBackstageService<ProductProfile>().LicensePropertyName}",
+            kind,
+            services ) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExplicitLicenseSource"/> class with the description that the
+    /// application supplied, which is what an application that reads its licenses from several places gives for each
+    /// of them.
+    /// </summary>
+    public ExplicitLicenseSource( string licenseString, string description, LicenseSourceKind kind, IServiceProvider services )
         : base( services )
     {
         this._licenseString = licenseString;
-        this._licensePropertyName = services.GetRequiredBackstageService<ProductProfile>().LicensePropertyName;
+        this.Description = description;
         this.Kind = kind;
     }
 
