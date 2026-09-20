@@ -4,12 +4,25 @@
 
 using JetBrains.Annotations;
 using System;
+using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption;
 
 [PublicAPI]
 public interface ILicenseConsumer
 {
+    /// <summary>
+    /// Gets the licenses that the consumer holds, in the order in which <see cref="TryConsume"/> considers them.
+    /// These are the licenses that were found and are usable; a license that was found and is not usable was reported
+    /// when the consumer was created.
+    /// </summary>
+    /// <remarks>
+    /// An application reads this to tell the user what it found, which is a different message from the one
+    /// <see cref="TryConsume"/> produces: a build with no license at all asks the user to register one, and a build
+    /// with a license that does not cover a feature names the license the user holds.
+    /// </remarks>
+    ImmutableArray<LicenseConsumptionProperties> Licenses { get; }
+
     /// <summary>
     /// Attempts to consume a license. If it succeeds, marks the license for audit.
     /// </summary>

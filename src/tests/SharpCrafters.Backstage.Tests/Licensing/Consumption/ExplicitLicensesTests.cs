@@ -147,6 +147,22 @@ public sealed class ExplicitLicensesTests : LicensingTestsBase
     }
 
     /// <summary>
+    /// What the consumer reports it holds is what it considers, in the same order. An application shows this to the
+    /// user when it has to say which license it found, so a list that did not match what a requirement is checked
+    /// against would name a license that had nothing to do with the failure.
+    /// </summary>
+    [Fact]
+    public async Task TheReportedLicensesAreTheOnesConsidered()
+    {
+        var consumer = await this.CreateConsumerAsync(
+            Explicitly( (_invalidLicense, "the first place"), (FirstLicense, "the second place"), (SecondLicense, "the third place") ),
+            _ => { } );
+
+        Assert.Equal( GetConsideredLicenses( consumer ), consumer.Licenses.Select( l => l.LicenseString ) );
+        Assert.Equal( new[] { FirstLicense, SecondLicense }, consumer.Licenses.Select( l => l.LicenseString ) );
+    }
+
+    /// <summary>
     /// The property is an <see cref="ImmutableArray{T}"/>, whose default value is not an empty array but an array with
     /// no storage, which throws when it is enumerated. An application that assigns <c>default</c> therefore gets no
     /// license rather than an exception.

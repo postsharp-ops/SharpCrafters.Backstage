@@ -37,7 +37,11 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         this._eventDispatcher = services.GetRequiredBackstageService<IEventDispatcher>();
         this._productProfile = services.GetRequiredBackstageService<ProductProfile>();
         this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
+        this.Licenses = licenses.Select( x => x.Properties ).ToImmutableArray();
     }
+
+    /// <inheritdoc />
+    public ImmutableArray<LicenseConsumptionProperties> Licenses { get; }
 
     /// <inheritdoc />
     public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage = null, bool showsToastNotification = true )
