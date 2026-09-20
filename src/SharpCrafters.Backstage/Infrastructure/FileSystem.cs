@@ -1,8 +1,7 @@
-﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common;
@@ -22,24 +21,8 @@ namespace SharpCrafters.Backstage.Infrastructure
     /// <summary>
     /// Provides access to file system using API in <see cref="System.IO" /> namespace.
     /// </summary>
-    /// <remarks>
-    /// The class is public so that <see cref="Default"/> can be. Every other consumer resolves
-    /// <see cref="IFileSystem"/> from the service provider, which is what lets a test substitute it.
-    /// </remarks>
-    [PublicAPI]
-    public sealed class FileSystem : IFileSystem
+    internal sealed class FileSystem : IFileSystem
     {
-        /// <summary>
-        /// Gets the file system for a process that has no service provider: a tool that drives a library of the
-        /// product without starting the services, for instance to read the references of an assembly.
-        /// </summary>
-        /// <remarks>
-        /// Every member works except <see cref="GetTempFileName"/>, which needs the standard directories and
-        /// therefore a service provider. A process that has a provider resolves <see cref="IFileSystem"/> from it
-        /// instead, so that a test can substitute it and so that the test synchronization points are in place.
-        /// </remarks>
-        public static IFileSystem Default { get; } = new FileSystem();
-
         private readonly IServiceProvider? _serviceProvider;
 
         /// <summary>
