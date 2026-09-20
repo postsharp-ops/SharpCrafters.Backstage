@@ -29,11 +29,18 @@
         <ProjectReference Include="..\SharpCrafters.Backstage.Infrastructure\SharpCrafters.Backstage.Infrastructure.csproj" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetFramework)'=='netframework4.7.2'">
+        <!-- Assemblies of the .NET Framework that this project uses directly. They were reaching it through
+             JetBrains.Profiler.SelfApi, which referenced them and which this project no longer takes, so they
+             are named here, where the code that needs them is. -->
+        <Reference Include="System.Net.Http" />
+        <Reference Include="System.IO.Compression" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="System.IO.Hashing" />
         <PackageReference Include="System.Collections.Immutable" />
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
-        <PackageReference Include="JetBrains.Profiler.SelfApi" Condition="'$(TargetFramework)'!='netstandard2.0'" />
         <PackageReference Include="Microsoft.Bcl.HashCode" />
         <PackageReference Include="System.Text.Json" VersionOverride="$(SystemTextJsonMinVersion)" NoWarn="NU1903" />
         <PackageReference Include="System.IO.Packaging" />
