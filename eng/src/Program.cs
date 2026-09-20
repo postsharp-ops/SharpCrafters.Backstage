@@ -47,6 +47,7 @@ var product = new Product( BackstageDependencies.Backstage )
     // product executables, so they are not packed at all.
     PublicArtifacts = Pattern.Create(
         "SharpCrafters.Backstage.$(PackageVersion).nupkg",
+        "SharpCrafters.Backstage.Infrastructure.$(PackageVersion).nupkg", // Required by SharpCrafters.Backstage and by the build tools of the products.
         "SharpCrafters.Backstage.Commands.$(PackageVersion).nupkg", // Required by Metalama.Tool.
         "SharpCrafters.Common.$(PackageVersion).nupkg",             // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.

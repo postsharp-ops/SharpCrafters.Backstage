@@ -13,10 +13,10 @@ namespace SharpCrafters.Backstage.Application;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The profile is a different axis than <see cref="IApplicationInfo"/>. The application info describes the host
+/// The profile is a different axis than the application info. <c>IApplicationInfo</c> describes the host
 /// process (the compiler, the design-time process, a command-line tool), and one product family has many host
 /// processes. The profile describes the product family, and it is the same for all of its host processes. The host
-/// passes the profile in <see cref="BackstageProduct.Profile"/>, and the services resolve it
+/// passes the profile in the <c>Profile</c> property of its <c>BackstageProduct</c>, and the services resolve it
 /// through the service provider.
 /// </para>
 /// <para>

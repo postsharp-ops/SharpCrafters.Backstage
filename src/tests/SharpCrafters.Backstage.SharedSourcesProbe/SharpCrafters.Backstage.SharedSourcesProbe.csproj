@@ -1,14 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <!-- Compiles the source files that the package ships under shared\ exactly as a consumer outside this repository
-         compiles them: by link, without METALAMA_BACKSTAGE and without HAS_METALAMA_TESTING_HOOKS, so the types are
-         internal and depend on nothing but the base class library.
+    <!-- Compiles the source files that SharpCrafters.Backstage.Infrastructure ships under shared\ exactly as a
+         consumer outside this repository compiles them: by link, without METALAMA_BACKSTAGE and without
+         HAS_METALAMA_TESTING_HOOKS, so the types are internal and depend on nothing but the base class library.
 
-         It exists because nothing else here checks that. Every project of this repository compiles those files with
-         METALAMA_BACKSTAGE defined, so a file that reaches a Backstage service, or that keeps a public member whose
-         type became internal, compiles here and fails in the consumer that takes it from the package. That is what
-         had happened to NamedLockExtensions.cs, which the package shipped although its own documentation said it
-         could not be shared.
+         Those files are shared for Metalama.Framework.CompilerExtensions and Metalama.Framework.DesignTime.Contracts,
+         which can reference nothing at all, not even that package. A consumer that can take a package reference,
+         such as an MSBuild task, references the package instead and compiles nothing.
+
+         This project exists because nothing else here checks the shared form. Every project of this repository
+         compiles those files with METALAMA_BACKSTAGE defined, so a file that reaches a Backstage service, or that
+         keeps a public member whose type became internal, compiles here and fails in the consumer that takes it from
+         the package. That is what had happened to NamedLockExtensions.cs.
 
          It builds no product code. It is not packed, not tested and referenced by nothing; failing to compile is the
          whole of what it does. -->
@@ -21,18 +24,17 @@
         <RootNamespace>SharpCrafters.Backstage</RootNamespace>
         <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
-        <!-- The files have no documentation comments to generate a file from, and the assembly is not shipped. -->
+        <!-- The files carry documentation comments, but this assembly is not shipped and its documentation would
+             collide with the one of the assembly that does ship them. -->
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- The same set as the shared\ item group of SharpCrafters.Backstage.csproj. The two lists are kept together
-             by the comment there; a file added to one and not to the other is a file that is either shipped and not
-             checked, or checked and not shipped. -->
-        <Compile Include="..\..\SharpCrafters.Backstage\Threading\*.cs"
-                 Exclude="..\..\SharpCrafters.Backstage\Threading\NamedLockExtensions.cs"
-                 LinkBase="Threading" />
-        <Compile Include="..\..\SharpCrafters.Backstage\Diagnostics\ProcessKind.cs;..\..\SharpCrafters.Backstage\Diagnostics\ProcessKindDetector.cs"
+        <!-- The same set as the shared\ item group of SharpCrafters.Backstage.Infrastructure.csproj. The two lists
+             are kept together by the comment there; a file in one and not in the other is a file that is either
+             shipped and not checked, or checked and not shipped. -->
+        <Compile Include="..\..\SharpCrafters.Backstage.Infrastructure\Threading\*.cs" LinkBase="Threading" />
+        <Compile Include="..\..\SharpCrafters.Backstage.Infrastructure\Diagnostics\ProcessKind.cs;..\..\SharpCrafters.Backstage.Infrastructure\Diagnostics\ProcessKindDetector.cs"
                  LinkBase="Diagnostics" />
     </ItemGroup>
 

@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The infrastructure that a consumer can take without taking the Backstage services: named locks, the detection
+         of the processes holding a file, the runtime information, the detection of an unattended process and of a
+         continuous integration server, the process kinds, and the contracts of the services those need. A build tool
+         loaded by MSBuild needs exactly these and can take no dependency, so this assembly has none beyond
+         SharpCrafters.Common, which is itself dependency-free: no serializer, no registry, no packaging, no hashing.
+
+         What is here is the contracts and the implementations that depend on nothing else. The logging, the
+         configuration, the standard directories, the file system and everything above them stay in
+         SharpCrafters.Backstage, which references this assembly. -->
+
+    <PropertyGroup>
+        <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
+        <PackageDescription>The dependency-light infrastructure of Backstage: named locks, process and runtime information, and the service contracts they rest on. It exists for the build tools of the Metalama and PostSharp products, which are loaded by MSBuild and can take no dependency. This package should only be installed as a dependency.</PackageDescription>
+        <RootNamespace>SharpCrafters.Backstage</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <!-- The files under Threading/ and the process kind files under Diagnostics/ are also compiled into
+             Metalama.Framework.CompilerExtensions and Metalama.Framework.DesignTime.Contracts, which can reference
+             nothing at all and therefore cannot take even this assembly. This symbol marks the copy that is part of
+             the Backstage services, and therefore the only one that takes part in dependency injection. -->
+        <DefineConstants>$(DefineConstants);METALAMA_BACKSTAGE</DefineConstants>
+
+        <!-- Marks a copy of those files that can reference SharpCrafters.Common, and therefore has the test
+             synchronization points. -->
+        <DefineConstants>$(DefineConstants);HAS_METALAMA_TESTING_HOOKS</DefineConstants>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The shared source files travel in the package under the shared directory, so that the projects of the
+             consuming products that compile them by link find them in the package instead of in this repository.
+             SharedSourcesProbe compiles this same set the way such a consumer does.
+
+             NamedLockExtensions.cs is deliberately absent, from this assembly as well as from this list: it reaches
+             the hashing library and the prefix of a product, and a consumer composes its lock names itself. -->
+        <None Include="Threading\*.cs" Pack="true" PackagePath="shared\Threading\" />
+        <None Include="Diagnostics\ProcessKind.cs;Diagnostics\ProcessKindDetector.cs" Pack="true" PackagePath="shared\Diagnostics\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Common\SharpCrafters.Common.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- SharpCrafters.Backstage sees the internals because the split is one of packaging and not of design: the
+             two assemblies were one, and a type that was internal to it stays internal to the pair. -->
+        <InternalsVisibleTo Include="SharpCrafters.Backstage" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
+    </ItemGroup>
+
+</Project>
