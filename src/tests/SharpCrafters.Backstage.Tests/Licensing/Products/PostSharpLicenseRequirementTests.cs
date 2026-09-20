@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Requirements;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tests.Licensing.Consumption;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -185,4 +186,40 @@ public sealed class PostSharpLicenseRequirementTests : LicenseConsumptionService
             ["PostSharp Ultimate", "PostSharp MVVM", "PostSharp Threading"],
             PostSharpLicenseRequirements.Aggregatable.GetEligibleProductNames( catalog ) );
     }
+
+    /// <summary>
+    /// Every package has a requirement, and asking for one twice gives one object. The compiler asks by the value of
+    /// the enumeration, because that is what it works out from the assembly that declares an aspect.
+    /// </summary>
+    /// <remarks>
+    /// The cases are taken from the enumeration rather than listed here, so that a package added to the enumeration
+    /// and not to the mapping fails this test instead of failing the first build that uses it.
+    /// </remarks>
+    [Fact]
+    public void EveryPackageHasARequirement()
+    {
+        foreach ( LicensedPackages package in Enum.GetValues( typeof(LicensedPackages) ) )
+        {
+            if ( package is LicensedPackages.None or LicensedPackages.All )
+            {
+                continue;
+            }
+
+            var requirement = PostSharpLicenseRequirements.ForPackage( package );
+
+            Assert.Equal( package, Assert.IsType<PostSharpLicenseRequirement>( requirement ).RequiredPackage );
+            Assert.Same( requirement, PostSharpLicenseRequirements.ForPackage( package ) );
+        }
+    }
+
+    /// <summary>
+    /// A requirement names exactly one package, so asking for none of them, for all of them, or for a combination is
+    /// refused rather than answered with one of them.
+    /// </summary>
+    [Theory]
+    [InlineData( LicensedPackages.None )]
+    [InlineData( LicensedPackages.All )]
+    [InlineData( LicensedPackages.Model | LicensedPackages.Xaml )]
+    public void AskingForSomethingOtherThanOnePackageIsRefused( LicensedPackages packages )
+        => Assert.Throws<ArgumentOutOfRangeException>( () => PostSharpLicenseRequirements.ForPackage( packages ) );
 }
