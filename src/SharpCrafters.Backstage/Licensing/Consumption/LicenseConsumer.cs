@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -83,6 +84,37 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     }
 
     /// <summary>
+    /// Gets the names under which the project may be licensed: the name of the project, and whatever further names
+    /// the application offered for it.
+    /// </summary>
+    private IEnumerable<string> GetProjectNames()
+    {
+        if ( !string.IsNullOrEmpty( this._options.ProjectName ) )
+        {
+            yield return this._options.ProjectName!;
+        }
+
+        if ( !this._options.AdditionalProjectNames.IsDefault )
+        {
+            foreach ( var projectName in this._options.AdditionalProjectNames )
+            {
+                if ( !string.IsNullOrEmpty( projectName ) )
+                {
+                    yield return projectName;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Determines whether the project is inside the namespace that a license key is constrained to. One of its names
+    /// being inside it is enough: they are names of one project, and a key sold for an organization names that
+    /// organization, not the way each of its projects happens to be named.
+    /// </summary>
+    private bool IsProjectInNamespace( string licensedNamespace )
+        => this.GetProjectNames().Any( projectName => projectName.StartsWith( licensedNamespace, StringComparison.OrdinalIgnoreCase ) );
+
+    /// <summary>
     /// Looks for a licence that satisfies a requirement, and reports its use when one does.
     /// </summary>
     private bool TryConsumeCore( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
@@ -90,19 +122,18 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         foreach ( var license in this._licenses )
         {
             // Check project-bound license keys.
-            if ( !string.IsNullOrEmpty( license.Properties.LicensedNamespace )
-                 && (string.IsNullOrEmpty( this._options.ProjectName ) || !this._options.ProjectName!.StartsWith(
-                     license.Properties.LicensedNamespace!,
-                     StringComparison.OrdinalIgnoreCase )) )
+            if ( !string.IsNullOrEmpty( license.Properties.LicensedNamespace ) && !this.IsProjectInNamespace( license.Properties.LicensedNamespace! ) )
             {
+                var projectNames = string.Join( "', '", this.GetProjectNames() );
+
                 reportMessage?.Invoke(
                     new LicensingMessage(
                         $"The license key '{license.Properties.DisplayName}' is bound to the " +
-                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{this._options.ProjectName}'." ) );
+                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{projectNames}'." ) );
 
                 this._logger.Warning?.Log(
                     $"TryConsume({{{requirement}}}: license key '{license.Properties.DisplayName}' ignored because it is bound to the namespace" +
-                    $" '{license.Properties.LicensedNamespace}' it does not match the current project name '{this._options.ProjectName}'." );
+                    $" '{license.Properties.LicensedNamespace}' it does not match the current project name '{projectNames}'." );
 
                 continue;
             }
