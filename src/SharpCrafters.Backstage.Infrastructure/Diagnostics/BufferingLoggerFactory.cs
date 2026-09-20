@@ -42,12 +42,19 @@ internal sealed class BufferingLoggerFactory : ILoggerFactory
         {
             this._parent = parent;
             this._category = category;
+            this.Trace = new Writer( parent, category, logger => logger.Trace );
             this.Info = new Writer( parent, category, logger => logger.Info );
             this.Warning = new Writer( parent, category, logger => logger.Warning );
             this.Error = new Writer( parent, category, logger => logger.Error );
         }
 
-        public ILogWriter? Trace => null;
+        // Buffered like the other severities, and not discarded. What a component writes before the real
+        // factory exists is mostly tracing -- the detection of an unattended process says what it saw and why
+        // it concluded what it did, and says all of it at this severity. Dropping it here left the caller of
+        // ProcessUtilities.IsCurrentProcessUnattended with an empty explanation, which is the one thing that
+        // method promises to replay. The writer decides nothing: a message is discarded later anyway if the
+        // factory it is replayed into has no writer for the severity.
+        public ILogWriter? Trace { get; }
 
         public ILogWriter? Info { get; }
 
