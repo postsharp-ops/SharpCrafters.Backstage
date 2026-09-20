@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -61,18 +61,26 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             + string.Join( ", ", requirement.GetEligibleProductNames( this._catalog ) )
             + ".";
 
+        LicensingMessageKind messageKind;
+
         if ( this._licenses.IsEmpty )
         {
             messageText += " Could not find any valid registered license.";
+
+            // The user is asked to register a license, and not told that the one they hold is not enough, so this is
+            // a different message from the one below and an application reports it under a different diagnostic.
+            messageKind = LicensingMessageKind.NoLicense;
         }
         else
         {
             messageText +=
                 $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.LicenseString ) )}.";
+
+            messageKind = LicensingMessageKind.RequirementNotSatisfied;
         }
 
         // Report a licensing message (this is typically reported as a compiler diagnostic).
-        reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true } );
+        reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true, Kind = messageKind } );
 
         // Publish the event, so that the user interface can show a notification, unless the application provides its own UI.
         if ( showsToastNotification )
@@ -129,7 +137,10 @@ internal sealed class LicenseConsumer : ILicenseConsumer
                 reportMessage?.Invoke(
                     new LicensingMessage(
                         $"The license key '{license.Properties.DisplayName}' is bound to the " +
-                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{projectNames}'." ) );
+                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{projectNames}'." )
+                    {
+                        Kind = LicensingMessageKind.NamespaceMismatch
+                    } );
 
                 this._logger.Warning?.Log(
                     $"TryConsume({{{requirement}}}: license key '{license.Properties.DisplayName}' ignored because it is bound to the namespace" +

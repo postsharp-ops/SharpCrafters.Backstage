@@ -545,7 +545,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         server.FaultMode = LicenseServerFault.Unreachable;
 
         Assert.False( await this.TryConsumeAsync() );
-        Assert.Contains( this.Messages, m => m.Text.Contains( "Cannot get a lease", StringComparison.Ordinal ) );
+
+        Assert.Contains(
+            this.Messages,
+            m => m.Kind == LicensingMessageKind.LicenseServerLeaseFailed && m.Text.Contains( "Cannot get a lease", StringComparison.Ordinal ) );
     }
 
     /// <summary>
@@ -887,7 +890,11 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
             new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile } );
 
         Assert.False( canConsume );
-        Assert.Contains( this.Messages, m => m.Text.Contains( "not eligible for a license server", StringComparison.Ordinal ) );
+
+        Assert.Contains(
+            this.Messages,
+            m => m.Kind == LicensingMessageKind.LicenseServerLeaseFailed
+                 && m.Text.Contains( "not eligible for a license server", StringComparison.Ordinal ) );
     }
 
     // ---------------------------------------------------------------------------------------------------------------

@@ -77,7 +77,7 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
                 }
                 else
                 {
-                    reportMessage( new LicensingMessage( errorMessage ) );
+                    reportMessage( new LicensingMessage( errorMessage ) { Kind = LicensingMessageKind.InvalidLicenseKey } );
                 }
             }
         }

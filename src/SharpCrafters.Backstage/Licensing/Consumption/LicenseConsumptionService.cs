@@ -111,7 +111,13 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
 
                 if ( !consumptionResult.IsSuccess )
                 {
-                    await this.ReportUnusableLicenseAsync( license, source, consumptionResult.ErrorMessage!, reportMessage, cancellationToken );
+                    await this.ReportUnusableLicenseAsync(
+                        license,
+                        source,
+                        consumptionResult.ErrorMessage!,
+                        consumptionResult.ErrorKind,
+                        reportMessage,
+                        cancellationToken );
 
                     continue;
                 }
@@ -136,6 +142,7 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         ILicense license,
         ILicenseSource source,
         string errorMessage,
+        LicensingMessageKind errorKind,
         Action<LicensingMessage>? reportMessage,
         CancellationToken cancellationToken )
     {
@@ -156,7 +163,7 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             message += $" The license key originates from {source.Description}.";
         }
 
-        reportMessage?.Invoke( new LicensingMessage( message ) );
+        reportMessage?.Invoke( new LicensingMessage( message ) { Kind = errorKind } );
         this._logger.Warning?.Log( message );
     }
 

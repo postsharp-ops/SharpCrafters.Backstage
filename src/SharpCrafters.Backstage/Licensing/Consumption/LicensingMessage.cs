@@ -11,5 +11,10 @@ public sealed record LicensingMessage( string Text )
 {
     public bool IsError { get; init; }
 
+    /// <summary>
+    /// Gets what the message is about. See <see cref="LicensingMessageKind"/> for what an application does with it.
+    /// </summary>
+    public LicensingMessageKind Kind { get; init; } = LicensingMessageKind.Generic;
+
     public override string ToString() => $"{(this.IsError ? "Error" : "Warning")}: {this.Text}";
 }

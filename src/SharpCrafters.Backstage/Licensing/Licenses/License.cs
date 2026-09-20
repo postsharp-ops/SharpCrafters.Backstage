@@ -73,9 +73,9 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             LicenseConsumptionOptions options,
             CancellationToken cancellationToken = default )
             => new(
-                this.TryGetConsumptionPropertiesCore( options, out var properties, out var errorMessage )
+                this.TryGetConsumptionPropertiesCore( options, out var properties, out var errorMessage, out var errorKind )
                     ? LicenseConsumptionResult.Success( properties )
-                    : LicenseConsumptionResult.Failure( errorMessage ) );
+                    : LicenseConsumptionResult.Failure( errorMessage, errorKind ) );
 
         /// <inheritdoc />
         public override ValueTask<LicenseRegistrationPropertiesResult> GetRegistrationPropertiesAsync( CancellationToken cancellationToken = default )
@@ -87,7 +87,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         private LicenseRegistrationBlocker GetRegistrationBlockerCore()
         {
             // Validates that the key can be consumed.
-            if ( !this.TryGetConsumptionPropertiesCore( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out var errorMessage ) )
+            if ( !this.TryGetConsumptionPropertiesCore( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out var errorMessage, out _ ) )
             {
                 return LicenseRegistrationBlocker.Unusable( errorMessage );
             }
@@ -105,9 +105,14 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         private bool TryGetConsumptionPropertiesCore(
             LicenseConsumptionOptions options,
             [MaybeNullWhen( false )] out LicenseConsumptionProperties licenseConsumptionProperties,
-            [MaybeNullWhen( true )] out string errorMessage )
+            [MaybeNullWhen( true )] out string errorMessage,
+            out LicensingMessageKind errorKind )
         {
             licenseConsumptionProperties = null;
+
+            // A key that fails one of the checks below is unusable whatever it is used for, which is what the default
+            // says. The checks that mean something else set the kind themselves.
+            errorKind = LicensingMessageKind.InvalidLicenseKey;
 
             if ( !this.TryGetLicenseKeyData( out var licenseKeyData, out errorMessage ) )
             {
@@ -131,6 +136,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 // cannot be reissued under another key. The license identifiers below 100 are used to test the
                 // licensing authority.
                 errorMessage = "the license key has been revoked";
+                errorKind = LicensingMessageKind.Revoked;
 
                 return false;
             }
@@ -152,6 +158,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             if ( licenseKeyData.ValidTo.HasValue && licenseKeyData.ValidTo < this._dateTimeProvider.UtcNow )
             {
                 errorMessage = "the license key has expired";
+                errorKind = LicensingMessageKind.Expired;
 
                 return false;
             }
@@ -203,6 +210,10 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                     errorMessage =
                         $"the license key does not allow to use the licensed product '{latestVendorComponent.Name}' version {latestVendorComponent.PackageVersion} released on {latestVendorComponent.BuildDate:d} - only versions released before {licenseKeyData.SubscriptionEndDate:d} are allowed to use by this license";
 
+                    // The key is valid and the subscription it carries is not, which is the same thing to the user as
+                    // an expired key: they renew it.
+                    errorKind = LicensingMessageKind.Expired;
+
                     return false;
                 }
             }
@@ -213,6 +224,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             if ( !this._catalog.IsProductOfFamily( product ) )
             {
                 errorMessage = $"the license key is for {licenseKeyData.Product} and not for {this._productProfile.Name}";
+                errorKind = LicensingMessageKind.WrongProductFamily;
 
                 return false;
             }
@@ -227,6 +239,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
 #pragma warning restore CS0612 // Type or member is obsolete
 
             errorMessage = null;
+            errorKind = LicensingMessageKind.Generic;
 
 #pragma warning disable CS0618 // Type or member is obsolete
             var isRedistributable = licenseType is LicenseType.OpenSourceRedistribution or LicenseType.CommercialRedistribution;

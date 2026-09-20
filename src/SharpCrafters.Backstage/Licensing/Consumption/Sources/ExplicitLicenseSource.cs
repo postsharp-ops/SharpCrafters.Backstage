@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -31,7 +31,11 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
         // mistyped value is a likely mistake, and the value itself must not reach a build log. See issue #1859.
         if ( !LicenseKeyData.TryDeserialize( this._licenseString, out _, out var errorMessage ) )
         {
-            reportMessage( new LicensingMessage( $"The license key set in {this.Description} is invalid. {errorMessage}" ) );
+            reportMessage(
+                new LicensingMessage( $"The license key set in {this.Description} is invalid. {errorMessage}" )
+                {
+                    Kind = LicensingMessageKind.InvalidLicenseKey
+                } );
 
             return [];
         }
