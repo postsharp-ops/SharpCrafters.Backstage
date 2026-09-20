@@ -17,6 +17,7 @@ namespace SharpCrafters.Backstage.Utilities;
 public static class ProcessUtilities
 {
     private static readonly bool _isCurrentProcessUnattended;
+    private static readonly bool _isRunningInContainer;
     private static readonly BufferingLoggerFactory _isCurrentProcessUnattendedLog = new();
 
     static ProcessUtilities()
@@ -25,6 +26,7 @@ public static class ProcessUtilities
         // because the parent process may end before the current process ends, and we would lose the ability
         // to walk the parent processes.
         // Therefore we must remember the result in a static field.
+        _isRunningInContainer = IsRunningInContainerCore( _isCurrentProcessUnattendedLog.GetLogger( nameof(ProcessUtilities) ) );
         _isCurrentProcessUnattended = IsCurrentProcessUnattendedCore( _isCurrentProcessUnattendedLog );
     }
 
@@ -46,6 +48,25 @@ public static class ProcessUtilities
         return _isCurrentProcessUnattended;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the current process runs inside a container. The answer is computed once,
+    /// when this class is first used, because it cannot change while the process lives.
+    /// </summary>
+    /// <param name="loggerFactory">The factory into which the trace of the detection is replayed.</param>
+    /// <remarks>
+    /// A container is one of the reasons why a process is unattended, and
+    /// <see cref="IsCurrentProcessUnattended"/> is the question most callers have. This one is separate because a
+    /// caller may need the container itself: a Windows container has no just-in-time debugger, whether or not
+    /// somebody is watching the build.
+    /// </remarks>
+    [PublicAPI]
+    public static bool IsRunningInContainer( ILoggerFactory loggerFactory )
+    {
+        _isCurrentProcessUnattendedLog.Replay( loggerFactory );
+
+        return _isRunningInContainer;
+    }
+
     private static bool IsCurrentProcessUnattendedCore( ILoggerFactory loggerFactory )
     {
         var logger = loggerFactory.GetLogger( nameof(ProcessUtilities) );
@@ -57,16 +78,14 @@ public static class ProcessUtilities
             return true;
         }
 
-        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Linux ) )
+        if ( _isRunningInContainer )
         {
-            if ( IsRunningInDockerContainer( logger ) )
-            {
-                logger.Trace?.Log( "Unattended mode detected because of Docker containerized environment." );
+            logger.Trace?.Log( "Unattended mode detected because of a containerized environment." );
 
-                return true;
-            }
+            return true;
         }
-        else if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+
+        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
             if ( Environment.OSVersion.Version.Major >= 6 && Process.GetCurrentProcess().SessionId == 0 )
             {
@@ -191,8 +210,45 @@ public static class ProcessUtilities
         return parentProcessSearch.GetParentProcesses( pivots );
     }
 
-    private static bool IsRunningInDockerContainer( ILogger logger )
+    /// <summary>
+    /// Determines whether an account is one of those a Windows container runs its processes as. That is the
+    /// signature Microsoft documents for the case, and there is nothing else to look at: a Windows container has
+    /// the same file system layout as a Windows installation.
+    /// </summary>
+    /// <param name="userName">The value of <see cref="Environment.UserName"/>.</param>
+    /// <param name="userDomainName">The value of <see cref="Environment.UserDomainName"/>.</param>
+    /// <remarks>
+    /// The two values are parameters rather than read here, so that a test can state the rule without running
+    /// inside a container.
+    /// </remarks>
+    internal static bool IsWindowsContainerAccount( string userName, string userDomainName )
+        => (StringComparer.OrdinalIgnoreCase.Equals( userName, "ContainerUser" )
+            || StringComparer.OrdinalIgnoreCase.Equals( userName, "ContainerAdministrator" ))
+           && StringComparer.OrdinalIgnoreCase.Equals( userDomainName, "User Manager" );
+
+    private static bool IsRunningInContainerCore( ILogger logger )
     {
+        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+        {
+            if ( IsWindowsContainerAccount( Environment.UserName, Environment.UserDomainName ) )
+            {
+                logger.Trace?.Log( $"Running inside a Windows container, detected from the account '{Environment.UserName}'." );
+
+                return true;
+            }
+
+            logger.Trace?.Log( "Not running inside a Windows container." );
+
+            return false;
+        }
+
+        if ( !RuntimeInformation.IsOSPlatform( OSPlatform.Linux ) )
+        {
+            // There is no container on macOS: a container running on a Mac runs inside a Linux virtual machine,
+            // and the process asking the question is then a Linux one.
+            return false;
+        }
+
         string? ReadFileSafe( string path )
         {
             try

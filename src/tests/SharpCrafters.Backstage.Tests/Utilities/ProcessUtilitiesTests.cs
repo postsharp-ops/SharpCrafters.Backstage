@@ -32,4 +32,38 @@ public sealed class ProcessUtilitiesTests : TestsBase
                 Assert.NotEmpty( p.ProcessName! );
             } );
     }
+
+    [Theory]
+
+    // The two accounts a Windows container runs its processes as.
+    [InlineData( "ContainerUser", "User Manager", true )]
+    [InlineData( "ContainerAdministrator", "User Manager", true )]
+    [InlineData( "containeruser", "user manager", true )]
+
+    // The authority is what tells a container apart from a machine on which somebody created an account of that
+    // name.
+    [InlineData( "ContainerUser", "BUILDAGENT", false )]
+    [InlineData( "ContainerAdministrator", "CONTOSO", false )]
+
+    // Ordinary accounts.
+    [InlineData( "gael", "User Manager", false )]
+    [InlineData( "SYSTEM", "NT AUTHORITY", false )]
+    public void WindowsContainerIsDetectedFromTheAccount( string userName, string userDomainName, bool expected )
+        => Assert.Equal( expected, ProcessUtilities.IsWindowsContainerAccount( userName, userDomainName ) );
+
+    /// <summary>
+    /// Asserts the relation between the two verdicts rather than either of them, because a test cannot put
+    /// itself inside a container. It fails if the container check is ever removed from the unattended
+    /// heuristics, which is what a product relies on when it reports nothing from a container.
+    /// </summary>
+    [Fact]
+    public void ContainerImpliesUnattended()
+    {
+        var loggerFactory = this.ServiceProvider.GetLoggerFactory();
+
+        if ( ProcessUtilities.IsRunningInContainer( loggerFactory ) )
+        {
+            Assert.True( ProcessUtilities.IsCurrentProcessUnattended( loggerFactory ) );
+        }
+    }
 }
