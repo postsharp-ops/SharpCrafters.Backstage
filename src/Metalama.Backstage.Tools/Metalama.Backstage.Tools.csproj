@@ -18,7 +18,9 @@
 
     <ItemGroup>
       <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
-      <PackageReference Include="JetBrains.Annotations" />
+      <!-- Annotations only, and with a sentinel version. PrivateAssets keeps it out of the dependency
+           graph of every consumer of this package, which would otherwise publish it beside their own files. -->
+      <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
       <PackageReference Include="Newtonsoft.Json" VersionOverride="$(NewtonsoftJsonMinVersion)" NoWarn="NU1903" />
     </ItemGroup>
 
