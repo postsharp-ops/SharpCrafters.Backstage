@@ -25,8 +25,14 @@
 
     <ItemGroup>
         <!-- The shared source files travel in the package under the shared directory, so that the projects of the
-             consuming products that compile them by link find them in the package instead of in this repository. -->
-        <None Include="Threading\*.cs" Pack="true" PackagePath="shared\Threading\" />
+             consuming products that compile them by link find them in the package instead of in this repository.
+
+             NamedLockExtensions.cs is excluded, as its own documentation already said it had to be: it reaches the
+             hashing library and the prefix of the product, neither of which a consumer compiling these files by link
+             has, and such a consumer composes its lock names itself. Shipping it made the shared set fail to compile
+             outside this repository, which nothing here noticed, because every project of this repository compiles
+             these files with METALAMA_BACKSTAGE defined. SharedSourcesProbe is what notices it now. -->
+        <None Include="Threading\*.cs" Exclude="Threading\NamedLockExtensions.cs" Pack="true" PackagePath="shared\Threading\" />
         <None Include="Diagnostics\ProcessKind.cs;Diagnostics\ProcessKindDetector.cs" Pack="true" PackagePath="shared\Diagnostics\" />
     </ItemGroup>
 

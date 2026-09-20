@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Compiles the source files that the package ships under shared\ exactly as a consumer outside this repository
+         compiles them: by link, without METALAMA_BACKSTAGE and without HAS_METALAMA_TESTING_HOOKS, so the types are
+         internal and depend on nothing but the base class library.
+
+         It exists because nothing else here checks that. Every project of this repository compiles those files with
+         METALAMA_BACKSTAGE defined, so a file that reaches a Backstage service, or that keeps a public member whose
+         type became internal, compiles here and fails in the consumer that takes it from the package. That is what
+         had happened to NamedLockExtensions.cs, which the package shipped although its own documentation said it
+         could not be shared.
+
+         It builds no product code. It is not packed, not tested and referenced by nothing; failing to compile is the
+         whole of what it does. -->
+
+    <PropertyGroup>
+        <TargetFrameworks>netframework4.7.2;netstandard2.0</TargetFrameworks>
+        <IsPackable>False</IsPackable>
+        <IsTestProject>False</IsTestProject>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>SharpCrafters.Backstage</RootNamespace>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+
+        <!-- The files have no documentation comments to generate a file from, and the assembly is not shipped. -->
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The same set as the shared\ item group of SharpCrafters.Backstage.csproj. The two lists are kept together
+             by the comment there; a file added to one and not to the other is a file that is either shipped and not
+             checked, or checked and not shipped. -->
+        <Compile Include="..\..\SharpCrafters.Backstage\Threading\*.cs"
+                 Exclude="..\..\SharpCrafters.Backstage\Threading\NamedLockExtensions.cs"
+                 LinkBase="Threading" />
+        <Compile Include="..\..\SharpCrafters.Backstage\Diagnostics\ProcessKind.cs;..\..\SharpCrafters.Backstage\Diagnostics\ProcessKindDetector.cs"
+                 LinkBase="Diagnostics" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The one package a consumer needs, for the attributes of the annotations library. The nullable analysis
+             attributes come from the embedded system types of the engineering SDK, which a consumer either imports
+             or declares itself. -->
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
+</Project>
