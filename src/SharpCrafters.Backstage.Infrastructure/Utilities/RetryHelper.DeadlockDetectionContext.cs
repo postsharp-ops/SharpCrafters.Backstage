@@ -17,34 +17,48 @@ public static partial class RetryHelper
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger? _logger;
         private readonly IReadOnlyList<string> _files;
+        private readonly Action<string>? _onFilesLocked;
 
-        public DeadlockDetectionContext( IServiceProvider serviceProvider, ILogger? logger, IReadOnlyList<string> files )
+        public DeadlockDetectionContext(
+            IServiceProvider serviceProvider,
+            ILogger? logger,
+            IReadOnlyList<string> files,
+            Action<string>? onFilesLocked = null )
         {
             this._serviceProvider = serviceProvider;
             this._logger = logger;
             this._files = files;
+            this._onFilesLocked = onFilesLocked;
         }
 
         public void OnRecoverableException( Exception exception )
         {
             var lockingDetection = this._serviceProvider.GetBackstageService<ILockingProcessDetector>();
 
-            if ( lockingDetection != null && this._logger != null )
+            if ( lockingDetection == null || (this._logger == null && this._onFilesLocked == null) )
             {
-                var lockingProcesses = lockingDetection.GetProcessesUsingFiles( this._files );
-
-                if ( lockingProcesses.Count == 0 )
-                {
-                    this._logger.Trace?.Log( "No process locking these files was found." );
-                }
-                else
-                {
-                    this._logger.Warning?.Log(
-                        "The following process(es) are locking these files: " + string.Join(
-                            ", ",
-                            lockingProcesses.Select( p => $"{p.ProcessName} ({p.Id})" ) ) );
-                }
+                return;
             }
+
+            var lockingProcesses = lockingDetection.GetProcessesUsingFiles( this._files );
+
+            if ( lockingProcesses.Count == 0 )
+            {
+                this._logger?.Trace?.Log( "No process locking these files was found." );
+
+                return;
+            }
+
+            var message = "The following process(es) are locking these files: " + string.Join(
+                ", ",
+                lockingProcesses.Select( p => $"{p.ProcessName} ({p.Id})" ) );
+
+            this._logger?.Warning?.Log( message );
+
+            // A product whose diagnostics are not a log reports it itself. It is called once, when the operation
+            // first fails, and not on every attempt, so a caller that turns this into a message for the user does
+            // not produce one per retry.
+            this._onFilesLocked?.Invoke( message );
         }
 
         public void OnFatalException( Exception e )
