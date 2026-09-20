@@ -8,6 +8,7 @@ using PostSharp.Backstage;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Testing;
 using System;
@@ -28,7 +29,9 @@ namespace SharpCrafters.Backstage.Tests.Extensibility;
 /// </remarks>
 public sealed class ProductServiceRegistrationTests
 {
-    private static IServiceProvider BuildServices( SharpCrafters.Backstage.Application.BackstageProduct product )
+    private static IServiceProvider BuildServices(
+        SharpCrafters.Backstage.Application.BackstageProduct product,
+        IEnvironmentVariableProvider? environmentVariableProvider = null )
     {
         var builder = new ServiceCollectionBuilder();
 
@@ -37,6 +40,12 @@ public sealed class ProductServiceRegistrationTests
             {
                 AddLicensing = false, AddSupportServices = false, AddUserInterface = false, AddRssClient = false
             } );
+
+        if ( environmentVariableProvider != null )
+        {
+            // Registered after the services of the product, because the later registration is the one that is resolved.
+            builder.AddSingleton( environmentVariableProvider );
+        }
 
         return builder.ServiceCollection.BuildServiceProvider();
     }
@@ -119,4 +128,51 @@ public sealed class ProductServiceRegistrationTests
     public void AProductCanReplaceTheDefaultAuditKeyProvider()
         => Assert.IsType<PostSharpLicenseAuditKeyProvider>(
             BuildServices( PostSharpProduct.Instance ).GetRequiredBackstageService<ILicenseAuditKeyProvider>() );
+
+    /// <summary>
+    /// An environment that forbids the registry gives the file-based manager, although the product registered a schema
+    /// provider and the platform is Windows.
+    /// </summary>
+    /// <remarks>
+    /// This is for an account that has no access to the registry. Without it the first read of a configuration object
+    /// throws, and a build that would otherwise have succeeded fails over a setting.
+    /// </remarks>
+    [Fact]
+    public void AnEnvironmentThatForbidsTheRegistryGivesTheFileManager()
+    {
+        var environment = new TestEnvironmentVariableProvider();
+
+        environment.Environment[
+                PostSharpProduct.Profile.GetEnvironmentVariableName( RegisterConfigurationServices.RegistryAccessDisabledVariableName )]
+            = "1";
+
+        var configurationManager = BuildServices( PostSharpProduct.Instance, environment ).GetRequiredBackstageService<IConfigurationManager>();
+
+        Assert.IsType<SharpCrafters.Backstage.Configuration.ConfigurationManager>( configurationManager );
+    }
+
+    /// <summary>
+    /// The variable is named after the product, so the one of another product does not forbid the registry here. The
+    /// two products keep separate settings and one of them being forbidden says nothing about the other.
+    /// </summary>
+    [Fact]
+    public void TheVariableOfAnotherProductDoesNotForbidTheRegistry()
+    {
+        var environment = new TestEnvironmentVariableProvider();
+
+        environment.Environment[
+                MetalamaProduct.Profile.GetEnvironmentVariableName( RegisterConfigurationServices.RegistryAccessDisabledVariableName )]
+            = "1";
+
+        var configurationManager = BuildServices( PostSharpProduct.Instance, environment ).GetRequiredBackstageService<IConfigurationManager>();
+
+        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+        {
+            Assert.IsType<RegistryConfigurationManager>( configurationManager );
+        }
+        else
+        {
+            Assert.IsType<SharpCrafters.Backstage.Configuration.ConfigurationManager>( configurationManager );
+        }
+    }
 }
