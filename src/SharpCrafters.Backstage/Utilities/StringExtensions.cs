@@ -6,7 +6,7 @@
 using System;
 #endif
 
-namespace SharpCrafters.Backstage;
+namespace SharpCrafters.Backstage.Utilities;
 
 internal static class StringExtensions
 {

@@ -4,4 +4,13 @@
     <Import Sdk="PostSharp.Engineering.Sdk" Project="TeamCity.targets"/>
     <Import Sdk="PostSharp.Engineering.Sdk" Project="CodeQuality.targets"/>
 
+    <!-- In the Debug configuration, SourceLink.props sets DebugType to embedded, so the compiler writes no separate
+         symbol file and the symbol package has nothing to carry. NuGet accepts such a package as long as it declares
+         dependencies, which is why most of them pack anyway, but a package that deliberately has none - the two
+         Abstractions packages - fails with NU5017. An empty symbol package is of use to nobody, so we produce none.
+         The other configurations write a .pdb and still get their symbol package. -->
+    <PropertyGroup Condition="'$(DebugType)'=='embedded'">
+        <IncludeSymbols>false</IncludeSymbols>
+    </PropertyGroup>
+
 </Project>

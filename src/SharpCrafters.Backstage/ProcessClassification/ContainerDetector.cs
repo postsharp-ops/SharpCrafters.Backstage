@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
