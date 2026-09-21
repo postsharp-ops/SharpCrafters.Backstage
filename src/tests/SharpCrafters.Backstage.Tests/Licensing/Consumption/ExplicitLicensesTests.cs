@@ -174,4 +174,35 @@ public sealed class ExplicitLicensesTests : LicensingTestsBase
 
         Assert.Empty( GetConsideredLicenses( consumer ) );
     }
+
+    /// <summary>
+    /// The message about a requirement that none of the licenses satisfies names them by their display name, which is
+    /// the product and the identifier, and never by their string.
+    /// </summary>
+    /// <remarks>
+    /// This message is reported as a compiler diagnostic, so it reaches build logs, continuous integration output and
+    /// bug reports. A license key is a credential, and an application typically takes it from a secret of a build
+    /// server, so naming the keys here would disclose every key the user holds to everyone who can read a build log.
+    /// </remarks>
+    [Fact]
+    public async Task AMessageAboutAnUnsatisfiedRequirementNamesTheLicensesAndNotTheirStrings()
+    {
+        var messages = new List<string>();
+
+        var consumer = await this.CreateConsumerAsync( Explicitly( (FirstLicense, "the first place"), (SecondLicense, "the second place") ) );
+
+        Assert.False(
+            consumer.TryConsume(
+                new DelegateLicenseRequirement( _ => false ),
+                m => messages.Add( m.Text ),
+                showsToastNotification: false ) );
+
+        var message = Assert.Single( messages );
+
+        foreach ( var license in consumer.Licenses )
+        {
+            Assert.Contains( license.DisplayName, message, StringComparison.Ordinal );
+            Assert.DoesNotContain( license.LicenseString!, message, StringComparison.Ordinal );
+        }
+    }
 }

@@ -73,8 +73,13 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         }
         else
         {
+            // The licenses are named by their display name, which is the product and the identifier of the
+            // license, and never by their string. This message is reported as a compiler diagnostic, so it
+            // reaches build logs, continuous integration output and bug reports, and a license key is a
+            // credential: naming the keys here would disclose every key the user holds to everyone who can
+            // read a build log.
             messageText +=
-                $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.LicenseString ) )}.";
+                $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.DisplayName ) )}.";
 
             messageKind = LicensingMessageKind.RequirementNotSatisfied;
         }
