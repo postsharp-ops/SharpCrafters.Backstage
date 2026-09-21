@@ -22,8 +22,20 @@ namespace SharpCrafters.Backstage.Infrastructure
     /// <summary>
     /// Provides access to file system using API in <see cref="System.IO" /> namespace.
     /// </summary>
-    internal sealed class FileSystem : IFileSystem
+    public sealed class FileSystem : IFileSystem
     {
+        /// <summary>
+        /// Gets a file system that a process which started no services can use.
+        /// </summary>
+        /// <remarks>
+        /// Every member works except <see cref="GetTempFileName"/>, which needs the standard directories and
+        /// therefore a service provider. It exists because the layers above have consumers that are not hosts --
+        /// build tools, test programs and the like -- and requiring them to start the services in order to read a
+        /// file is the wrong price. A process that does have a provider keeps resolving <see cref="IFileSystem"/>
+        /// from it, so a test can still substitute one.
+        /// </remarks>
+        public static IFileSystem Default { get; } = new FileSystem();
+
         private readonly IServiceProvider? _serviceProvider;
 
         /// <summary>
