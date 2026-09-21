@@ -13,7 +13,6 @@ using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
-using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Backstage.VersionControl;
 using System;
 using System.Collections.Immutable;

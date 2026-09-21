@@ -9,7 +9,6 @@ using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;
-using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;

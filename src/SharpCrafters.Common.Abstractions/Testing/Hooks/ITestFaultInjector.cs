@@ -17,8 +17,11 @@ namespace SharpCrafters.Common.Testing.Hooks;
 /// The names of the injection points are declared by each layer, close to the code that reaches them, because they
 /// are meaningful only there.
 /// </para>
+/// <para>
+/// The implementation a test registers is <c>TestFaultInjector</c>, in <c>SharpCrafters.Common</c>. It is named here
+/// rather than referenced, because that package references this one and not the other way round.
+/// </para>
 /// </remarks>
-/// <seealso cref="TestFaultInjector"/>
 public interface ITestFaultInjector
 {
     /// <summary>

@@ -22,8 +22,11 @@ namespace SharpCrafters.Common.Testing.Hooks;
 /// Add a synchronization point only where a race is otherwise not reproducible: each one is production code that
 /// exists for a test, so it must be justified by a defect that escaped review.
 /// </para>
+/// <para>
+/// The implementation a test registers is <c>TestSynchronizationProvider</c>, in <c>SharpCrafters.Common</c>. It is
+/// named here rather than referenced, because that package references this one and not the other way round.
+/// </para>
 /// </remarks>
-/// <seealso cref="TestSynchronizationProvider"/>
 public interface ITestSynchronizationProvider
 {
     /// <summary>
