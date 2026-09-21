@@ -6,7 +6,6 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Threading;
-using SharpCrafters.Common;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;

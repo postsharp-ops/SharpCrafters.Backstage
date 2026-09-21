@@ -4,7 +4,6 @@
 
 using SharpCrafters.Backstage.Licensing.Registration;
 using PostSharp.Backstage;
-using PostSharp.Backstage.PostSharp;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Licensing;
 using System.Linq;

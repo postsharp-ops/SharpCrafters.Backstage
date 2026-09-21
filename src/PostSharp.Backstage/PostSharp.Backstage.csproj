@@ -29,4 +29,8 @@
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="PostSharp\" />
+    </ItemGroup>
+
 </Project>

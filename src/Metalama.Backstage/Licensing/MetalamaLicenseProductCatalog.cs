@@ -9,7 +9,7 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
 
-namespace Metalama.Backstage.Metalama;
+namespace Metalama.Backstage.Licensing;
 
 /// <summary>
 /// The catalog of the products of PostSharp Technologies as consumed by the Metalama product family: the Metalama

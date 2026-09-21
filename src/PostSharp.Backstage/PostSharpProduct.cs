@@ -17,7 +17,7 @@ using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
 
-namespace PostSharp.Backstage.PostSharp;
+namespace PostSharp.Backstage;
 
 /// <summary>
 /// The values that configure the Backstage services for the PostSharp product family: the product profile, the web

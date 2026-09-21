@@ -3,7 +3,6 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Threading;
-using SharpCrafters.Common;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
