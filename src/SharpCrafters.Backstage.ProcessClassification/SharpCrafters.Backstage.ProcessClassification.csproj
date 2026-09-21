@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="JetBrains.Annotations" />
+      <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
