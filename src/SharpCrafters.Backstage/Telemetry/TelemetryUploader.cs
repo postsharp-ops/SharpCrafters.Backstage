@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common.Testing.Hooks;

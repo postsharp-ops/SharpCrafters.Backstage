@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Immutable;
 using System.Globalization;

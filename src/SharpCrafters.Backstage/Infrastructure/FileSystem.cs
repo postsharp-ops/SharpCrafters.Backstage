@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common.Testing.Hooks;
 using System;

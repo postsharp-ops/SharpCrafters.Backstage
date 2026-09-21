@@ -4,15 +4,12 @@
 
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.FileLocks;
 
 public static partial class RetryHelper
 {
-    private class DeadlockDetectionContext
+    private sealed class DeadlockDetectionContext
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger? _logger;

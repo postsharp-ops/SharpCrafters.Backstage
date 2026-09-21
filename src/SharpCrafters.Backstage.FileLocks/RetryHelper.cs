@@ -2,15 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using JetBrains.Annotations;
 using SharpCrafters.Backstage.Diagnostics;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Threading;
 
-namespace SharpCrafters.Backstage.Utilities
+namespace SharpCrafters.Backstage.FileLocks
 {
     /// <summary>
     /// Reports an attempt that failed and is about to be retried, so that a caller can decide for itself when a
@@ -23,10 +18,8 @@ namespace SharpCrafters.Backstage.Utilities
     /// It is called on every retry, so a caller that reports on every call produces one message per attempt. A
     /// caller that wants one message reports on a threshold of its own, of either argument.
     /// </remarks>
-    [PublicAPI]
     public delegate void RetryReporter( int attempts, TimeSpan elapsed, Exception exception );
 
-    [PublicAPI]
     public static partial class RetryHelper
     {
         /// <summary>

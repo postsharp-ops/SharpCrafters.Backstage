@@ -2,15 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using JetBrains.Annotations;
 using SharpCrafters.Backstage.Diagnostics;
-using System;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Utilities
+namespace SharpCrafters.Backstage.FileLocks
 {
     public static partial class RetryHelper
     {
@@ -22,7 +17,6 @@ namespace SharpCrafters.Backstage.Utilities
         /// The waits between the attempts are asynchronous, so a caller on a thread that must not block, or a caller
         /// that has given a cancellation token, is not held on a blocking sleep.
         /// </remarks>
-        [PublicAPI]
         [ExcludeFromCodeCoverage]
         public static async Task RetryAsync(
             Func<Task> operation,

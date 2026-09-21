@@ -10,19 +10,14 @@
 #pragma warning disable IDE1006 // Inconsistent naming
 #pragma warning disable SA1310
 
-using JetBrains.Annotations;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.FileLocks;
 
-[PublicAPI]
 public sealed class LockingProcessDetector : ILockingProcessDetector
 {
     public static bool IsSupported => RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) && Environment.OSVersion.Version.Major >= 6;

@@ -26,6 +26,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\SharpCrafters.Backstage.ProcessClassification\SharpCrafters.Backstage.ProcessClassification.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage.FileLocks\SharpCrafters.Backstage.FileLocks.csproj" />
         <ProjectReference Include="..\SharpCrafters.Backstage.Threading\SharpCrafters.Backstage.Threading.csproj" />
         <ProjectReference Include="..\SharpCrafters.Common\SharpCrafters.Common.csproj" />
     </ItemGroup>

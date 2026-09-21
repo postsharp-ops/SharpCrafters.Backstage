@@ -63,6 +63,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Common.Abstra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.ProcessClassification", "src\SharpCrafters.Backstage.ProcessClassification\SharpCrafters.Backstage.ProcessClassification.csproj", "{A2D693F3-8BC1-4148-95E5-AA5CBB43AD28}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.FileLocks", "src\SharpCrafters.Backstage.FileLocks\SharpCrafters.Backstage.FileLocks.csproj", "{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -409,6 +411,18 @@ Global
 		{A2D693F3-8BC1-4148-95E5-AA5CBB43AD28}.Release|x64.Build.0 = Release|Any CPU
 		{A2D693F3-8BC1-4148-95E5-AA5CBB43AD28}.Release|x86.ActiveCfg = Release|Any CPU
 		{A2D693F3-8BC1-4148-95E5-AA5CBB43AD28}.Release|x86.Build.0 = Release|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Debug|x64.Build.0 = Debug|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Debug|x86.Build.0 = Debug|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Release|x64.ActiveCfg = Release|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Release|x64.Build.0 = Release|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Release|x86.ActiveCfg = Release|Any CPU
+		{7C27875F-DE63-4E41-B1EA-2C04CCB6BB2E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
