@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.IO;
 using System.Text.Json.Serialization.Metadata;

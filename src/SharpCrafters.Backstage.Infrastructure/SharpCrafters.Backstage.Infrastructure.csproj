@@ -39,14 +39,11 @@
              NamedLockExtensions.cs is deliberately absent, from this assembly as well as from this list: it reaches
              the hashing library and the prefix of a product, and a consumer composes its lock names itself. -->
         <None Include="Threading\*.cs" Pack="true" PackagePath="shared\Threading\" />
-        <None Include="Diagnostics\ProcessKind.cs;Diagnostics\ProcessKindDetector.cs" Pack="true" PackagePath="shared\Diagnostics\" />
+        <None Include="Infrastructure\ProcessClassification\ProcessKind.cs;Infrastructure\ProcessClassification\ProcessKindDetector.cs" Pack="true" PackagePath="shared\Infrastructure\ProcessClassification\" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\SharpCrafters.Common\SharpCrafters.Common.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
     </ItemGroup>
 

@@ -3,13 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 /// <summary>
 /// Supplies the facts from which the detection methods of <see cref="ContinuousIntegrationDetector"/> recognize a

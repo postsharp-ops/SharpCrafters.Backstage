@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using PostSharp.Backstage.Licensing;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Json.Serialization;

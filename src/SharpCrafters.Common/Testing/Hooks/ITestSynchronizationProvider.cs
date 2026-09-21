@@ -5,7 +5,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Common;
+namespace SharpCrafters.Common.Testing.Hooks;
 
 /// <summary>
 /// Provides synchronization points, so that a test can drive concurrent code into a specific interleaving instead of

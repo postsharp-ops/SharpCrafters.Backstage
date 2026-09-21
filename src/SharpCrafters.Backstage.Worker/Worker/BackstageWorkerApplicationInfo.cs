@@ -5,9 +5,10 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System.Reflection;
 
-namespace SharpCrafters.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker.Worker;
 
 /// <summary>
 /// The description of the worker process of a product. The executable of the product derives a class from it that

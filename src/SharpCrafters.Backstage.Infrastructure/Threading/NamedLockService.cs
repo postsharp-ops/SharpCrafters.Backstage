@@ -3,9 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-#if HAS_METALAMA_TESTING_HOOKS
-using SharpCrafters.Common;
-#endif
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,6 +11,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+
+#if METALAMA_BACKSTAGE
+using SharpCrafters.Common;
+#endif
+
 
 namespace SharpCrafters.Backstage.Threading;
 

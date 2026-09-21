@@ -4,6 +4,7 @@
 
 using PostSharp.Backstage;
 using PostSharp.Backstage.Configuration;
+using PostSharp.Backstage.Licensing;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;

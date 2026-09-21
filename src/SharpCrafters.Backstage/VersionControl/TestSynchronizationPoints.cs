@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System.Globalization;
 
 namespace SharpCrafters.Backstage.VersionControl;

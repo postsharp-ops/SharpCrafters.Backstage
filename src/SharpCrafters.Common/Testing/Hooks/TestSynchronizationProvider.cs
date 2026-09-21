@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Common;
+namespace SharpCrafters.Common.Testing.Hooks;
 
 /// <summary>
 /// The default implementation of <see cref="ITestSynchronizationProvider"/>. It lets a test hold the code under test

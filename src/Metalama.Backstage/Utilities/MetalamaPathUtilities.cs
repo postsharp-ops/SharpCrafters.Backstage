@@ -11,7 +11,7 @@ using SharpCrafters.Backstage.Utilities;
 using System;
 using System.IO;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Utilities;
 
 [PublicAPI]
 public static class MetalamaPathUtilities

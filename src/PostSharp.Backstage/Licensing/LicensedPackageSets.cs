@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// The sets of packages that a product grants, and the test by which a set satisfies a requirement.

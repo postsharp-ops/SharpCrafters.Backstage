@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 // ReSharper disable RedundantLinebreak
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Licensing.Consumption.Requirements;
 
 public class MetalamaExtensionLicenseRequirement : LicenseRequirement
 {

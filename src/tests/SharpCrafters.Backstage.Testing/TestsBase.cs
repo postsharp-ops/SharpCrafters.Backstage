@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using Metalama.Backstage;
+using Metalama.Backstage.Metalama;
 using Metalama.Backstage.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
-using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System.Reflection;
 
 namespace SharpCrafters.Backstage.Windows;

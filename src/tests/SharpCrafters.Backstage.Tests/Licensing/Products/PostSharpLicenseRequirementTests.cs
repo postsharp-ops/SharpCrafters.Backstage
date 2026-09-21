@@ -3,6 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using PostSharp.Backstage;
+using PostSharp.Backstage.Licensing;
+using PostSharp.Backstage.PostSharp;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Requirements;
 using SharpCrafters.Backstage.Testing;

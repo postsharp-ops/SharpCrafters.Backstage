@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Metalama.Backstage;
+using Metalama.Backstage.Metalama;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
@@ -10,6 +11,7 @@ using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.PostSharp;
 
 /// <summary>
 /// PostSharp Essentials, which is given to everyone.

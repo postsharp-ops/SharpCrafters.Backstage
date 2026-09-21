@@ -34,8 +34,8 @@
              are kept together by the comment there; a file in one and not in the other is a file that is either
              shipped and not checked, or checked and not shipped. -->
         <Compile Include="..\..\SharpCrafters.Backstage.Infrastructure\Threading\*.cs" LinkBase="Threading" />
-        <Compile Include="..\..\SharpCrafters.Backstage.Infrastructure\Diagnostics\ProcessKind.cs;..\..\SharpCrafters.Backstage.Infrastructure\Diagnostics\ProcessKindDetector.cs"
-                 LinkBase="Diagnostics" />
+        <Compile Include="..\..\SharpCrafters.Backstage.Infrastructure\Infrastructure\ProcessClassification\ProcessKind.cs;..\..\SharpCrafters.Backstage.Infrastructure\Infrastructure\ProcessClassification\ProcessKindDetector.cs"
+                 LinkBase="Infrastructure\ProcessClassification" />
     </ItemGroup>
 
     <ItemGroup>

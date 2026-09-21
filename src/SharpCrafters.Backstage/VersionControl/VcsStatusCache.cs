@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

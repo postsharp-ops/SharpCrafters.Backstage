@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System;
 using System.Collections.Immutable;
 

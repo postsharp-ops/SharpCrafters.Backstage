@@ -7,7 +7,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
-namespace SharpCrafters.Common;
+namespace SharpCrafters.Common.Testing.Hooks;
 
 /// <summary>
 /// The default implementation of <see cref="ITestFaultInjector"/>. A test arms a named injection point with the

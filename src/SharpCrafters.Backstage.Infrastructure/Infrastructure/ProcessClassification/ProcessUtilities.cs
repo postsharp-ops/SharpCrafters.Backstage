@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 public static class ProcessUtilities
 {
@@ -33,7 +32,7 @@ public static class ProcessUtilities
     /// <summary>
     /// Gets the kind of the current process. The value is computed once, in this property initializer, and is then
     /// cached for the lifetime of the process. The table itself is in
-    /// <see cref="Diagnostics.ProcessKindDetector"/>, which <c>Metalama.Framework.CompilerExtensions</c> also
+    /// <see cref="ProcessKindDetector"/>, which <c>Metalama.Framework.CompilerExtensions</c> also
     /// compiles.
     /// </summary>
     [PublicAPI]

@@ -10,11 +10,7 @@ using System;
 // symbol selects the namespace, so that the two assemblies do not declare a type of the same full name:
 // ResourceExtractor loads Metalama.Backstage into the process that already contains
 // Metalama.Framework.CompilerExtensions.
-#if METALAMA_BACKSTAGE
-namespace SharpCrafters.Backstage.Diagnostics;
-#else
-namespace Metalama.Framework.CompilerExtensions;
-#endif
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 /// <summary>
 /// Classifies a process into a <see cref="ProcessKind"/> from its name and its command line.

@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace SharpCrafters.Backstage.Utilities
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification
 {
     [PublicAPI]
     public sealed class ProcessInfo

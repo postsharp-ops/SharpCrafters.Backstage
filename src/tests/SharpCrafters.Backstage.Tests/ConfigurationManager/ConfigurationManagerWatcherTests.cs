@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;

@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Metalama;
 
 /// <summary>
 /// Metalama Community, which is given on conditions and must be renewed every year.

@@ -3,6 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Metalama.Backstage;
+using Metalama.Backstage.Licensing.Consumption.Requirements;
+using Metalama.Backstage.Metalama;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Requirements;

@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Configuration;
 using System.Collections.Immutable;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// How many lines of code each assembly has had enhanced under the free edition, which is what the cap of that

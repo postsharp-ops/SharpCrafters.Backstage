@@ -6,7 +6,7 @@ using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Metalama;
 
 /// <summary>
 /// Metalama Free, the edition that Metalama 2025.0 and earlier issued.

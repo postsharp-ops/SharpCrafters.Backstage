@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.IO;
 using System.Linq;

@@ -3,8 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System.Runtime.InteropServices;
 
 // ReSharper disable InconsistentNaming
@@ -36,7 +36,7 @@ public interface IRuntimeInformation : IBackstageService
     Architecture OSArchitecture { get; }
 
     /// <summary>
-    /// Gets the kind of the current process (e.g. <see cref="Diagnostics.ProcessKind.Rider"/>),
+    /// Gets the kind of the current process (e.g. <see cref="ProcessClassification.ProcessKind.Rider"/>),
     /// abstracted so a fake can simulate a host without depending on the real process name.
     /// </summary>
     ProcessKind ProcessKind { get; }
@@ -46,7 +46,7 @@ public interface IRuntimeInformation : IBackstageService
     /// </summary>
     /// <remarks>
     /// A container is one of the reasons why a process is unattended, and
-    /// <see cref="SharpCrafters.Backstage.Application.IApplicationInfo.IsUnattendedProcess"/> is the question most
+    /// <c>IApplicationInfo.IsUnattendedProcess</c> is the question most
     /// callers have. This one is here because a caller may need the container itself: a Windows container has no
     /// just-in-time debugger, whether or not somebody is watching the build.
     /// </remarks>

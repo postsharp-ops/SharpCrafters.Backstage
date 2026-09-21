@@ -9,7 +9,7 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Immutable;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.PostSharp;
 
 /// <summary>
 /// The catalog of the products of PostSharp Technologies as consumed by the PostSharp product family: the PostSharp

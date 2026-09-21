@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using System;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// The requirements that PostSharp asks for. There is one per package, because a requirement names exactly one.

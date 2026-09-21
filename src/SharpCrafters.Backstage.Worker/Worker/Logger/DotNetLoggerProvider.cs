@@ -9,7 +9,7 @@ using System;
 using IDotNetLogger = Microsoft.Extensions.Logging.ILogger;
 using IMetalamaLogger = SharpCrafters.Backstage.Diagnostics.ILogger;
 
-namespace SharpCrafters.Backstage.Worker.Logger;
+namespace SharpCrafters.Backstage.Worker.Worker.Logger;
 
 [PublicAPI]
 public class DotNetLoggerProvider : ILoggerProvider, IDotNetLogger

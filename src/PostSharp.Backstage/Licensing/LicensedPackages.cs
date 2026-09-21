@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using System;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// The packages of PostSharp that a license grants, and that a feature requires.

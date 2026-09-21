@@ -3,16 +3,17 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using Metalama.Backstage.UserInterface;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
-using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Metalama;
 
 /// <summary>
 /// The values that configure the Backstage services for the Metalama product family: the product profile, the web

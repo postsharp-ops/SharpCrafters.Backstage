@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using PostSharp.Backstage;
+using PostSharp.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing;
 using Xunit;
 

@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 internal sealed class ParentProcessSearchLinux : ParentProcessSearchBase<int>
 {

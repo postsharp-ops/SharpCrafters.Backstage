@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

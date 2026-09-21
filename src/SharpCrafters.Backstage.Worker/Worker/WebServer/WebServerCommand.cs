@@ -13,7 +13,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
-using SharpCrafters.Backstage.Worker.Logger;
+using SharpCrafters.Backstage.Worker.Worker.Logger;
 using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Worker.WebServer;
+namespace SharpCrafters.Backstage.Worker.Worker.WebServer;
 
 [UsedImplicitly]
 internal class WebServerCommand : AsyncCommand<WebServerCommandSettings>

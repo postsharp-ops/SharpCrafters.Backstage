@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;

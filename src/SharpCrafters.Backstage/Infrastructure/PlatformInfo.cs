@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System;
 using System.Collections.Generic;
 using System.IO;

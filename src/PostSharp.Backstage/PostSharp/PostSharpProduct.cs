@@ -4,6 +4,8 @@
 
 using JetBrains.Annotations;
 using PostSharp.Backstage.Configuration;
+using PostSharp.Backstage.Licensing;
+using PostSharp.Backstage.UserInterface;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
@@ -15,7 +17,7 @@ using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.PostSharp;
 
 /// <summary>
 /// The values that configure the Backstage services for the PostSharp product family: the product profile, the web

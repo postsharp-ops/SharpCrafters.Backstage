@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using Metalama.Backstage;
+using Metalama.Backstage.Metalama;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Testing;

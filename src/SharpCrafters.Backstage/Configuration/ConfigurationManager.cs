@@ -10,6 +10,7 @@ using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

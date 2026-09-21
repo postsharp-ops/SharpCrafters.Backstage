@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 /// <summary>
 /// Recognizes the continuous integration server on which the current process runs.

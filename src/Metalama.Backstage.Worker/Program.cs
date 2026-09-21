@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Worker;
+using SharpCrafters.Backstage.Worker.Worker;
 using System.Threading.Tasks;
 
 namespace Metalama.Backstage;
