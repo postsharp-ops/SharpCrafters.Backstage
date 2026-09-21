@@ -14,11 +14,6 @@ using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
 
-internal interface IUnattendedProcessDetector : IBackstageService
-{
-    bool IsCurrentProcessUnattended { get; }
-}
-
 internal class UnattendedProcessDetector : IUnattendedProcessDetector
 {
     /// <summary>

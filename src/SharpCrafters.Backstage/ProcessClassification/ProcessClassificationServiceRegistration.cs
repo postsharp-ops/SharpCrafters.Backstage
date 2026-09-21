@@ -6,7 +6,7 @@ using SharpCrafters.Backstage.Extensibility;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
 
-internal static class ProcessClassificationServiceRegistration
+public static class ProcessClassificationServiceRegistration
 {
     public static ServiceProviderBuilder AddProcessClassificationServices( this ServiceProviderBuilder builder )
     {

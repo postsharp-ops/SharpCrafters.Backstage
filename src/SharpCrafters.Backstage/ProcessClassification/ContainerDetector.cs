@@ -3,18 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Utilities;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
-
-internal interface IContainerDetector : IBackstageService
-{
-    bool IsRunningInContainer { get; }
-}
 
 internal class ContainerDetector : IContainerDetector
 {
