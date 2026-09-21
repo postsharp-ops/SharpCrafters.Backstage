@@ -8,7 +8,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 // ReSharper disable StringLiteralTypo
 // ReSharper disable FieldCanBeMadeReadOnly.Local

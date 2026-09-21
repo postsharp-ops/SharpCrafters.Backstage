@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Diagnostics;
 using System.Collections.Generic;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 internal abstract class ParentProcessSearchBase
 {

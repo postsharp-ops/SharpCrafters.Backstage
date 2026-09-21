@@ -10,6 +10,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System;
 
 #if PROFILING_ENABLED

@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tests.Extensibility;

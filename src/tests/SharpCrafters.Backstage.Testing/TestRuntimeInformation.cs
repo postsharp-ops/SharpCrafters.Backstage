@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.Testing;

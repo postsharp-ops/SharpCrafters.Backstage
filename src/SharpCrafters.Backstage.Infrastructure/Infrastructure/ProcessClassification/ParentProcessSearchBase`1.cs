@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Utilities;
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 #pragma warning disable SA1649 // File name should match first type name
 internal abstract class ParentProcessSearchBase<TProcessHandle> : ParentProcessSearchBase

@@ -5,6 +5,7 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Immutable;

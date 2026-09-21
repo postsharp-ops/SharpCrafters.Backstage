@@ -17,7 +17,7 @@ using System.Threading;
 // ReSharper disable InconsistentNaming
 // ReSharper disable MemberHidesStaticFromOuterClass
 
-namespace SharpCrafters.Backstage.Threading;
+namespace SharpCrafters.Backstage;
 
 // This code is mostly taken from https://github.com/dotnet/runtime/blob/770df102/src/libraries/System.Threading.AccessControl/src/System/Threading/MutexAcl.cs.
 // The main difference is that Create takes mutexSecurity as an SDDL string instead of a MutexSecurity object.

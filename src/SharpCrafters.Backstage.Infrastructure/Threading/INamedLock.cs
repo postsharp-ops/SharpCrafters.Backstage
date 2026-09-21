@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
-namespace SharpCrafters.Backstage.Threading;
+namespace SharpCrafters.Backstage;
 
 /// <summary>
 /// Represents a named lock created by <see cref="INamedLockService.GetLock"/>.

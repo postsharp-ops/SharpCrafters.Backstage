@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;

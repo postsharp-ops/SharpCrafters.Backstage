@@ -6,11 +6,7 @@
 // ProcessKindDetector for the reason. The METALAMA_BACKSTAGE compilation symbol selects the namespace, so that the
 // two assemblies do not declare a type of the same full name: ResourceExtractor extracts Metalama.Backstage and
 // loads it into the process that already contains Metalama.Framework.CompilerExtensions.
-#if METALAMA_BACKSTAGE
-namespace SharpCrafters.Backstage.Diagnostics;
-#else
-namespace Metalama.Framework.CompilerExtensions;
-#endif
+namespace SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 
 // ReSharper disable UnusedMember.Global
 

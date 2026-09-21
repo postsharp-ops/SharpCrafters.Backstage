@@ -5,6 +5,7 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using System.Runtime.InteropServices;
 
 // ReSharper disable InconsistentNaming
@@ -36,7 +37,7 @@ public interface IRuntimeInformation : IBackstageService
     Architecture OSArchitecture { get; }
 
     /// <summary>
-    /// Gets the kind of the current process (e.g. <see cref="Diagnostics.ProcessKind.Rider"/>),
+    /// Gets the kind of the current process (e.g. <see cref="ProcessClassification.ProcessKind.Rider"/>),
     /// abstracted so a fake can simulate a host without depending on the real process name.
     /// </summary>
     ProcessKind ProcessKind { get; }

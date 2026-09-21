@@ -3,13 +3,13 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using System;
+using System.Threading;
 #if METALAMA_BACKSTAGE
 using SharpCrafters.Backstage.Extensibility;
 #endif
-using System;
-using System.Threading;
 
-namespace SharpCrafters.Backstage.Threading;
+namespace SharpCrafters.Backstage;
 
 /// <summary>
 /// Creates locks that are identified by a name and that, when the operating system permits it, are shared by all

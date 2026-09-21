@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Testing;
 using System.Collections.Immutable;
