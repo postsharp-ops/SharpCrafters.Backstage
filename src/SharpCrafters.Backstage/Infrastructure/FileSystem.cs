@@ -4,7 +4,6 @@
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Utilities;
-using SharpCrafters.Common;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
@@ -408,7 +407,6 @@ namespace SharpCrafters.Backstage.Infrastructure
         }
 
 #if !NET5_0_OR_GREATER
-
         /// <summary>
         /// Reads a text file without blocking the calling thread on the platforms where <c>File.ReadAllTextAsync</c>
         /// does not exist. The stream is opened with <see cref="FileOptions.Asynchronous"/>, otherwise the read would

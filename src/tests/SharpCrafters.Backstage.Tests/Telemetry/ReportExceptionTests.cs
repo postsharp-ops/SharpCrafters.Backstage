@@ -435,14 +435,16 @@ public sealed class ReportExceptionTests : TestsBase
     [Fact]
     public void ExceptionsAreNotReportedWhenOptOutEnvironmentVariableIsSet()
     {
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] = "true";
+        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] =
+            "true";
+
         this.AssertReportingDisabled();
     }
 
     [Fact]
     public void ExceptionsAreNotReportedForUnattendedBuild()
     {
-        this.ApplicationInfo = new TestApplicationInfo() { IsUnattendedProcess = true };
+        this.UnattendedProcessDetector.IsCurrentProcessUnattended = true;
         this.AssertReportingDisabled();
     }
 

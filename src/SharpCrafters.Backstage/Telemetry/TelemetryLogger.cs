@@ -33,7 +33,7 @@ internal sealed class TelemetryLogger : IBackstageService
         this._logsDirectory = serviceProvider.GetRequiredBackstageService<IStandardDirectories>().TelemetryLogsDirectory;
         this._fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(TelemetryLogger) );
-        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         this._source = $"{applicationInfo.Name} {applicationInfo.PackageVersion}";
     }
 

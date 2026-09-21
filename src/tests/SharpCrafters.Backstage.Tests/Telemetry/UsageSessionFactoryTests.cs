@@ -142,14 +142,16 @@ public sealed class UsageSessionFactoryTests : TestsBase
     [Fact]
     public void UsageIsNotReportedWhenOptOutEnvironmentVariableIsSet()
     {
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] = "true";
+        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] =
+            "true";
+
         this.AssertReportingDisabled();
     }
 
     [Fact]
     public void UsageIsNotReportedForUnattendedBuild()
     {
-        this._applicationInfo = new TestApplicationInfo() { IsUnattendedProcess = true };
+        this.UnattendedProcessDetector.IsCurrentProcessUnattended = true;
 
         this.AssertReportingDisabled();
     }

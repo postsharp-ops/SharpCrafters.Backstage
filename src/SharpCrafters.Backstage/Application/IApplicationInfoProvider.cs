@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.ProcessClassification;
 
 namespace SharpCrafters.Backstage.Application
 {
@@ -10,6 +11,8 @@ namespace SharpCrafters.Backstage.Application
     // TODO: Split IApplicationInfo to application, component and process info.
     public interface IApplicationInfoProvider : IBackstageService
     {
-        IApplicationInfo CurrentApplication { get; }
+        IApplicationInfo Application { get; }
+
+        ProcessKind ProcessKind { get; }
     }
 }

@@ -38,7 +38,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
     public LicenseRegistrationService( IServiceProvider serviceProvider )
     {
         this._serviceProvider = serviceProvider;
-        this._currentVersion = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication.GetLicensingVersion();
+        this._currentVersion = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application.GetLicensingVersion();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(LicenseRegistrationService) );
         this._userDeviceDetectionService = serviceProvider.GetRequiredBackstageService<IUserDeviceDetectionService>();
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
@@ -140,8 +140,7 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
 
         if ( this.RegisteredLicenseServerUrl is not { } licenseServerUrl )
         {
-            return LicenseRegistrationResult.Failure(
-                "No license server is registered. Use the 'register' command with the URL of a license server." );
+            return LicenseRegistrationResult.Failure( "No license server is registered. Use the 'register' command with the URL of a license server." );
         }
 
         // The very licence a build would use, resolved the way a build resolves it, so that what the user sees is what

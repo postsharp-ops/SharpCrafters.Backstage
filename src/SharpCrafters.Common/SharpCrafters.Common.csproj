@@ -25,4 +25,8 @@
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\SharpCrafters.Common.Abstractions\SharpCrafters.Common.Abstractions.csproj" />
+    </ItemGroup>
+
 </Project>

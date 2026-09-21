@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.Utilities;
-using SharpCrafters.Common;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
@@ -65,6 +64,7 @@ internal sealed class VcsStatusCache
     /// normally <see langword="null"/>.
     /// </summary>
     private readonly ITestSynchronizationProvider? _testSynchronizationProvider;
+
     private readonly ConcurrentDictionary<string, VcsStatusRecord> _memory = new( StringComparer.OrdinalIgnoreCase );
     private readonly Lazy<string?> _directory;
 

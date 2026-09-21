@@ -25,7 +25,8 @@ public sealed class TelemetryContextTests : TestsBase
 
     public TelemetryContextTests( ITestOutputHelper logger ) : base( logger, new TestApplicationInfo { IsTelemetryEnabled = true } ) { }
 
-    protected override void ConfigureServices( ServiceProviderBuilder services ) => services.AddTelemetryServices( this.InitializationOptions.Product.TelemetryOptions );
+    protected override void ConfigureServices( ServiceProviderBuilder services )
+        => services.AddTelemetryServices( this.InitializationOptions.Product.TelemetryOptions );
 
     private ITelemetryService TelemetryService => this.ServiceProvider.GetRequiredBackstageService<ITelemetryService>();
 
@@ -146,7 +147,9 @@ public sealed class TelemetryContextTests : TestsBase
     public void RepositoryOptIn_DoesNotOverrideEnvironmentVariableOptOut()
     {
         // The environment variable keeps absolute priority: an explicit repository opt-in cannot re-enable telemetry.
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] = "1";
+        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] =
+            "1";
+
         this.CreateRepository( telemetryEnabled: true );
 
         Assert.Equal(
@@ -286,7 +289,9 @@ public sealed class TelemetryContextTests : TestsBase
     public void Reason_EnvironmentVariableOptOut()
     {
         // The repository does not opt out, so the reason comes from the env-var gate resolved by the configuration service.
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] = "1";
+        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] =
+            "1";
+
         this.CreateRepository( telemetryEnabled: true );
 
         var (consent, reason) = this.TelemetryService.GetPolicy( _projectDirectory ).GetConsentAndReason( TelemetryScenario.Usage );
@@ -311,7 +316,8 @@ public sealed class TelemetryContextTests : TestsBase
     [Fact]
     public void Reason_UnattendedProcess()
     {
-        this.ApplicationInfo = new TestApplicationInfo { IsTelemetryEnabled = true, IsUnattendedProcess = true };
+        this.ApplicationInfo = new TestApplicationInfo { IsTelemetryEnabled = true };
+        this.UnattendedProcessDetector.IsCurrentProcessUnattended = true;
         this.CreateRepository( telemetryEnabled: null );
 
         var (consent, reason) = this.TelemetryService.GetPolicy( _projectDirectory ).GetConsentAndReason( TelemetryScenario.Usage );

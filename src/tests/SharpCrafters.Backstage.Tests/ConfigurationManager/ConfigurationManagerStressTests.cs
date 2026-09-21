@@ -134,6 +134,7 @@ public sealed class ConfigurationManagerStressTests : IDisposable
     {
         var services = new ServiceCollection();
 
+        services.AddSingleton<INamedLockServiceEnvironment>( MetalamaProduct.Profile );
         services.AddSingleton<IFileSystem>( new FileSystem() );
         services.AddSingleton<IDateTimeProvider>( new TestDateTimeProvider() );
         services.AddSingleton<IEnvironmentVariableProvider>( new EnvironmentVariableProvider() );
@@ -144,7 +145,7 @@ public sealed class ConfigurationManagerStressTests : IDisposable
 
         // The real service and not the substitute, because this test uses the real file system and therefore has to
         // exclude the other processes of the machine exactly as the product does.
-        services.AddSingleton<INamedLockService>( new NamedLockService() );
+        services.AddSingleton<INamedLockService>( serviceProvider => new NamedLockService( serviceProvider ) );
 
         services.AddSingleton<IJsonSerializationService>(
             _ => new JsonSerializationService( new IJsonTypeInfoResolver[] { TestConfigurationJsonContext.Default } ) );
@@ -230,8 +231,7 @@ public sealed class ConfigurationManagerStressTests : IDisposable
     /// <param name="workerId">The identifier of the worker.</param>
     /// <param name="iteration">The number of the attempt within the worker.</param>
     /// <returns>The mark.</returns>
-    private static string FormatMark( int workerId, int iteration )
-        => string.Format( CultureInfo.InvariantCulture, "w{0}:{1};", workerId, iteration );
+    private static string FormatMark( int workerId, int iteration ) => string.Format( CultureInfo.InvariantCulture, "w{0}:{1};", workerId, iteration );
 
     /// <summary>
     /// Verifies that the file holds exactly the marks of the accepted attempts, once each.

@@ -74,12 +74,13 @@ internal sealed class LocalExceptionReporter : IBackstageService
                 exceptionText.AppendLine( $"{name}: {value}" );
             }
 
-            AppendLineSafe( $"{this._productName} Application", () => $"{this._applicationInfoProvider.CurrentApplication.Name}" );
-            AppendLineSafe( $"{this._productName} Version", () => $"{this._applicationInfoProvider.CurrentApplication.PackageVersion}" );
+            AppendLineSafe( $"{this._productName} Application", () => $"{this._applicationInfoProvider.Application.Name}" );
+            AppendLineSafe( $"{this._productName} Version", () => $"{this._applicationInfoProvider.Application.PackageVersion}" );
             AppendLineSafe( ".NET Runtime", () => $"{RuntimeInformation.FrameworkDescription}" );
             AppendLineSafe( "Processor Architecture", () => $" {RuntimeInformation.ProcessArchitecture}" );
             AppendLineSafe( "OS Description", () => $"{RuntimeInformation.OSDescription}" );
             AppendLineSafe( "OS Architecture", () => $"{RuntimeInformation.OSArchitecture}" );
+
             AppendLineSafe(
                 "Process",
                 () =>

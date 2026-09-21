@@ -4,7 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
+using SharpCrafters.Backstage.ProcessClassification;
 using System.Reflection;
 
 namespace SharpCrafters.Backstage.Windows;
@@ -32,5 +32,5 @@ public abstract class BackstageDesktopApplicationInfo : ApplicationInfoBase
     public BackstageProduct Product { get; }
 
     /// <inheritdoc />
-    public override ProcessKind ProcessKind => ProcessKind.BackstageDesktopWindows;
+    public override ProcessKind? ProcessKind => ProcessClassification.ProcessKind.BackstageDesktopWindows;
 }

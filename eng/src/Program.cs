@@ -42,12 +42,13 @@ var product = new Product( BackstageDependencies.Backstage )
 
     Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
 
+    // TODO: Should be reviewed before publishing first release.
+    
     // Only the packages that a public package of a product depends on are public. SharpCrafters.Backstage.Testing
     // is consumed by test projects only, and the worker and Windows libraries are project references of the
     // product executables, so they are not packed at all.
     PublicArtifacts = Pattern.Create(
         "SharpCrafters.Backstage.$(PackageVersion).nupkg",
-        "SharpCrafters.Backstage.Infrastructure.$(PackageVersion).nupkg", // Required by SharpCrafters.Backstage and by the build tools of the products.
         "SharpCrafters.Backstage.Commands.$(PackageVersion).nupkg", // Required by Metalama.Tool.
         "SharpCrafters.Common.$(PackageVersion).nupkg",             // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.

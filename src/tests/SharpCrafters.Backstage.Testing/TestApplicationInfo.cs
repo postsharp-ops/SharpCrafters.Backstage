@@ -4,8 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
-using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Immutable;
@@ -64,15 +63,12 @@ namespace SharpCrafters.Backstage.Testing
         public DateTime? BuildDate { get; set; }
 
         /// <inheritdoc />
-        public ProcessKind ProcessKind => ProcessKind.Other;
-
-        public bool IsUnattendedProcess { get; init; }
-
-        /// <inheritdoc />
-        bool IApplicationInfo.IsUnattendedProcess( ILoggerFactory loggerFactory ) => this.IsUnattendedProcess;
+        public ProcessKind? ProcessKind { get; set; } = ProcessClassification.ProcessKind.Other;
 
         /// <inheritdoc />
         public bool IsLongRunningProcess { get; init; }
+
+        public bool IsWorkerProcess { get; init; }
 
         /// <inheritdoc />
         public bool IsTelemetryEnabled { get; init; }

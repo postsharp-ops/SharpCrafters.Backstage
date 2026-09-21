@@ -34,7 +34,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         this._options = options;
         this._logger = services.GetLoggerFactory().Licensing();
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
-        this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         this._eventDispatcher = services.GetRequiredBackstageService<IEventDispatcher>();
         this._productProfile = services.GetRequiredBackstageService<ProductProfile>();
         this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
@@ -151,7 +151,12 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
             // Check eligibility.
             if ( requirement.IsEligible(
-                    new LicenseConsumptionContext( license.Properties, this._applicationInfo, this._productProfile, this._dateTimeProvider.UtcNow, this._logger ) ) )
+                    new LicenseConsumptionContext(
+                        license.Properties,
+                        this._applicationInfo,
+                        this._productProfile,
+                        this._dateTimeProvider.UtcNow,
+                        this._logger ) ) )
             {
                 this._logger.Trace?.Log( $"TryConsume({{{requirement}}}: '{license.Properties.DisplayName}' is eligible." );
 

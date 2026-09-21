@@ -2,9 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,7 @@ namespace SharpCrafters.Backstage.Infrastructure
         private readonly IFileSystem _fileSystem;
         private readonly IRuntimeInformation _runtimeInformation;
         private readonly Lazy<string> _dotNetExePath;
+        private readonly IApplicationInfoProvider _applicationInfoProvider;
 
         public string DotNetExePath => this._dotNetExePath.Value;
 
@@ -28,6 +30,7 @@ namespace SharpCrafters.Backstage.Infrastructure
             this._environmentVariableProvider = serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>();
             this._fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
             this._runtimeInformation = serviceProvider.GetRequiredBackstageService<IRuntimeInformation>();
+            this._applicationInfoProvider = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>();
 
             this._dotNetExePath = new Lazy<string>( this.GetDotNetPath );
         }
@@ -66,7 +69,7 @@ namespace SharpCrafters.Backstage.Infrastructure
             // bundled .NET installation, which only ships the SDKs Rider itself needs (see #1627).
             // Skip those hints so we fall through to the system installation, which has the SDKs
             // Rider actually used to evaluate the user's project.
-            var skipEnvVarHints = this._runtimeInformation.ProcessKind == ProcessKind.Rider;
+            var skipEnvVarHints = this._applicationInfoProvider.Application.ProcessKind == ProcessKind.Rider;
 
             if ( skipEnvVarHints )
             {

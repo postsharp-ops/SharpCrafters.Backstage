@@ -39,7 +39,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             this._licenseKey = CleanLicenseKey( licenseKey );
             this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
             this._licensingAuthorityProvider = services.GetRequiredBackstageService<ILicensingAuthorityProvider>();
-            this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+            this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
             this._productProfile = services.GetRequiredBackstageService<ProductProfile>();
             this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
         }
@@ -87,7 +87,11 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
         private LicenseRegistrationBlocker GetRegistrationBlockerCore()
         {
             // Validates that the key can be consumed.
-            if ( !this.TryGetConsumptionPropertiesCore( LicenseConsumptionOptions.ForRegistration, out var licenseConsumptionData, out var errorMessage, out _ ) )
+            if ( !this.TryGetConsumptionPropertiesCore(
+                    LicenseConsumptionOptions.ForRegistration,
+                    out var licenseConsumptionData,
+                    out var errorMessage,
+                    out _ ) )
             {
                 return LicenseRegistrationBlocker.Unusable( errorMessage );
             }

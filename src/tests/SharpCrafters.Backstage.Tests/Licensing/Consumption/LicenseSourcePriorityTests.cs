@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tests.Extensibility;
 using System;
@@ -41,10 +42,10 @@ public sealed class LicenseSourcePriorityTests : LicensingTestsBase
 
         serviceProviderBuilder.AddSingleton<IApplicationInfoProvider>(
             new ApplicationInfoProvider(
-                new TestApplicationInfo( "License Source Priority Test App", isPreview, "1.0.0", new DateTime( 2022, 1, 1, 0, 0, 0, DateTimeKind.Utc ) )
-                {
-                    IsUnattendedProcess = isUnattendedProcess
-                } ) );
+                new TestApplicationInfo( "License Source Priority Test App", isPreview, "1.0.0", new DateTime( 2022, 1, 1, 0, 0, 0, DateTimeKind.Utc ) ) ) );
+
+        serviceProviderBuilder.AddSingleton<IUnattendedProcessDetector>(
+            new TestUnattendedProcessDetector() { IsCurrentProcessUnattended = isUnattendedProcess } );
 
         serviceProviderBuilder.AddSingleton<ILicenseConsumptionService>(
             sp =>

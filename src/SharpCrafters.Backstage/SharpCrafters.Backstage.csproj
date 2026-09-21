@@ -25,8 +25,9 @@
 
 
     <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Backstage.ProcessClassification\SharpCrafters.Backstage.ProcessClassification.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage.Threading\SharpCrafters.Backstage.Threading.csproj" />
         <ProjectReference Include="..\SharpCrafters.Common\SharpCrafters.Common.csproj" />
-        <ProjectReference Include="..\SharpCrafters.Backstage.Infrastructure\SharpCrafters.Backstage.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)'=='netframework4.7.2'">

@@ -255,14 +255,16 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
     [Fact]
     public async Task LicenseIsReportedWhenOptOutEnvironmentVariableIsSet()
     {
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] = "true";
+        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable )] =
+            "true";
+
         await this.ConsumeAndAssertReportsCount( 1 );
     }
 
     [Fact]
     public async Task LicenseIsNotReportedForUnattendedBuild()
     {
-        this.ApplicationInfo = new TestApplicationInfo() { IsUnattendedProcess = true };
+        this.UnattendedProcessDetector.IsCurrentProcessUnattended = true;
         await this.ConsumeAndAssertReportsCount( 0 );
     }
 
@@ -401,8 +403,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
 
         foreach ( var saltKind in new[]
                  {
-                     TelemetrySaltKind.LicenseAudit, TelemetrySaltKind.Matomo, TelemetrySaltKind.UsageTracking,
-                     TelemetrySaltKind.ExceptionReport
+                     TelemetrySaltKind.LicenseAudit, TelemetrySaltKind.Matomo, TelemetrySaltKind.UsageTracking, TelemetrySaltKind.ExceptionReport
                  } )
         {
             var saltedUserHash = HashUtilities
@@ -476,8 +477,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
 
         foreach ( var saltKind in new[]
                  {
-                     TelemetrySaltKind.LicenseAudit, TelemetrySaltKind.Matomo, TelemetrySaltKind.UsageTracking,
-                     TelemetrySaltKind.ExceptionReport
+                     TelemetrySaltKind.LicenseAudit, TelemetrySaltKind.Matomo, TelemetrySaltKind.UsageTracking, TelemetrySaltKind.ExceptionReport
                  } )
         {
             var saltedDeviceHash = HashUtilities

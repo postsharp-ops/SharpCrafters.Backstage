@@ -77,9 +77,9 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     /// <typeparam name="T">The type of the configuration file.</typeparam>
     /// <param name="configurationManager">The manager.</param>
     /// <returns>The name of the lock.</returns>
-    private static string GetLockName<T>( IConfigurationManager configurationManager )
+    private string GetLockName<T>( IConfigurationManager configurationManager )
         where T : ConfigurationFile
-        => NamedLockExtensions.GetGlobalLockName( configurationManager.GetFilePath<T>() );
+        => this.Locks.GetGlobalLockName( configurationManager.GetFilePath<T>() );
 
     /// <summary>
     /// Runs an action on a thread of its own, so that a test can drive it while it is blocked.
@@ -171,7 +171,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     public void ReadingAWrittenFileTakesNoLock()
     {
         using var configurationManager = this.CreateConfigurationManager();
-        var lockName = GetLockName<TestConfigurationFile>( configurationManager );
+        var lockName = this.GetLockName<TestConfigurationFile>( configurationManager );
 
         Assert.True( configurationManager.Update<TestConfigurationFile>( c => c with { IsModified = true } ) );
 
@@ -189,8 +189,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     /// </summary>
     /// <returns>The name of the lock.</returns>
     private string GetLegacyLockName()
-        => NamedLockExtensions.GetGlobalLockName(
-            this.ServiceProvider.GetRequiredBackstageService<IStandardDirectories>().ApplicationDataDirectory );
+        => this.Locks.GetGlobalLockName( this.ServiceProvider.GetRequiredBackstageService<IStandardDirectories>().ApplicationDataDirectory );
 
     /// <summary>
     /// Verifies that an update does not take the lock of the previous generation unless it is asked to.
@@ -206,7 +205,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
 
         Assert.True( configurationManager.Update<TestConfigurationFile>( c => c with { IsModified = true } ) );
 
-        Assert.Equal( new[] { GetLockName<TestConfigurationFile>( configurationManager ) }, this.Locks.GetKnownNames() );
+        Assert.Equal( new[] { this.GetLockName<TestConfigurationFile>( configurationManager ) }, this.Locks.GetKnownNames() );
         Assert.Equal( 0, this.Locks.GetAcquisitionCount( this.GetLegacyLockName() ) );
     }
 
@@ -231,7 +230,9 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     public void TheEnvironmentVariableMakesAnUpdateTakeTheLegacyLock()
     {
         this.Locks.EnforceDiscipline = false;
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( Configuration.ConfigurationManager.LegacyLockEnvironmentVariable )] = "true";
+
+        this.EnvironmentVariableProvider.Environment[
+            MetalamaProduct.Profile.GetEnvironmentVariableName( Configuration.ConfigurationManager.LegacyLockEnvironmentVariable )] = "true";
 
         using var configurationManager = this.CreateConfigurationManager();
 
@@ -240,7 +241,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
         var legacyLockName = this.GetLegacyLockName();
 
         Assert.Equal( 1, this.Locks.GetAcquisitionCount( legacyLockName ) );
-        Assert.Equal( 1, this.Locks.GetAcquisitionCount( GetLockName<TestConfigurationFile>( configurationManager ) ) );
+        Assert.Equal( 1, this.Locks.GetAcquisitionCount( this.GetLockName<TestConfigurationFile>( configurationManager ) ) );
 
         // Both were released, and the update took effect.
         Assert.Empty( this.Locks.GetHeldLocks() );
@@ -265,7 +266,8 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     [InlineData( "yes" )]
     public void AValueThatDoesNotExpressAssentLeavesTheLegacyLockAlone( string value )
     {
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( Configuration.ConfigurationManager.LegacyLockEnvironmentVariable )] = value;
+        this.EnvironmentVariableProvider.Environment[
+            MetalamaProduct.Profile.GetEnvironmentVariableName( Configuration.ConfigurationManager.LegacyLockEnvironmentVariable )] = value;
 
         using var configurationManager = this.CreateConfigurationManager();
 
@@ -286,7 +288,9 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     public void AnUpdateWaitsForTheLegacyLockWhenItIsHeldElsewhere()
     {
         this.Locks.EnforceDiscipline = false;
-        this.EnvironmentVariableProvider.Environment[MetalamaProduct.Profile.GetEnvironmentVariableName( Configuration.ConfigurationManager.LegacyLockEnvironmentVariable )] = "true";
+
+        this.EnvironmentVariableProvider.Environment[
+            MetalamaProduct.Profile.GetEnvironmentVariableName( Configuration.ConfigurationManager.LegacyLockEnvironmentVariable )] = "true";
 
         using var configurationManager = this.CreateConfigurationManager();
 
@@ -299,7 +303,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
                 currentValue => ((TestConfigurationFile) currentValue) with { IsModified = true } ) );
 
         // The per-file lock was never reached, so nothing was written.
-        Assert.Equal( 0, this.Locks.GetAcquisitionCount( GetLockName<TestConfigurationFile>( configurationManager ) ) );
+        Assert.Equal( 0, this.Locks.GetAcquisitionCount( this.GetLockName<TestConfigurationFile>( configurationManager ) ) );
         Assert.Null( configurationManager.Get<TestConfigurationFile>( true ).Timestamp );
     }
 
@@ -317,7 +321,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
 
         Assert.True( configurationManager.Update<TestConfigurationFile>( c => c with { IsModified = true } ) );
 
-        Assert.Equal( new[] { GetLockName<TestConfigurationFile>( configurationManager ) }, this.Locks.GetKnownNames() );
+        Assert.Equal( new[] { this.GetLockName<TestConfigurationFile>( configurationManager ) }, this.Locks.GetKnownNames() );
     }
 
     /// <summary>
@@ -334,7 +338,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
     {
         using var configurationManager = this.CreateConfigurationManager();
 
-        using ( this.Locks.Pin( GetLockName<TestConfigurationFile>( configurationManager ) ) )
+        using ( this.Locks.Pin( this.GetLockName<TestConfigurationFile>( configurationManager ) ) )
         {
             // The lock of the first file is held by another process for the whole scope, and the second file is
             // nonetheless updated.
@@ -464,8 +468,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
 
         // The notification is dispatched by whichever thread updates the cache first, which can be the thread that
         // calls Update, so the update runs on a thread of its own and the test thread stays free to drive the point.
-        var update = RunOnDedicatedThreadAsync(
-            () => Assert.True( configurationManager.Update<TestConfigurationFile>( c => c with { IsModified = true } ) ) );
+        var update = RunOnDedicatedThreadAsync( () => Assert.True( configurationManager.Update<TestConfigurationFile>( c => c with { IsModified = true } ) ) );
 
         // Every wait below also observes the update, so that an update that fails before it reaches the point is
         // reported with its own error instead of as a timeout.
@@ -524,7 +527,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
 
         using var configurationManager = this.CreateConfigurationManager();
 
-        this.Locks.ForceTimeout( GetLockName<TestConfigurationFile>( configurationManager ), int.MaxValue );
+        this.Locks.ForceTimeout( this.GetLockName<TestConfigurationFile>( configurationManager ), int.MaxValue );
 
         Assert.Equal( ConfigurationUpdateOutcome.LockTimeout, UpdateTestFile( configurationManager ) );
         Assert.Equal( ConfigurationUpdateOutcome.LockTimeout, UpdateTestFile( configurationManager ) );
@@ -546,7 +549,7 @@ public sealed class ConfigurationManagerLockingTests : TestsBase, IDisposable
         using var configurationManager = this.CreateConfigurationManager();
 
         this.Locks.ArmException(
-            GetLockName<TestConfigurationFile>( configurationManager ),
+            this.GetLockName<TestConfigurationFile>( configurationManager ),
             () => new UnauthorizedAccessException( "Injected by a test." ) );
 
         Assert.Equal( ConfigurationUpdateOutcome.LockTimeout, UpdateTestFile( configurationManager ) );

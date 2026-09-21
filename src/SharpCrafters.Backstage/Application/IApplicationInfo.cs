@@ -2,9 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
-using System;
+using SharpCrafters.Backstage.ProcessClassification;
 using System.Collections.Immutable;
 
 namespace SharpCrafters.Backstage.Application
@@ -14,17 +12,14 @@ namespace SharpCrafters.Backstage.Application
     /// </summary>
     public interface IApplicationInfo : IComponentInfo
     {
-        ProcessKind ProcessKind { get; }
-
-        /// <summary>
-        /// Determines whether the current process is unattended. This method accepts an <see cref="ILoggerFactory"/> because
-        /// the <see cref="IServiceProvider"/> cannot be available when we instantiate implementations of this interface.
-        /// </summary>
-        /// <param name="loggerFactory"></param>
-        /// <returns></returns>
-        bool IsUnattendedProcess( ILoggerFactory loggerFactory );
+        ProcessKind? ProcessKind { get; }
 
         bool IsLongRunningProcess { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the application itself is
+        /// </summary>
+        bool IsWorkerProcess { get; }
 
         /// <summary>
         /// Gets a value indicating whether telemetry is enabled for the application.

@@ -8,6 +8,7 @@ using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using System;
 
@@ -19,27 +20,27 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
     private readonly IConfigurationManager _configurationManager;
     private readonly IApplicationInfo _applicationInfo;
     private readonly IDateTimeProvider _time;
-    private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger _logger;
     private readonly TelemetryReportUploader _telemetryReportUploader;
     private readonly MatomoUploader? _matomoAuditUploader;
     private readonly BackstageBackgroundTasksService _backgroundTasksService;
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
     private readonly ILicenseAuditKeyProvider _auditKeyProvider;
+    private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
     public LicenseAuditManager( IServiceProvider serviceProvider )
     {
         this._serviceProvider = serviceProvider;
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
-        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         this._time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
-        this._loggerFactory = serviceProvider.GetLoggerFactory();
-        this._logger = this._loggerFactory.Licensing();
+        this._logger = serviceProvider.GetLoggerFactory().Licensing();
         this._telemetryReportUploader = serviceProvider.GetRequiredBackstageService<TelemetryReportUploader>();
         this._matomoAuditUploader = serviceProvider.GetBackstageService<MatomoUploader>();
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
         this._auditKeyProvider = serviceProvider.GetRequiredBackstageService<ILicenseAuditKeyProvider>();
+        this._unattendedProcessDetector = serviceProvider.GetRequiredBackstageService<IUnattendedProcessDetector>();
     }
 
     public void ReportLicense( LicenseConsumptionProperties license )
@@ -51,7 +52,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
             return;
         }
 
-        if ( this._applicationInfo.IsUnattendedProcess( this._loggerFactory ) )
+        if ( this._unattendedProcessDetector.IsCurrentProcessUnattended )
         {
             this._logger.Trace?.Log( "License audit disabled because the current process is unattended." );
 

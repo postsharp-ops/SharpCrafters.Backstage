@@ -60,8 +60,8 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
 
     private Configuration.ConfigurationManager CreateConfigurationManager() => new( this.ServiceProvider );
 
-    private static string GetLockName( IConfigurationManager configurationManager )
-        => NamedLockExtensions.GetGlobalLockName( configurationManager.GetFilePath<TestConfigurationFile>() );
+    private string GetLockName( IConfigurationManager configurationManager )
+        => this.Locks.GetGlobalLockName( configurationManager.GetFilePath<TestConfigurationFile>() );
 
     private static string GetSyncPointName( IConfigurationManager configurationManager, string location )
         => Configuration.ConfigurationManager.GetSyncPointName( location, configurationManager.GetFilePath<TestConfigurationFile>() );
@@ -123,7 +123,7 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
 
         Assert.Equal( ConfigurationUpdateOutcome.Updated, AppendMark( configurationManager, "a" ) );
 
-        Assert.Equal( 1, this.Locks.GetAcquisitionCount( GetLockName( configurationManager ) ) );
+        Assert.Equal( 1, this.Locks.GetAcquisitionCount( this.GetLockName( configurationManager ) ) );
     }
 
     /// <summary>
@@ -157,7 +157,7 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
 
         // The second writer cannot read anything until the first one has released the lock.
         var secondWriter = RunOnDedicatedThreadAsync( () => AppendMark( configurationManager, "b" ) );
-        await this.WithTimeout( this.Locks.WaitForWaitersAsync( GetLockName( configurationManager ), 1, this._timeout.Token ) );
+        await this.WithTimeout( this.Locks.WaitForWaitersAsync( this.GetLockName( configurationManager ), 1, this._timeout.Token ) );
 
         this._syncProvider.DisableSyncPoint( afterReadSyncPoint );
 
@@ -171,7 +171,7 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
         Assert.Equal( 2, value.Version );
 
         // One acquisition each, and no attempt was ever abandoned and retried.
-        Assert.Equal( 2, this.Locks.GetAcquisitionCount( GetLockName( configurationManager ) ) );
+        Assert.Equal( 2, this.Locks.GetAcquisitionCount( this.GetLockName( configurationManager ) ) );
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
         await this.WithTimeout( this._syncProvider.WaitForSyncPointReachedAsync( afterReadSyncPoint, this._timeout.Token ) );
 
         var secondWriter = RunOnDedicatedThreadAsync( () => AppendMark( secondManager, "b" ) );
-        await this.WithTimeout( this.Locks.WaitForWaitersAsync( GetLockName( firstManager ), 1, this._timeout.Token ) );
+        await this.WithTimeout( this.Locks.WaitForWaitersAsync( this.GetLockName( firstManager ), 1, this._timeout.Token ) );
 
         this._syncProvider.DisableSyncPoint( afterReadSyncPoint );
 
@@ -217,8 +217,8 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
         Assert.Equal( 2, value.Version );
 
         // Two holders, one acquisition each, and no attempt abandoned and retried.
-        Assert.Equal( 2, this.Locks.GetAcquisitionCount( GetLockName( firstManager ) ) );
-        Assert.Equal( 2, this.Locks.GetCreationCount( GetLockName( firstManager ) ) );
+        Assert.Equal( 2, this.Locks.GetAcquisitionCount( this.GetLockName( firstManager ) ) );
+        Assert.Equal( 2, this.Locks.GetCreationCount( this.GetLockName( firstManager ) ) );
     }
 
     /// <summary>
@@ -275,12 +275,12 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
         Assert.True( configurationManager.CreateIfMissing<TestConfigurationFile>() );
         Assert.NotNull( configurationManager.Get<TestConfigurationFile>( true ).Timestamp );
 
-        var acquisitionsAfterCreation = this.Locks.GetAcquisitionCount( GetLockName( configurationManager ) );
+        var acquisitionsAfterCreation = this.Locks.GetAcquisitionCount( this.GetLockName( configurationManager ) );
 
         Assert.False( configurationManager.CreateIfMissing<TestConfigurationFile>() );
 
         // The second call stops at the read, which takes no lock.
-        Assert.Equal( acquisitionsAfterCreation, this.Locks.GetAcquisitionCount( GetLockName( configurationManager ) ) );
+        Assert.Equal( acquisitionsAfterCreation, this.Locks.GetAcquisitionCount( this.GetLockName( configurationManager ) ) );
     }
 
     /// <summary>
@@ -372,11 +372,11 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
 
         Assert.True( configurationManager.UpdateIf<TestConfigurationFile>( c => !c.IsModified, c => c with { IsModified = true } ) );
 
-        var acquisitionsAfterFirstCall = this.Locks.GetAcquisitionCount( GetLockName( configurationManager ) );
+        var acquisitionsAfterFirstCall = this.Locks.GetAcquisitionCount( this.GetLockName( configurationManager ) );
 
         Assert.False( configurationManager.UpdateIf<TestConfigurationFile>( c => !c.IsModified, c => c with { IsModified = true } ) );
 
-        Assert.Equal( acquisitionsAfterFirstCall, this.Locks.GetAcquisitionCount( GetLockName( configurationManager ) ) );
+        Assert.Equal( acquisitionsAfterFirstCall, this.Locks.GetAcquisitionCount( this.GetLockName( configurationManager ) ) );
     }
 
     /// <summary>
@@ -406,7 +406,7 @@ public sealed class ConfigurationManagerTransactionTests : TestsBase, IDisposabl
         var secondWriter = RunOnDedicatedThreadAsync(
             () => configurationManager.UpdateIf<TestConfigurationFile>( c => !c.IsModified, c => c with { IsModified = true } ) );
 
-        await this.WithTimeout( this.Locks.WaitForWaitersAsync( GetLockName( configurationManager ), 1, this._timeout.Token ) );
+        await this.WithTimeout( this.Locks.WaitForWaitersAsync( this.GetLockName( configurationManager ), 1, this._timeout.Token ) );
 
         this._syncProvider.DisableSyncPoint( afterReadSyncPoint );
 

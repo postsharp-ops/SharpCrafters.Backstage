@@ -61,8 +61,8 @@ public sealed class ConfigurationManagerResilienceTests : TestsBase, IDisposable
 
     private Configuration.ConfigurationManager CreateConfigurationManager() => new( this.ServiceProvider );
 
-    private static string GetLockName( IConfigurationManager configurationManager )
-        => NamedLockExtensions.GetGlobalLockName( configurationManager.GetFilePath<TestConfigurationFile>() );
+    private string GetLockName( IConfigurationManager configurationManager )
+        => this.Locks.GetGlobalLockName( configurationManager.GetFilePath<TestConfigurationFile>() );
 
     /// <summary>
     /// Runs an action on a thread of its own, so that a test can drive it while it is blocked.
@@ -109,7 +109,7 @@ public sealed class ConfigurationManagerResilienceTests : TestsBase, IDisposable
     public void AnAbandonedLockDoesNotPreventAnUpdate()
     {
         using var configurationManager = this.CreateConfigurationManager();
-        var lockName = GetLockName( configurationManager );
+        var lockName = this.GetLockName( configurationManager );
 
         this.Locks.Abandon( lockName );
 
@@ -133,7 +133,7 @@ public sealed class ConfigurationManagerResilienceTests : TestsBase, IDisposable
     {
         using var configurationManager = this.CreateConfigurationManager();
         var path = configurationManager.GetFilePath<TestConfigurationFile>();
-        var lockName = GetLockName( configurationManager );
+        var lockName = this.GetLockName( configurationManager );
 
         this.FileSystem.WriteAllText( path, "{ this is not the whole file" );
         this.Locks.Abandon( lockName );
@@ -213,8 +213,7 @@ public sealed class ConfigurationManagerResilienceTests : TestsBase, IDisposable
         {
             var mark = writerId.ToString( CultureInfo.InvariantCulture );
 
-            writers[writerId] = RunOnDedicatedThreadAsync(
-                () => configurationManager.Update<TestConfigurationFile>( c => c with { Marks = c.Marks + mark } ) );
+            writers[writerId] = RunOnDedicatedThreadAsync( () => configurationManager.Update<TestConfigurationFile>( c => c with { Marks = c.Marks + mark } ) );
 
             // Waiting for each writer to reach the point before starting the next one orders the two writes, and
             // leaves the first writer holding a value that the second one supersedes.

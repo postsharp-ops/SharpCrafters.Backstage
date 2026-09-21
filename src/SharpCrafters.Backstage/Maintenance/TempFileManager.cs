@@ -44,7 +44,7 @@ public sealed class TempFileManager : ITempFileManager
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         this._lockService = serviceProvider.GetRequiredBackstageService<INamedLockService>();
 
-        var application = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var application = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
 
         if ( !AssemblyMetadataReader.GetInstance( typeof(TempFileManager).Assembly ).TryGetValue( "BackstagePackageVersion", out var backstageVersion ) )
         {
@@ -53,7 +53,8 @@ public sealed class TempFileManager : ITempFileManager
 
         this._backstageVersion = backstageVersion;
 
-        this._applicationVersion = application.GetLatestVendorComponent( serviceProvider.GetRequiredBackstageService<ProductProfile>().Company ).PackageVersion ??
+        this._applicationVersion = application.GetLatestVendorComponent( serviceProvider.GetRequiredBackstageService<ProductProfile>().Company ).PackageVersion
+                                   ??
                                    throw new InvalidOperationException( "The application version is not set." );
     }
 

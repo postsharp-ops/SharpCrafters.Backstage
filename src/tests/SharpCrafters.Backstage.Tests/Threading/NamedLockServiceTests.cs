@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using Metalama.Backstage;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
@@ -133,8 +134,18 @@ public sealed class NamedLockServiceTests : IDisposable
             {
                 return this._syncProvider;
             }
-
-            return serviceType == typeof(ITestFaultInjector) ? this._faultInjector : null;
+            else if ( serviceType == typeof(INamedLockServiceEnvironment) )
+            {
+                return MetalamaProduct.Profile;
+            }
+            else if ( serviceType == typeof(ITestFaultInjector) )
+            {
+                return this._faultInjector;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 
@@ -464,6 +475,7 @@ public sealed class NamedLockServiceTests : IDisposable
         try
         {
 #if DEBUG
+
             // The check is keyed on the name and not on the object, because acquiring the same name through two
             // objects deadlocks just as surely as through one.
             Assert.Throws<InvalidOperationException>( () => secondLock.TryAcquire( TimeSpan.Zero, out _ ) );
@@ -705,8 +717,7 @@ public sealed class NamedLockServiceTests : IDisposable
 
         // A timeout of zero makes this deterministic: the lock is owned, so the acquisition cannot succeed, and
         // the test never waits.
-        await this.WithTimeout(
-            RunOnDedicatedThreadAsync( () => Assert.Throws<TimeoutException>( () => contenderLock.Acquire( TimeSpan.Zero ) ) ) );
+        await this.WithTimeout( RunOnDedicatedThreadAsync( () => Assert.Throws<TimeoutException>( () => contenderLock.Acquire( TimeSpan.Zero ) ) ) );
 
         owner.Release();
         await this.WithTimeout( owner.Completed );

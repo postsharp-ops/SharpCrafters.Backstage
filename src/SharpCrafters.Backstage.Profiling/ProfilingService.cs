@@ -10,7 +10,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 
 #if PROFILING_ENABLED
@@ -41,7 +41,7 @@ public sealed class ProfilingService : IProfilingService
 
     public ProfilingService( IServiceProvider serviceProvider )
     {
-        this._processKind = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication.ProcessKind;
+        this._processKind = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().ProcessKind;
         this._configuration = serviceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<DiagnosticsConfiguration>();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( "Profiling" );
 

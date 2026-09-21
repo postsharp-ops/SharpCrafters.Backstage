@@ -2,10 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -15,9 +15,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 
 internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
 {
-    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger _logger;
-    private readonly IApplicationInfo _applicationInfo;
+    private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
     /// <summary>
     /// The product that the unattended license names. It is the premium product of the product family, because an
@@ -32,16 +31,15 @@ internal sealed class UnattendedLicenseSource : ILicenseSource, ILicense
 
     public UnattendedLicenseSource( IServiceProvider serviceProvider )
     {
-        this._serviceProvider = serviceProvider;
-        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
         this._product = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>().EvaluationProduct;
+        this._unattendedProcessDetector = serviceProvider.GetRequiredBackstageService<IUnattendedProcessDetector>();
     }
 
     /// <inheritdoc />
     public IEnumerable<ILicense> GetLicenses( Action<LicensingMessage> reportMessage )
     {
-        if ( this._applicationInfo.IsUnattendedProcess( this._serviceProvider.GetLoggerFactory() ) )
+        if ( this._unattendedProcessDetector.IsCurrentProcessUnattended )
         {
             this._logger.Trace?.Log( "Providing an unattended process license." );
 

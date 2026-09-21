@@ -60,10 +60,6 @@ internal sealed class SimulatedInstallation : IDisposable
             // whose build date is past the end of the subscription, which would look like a denial of capacity.
             new DateTime( 2026, 1, 15, 0, 0, 0, DateTimeKind.Utc ) )
         {
-            // A simulated developer, not a build server: an unattended process never leases, so a simulation that
-            // declared itself unattended would send nothing at all and would report a server that is never used.
-            IsUnattendedProcess = false,
-
             // The audit uploads a report of the licenses it consumes to PostSharp Technologies. A simulation consumes
             // licenses nobody bought, on machines that do not exist, so it has nothing to report. The audit manager
             // also requires the support services, which this harness does not compose.

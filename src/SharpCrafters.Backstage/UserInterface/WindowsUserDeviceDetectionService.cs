@@ -3,7 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 
 #if NETCOREAPP || NETFRAMEWORK
@@ -23,12 +24,12 @@ namespace SharpCrafters.Backstage.UserInterface;
 internal sealed class WindowsUserDeviceDetectionService : IUserDeviceDetectionService
 {
     private readonly ILogger _logger;
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
     public WindowsUserDeviceDetectionService( IServiceProvider serviceProvider )
     {
-        this._loggerFactory = serviceProvider.GetLoggerFactory();
-        this._logger = this._loggerFactory.GetLogger( nameof(WindowsUserDeviceDetectionService) );
+        this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(WindowsUserDeviceDetectionService) );
+        this._unattendedProcessDetector = serviceProvider.GetRequiredBackstageService<IUnattendedProcessDetector>();
     }
 
     [StructLayout( LayoutKind.Sequential )]
@@ -126,7 +127,7 @@ internal sealed class WindowsUserDeviceDetectionService : IUserDeviceDetectionSe
     {
         get
         {
-            if ( ProcessUtilities.IsCurrentProcessUnattended( this._loggerFactory ) )
+            if ( this._unattendedProcessDetector.IsCurrentProcessUnattended )
             {
                 return false;
             }

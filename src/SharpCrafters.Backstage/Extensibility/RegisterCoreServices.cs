@@ -6,8 +6,8 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Infrastructure;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
 using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Tools;
@@ -55,18 +55,20 @@ public static class RegisterCoreServices
     public static ServiceProviderBuilder AddCoreServices( this ServiceProviderBuilder serviceProviderBuilder, CoreInitializationOptions options )
     {
         var applicationInfo = options.ApplicationInfo;
+        var applicationInfoProvider = new ApplicationInfoProvider( applicationInfo );
 
         serviceProviderBuilder
             .AddSingleton( options.ProductProfile )
+            .AddSingleton<INamedLockServiceEnvironment>( options.ProductProfile )
             .AddSingleton( _ => new EarlyLoggerFactory() )
             .AddSingleton<IEventDispatcher>( serviceProvider => new EventDispatcher( serviceProvider ) )
             .AddSingleton( _ => new RandomNumberGenerator() )
             .AddSingleton<IEnvironmentVariableProvider>( _ => new EnvironmentVariableProvider() )
             .AddSingleton<IRuntimeInformation>( _ => new RuntimeInformationProvider() )
-            .AddSingleton<IMachineIdProvider>( CreateMachineIdProvider )
+            .AddSingleton( CreateMachineIdProvider )
             .AddSingleton<IUserIdentityProvider>( _ => new UserIdentityProvider() )
             .AddSingleton<IRecoverableExceptionService>( serviceProvider => new RecoverableExceptionService( serviceProvider ) )
-            .AddSingleton<IApplicationInfoProvider>( new ApplicationInfoProvider( applicationInfo ) )
+            .AddSingleton<IApplicationInfoProvider>( _ => applicationInfoProvider )
             .AddSingleton<IUserDeviceDetectionService>( serviceProvider => new WindowsUserDeviceDetectionService( serviceProvider ) )
             .AddSingleton<IDateTimeProvider>( _ => new CurrentDateTimeProvider() )
             .AddSingleton<IFileSystem>( serviceProvider => new FileSystem( serviceProvider ) )
@@ -75,17 +77,18 @@ public static class RegisterCoreServices
             .AddSingleton<IVcsStatusService>( serviceProvider => new GitStatusService( serviceProvider ) )
             .AddSingleton<IHttpClientFactory>( _ => new HttpClientFactory() )
             .AddSingleton<IJsonSerializationService>( _ => new JsonSerializationService( options.JsonTypeInfoResolvers ) )
-            .AddSingleton<INamedLockService>( CreateNamedLockService )
+            .AddSingleton( CreateNamedLockService )
             .AddSingleton<IPlatformInfo>( serviceProvider => new PlatformInfo( serviceProvider ) )
             .AddSingleton<BackstageBackgroundTasksService>( _ => new BackstageBackgroundTasksService() )
             .AddSingleton<ITempFileManager>( serviceProvider => new TempFileManager( serviceProvider ) )
-            .AddSingleton( serviceProvider => new ShutdownService( serviceProvider ) );
+            .AddSingleton( serviceProvider => new ShutdownService( serviceProvider ) )
+            .AddProcessClassificationServices();
 
         if ( options.AddDiagnostics )
         {
             if ( options.DiagnosticsOptions.CreateLoggingFactory == null )
             {
-                serviceProviderBuilder.AddDiagnostics( applicationInfo.ProcessKind, options.DiagnosticsOptions );
+                serviceProviderBuilder.AddDiagnostics( applicationInfoProvider.ProcessKind, options.DiagnosticsOptions );
             }
             else
             {
@@ -174,7 +177,7 @@ public static class RegisterCoreServices
                         configuration = configurationManager.Get<DiagnosticsConfiguration>();
                     }
 
-                    var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+                    var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>();
 
                     loggerFactory = new LoggerFactory(
                         serviceProvider,

@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
-using SharpCrafters.Backstage.Infrastructure.ProcessClassification;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -49,7 +49,7 @@ public sealed class PlatformInfoTests : TestsBase
         // uses). Under Rider we must skip those hints and fall through to the system installation.
         this.RuntimeInformation.TestProcessArchitecture = Architecture.X64;
         this.RuntimeInformation.Platform = OSPlatform.Windows;
-        this.RuntimeInformation.TestProcessKind = ProcessKind.Rider;
+        ((TestApplicationInfo) this.ApplicationInfo).ProcessKind = ProcessKind.Rider;
 
         const string riderDotnet = "C:\\Rider\\dotnet\\dotnet.exe";
         const string riderRoot = "C:\\Rider\\dotnet";
