@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Worker.Worker;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Worker;
 
 /// <summary>
 /// The description of the worker process of PostSharp.

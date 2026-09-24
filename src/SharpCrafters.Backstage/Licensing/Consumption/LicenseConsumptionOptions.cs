@@ -31,16 +31,22 @@ public sealed record LicenseConsumptionOptions
     public string? ProjectName { get; init; }
 
     /// <summary>
-    /// Gets further names of the project, any of which satisfies the namespace constraint of a license key as
-    /// <see cref="ProjectName"/> does.
+    /// Gets a delegate that returns further names of the project. Any of these names satisfies the namespace
+    /// constraint of a license key, as <see cref="ProjectName"/> does.
     /// </summary>
     /// <remarks>
-    /// A namespace-constrained key is sold for the code of one organization, and the name of a project is not always
-    /// how that code is identified: PostSharp also offers the names of the repositories the project is in, so that a
-    /// key constrained to an organization covers a project whose assembly is named after something else. An
-    /// application that has only one name for a project leaves this empty.
+    /// <para>
+    /// A namespace-constrained key is sold for the code of one organization. The name of a project does not always
+    /// identify that organization. PostSharp therefore also offers the names of the repositories that contain the
+    /// project, so that a key constrained to an organization covers a project whose assembly has another name.
+    /// </para>
+    /// <para>
+    /// The names can be expensive to compute, and only a namespace-constrained key needs them. The license consumer
+    /// therefore invokes the delegate at most once, and only when it evaluates such a key. An application that has
+    /// only one name for a project leaves this property <see langword="null"/>.
+    /// </para>
     /// </remarks>
-    public ImmutableArray<string> AdditionalProjectNames { get; init; } = ImmutableArray<string>.Empty;
+    public Func<ImmutableArray<string>>? AdditionalProjectNamesProvider { get; init; }
 
     public TimeSpan? SubscriptionGracePeriod { get; init; }
 

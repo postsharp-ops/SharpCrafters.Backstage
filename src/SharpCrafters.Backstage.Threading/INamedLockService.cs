@@ -19,12 +19,6 @@ namespace SharpCrafters.Backstage.Threading;
 /// backed by a named <see cref="System.Threading.Mutex"/>.
 /// </para>
 /// <para>
-/// The source file declaring this interface is compiled into several assemblies, because the earliest code of the
-/// build pipeline needs named locks and cannot reference any assembly. Only the assembly that defines the
-/// <c>METALAMA_BACKSTAGE</c> compilation symbol derives the interface from <c>IBackstageService</c> and therefore
-/// participates in dependency injection. The other assemblies instantiate <see cref="NamedLockService"/> directly.
-/// </para>
-/// <para>
 /// This service is a factory of locks and is not itself a lock. The caller owns the <see cref="INamedLock"/>
 /// returned by <see cref="GetLock"/> and must dispose it. The service caches nothing, because the set of names is
 /// unbounded and caching would leak one operating system handle per distinct name. A component that repeatedly

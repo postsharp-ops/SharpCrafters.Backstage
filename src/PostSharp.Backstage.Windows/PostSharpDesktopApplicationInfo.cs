@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Windows;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Windows;
 
 /// <summary>
 /// The description of the desktop notifier process of PostSharp.

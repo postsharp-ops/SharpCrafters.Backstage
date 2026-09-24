@@ -16,10 +16,9 @@ namespace SharpCrafters.Backstage.Threading;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The source file declaring this class is compiled into several assemblies. It must therefore depend on nothing
-/// but the base class library, which is why it reports its activity through the
-/// <see cref="LockEventReported"/> event instead of through a logger, and why the composition of the lock name is
-/// left to the caller.
+/// The assembly of this class references only the abstractions of the services, so that a component that starts no
+/// service can use it. This is why the class reports its activity through the <see cref="LockEventReported"/> event
+/// instead of through a logger, and why the composition of the lock name is left to the caller.
 /// </para>
 /// <para>
 /// This class replaces three divergent copies of the same logic, which used to live in <c>MutexHelper</c>, in
@@ -69,12 +68,11 @@ public sealed partial class NamedLockService : INamedLockService
     /// per instance would silently provide no exclusion at all between them.
     /// </para>
     /// <para>
-    /// The exclusion reaches no further than that. This source file is compiled into several assemblies, and a
-    /// static field belongs to one type of one assembly, so the copies do not share this table: two of them
-    /// degrading on the same name in one process do not exclude each other. Several loaded copies of one assembly,
-    /// which is the ordinary situation when different versions of Metalama coexist in a design-time host, are in
-    /// the same position. Degraded mode is therefore weaker than it looks, and it remains an improvement only
-    /// because the alternative it replaced was to fail outright.
+    /// The exclusion reaches no further than that. A static field belongs to one type of one loaded assembly. When
+    /// several versions of the assembly are loaded in one process, which is the ordinary situation when different
+    /// versions of a product coexist in a design-time host, the versions do not share this table, and two of them
+    /// that degrade on the same name do not exclude each other. Degraded mode is therefore weaker than it looks. It
+    /// remains an improvement only because the alternative it replaced was to fail outright.
     /// </para>
     /// </remarks>
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _processLocalMonitors = new( StringComparer.Ordinal );
@@ -115,11 +113,6 @@ public sealed partial class NamedLockService : INamedLockService
     /// An optional service provider, from which the test synchronization points are resolved. It is
     /// <see langword="null"/> in production, where nothing is registered for them anyway.
     /// </param>
-    /// <remarks>
-    /// This constructor exists only in the copies of this class that can reference <c>SharpCrafters.Common</c>.
-    /// The copies compiled into the projects that run before <c>Metalama.Backstage</c> has been extracted cannot
-    /// reference it, and use the implicit parameterless constructor instead.
-    /// </remarks>
     public NamedLockService( IServiceProvider serviceProvider )
     {
         // Resolved untyped, because ITestSynchronizationProvider is shared with the layers above and therefore

@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Worker.Worker;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Worker;
 
 /// <summary>
 /// The description of the worker process of Metalama.

@@ -18,6 +18,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 {
     private readonly ImmutableArray<(ILicense License, LicenseConsumptionProperties Properties)> _licenses;
     private readonly LicenseConsumptionOptions _options;
+    private readonly Lazy<ImmutableArray<string>> _additionalProjectNames;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger _logger;
     private readonly IApplicationInfo _applicationInfo;
@@ -32,6 +33,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     {
         this._licenses = licenses;
         this._options = options;
+        this._additionalProjectNames = new Lazy<ImmutableArray<string>>( () => options.AdditionalProjectNamesProvider?.Invoke() ?? default );
         this._logger = services.GetLoggerFactory().Licensing();
         this._dateTimeProvider = services.GetRequiredBackstageService<IDateTimeProvider>();
         this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
@@ -107,9 +109,11 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             yield return this._options.ProjectName!;
         }
 
-        if ( !this._options.AdditionalProjectNames.IsDefault )
+        var additionalProjectNames = this._additionalProjectNames.Value;
+
+        if ( !additionalProjectNames.IsDefault )
         {
-            foreach ( var projectName in this._options.AdditionalProjectNames )
+            foreach ( var projectName in additionalProjectNames )
             {
                 if ( !string.IsNullOrEmpty( projectName ) )
                 {

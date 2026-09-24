@@ -10,9 +10,9 @@ namespace SharpCrafters.Backstage.Threading;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The lock implementation reports its activity through an event rather than through a logger, because it is
-/// compiled into assemblies that cannot reference the logging services. Each consumer adapts these events to
-/// whatever diagnostic facility it has.
+/// The lock implementation reports its activity through an event rather than through a logger, because its
+/// assembly does not reference the logging services. Each consumer adapts these events to whatever diagnostic
+/// facility it has.
 /// </para>
 /// <para>
 /// A test implementation of <see cref="INamedLockService"/> is expected to report the same events, so that the

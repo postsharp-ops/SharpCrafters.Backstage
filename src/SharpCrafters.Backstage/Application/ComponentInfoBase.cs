@@ -14,38 +14,36 @@ namespace SharpCrafters.Backstage.Application;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <strong>What the assembly of a product must carry.</strong> A product built on these services has to produce
-/// three things at build time, and none of them fails loudly when it is missing, so a product that adopts these
-/// services checks all three before anything else:
+/// The assembly that describes the component must have the following three attributes. The build does not fail
+/// when one of them is missing, so a product that adopts these services must verify them.
 /// </para>
 /// <list type="number">
 /// <item>
 /// <description>
-/// <c>[assembly: AssemblyMetadata( "PackageVersion", … )]</c>, the version of the package the assembly ships in.
-/// A version-limited licence key is compared against it, and a usage report is grouped by it.
+/// <c>[assembly: AssemblyMetadata( "PackageVersion", … )]</c> gives the version of the package that contains the
+/// assembly. The telemetry and exception reports include it, and <see cref="IsPrerelease"/> is computed from it.
 /// </description>
 /// </item>
 /// <item>
 /// <description>
-/// <c>[assembly: AssemblyMetadata( "PackageBuildDate", … )]</c>, in a format
-/// <see cref="DateTime.Parse(string, IFormatProvider)"/> reads under the invariant culture. This one is not
-/// decorative: the end date of a subscription is compared against the build date, and a licence is refused with
-/// an exception when the application cannot say when it was built, so an absent attribute turns every licensed
-/// build of the product into a crash.
+/// <c>[assembly: AssemblyMetadata( "PackageBuildDate", … )]</c> gives the build date. The value must be in a format
+/// that <see cref="DateTime.Parse(string, IFormatProvider)"/> accepts with the invariant culture. Licensing compares
+/// the build date with the end date of the subscription of a license key. When the build date is missing, the
+/// consumption of a license throws an <see cref="InvalidOperationException"/>.
 /// </description>
 /// </item>
 /// <item>
 /// <description>
-/// <c>[assembly: AssemblyCompany( … )]</c> equal to <see cref="ProductProfile.Company"/>. Licensing finds the most
-/// recently built component of the vendor by filtering the components of the application on that string, so a
-/// company that does not match makes the search find nothing and the subscription date is compared against the
-/// wrong component.
+/// <c>[assembly: AssemblyCompany( … )]</c> must be equal to <see cref="ProductProfile.Company"/>. Licensing selects
+/// the components of the vendor by this value. When the value is different, licensing ignores the component. It then
+/// compares the subscription end date with the build date of another component.
 /// </description>
 /// </item>
 /// </list>
 /// <para>
-/// The environment variables named below override two of these for testing. They are named after the product, so
-/// <c>METALAMA_BUILD_DATE</c> and <c>POSTSHARP_BUILD_DATE</c> are different variables.
+/// Two environment variables override the prerelease flag and the build date for testing. Their names start with the
+/// prefix of the product. For example, <c>METALAMA_BUILD_DATE</c> and <c>POSTSHARP_BUILD_DATE</c> are two different
+/// variables.
 /// </para>
 /// </remarks>
 public abstract class ComponentInfoBase : IComponentInfo

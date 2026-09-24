@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Worker.Worker;
 using System.Threading.Tasks;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Worker;
 
 /// <summary>
 /// The entry point of the worker of PostSharp, which binds the worker library to the PostSharp product.

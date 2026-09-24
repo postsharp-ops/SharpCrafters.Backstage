@@ -6,7 +6,6 @@
         <RollForward>Major</RollForward>
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
-        <RootNamespace>PostSharp.Backstage</RootNamespace>
         <AssemblyTitle>PostSharp</AssemblyTitle>
         <ApplicationIcon>Resources/postsharp.ico</ApplicationIcon>
         <ProductName>PostSharp</ProductName>

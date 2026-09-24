@@ -53,7 +53,7 @@ public static class PostSharpProduct
     /// <remarks>
     /// <para>
     /// <see cref="ProductProfile.EnvironmentVariablePrefix"/> is the prefix that PostSharp 2026.0 already uses, so
-    /// that a variable such as <c>POSTSHARP_REGISTRY_ACCESS_DISABLED</c> keeps its name.
+    /// that a variable such as <c>POSTSHARP_BUILD_DATE</c> keeps its name.
     /// <see cref="ProductProfile.LicensePropertyName"/> is the MSBuild property that PostSharp 2026.0 reads.
     /// </para>
     /// <para>

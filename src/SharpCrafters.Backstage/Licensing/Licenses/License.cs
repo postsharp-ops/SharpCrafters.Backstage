@@ -243,7 +243,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
 #pragma warning restore CS0612 // Type or member is obsolete
 
             errorMessage = null;
-            errorKind = LicensingMessageKind.Generic;
+            errorKind = LicensingMessageKind.Default;
 
 #pragma warning disable CS0618 // Type or member is obsolete
             var isRedistributable = licenseType is LicenseType.OpenSourceRedistribution or LicenseType.CommercialRedistribution;

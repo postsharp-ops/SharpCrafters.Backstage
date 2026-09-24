@@ -5,18 +5,6 @@
         <PackageDescription>The product-independent services of Backstage, the infrastructure of the Metalama and PostSharp products: dependency injection, diagnostics, configuration, telemetry, licensing and user interface. This package should only be installed as a dependency.</PackageDescription>
         <RootNamespace>SharpCrafters.Backstage</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-        <!-- The files under Threading/ and the process kind files under Diagnostics/ are also compiled into
-             Metalama.Framework.CompilerExtensions and Metalama.Framework.DesignTime.Contracts, which can reference
-             nothing. This symbol marks the copy that is part of the Backstage services, and therefore the only one
-             that takes part in dependency injection. -->
-        <DefineConstants>$(DefineConstants);METALAMA_BACKSTAGE</DefineConstants>
-
-        <!-- Marks a copy of those files that can reference SharpCrafters.Common, and therefore has the test
-             synchronization points. This is deliberately a separate symbol, because whether an assembly is part of
-             the Backstage services and whether it has the hooks are two independent questions: any project that
-             compiles these files and gains a reference to SharpCrafters.Common should define this one too. -->
-        <DefineConstants>$(DefineConstants);HAS_METALAMA_TESTING_HOOKS</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

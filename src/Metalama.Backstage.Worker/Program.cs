@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Worker.Worker;
 using System.Threading.Tasks;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Worker;
 
 /// <summary>
 /// The entry point of the worker of Metalama, which binds the worker library to the Metalama product.

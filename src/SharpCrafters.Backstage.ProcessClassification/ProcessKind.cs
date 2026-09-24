@@ -2,11 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-// This file is compiled into Metalama.Backstage and into Metalama.Framework.CompilerExtensions. See the remarks of
-// ProcessKindDetector for the reason. The METALAMA_BACKSTAGE compilation symbol selects the namespace, so that the
-// two assemblies do not declare a type of the same full name: ResourceExtractor extracts Metalama.Backstage and
-// loads it into the process that already contains Metalama.Framework.CompilerExtensions.
-
 namespace SharpCrafters.Backstage.ProcessClassification;
 
 // ReSharper disable UnusedMember.Global

@@ -28,7 +28,7 @@ public enum LicensingMessageKind
     /// <summary>
     /// Anything that the other members do not name. An application maps this to its general licensing diagnostic.
     /// </summary>
-    Generic,
+    Default,
 
     /// <summary>
     /// A license key could not be read, or carries something that makes it unusable whatever it is used for: it is

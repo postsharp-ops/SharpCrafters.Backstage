@@ -5,6 +5,7 @@
 using Metalama.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Testing;
+using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -43,7 +44,7 @@ public sealed class NamespaceBoundLicenseTests : LicenseConsumptionServiceTestsB
     {
         var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalEvaluationNamespaceConstrained )
             .CreateConsumerAsync(
-                new LicenseConsumptionOptions { ProjectName = "AProjectOfAnotherName", AdditionalProjectNames = [additionalProjectName] } );
+                new LicenseConsumptionOptions { ProjectName = "AProjectOfAnotherName", AdditionalProjectNamesProvider = () => [additionalProjectName] } );
 
         Assert.Equal( expectedResult, consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
     }
@@ -59,24 +60,80 @@ public sealed class NamespaceBoundLicenseTests : LicenseConsumptionServiceTestsB
             .CreateConsumerAsync(
                 new LicenseConsumptionOptions
                 {
-                    ProjectName = TestLicenseKeyProvider.NamespaceConstraint, AdditionalProjectNames = ["AnotherNamespace"]
+                    ProjectName = TestLicenseKeyProvider.NamespaceConstraint, AdditionalProjectNamesProvider = () => ["AnotherNamespace"]
                 } );
 
         Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
     }
 
     /// <summary>
-    /// The property is an <see cref="System.Collections.Immutable.ImmutableArray{T}"/>, whose default value is not an
-    /// empty array but an array with no storage, which throws when it is enumerated. An application that assigns
-    /// <c>default</c> is treated as offering no further name.
+    /// The delegate returns an <see cref="ImmutableArray{T}"/>. The default value of this type is not an empty array
+    /// but an array with no storage, which throws when it is enumerated. A delegate that returns <c>default</c> is
+    /// treated as offering no further name.
     /// </summary>
     [Fact]
     public async Task ADefaultListIsTreatedAsEmpty()
     {
         var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalEvaluationNamespaceConstrained )
             .CreateConsumerAsync(
-                new LicenseConsumptionOptions { ProjectName = TestLicenseKeyProvider.NamespaceConstraint, AdditionalProjectNames = default } );
+                new LicenseConsumptionOptions
+                {
+                    ProjectName = TestLicenseKeyProvider.NamespaceConstraint, AdditionalProjectNamesProvider = () => default
+                } );
 
         Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+    }
+
+    /// <summary>
+    /// The consumer invokes the delegate at most once, however many requirements it evaluates against a
+    /// namespace-constrained key.
+    /// </summary>
+    [Fact]
+    public async Task TheFurtherNamesAreComputedOnce()
+    {
+        var invocations = 0;
+
+        var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalEvaluationNamespaceConstrained )
+            .CreateConsumerAsync(
+                new LicenseConsumptionOptions
+                {
+                    ProjectName = "AProjectOfAnotherName",
+                    AdditionalProjectNamesProvider = () =>
+                    {
+                        invocations++;
+
+                        return [TestLicenseKeyProvider.NamespaceConstraint];
+                    }
+                } );
+
+        Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        Assert.Equal( 1, invocations );
+    }
+
+    /// <summary>
+    /// A key that is not constrained to a namespace does not need the further names, so the consumer does not invoke
+    /// the delegate.
+    /// </summary>
+    [Fact]
+    public async Task AnUnconstrainedKeyDoesNotComputeTheFurtherNames()
+    {
+        var invocations = 0;
+
+        var consumer = await this.CreateConsumptionService( LicenseKeyProvider.MetalamaProfessionalBusiness )
+            .CreateConsumerAsync(
+                new LicenseConsumptionOptions
+                {
+                    ProjectName = "AProjectOfAnotherName",
+                    AdditionalProjectNamesProvider = () =>
+                    {
+                        invocations++;
+
+                        return ImmutableArray<string>.Empty;
+                    }
+                } );
+
+        Assert.True( consumer.TryConsume( new MetalamaExtensionLicenseRequirement( "<ComponentName>" ) ) );
+        Assert.Equal( 0, invocations );
     }
 }

@@ -2,13 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-// This file is compiled into Metalama.Backstage and into Metalama.Framework.CompilerExtensions. The second assembly
-// can reference nothing, because Metalama.Backstage is one of the assemblies that it embeds and extracts, so the
-// classification is shared as source rather than through an assembly reference. The METALAMA_BACKSTAGE compilation
-// symbol selects the namespace, so that the two assemblies do not declare a type of the same full name:
-// ResourceExtractor loads Metalama.Backstage into the process that already contains
-// Metalama.Framework.CompilerExtensions.
-
 using System.Diagnostics;
 
 namespace SharpCrafters.Backstage.ProcessClassification;

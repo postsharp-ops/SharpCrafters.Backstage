@@ -226,7 +226,7 @@ public sealed class LicensingMessageKindTests : LicensingTestsBase
 
         var uncovered = Enum.GetValues( typeof(LicensingMessageKind) )
             .Cast<LicensingMessageKind>()
-            .Where( k => k != LicensingMessageKind.Generic )
+            .Where( k => k != LicensingMessageKind.Default )
             .Except( covered )
             .ToList();
 
