@@ -28,13 +28,21 @@ public static class MetalamaPathUtilities
     public static string GetTempPath() => _overriddenTempPath ?? Path.GetTempPath();
 
     /// <summary>
-    /// Gets the Metalama temporary directory. The actual logic lives in <see cref="IStandardDirectories.TempDirectory" />;
-    /// this static accessor delegates to it for callers that do not have a service provider at hand. It therefore requires
-    /// the backstage services to be initialized.
+    /// Gets the Metalama temporary directory from the process-wide service provider. The actual logic lives in
+    /// <see cref="IStandardDirectories.TempDirectory" />.
     /// </summary>
+    [Obsolete( "Use GetTempDirectory(IServiceProvider) or IStandardDirectories.TempDirectory. The process-wide service provider is obsolete." )]
     public static string GetTempDirectory()
         => BackstageServiceFactory.ServiceProvider.GetRequiredBackstageService<IStandardDirectories>().TempDirectory;
 
+    /// <summary>
+    /// Gets the Metalama temporary directory from the given service provider. The actual logic lives in
+    /// <see cref="IStandardDirectories.TempDirectory" />.
+    /// </summary>
+    public static string GetTempDirectory( IServiceProvider serviceProvider )
+        => serviceProvider.GetRequiredBackstageService<IStandardDirectories>().TempDirectory;
+
+    [Obsolete( "Use GetTempFileName(string) with GetTempDirectory(IServiceProvider). The process-wide service provider is obsolete." )]
     public static string GetTempFileName() => GetTempFileName( GetTempDirectory() );
 
     /// <summary>
