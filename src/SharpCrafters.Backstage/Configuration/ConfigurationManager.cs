@@ -162,7 +162,7 @@ namespace SharpCrafters.Backstage.Configuration
             if ( !string.IsNullOrEmpty(
                     Environment.GetEnvironmentVariable( this._productProfile.GetEnvironmentVariableName( "DEBUG_CONFIGURATION_MANAGER" ) ) ) )
             {
-                DebuggerHelper.Launch();
+                DebuggerHelper.LaunchOnce();
             }
 
             var applicationInfo = serviceProvider.GetBackstageService<IApplicationInfoProvider>()?.Application;

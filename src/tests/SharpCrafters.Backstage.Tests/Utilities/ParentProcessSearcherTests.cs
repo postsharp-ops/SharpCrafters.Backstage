@@ -48,5 +48,5 @@ public sealed class ParentProcessSearcherTests : TestsBase
     [InlineData( "gael", "User Manager", false )]
     [InlineData( "SYSTEM", "NT AUTHORITY", false )]
     public void WindowsContainerIsDetectedFromTheAccount( string userName, string userDomainName, bool expected )
-        => Assert.Equal( expected, ContainerDetector.IsWindowsContainerAccount( userName, userDomainName ) );
+        => Assert.Equal( expected, ContainerDetection.IsWindowsContainerAccount( userName, userDomainName ) );
 }

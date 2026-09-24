@@ -147,7 +147,10 @@ public static class RegisterCoreServices
                 var configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
                 var configuration = configurationManager.Get<DiagnosticsConfiguration>();
 
-                DebuggerHelper.Launch( configuration, processKind );
+                if ( configuration.Debugging.Processes.TryGetValue( processKind.ToString(), out var launchDebugger ) && launchDebugger )
+                {
+                    DebuggerHelper.LaunchOnce();
+                }
 
                 var productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
                 var consoleTracing = Environment.GetEnvironmentVariable( productProfile.GetEnvironmentVariableName( "CONSOLE_TRACE" ) );
