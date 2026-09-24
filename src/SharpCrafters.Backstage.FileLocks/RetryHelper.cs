@@ -7,19 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SharpCrafters.Backstage.FileLocks
 {
-    /// <summary>
-    /// Reports an attempt that failed and is about to be retried, so that a caller can decide for itself when a
-    /// wait has lasted long enough to be worth telling the user about.
-    /// </summary>
-    /// <param name="attempts">The number of attempts made so far, starting at one.</param>
-    /// <param name="elapsed">The time since the first attempt started.</param>
-    /// <param name="exception">The exception that failed the attempt.</param>
-    /// <remarks>
-    /// It is called on every retry, so a caller that reports on every call produces one message per attempt. A
-    /// caller that wants one message reports on a threshold of its own, of either argument.
-    /// </remarks>
-    public delegate void RetryReporter( int attempts, TimeSpan elapsed, Exception exception );
-
     public static partial class RetryHelper
     {
         /// <summary>
@@ -30,7 +17,7 @@ namespace SharpCrafters.Backstage.FileLocks
             Predicate<Exception>? retryPredicate = null,
             ILogger? logger = null,
             Action<Exception>? onException = null,
-            RetryReporter? onRetry = null,
+            RetryWarning? warning = null,
             RetryBudget? budget = null )
             => Retry(
                 () =>
@@ -42,20 +29,45 @@ namespace SharpCrafters.Backstage.FileLocks
                 retryPredicate,
                 logger,
                 onException,
-                onRetry,
+                warning,
                 budget );
 
         /// <summary>
         /// Executes a <see cref="Func{TResult}"/> and retries it upon failure.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        /// <param name="action">The operation.</param>
+        /// <param name="retryPredicate">
+        /// Determines whether an exception is retried. By default, an <see cref="IOException"/> or an
+        /// <see cref="UnauthorizedAccessException"/> is.
+        /// </param>
+        /// <param name="logger">A logger that receives a warning at each retry.</param>
+        /// <param name="onException">Called with the exception of the first failed attempt.</param>
+        /// <param name="warning">Tells the user, once, that the operation keeps failing.</param>
+        /// <param name="budget">How long to keep trying. By default, a dozen attempts.</param>
+        /// <returns>The return value of <paramref name="action"/>.</returns>
         public static T Retry<T>(
             Func<T> action,
             Predicate<Exception>? retryPredicate = null,
             ILogger? logger = null,
             Action<Exception>? onException = null,
-            RetryReporter? onRetry = null,
+            RetryWarning? warning = null,
             RetryBudget? budget = null )
+            => RetryCore(
+                action,
+                retryPredicate,
+                logger,
+                onException,
+                warning?.CreateReporter( () => null ),
+                budget );
+
+        [ExcludeFromCodeCoverage]
+        private static T RetryCore<T>(
+            Func<T> action,
+            Predicate<Exception>? retryPredicate,
+            ILogger? logger,
+            Action<Exception>? onException,
+            Action<int, TimeSpan, Exception>? onFailedAttempt,
+            RetryBudget? budget )
         {
             var delay = 10.0;
             budget ??= RetryBudget.Default;
@@ -80,7 +92,7 @@ namespace SharpCrafters.Backstage.FileLocks
                         onException?.Invoke( e );
                     }
 
-                    onRetry?.Invoke( i + 1, elapsed, e );
+                    onFailedAttempt?.Invoke( i + 1, elapsed, e );
 
                     var wait = budget.CapDelay( TimeSpan.FromMilliseconds( delay ), elapsed );
 
@@ -97,45 +109,54 @@ namespace SharpCrafters.Backstage.FileLocks
         /// <summary>
         /// Executes an action that affects a single file while retrying and reporting blocking processes upon lock.
         /// </summary>
-        /// <param name="onFilesLocked">
-        /// Called once, the first time the operation fails, with the names of the processes holding the files,
-        /// for a product whose diagnostics are not a log. It is not called per attempt, so a caller that turns
-        /// it into a message for the user does not produce one per retry.
-        /// </param>
         public static void RetryWithLockDetection(
             string file,
             Action<string> action,
-            IServiceProvider serviceProvider,
+            IServiceProvider? serviceProvider,
             Predicate<Exception>? retryPredicate = null,
             ILogger? logger = null,
-            Action<string>? onFilesLocked = null,
-            RetryReporter? onRetry = null,
+            RetryWarning? warning = null,
             RetryBudget? budget = null )
-            => RetryWithLockDetection( new[] { file }, action, serviceProvider, retryPredicate, logger, onFilesLocked, onRetry, budget );
+            => RetryWithLockDetection( new[] { file }, action, serviceProvider, retryPredicate, logger, warning, budget );
 
         /// <summary>
         /// Executes an action that affects a several files while retrying and reporting blocking processes upon lock.
-        /// The action is executed once for each file and receives the file name as an argument. 
+        /// The action is executed once for each file and receives the file name as an argument.
         /// </summary>
+        /// <remarks>
+        /// The <paramref name="warning"/> is reported at most once for the whole call, not once for each file.
+        /// </remarks>
         public static void RetryWithLockDetection(
             IReadOnlyList<string> files,
             Action<string> action,
-            IServiceProvider serviceProvider,
+            IServiceProvider? serviceProvider,
             Predicate<Exception>? retryPredicate = null,
             ILogger? logger = null,
-            Action<string>? onFilesLocked = null,
-            RetryReporter? onRetry = null,
+            RetryWarning? warning = null,
             RetryBudget? budget = null )
         {
-            var context = new DeadlockDetectionContext( serviceProvider, logger, files, onFilesLocked );
+            var context = new DeadlockDetectionContext( serviceProvider, logger, files, warning );
 
             ExecuteWithLockDetection(
                 () =>
                 {
                     foreach ( var file in files )
                     {
-                        Retry( () => action( file ), retryPredicate, logger, context.OnRecoverableException, onRetry, budget );
+                        RetryCore(
+                            () =>
+                            {
+                                action( file );
+
+                                return true;
+                            },
+                            retryPredicate,
+                            logger,
+                            context.OnRecoverableException,
+                            context.OnFailedAttempt,
+                            budget );
                     }
+
+                    return true;
                 },
                 context );
         }
@@ -147,25 +168,69 @@ namespace SharpCrafters.Backstage.FileLocks
         public static void RetryWithLockDetection(
             IReadOnlyList<string> files,
             Action action,
-            IServiceProvider serviceProvider,
+            IServiceProvider? serviceProvider,
             Predicate<Exception>? retryPredicate = null,
             ILogger? logger = null,
-            Action<string>? onFilesLocked = null,
-            RetryReporter? onRetry = null,
+            RetryWarning? warning = null,
+            RetryBudget? budget = null )
+            => RetryWithLockDetection(
+                files,
+                () =>
+                {
+                    action();
+
+                    return true;
+                },
+                serviceProvider,
+                retryPredicate,
+                logger,
+                warning,
+                budget );
+
+        /// <summary>
+        /// Executes a function that affects a several files while retrying and reporting blocking processes upon lock.
+        /// The function is executed only once.
+        /// </summary>
+        /// <param name="files">The files that the function affects, whose holding processes are reported.</param>
+        /// <param name="action">The operation.</param>
+        /// <param name="serviceProvider">
+        /// The services that provide the <see cref="ILockingProcessDetector"/>, or <c>null</c> in a process that started no
+        /// services. Without the detector, the holding processes are not named.
+        /// </param>
+        /// <param name="retryPredicate">
+        /// Determines whether an exception is retried. By default, an <see cref="IOException"/> or an
+        /// <see cref="UnauthorizedAccessException"/> is.
+        /// </param>
+        /// <param name="logger">A logger that receives a warning at each retry, and the holding processes.</param>
+        /// <param name="warning">Tells the user, once, that the operation keeps failing, naming the holding processes.</param>
+        /// <param name="budget">How long to keep trying. By default, a dozen attempts.</param>
+        /// <returns>The return value of <paramref name="action"/>.</returns>
+        /// <exception cref="LockedFileException">
+        /// The operation still failed when the budget was spent, and processes holding the files were found.
+        /// </exception>
+        public static T RetryWithLockDetection<T>(
+            IReadOnlyList<string> files,
+            Func<T> action,
+            IServiceProvider? serviceProvider,
+            Predicate<Exception>? retryPredicate = null,
+            ILogger? logger = null,
+            RetryWarning? warning = null,
             RetryBudget? budget = null )
         {
-            var context = new DeadlockDetectionContext( serviceProvider, logger, files, onFilesLocked );
+            var context = new DeadlockDetectionContext( serviceProvider, logger, files, warning );
 
-            ExecuteWithLockDetection( () => Retry( action, retryPredicate, logger, context.OnRecoverableException, onRetry, budget ), context );
+            return ExecuteWithLockDetection(
+                () => RetryCore( action, retryPredicate, logger, context.OnRecoverableException, context.OnFailedAttempt, budget ),
+                context );
         }
 
-        private static void ExecuteWithLockDetection(
-            Action action,
+        private static T ExecuteWithLockDetection<T>(
+            Func<T> action,
             DeadlockDetectionContext context )
         {
             try
             {
-                action();
+                return action();
             }
             catch ( Exception e )
             {

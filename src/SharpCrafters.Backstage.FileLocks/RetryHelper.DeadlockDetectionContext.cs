@@ -11,28 +11,50 @@ public static partial class RetryHelper
 {
     private sealed class DeadlockDetectionContext
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider? _serviceProvider;
         private readonly ILogger? _logger;
         private readonly IReadOnlyList<string> _files;
-        private readonly Action<string>? _onFilesLocked;
+        private readonly bool _hasWarning;
 
         public DeadlockDetectionContext(
-            IServiceProvider serviceProvider,
+            IServiceProvider? serviceProvider,
             ILogger? logger,
             IReadOnlyList<string> files,
-            Action<string>? onFilesLocked = null )
+            RetryWarning? warning )
         {
             this._serviceProvider = serviceProvider;
             this._logger = logger;
             this._files = files;
-            this._onFilesLocked = onFilesLocked;
+            this._hasWarning = warning != null;
+
+            // One reporter for the whole call, so that an operation retried once per file warns once and not once per
+            // file.
+            this.OnFailedAttempt = warning?.CreateReporter( () => this.LockingProcesses );
         }
+
+        /// <summary>
+        /// Gets the delegate invoked after each failed attempt, or <c>null</c> when the caller asked for no warning.
+        /// </summary>
+        public Action<int, TimeSpan, Exception>? OnFailedAttempt { get; }
+
+        /// <summary>
+        /// Gets the sentence naming the processes holding the files, found when the operation first failed, or
+        /// <c>null</c>.
+        /// </summary>
+        public string? LockingProcesses { get; private set; }
 
         public void OnRecoverableException( Exception exception )
         {
-            var lockingDetection = this._serviceProvider.GetBackstageService<ILockingProcessDetector>();
+            // Naming the processes costs a restart manager session, so it is done only when a logger or a warning reads
+            // the result.
+            if ( this.LockingProcesses != null || (this._logger == null && !this._hasWarning) )
+            {
+                return;
+            }
 
-            if ( lockingDetection == null || (this._logger == null && this._onFilesLocked == null) )
+            var lockingDetection = this._serviceProvider?.GetBackstageService<ILockingProcessDetector>();
+
+            if ( lockingDetection == null )
             {
                 return;
             }
@@ -46,21 +68,16 @@ public static partial class RetryHelper
                 return;
             }
 
-            var message = "The following process(es) are locking these files: " + string.Join(
+            this.LockingProcesses = "The following process(es) are locking these files: " + string.Join(
                 ", ",
                 lockingProcesses.Select( p => $"{p.ProcessName} ({p.Id})" ) );
 
-            this._logger?.Warning?.Log( message );
-
-            // A product whose diagnostics are not a log reports it itself. It is called once, when the operation
-            // first fails, and not on every attempt, so a caller that turns this into a message for the user does
-            // not produce one per retry.
-            this._onFilesLocked?.Invoke( message );
+            this._logger?.Warning?.Log( this.LockingProcesses );
         }
 
         public void OnFatalException( Exception e )
         {
-            var lockingDetection = this._serviceProvider.GetBackstageService<ILockingProcessDetector>();
+            var lockingDetection = this._serviceProvider?.GetBackstageService<ILockingProcessDetector>();
 
             if ( lockingDetection != null )
             {
