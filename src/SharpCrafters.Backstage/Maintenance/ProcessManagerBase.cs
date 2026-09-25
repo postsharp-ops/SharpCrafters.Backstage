@@ -252,7 +252,12 @@ internal abstract class ProcessManagerBase : IProcessManager
 #if NET
         var excludedProcessIds = new HashSet<int> { Environment.ProcessId };
 #else
-        var excludedProcessIds = new HashSet<int> { Process.GetCurrentProcess().Id };
+        HashSet<int> excludedProcessIds;
+
+        using ( var currentProcess = Process.GetCurrentProcess() )
+        {
+            excludedProcessIds = [currentProcess.Id];
+        }
 #endif
 
         try

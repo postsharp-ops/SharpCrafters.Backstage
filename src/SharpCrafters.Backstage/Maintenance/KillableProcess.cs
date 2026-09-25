@@ -42,7 +42,7 @@ internal sealed class KillableProcess
 
             this._logger.Trace?.Log( $"Gracefully shutting down process {this.Process.Id}." );
 
-            var shutdownProcess = new Process()
+            using var shutdownProcess = new Process()
             {
                 StartInfo = new ProcessStartInfo()
                 {
