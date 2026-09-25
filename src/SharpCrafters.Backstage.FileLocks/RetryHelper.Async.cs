@@ -11,7 +11,7 @@ namespace SharpCrafters.Backstage.FileLocks
     {
         /// <summary>
         /// Executes an asynchronous operation and retries it upon failure, with the same schedule and the same
-        /// default retry predicate as <see cref="Retry{T}"/>.
+        /// default retry predicate as <see cref="Retry{T}(Func{T}, Predicate{Exception}, ILogger, Action{Exception}, RetryWarning, RetryBudget)"/>.
         /// </summary>
         /// <remarks>
         /// The waits between the attempts are asynchronous, so a caller on a thread that must not block, or a caller

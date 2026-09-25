@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
+using System;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
 
