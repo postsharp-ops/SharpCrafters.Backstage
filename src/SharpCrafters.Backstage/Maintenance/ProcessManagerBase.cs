@@ -96,10 +96,6 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The caller owns the processes, and disposes all of them once it has acted on the ones that
-    /// <see cref="GetMatchingProcesses"/> selects.
-    /// </para>
-    /// <para>
     /// The standalone processes are enumerated on every operating system, and not on Windows alone, because the language
     /// server of the Visual Studio Code C# Dev Kit runs as its own executable on Linux and on macOS as well. The
     /// comparison of the process name is case insensitive, which is what <see cref="Process.GetProcessesByName(string)"/>
@@ -107,54 +103,84 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// </para>
     /// </remarks>
 #pragma warning disable CA1307
-    public List<Process> GetCandidateProcesses( ImmutableArray<ProcessSpec> processSpecs )
+    private List<Process> GetCandidateProcesses( ImmutableArray<ProcessSpec> processSpecs )
     {
         var processes = new List<Process>();
 
-        if ( processSpecs.Any( s => s.IsDotNet ) )
+        try
         {
-            var dotnetProcesses = Process.GetProcessesByName( _dotNetProcessName );
+            if ( processSpecs.Any( s => s.IsDotNet ) )
+            {
+                var dotnetProcesses = Process.GetProcessesByName( _dotNetProcessName );
 
-            this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
+                this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
 
-            processes.AddRange( dotnetProcesses );
+                processes.AddRange( dotnetProcesses );
+            }
+
+            foreach ( var processSpec in processSpecs.Where( s => s.IsStandaloneProcess ) )
+            {
+                processes.AddRange( Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ) );
+            }
+
+            return processes;
         }
-
-        foreach ( var processSpec in processSpecs.Where( s => s.IsStandaloneProcess ) )
+        catch
         {
-            processes.AddRange( Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ) );
-        }
+            Dispose( processes );
 
-        return processes;
+            throw;
+        }
     }
 #pragma warning restore CA1307
 
     /// <summary>
-    /// Selects, among <paramref name="candidates"/>, the processes that match one of <paramref name="processSpecs"/>, whether
-    /// they run as an assembly under the <c>dotnet</c> process name or as their own executable.
+    /// Gets the running processes that match one of <paramref name="processSpecs"/>, whether they run as an assembly under
+    /// the <c>dotnet</c> process name or as their own executable.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The <see cref="MatchedProcess"/> objects do not own their processes: the caller of <see cref="GetCandidateProcesses"/>
-    /// disposes them.
-    /// </para>
-    /// <para>
-    /// The current process and its parents are never selected: see <see cref="ExcludeCurrentProcessAndParents{T}"/>.
-    /// </para>
+    /// The current process and its parents are never selected: see <see cref="ExcludeCurrentProcessAndParents{T}"/>. The
+    /// caller owns the matching processes. The others are disposed here, so they never leave this method.
     /// </remarks>
-    public IEnumerable<MatchedProcess> GetMatchingProcesses( IEnumerable<Process> candidates, ImmutableArray<ProcessSpec> processSpecs )
+    public IReadOnlyList<MatchedProcess> GetMatchingProcesses( ImmutableArray<ProcessSpec> processSpecs )
     {
-        foreach ( var process in this.ExcludeCurrentProcessAndParents( candidates, p => p.Id ) )
-        {
-            // The name comes from the snapshot that Process.GetProcessesByName took, so it is available after the process exits.
-            var killableProcess = string.Equals( process.ProcessName, _dotNetProcessName, StringComparison.OrdinalIgnoreCase )
-                ? this.SelectDotNetProcess( process, processSpecs )
-                : this.SelectStandaloneProcess( process, processSpecs );
+        var candidates = this.GetCandidateProcesses( processSpecs );
+        var matches = new List<MatchedProcess>();
 
-            if ( killableProcess != null )
+        try
+        {
+            foreach ( var process in this.ExcludeCurrentProcessAndParents( candidates, p => p.Id ) )
             {
-                yield return killableProcess;
+                // The name comes from the snapshot that Process.GetProcessesByName took, so it is available after the
+                // process exits.
+                var match = string.Equals( process.ProcessName, _dotNetProcessName, StringComparison.OrdinalIgnoreCase )
+                    ? this.SelectDotNetProcess( process, processSpecs )
+                    : this.SelectStandaloneProcess( process, processSpecs );
+
+                if ( match != null )
+                {
+                    matches.Add( match );
+                }
             }
+        }
+        catch
+        {
+            Dispose( candidates );
+
+            throw;
+        }
+
+        var matchingProcesses = new HashSet<Process>( matches.Select( m => m.Process ) );
+        Dispose( candidates.Where( p => !matchingProcesses.Contains( p ) ) );
+
+        return matches;
+    }
+
+    private static void Dispose( IEnumerable<Process> processes )
+    {
+        foreach ( var process in processes )
+        {
+            process.Dispose();
         }
     }
 

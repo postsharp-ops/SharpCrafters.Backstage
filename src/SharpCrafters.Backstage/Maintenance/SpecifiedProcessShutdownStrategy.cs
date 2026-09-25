@@ -48,19 +48,19 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
 
     public IReadOnlyList<ProcessShutdownResult> ShutDownProcesses( ProcessShutdownOptions options )
     {
-        var candidates = this._processManager.GetCandidateProcesses( this.ProcessSpecs );
+        // The process that runs the command and its parents are never selected, so that a tool of the product, or a build
+        // that runs the command, survives it.
+        var processes = this._processManager.GetMatchingProcesses( this.ProcessSpecs );
 
         try
         {
-            // The process that runs the command and its parents are never selected, so that a tool of the product, or a
-            // build that runs the command, survives it.
-            return this.ShutDown( this._processManager.GetMatchingProcesses( candidates, this.ProcessSpecs ).ToList(), options );
+            return this.ShutDown( processes, options );
         }
         finally
         {
-            foreach ( var candidate in candidates )
+            foreach ( var process in processes )
             {
-                candidate.Dispose();
+                process.Process.Dispose();
             }
         }
     }
