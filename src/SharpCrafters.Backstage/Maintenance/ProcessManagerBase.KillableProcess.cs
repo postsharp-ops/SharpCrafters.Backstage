@@ -11,7 +11,7 @@ namespace SharpCrafters.Backstage.Maintenance;
 
 internal abstract partial class ProcessManagerBase
 {
-    protected sealed class KillableProcess
+    protected sealed class KillableProcess : IDisposable
     {
         private readonly ILogger _logger;
         private readonly string? _mainModule;
@@ -31,7 +31,7 @@ internal abstract partial class ProcessManagerBase
 
                 this._logger.Trace?.Log( $"Gracefully shutting down process {this.Process.Id}." );
 
-                var shutdownProcess = new Process()
+                using var shutdownProcess = new Process()
                 {
                     StartInfo = new ProcessStartInfo()
                     {
@@ -114,5 +114,10 @@ internal abstract partial class ProcessManagerBase
 
             this.Kill();
         }
+
+        /// <summary>
+        /// Disposes <see cref="Process"/>, which this object owns.
+        /// </summary>
+        public void Dispose() => this.Process.Dispose();
     }
 }
