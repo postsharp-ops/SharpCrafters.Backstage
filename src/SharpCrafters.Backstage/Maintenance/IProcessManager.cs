@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
+using System.Collections.Generic;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -11,4 +12,14 @@ namespace SharpCrafters.Backstage.Maintenance;
 public interface IProcessManager : IBackstageService
 {
     void KillCompilerProcesses( bool shouldEmitWarnings );
+
+    /// <summary>
+    /// Gets the running processes of the tools of the product: the worker, whether it uploads the telemetry or hosts
+    /// the setup web server, and the desktop notifier.
+    /// </summary>
+    /// <remarks>
+    /// The processes are identified as <see cref="KillCompilerProcesses"/> identifies them. A process whose modules
+    /// cannot be read, typically because it belongs to another user, is not returned.
+    /// </remarks>
+    IReadOnlyList<BackstageToolProcess> GetToolProcesses();
 }
