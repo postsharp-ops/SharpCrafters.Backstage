@@ -22,7 +22,8 @@ internal interface IProcessManager : IBackstageService
     List<Process> GetCandidateProcesses( ImmutableArray<KillableProcessSpec> processSpecs );
 
     /// <summary>
-    /// Selects, among <paramref name="candidates"/>, the processes that match one of <paramref name="processSpecs"/>.
+    /// Selects, among <paramref name="candidates"/>, the processes that match one of <paramref name="processSpecs"/>, except
+    /// the current process and its parents.
     /// </summary>
     IEnumerable<KillableProcess> GetKillableProcesses( IEnumerable<Process> candidates, ImmutableArray<KillableProcessSpec> processSpecs );
 }

@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -32,8 +33,11 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// </summary>
     private readonly ProductProfile _productProfile;
 
+    private readonly IParentProcessSearch _parentProcessSearch;
+
     protected ProcessManagerBase( IServiceProvider serviceProvider )
     {
+        this._parentProcessSearch = serviceProvider.GetRequiredBackstageService<IParentProcessSearch>();
         this.Logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessManager" );
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
     }
@@ -130,12 +134,17 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// they run as an assembly under the <c>dotnet</c> process name or as their own executable.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The <see cref="KillableProcess"/> objects do not own their processes: the caller of <see cref="GetCandidateProcesses"/>
     /// disposes them.
+    /// </para>
+    /// <para>
+    /// The current process and its parents are never selected: see <see cref="ExcludeCurrentProcessAndParents{T}"/>.
+    /// </para>
     /// </remarks>
     public IEnumerable<KillableProcess> GetKillableProcesses( IEnumerable<Process> candidates, ImmutableArray<KillableProcessSpec> processSpecs )
     {
-        foreach ( var process in candidates )
+        foreach ( var process in this.ExcludeCurrentProcessAndParents( candidates, p => p.Id ) )
         {
             // The name comes from the snapshot that Process.GetProcessesByName took, so it is available after the process exits.
             var killableProcess = string.Equals( process.ProcessName, _dotNetProcessName, StringComparison.OrdinalIgnoreCase )
@@ -220,5 +229,56 @@ internal abstract class ProcessManagerBase : IProcessManager
         }
 
         return new KillableProcess( process, this.Logger, null, processSpec );
+    }
+
+    /// <summary>
+    /// Removes the current process and its parent processes from the processes to stop.
+    /// </summary>
+    /// <param name="processes">The processes to stop.</param>
+    /// <param name="getProcessId">Gets the identifier of a process.</param>
+    /// <remarks>
+    /// <para>
+    /// A process that asks for the shutdown must survive it, and so must the processes that wait for it. The parent of
+    /// the current process is often one of the processes to stop: <c>dotnet build</c> and <c>dotnet test</c> run MSBuild
+    /// in their own process, and so does a <c>dotnet</c> tool started from a build. Stopping a parent would end the
+    /// operation that asked for the shutdown.
+    /// </para>
+    /// <para>
+    /// When the parent processes cannot be determined, only the current process is excluded, and a warning is logged.
+    /// </para>
+    /// </remarks>
+    internal IEnumerable<T> ExcludeCurrentProcessAndParents<T>( IEnumerable<T> processes, Func<T, int> getProcessId )
+    {
+#if NET
+        var excludedProcessIds = new HashSet<int> { Environment.ProcessId };
+#else
+        var excludedProcessIds = new HashSet<int> { Process.GetCurrentProcess().Id };
+#endif
+
+        try
+        {
+            foreach ( var parent in this._parentProcessSearch.GetParentProcesses() )
+            {
+                excludedProcessIds.Add( parent.ProcessId );
+            }
+        }
+        catch ( Exception e )
+        {
+            this.Logger.Warning?.Log( $"Cannot determine the parent processes, so only the current process is excluded from the shutdown: {e.Message}" );
+        }
+
+        foreach ( var process in processes )
+        {
+            var processId = getProcessId( process );
+
+            if ( excludedProcessIds.Contains( processId ) )
+            {
+                this.Logger.Trace?.Log( $"Do not stop the process {processId}, because it is the current process or one of its parents." );
+
+                continue;
+            }
+
+            yield return process;
+        }
     }
 }
