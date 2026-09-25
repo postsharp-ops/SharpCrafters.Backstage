@@ -17,8 +17,8 @@ namespace SharpCrafters.Backstage.PlatformTests.ProcessManagement;
 /// </summary>
 /// <remarks>
 /// <see cref="IProcessManager.KillCompilerProcesses"/> ends every process it recognizes on the machine, including the
-/// compiler server and the MSBuild nodes of other builds. Run these tests in a container, or on an agent that runs one
-/// build at a time.
+/// compiler server and the MSBuild nodes of other builds, but not the current process and its parents, which include the
+/// <c>dotnet test</c> that runs these tests. Run them in a container, or on an agent that runs one build at a time.
 /// </remarks>
 public sealed class ProcessManagerTests : IDisposable
 {
