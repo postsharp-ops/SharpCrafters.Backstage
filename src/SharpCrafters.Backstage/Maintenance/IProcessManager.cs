@@ -4,7 +4,6 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Extensibility;
-using System.Collections.Generic;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -21,5 +20,6 @@ public interface IProcessManager : IBackstageService
     /// The processes are identified as <see cref="KillCompilerProcesses"/> identifies them. A process whose modules
     /// cannot be read, typically because it belongs to another user, is not returned.
     /// </remarks>
-    IReadOnlyList<BackstageToolProcess> GetToolProcesses();
+    /// <returns>The processes. The caller disposes the collection, which disposes the processes.</returns>
+    BackstageToolProcessCollection GetToolProcesses();
 }

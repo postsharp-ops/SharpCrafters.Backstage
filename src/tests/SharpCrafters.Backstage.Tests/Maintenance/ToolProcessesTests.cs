@@ -45,7 +45,7 @@ public sealed class ToolProcessesTests : TestsBase
 
         try
         {
-            var toolProcesses = new WindowsProcessManager( this.ServiceProvider ).GetToolProcesses();
+            using var toolProcesses = new WindowsProcessManager( this.ServiceProvider ).GetToolProcesses();
 
             var found = Assert.Single( toolProcesses, p => p.Process.Id == process.Id );
             Assert.Same( BackstageTool.DesktopWindows, found.Tool );
