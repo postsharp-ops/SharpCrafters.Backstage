@@ -7,7 +7,8 @@ using System;
 namespace SharpCrafters.Backstage.Commands.Maintenance;
 
 /// <summary>
-/// The <c>shutdown</c> command: stops the processes that keep the files of the product locked after a build.
+/// The <c>shutdown</c> command, also named <c>kill</c>: stops the processes that keep the files of the product locked
+/// after a build.
 /// </summary>
 /// <remarks>
 /// What is stopped, and how, is decided by the registered <see cref="SharpCrafters.Backstage.Maintenance.IProcessShutdownStrategy"/>

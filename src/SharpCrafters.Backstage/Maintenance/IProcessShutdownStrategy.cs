@@ -9,8 +9,8 @@ using System.Collections.Generic;
 namespace SharpCrafters.Backstage.Maintenance;
 
 /// <summary>
-/// Stops one kind of process that keeps files of the product locked after a build, for the <c>shutdown</c>,
-/// <c>kill</c> and <c>cleanup</c> commands.
+/// Stops one kind of process that keeps files of the product locked after a build, for the <c>shutdown</c> command, also
+/// named <c>kill</c>, and the <c>cleanup</c> command.
 /// </summary>
 /// <remarks>
 /// <para>

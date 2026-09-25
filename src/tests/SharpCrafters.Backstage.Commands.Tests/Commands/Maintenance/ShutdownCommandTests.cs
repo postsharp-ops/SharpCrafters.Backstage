@@ -35,6 +35,14 @@ public sealed class ShutdownCommandTests : CommandsTestsBase
         await this.TestCommandAsync( "shutdown", "Other stub server (process 5678): exited" );
     }
 
+    /// <summary>
+    /// Tests that <c>kill</c>, the earlier name of the command, still runs it. Scripts and documentation of earlier versions
+    /// call it by that name.
+    /// </summary>
+    [Fact]
+    public async Task KillIsTheSameCommand()
+        => await this.TestCommandAsync( "kill", "Stub server (process 1234): exited" );
+
     private sealed class StubStrategy : IProcessShutdownStrategy
     {
         private readonly string _description;

@@ -41,7 +41,7 @@ public sealed class BackstageCommandOptions
     /// Registers the services that the host of the commands contributes, after the services of Backstage. A host registers
     /// there the <see cref="SharpCrafters.Backstage.Maintenance.IProcessShutdownStrategy"/> implementations of its product,
     /// with <see cref="SharpCrafters.Backstage.Maintenance.ProcessShutdownServiceExtensions.AddProcessShutdownStrategy"/>,
-    /// which the <c>shutdown</c>, <c>kill</c> and <c>cleanup</c> commands run after those of Backstage.
+    /// which the <c>shutdown</c> command, also named <c>kill</c>, and the <c>cleanup</c> command run after those of Backstage.
     /// </param>
     public BackstageCommandOptions(
         IApplicationInfo applicationInfo,

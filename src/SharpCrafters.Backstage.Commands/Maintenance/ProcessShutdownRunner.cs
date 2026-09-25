@@ -11,8 +11,8 @@ using System.Linq;
 namespace SharpCrafters.Backstage.Commands.Maintenance;
 
 /// <summary>
-/// Runs every registered <see cref="IProcessShutdownStrategy"/> and reports what each did, for the <c>shutdown</c>,
-/// <c>kill</c> and <c>cleanup</c> commands.
+/// Runs every registered <see cref="IProcessShutdownStrategy"/> and reports what each did, for the <c>shutdown</c> command,
+/// also named <c>kill</c>, and the <c>cleanup</c> command.
 /// </summary>
 internal static class ProcessShutdownRunner
 {
