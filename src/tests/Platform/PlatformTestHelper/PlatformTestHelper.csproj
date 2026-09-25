@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      The second process of the cross-process platform tests. Its assembly name is longer than the 15 characters that Linux
+      keeps of a process name, and it has an apphost, so that a test can run it under that name.
+    -->
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <AssemblyName>SharpCrafters.Backstage.PlatformTestHelper</AssemblyName>
+        <RootNamespace>SharpCrafters.Backstage.PlatformTests</RootNamespace>
+        <UseAppHost>true</UseAppHost>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Metalama.Backstage" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The version of the application of the tests, which the user interface services require, as an application has one. -->
+        <AssemblyMetadata Include="PackageVersion" Value="1.0.0" />
+    </ItemGroup>
+
+</Project>

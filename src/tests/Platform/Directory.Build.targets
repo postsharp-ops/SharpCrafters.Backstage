@@ -1,0 +1,5 @@
+<Project>
+
+    <!-- A blocker. It does not import the Directory.Build.targets above it, for the reason given in Directory.Build.props. -->
+
+</Project>

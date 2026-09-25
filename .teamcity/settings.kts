@@ -18,6 +18,10 @@ project {
 
     buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment)
 
+    subProject(DockerTests)
+
+    subProjectsOrder = arrayListOf(DockerTests)
+
 }
 
 object DebugBuild : BuildType({
@@ -51,7 +55,7 @@ object DebugBuild : BuildType({
             id = "CleanNuGetCache"
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
             }
             noProfile = false
         }
@@ -81,7 +85,7 @@ object DebugBuild : BuildType({
             executionMode = BuildStep.ExecutionMode.ALWAYS
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }"
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
             }
             noProfile = false
         }
@@ -165,7 +169,7 @@ object ReleaseBuild : BuildType({
             id = "CleanNuGetCache"
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
             }
             noProfile = false
         }
@@ -195,7 +199,7 @@ object ReleaseBuild : BuildType({
             executionMode = BuildStep.ExecutionMode.ALWAYS
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }"
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
             }
             noProfile = false
         }
@@ -268,7 +272,7 @@ object PublicBuild : BuildType({
             id = "CleanNuGetCache"
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
             }
             noProfile = false
         }
@@ -298,7 +302,7 @@ object PublicBuild : BuildType({
             executionMode = BuildStep.ExecutionMode.ALWAYS
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }"
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
             }
             noProfile = false
         }
@@ -366,7 +370,7 @@ object PublicDeployment : BuildType({
             id = "CleanNuGetCache"
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
             }
             noProfile = false
         }
@@ -396,7 +400,7 @@ object PublicDeployment : BuildType({
             executionMode = BuildStep.ExecutionMode.ALWAYS
             edition = PowerShellStep.Edition.Core
             scriptMode = script {
-                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }"
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
             }
             noProfile = false
         }
@@ -434,3 +438,432 @@ object PublicDeployment : BuildType({
 
 })
 
+object DockerTestsWindowsX64 : BuildType({
+
+    name = "Docker Tests (Windows x64)"
+
+    params {
+        text(
+            "Exec.Arguments", 
+            "", 
+            label ="eng/RunDockerTests.ps1 Arguments",
+            description = "Arguments to append to the 'Execute eng/RunDockerTests.ps1' build step.", allowEmpty = true)
+    }
+
+    vcs {
+        root(AbsoluteId("Backstage_Backstage20270"))
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    steps {
+        powerShell {
+            name = "Clean NuGet cache of produced and dependency packages"
+            id = "CleanNuGetCache"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Copy nuget.restored.config to nuget.config"
+            id = "CopyNuGetConfig"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.config\" -Force;Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.wsl.config\" -Force;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Create eng/Versions.g.props"
+            id = "CreateVersionsFile"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "New-Item -Path \"eng/Versions.g.props\" -ItemType File -Force -Value \"<Project><Import Project=`\"../artifacts/publish/private/Backstage.version.props`\" /></Project>\" | Out-Null;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Execute eng/RunDockerTests.ps1"
+            id = "Exec"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = file {
+                path = "eng/RunDockerTests.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-Platform win-x64 %Exec.Arguments%"
+        }
+        powerShell {
+            name = "Cleanup Docker containers"
+            id = "DockerCleanup"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
+            }
+            noProfile = false
+        }
+    }
+
+    requirements {
+        matches("teamcity.agent.jvm.os.family", "Windows")
+        doesNotContain("env.PROCESSOR_IDENTIFIER", "ARMv8")
+    }
+
+    features {
+        swabra {
+            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
+            verbose = true
+        }
+        gitHubAppBuildScopedToken {
+            parameterName = "env.GITHUB_TOKEN"
+            connectionId = "%GITHUB_CONNECTION_POSTSHARP_OPS%"
+            targetRepositories = "SharpCrafters.Backstage"
+        }
+    }
+
+    dependencies {
+        snapshot(DebugBuild) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+
+        artifacts(DebugBuild) { 
+            cleanDestination = true
+            artifactRules = "+:artifacts/publish/private/**/*=>artifacts/publish/private"
+        }
+     }
+
+})
+
+object DockerTestsLinuxX64 : BuildType({
+
+    name = "Docker Tests (Linux x64)"
+
+    params {
+        text(
+            "Exec.Arguments", 
+            "", 
+            label ="eng/RunDockerTests.ps1 Arguments",
+            description = "Arguments to append to the 'Execute eng/RunDockerTests.ps1' build step.", allowEmpty = true)
+    }
+
+    vcs {
+        root(AbsoluteId("Backstage_Backstage20270"))
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    steps {
+        powerShell {
+            name = "Clean NuGet cache of produced and dependency packages"
+            id = "CleanNuGetCache"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Copy nuget.restored.config to nuget.config"
+            id = "CopyNuGetConfig"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.config\" -Force;Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.wsl.config\" -Force;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Create eng/Versions.g.props"
+            id = "CreateVersionsFile"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "New-Item -Path \"eng/Versions.g.props\" -ItemType File -Force -Value \"<Project><Import Project=`\"../artifacts/publish/private/Backstage.version.props`\" /></Project>\" | Out-Null;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Execute eng/RunDockerTests.ps1"
+            id = "Exec"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = file {
+                path = "eng/RunDockerTests.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-Platform linux-x64 %Exec.Arguments%"
+        }
+        powerShell {
+            name = "Cleanup Docker containers"
+            id = "DockerCleanup"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
+            }
+            noProfile = false
+        }
+    }
+
+    requirements {
+        equals("teamcity.agent.jvm.os.name", "Linux")
+        equals("teamcity.agent.jvm.os.arch", "amd64")
+    }
+
+    features {
+        swabra {
+            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
+            verbose = true
+        }
+        gitHubAppBuildScopedToken {
+            parameterName = "env.GITHUB_TOKEN"
+            connectionId = "%GITHUB_CONNECTION_POSTSHARP_OPS%"
+            targetRepositories = "SharpCrafters.Backstage"
+        }
+    }
+
+    dependencies {
+        snapshot(DebugBuild) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+
+        artifacts(DebugBuild) { 
+            cleanDestination = true
+            artifactRules = "+:artifacts/publish/private/**/*=>artifacts/publish/private"
+        }
+     }
+
+})
+
+object DockerTestsLinuxArm64 : BuildType({
+
+    name = "Docker Tests (Linux ARM64)"
+
+    params {
+        text(
+            "Exec.Arguments", 
+            "", 
+            label ="eng/RunDockerTests.ps1 Arguments",
+            description = "Arguments to append to the 'Execute eng/RunDockerTests.ps1' build step.", allowEmpty = true)
+    }
+
+    vcs {
+        root(AbsoluteId("Backstage_Backstage20270"))
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    steps {
+        powerShell {
+            name = "Clean NuGet cache of produced and dependency packages"
+            id = "CleanNuGetCache"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Copy nuget.restored.config to nuget.config"
+            id = "CopyNuGetConfig"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.config\" -Force;Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.wsl.config\" -Force;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Create eng/Versions.g.props"
+            id = "CreateVersionsFile"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "New-Item -Path \"eng/Versions.g.props\" -ItemType File -Force -Value \"<Project><Import Project=`\"../artifacts/publish/private/Backstage.version.props`\" /></Project>\" | Out-Null;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Execute eng/RunDockerTests.ps1"
+            id = "Exec"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = file {
+                path = "eng/RunDockerTests.ps1"
+            }
+            noProfile = false
+            scriptArgs = "-Platform linux-arm64 %Exec.Arguments%"
+        }
+        powerShell {
+            name = "Cleanup Docker containers"
+            id = "DockerCleanup"
+            executionMode = BuildStep.ExecutionMode.ALWAYS
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}label = \"%system.teamcity.buildType.id%_%build.number%\"; ${'$'}ids = docker ps -a -q --filter \"label=postsharp.build=${'$'}label\"; if (${'$'}ids) { docker rm -f ${'$'}ids 2>&1 | Out-Null }; if (${'$'}env:BUILDAGENT_CLEANUP_SCRIPT) { Write-Host \"Running the agent cleanup script: ${'$'}(${'$'}env:BUILDAGENT_CLEANUP_SCRIPT)\"; try { Invoke-Expression ${'$'}env:BUILDAGENT_CLEANUP_SCRIPT; if (${'$'}LASTEXITCODE -ne 0) { Write-Host \"The agent cleanup script exited with code ${'$'}LASTEXITCODE.\" } } catch { Write-Host \"The agent cleanup script failed: ${'$'}_\" } }"
+            }
+            noProfile = false
+        }
+    }
+
+    requirements {
+        matches("teamcity.agent.jvm.os.name", "Linux|Mac OS X")
+        equals("teamcity.agent.jvm.os.arch", "aarch64")
+    }
+
+    features {
+        swabra {
+            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
+            verbose = true
+        }
+        gitHubAppBuildScopedToken {
+            parameterName = "env.GITHUB_TOKEN"
+            connectionId = "%GITHUB_CONNECTION_POSTSHARP_OPS%"
+            targetRepositories = "SharpCrafters.Backstage"
+        }
+    }
+
+    dependencies {
+        snapshot(DebugBuild) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+
+        artifacts(DebugBuild) { 
+            cleanDestination = true
+            artifactRules = "+:artifacts/publish/private/**/*=>artifacts/publish/private"
+        }
+     }
+
+})
+
+object RunAllDockerTests : BuildType({
+
+    name = "Run All Docker Tests"
+
+    type = Type.COMPOSITE
+
+    vcs {
+        root(AbsoluteId("Backstage_Backstage20270"))
+        showDependenciesChanges = true
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    features {
+        gitHubAppBuildScopedToken {
+            parameterName = "env.GITHUB_TOKEN"
+            connectionId = "%GITHUB_CONNECTION_POSTSHARP_OPS%"
+            targetRepositories = "SharpCrafters.Backstage"
+        }
+    }
+
+    dependencies {
+        snapshot(DockerTestsWindowsX64) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+        snapshot(DockerTestsLinuxX64) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+        snapshot(DockerTestsLinuxArm64) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+     }
+
+})
+
+object PlatformTestsMacOSArm64 : BuildType({
+
+    name = "Platform Tests (macOS ARM64)"
+
+    params {
+        text(
+            "Exec.Arguments", 
+            "", 
+            label ="src/tests/Platform/RunMacOSTests.ps1 Arguments",
+            description = "Arguments to append to the 'Execute src/tests/Platform/RunMacOSTests.ps1' build step.", allowEmpty = true)
+    }
+
+    vcs {
+        root(AbsoluteId("Backstage_Backstage20270"))
+     checkoutMode = CheckoutMode.ON_AGENT
+    }
+
+    steps {
+        powerShell {
+            name = "Clean NuGet cache of produced and dependency packages"
+            id = "CleanNuGetCache"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "${'$'}nugetPackages = if ( ${'$'}env:NUGET_PACKAGES ) { ${'$'}env:NUGET_PACKAGES } else { Join-Path ${'$'}HOME '.nuget' 'packages' }; ${'$'}removedDirs = 0; ${'$'}removedFiles = 0; if ( Test-Path -LiteralPath ${'$'}nugetPackages ) { foreach ( ${'$'}pattern in @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*') ) { Get-ChildItem -LiteralPath ${'$'}nugetPackages -Directory -Filter ${'$'}pattern -ErrorAction SilentlyContinue | ForEach-Object { ${'$'}files = @( Get-ChildItem -LiteralPath ${'$'}_.FullName -Recurse -File -ErrorAction SilentlyContinue ).Count; Write-Host \"Removing NuGet cache directory: ${'$'}(${'$'}_.FullName) (${'$'}files file(s))\"; Remove-Item -LiteralPath ${'$'}_.FullName -Recurse -Force -ErrorAction SilentlyContinue; if ( -not ( Test-Path -LiteralPath ${'$'}_.FullName ) ) { ${'$'}removedDirs++; ${'$'}removedFiles += ${'$'}files } } } Write-Host \"Removed ${'$'}removedDirs package directory(ies) and ${'$'}removedFiles file(s) from the NuGet cache.\"; } else { Write-Host \"NuGet packages folder not found: ${'$'}nugetPackages\" }"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Copy nuget.restored.config to nuget.config"
+            id = "CopyNuGetConfig"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.config\" -Force;Copy-Item -Path \"artifacts/publish/private/nuget.restored.config\" -Destination \"nuget.wsl.config\" -Force;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Create eng/Versions.g.props"
+            id = "CreateVersionsFile"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = script {
+                content = "New-Item -Path \"eng/Versions.g.props\" -ItemType File -Force -Value \"<Project><Import Project=`\"../artifacts/publish/private/Backstage.version.props`\" /></Project>\" | Out-Null;"
+            }
+            noProfile = false
+        }
+        powerShell {
+            name = "Execute src/tests/Platform/RunMacOSTests.ps1"
+            id = "Exec"
+            edition = PowerShellStep.Edition.Core
+            scriptMode = file {
+                path = "src/tests/Platform/RunMacOSTests.ps1"
+            }
+            noProfile = false
+            scriptArgs = " %Exec.Arguments%"
+        }
+    }
+
+    requirements {
+        equals("teamcity.agent.jvm.os.name", "Mac OS X")
+        equals("teamcity.agent.jvm.os.arch", "aarch64")
+    }
+
+    features {
+        swabra {
+            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
+            verbose = true
+        }
+        gitHubAppBuildScopedToken {
+            parameterName = "env.GITHUB_TOKEN"
+            connectionId = "%GITHUB_CONNECTION_POSTSHARP_OPS%"
+            targetRepositories = "SharpCrafters.Backstage"
+        }
+    }
+
+    dependencies {
+        snapshot(DebugBuild) {
+                 onDependencyFailure = FailureAction.FAIL_TO_START
+        }
+
+        artifacts(DebugBuild) { 
+            cleanDestination = true
+            artifactRules = "+:artifacts/publish/private/**/*=>artifacts/publish/private"
+        }
+     }
+
+})
+
+object DockerTests : Project({
+
+    name = "Docker Tests"
+
+    buildType(DockerTestsWindowsX64)
+    buildType(DockerTestsLinuxX64)
+    buildType(DockerTestsLinuxArm64)
+    buildType(RunAllDockerTests)
+    buildType(PlatformTestsMacOSArm64)
+
+    buildTypesOrder = arrayListOf(DockerTestsWindowsX64,DockerTestsLinuxX64,DockerTestsLinuxArm64,RunAllDockerTests,PlatformTestsMacOSArm64)
+
+})

@@ -6,31 +6,40 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.UserInterface;
 
 internal sealed class LinuxUserInterfaceService( IServiceProvider serviceProvider ) : BrowserBasedUserInterfaceService( serviceProvider )
 {
-    private readonly IProcessExecutor _processExecutor = serviceProvider.GetRequiredBackstageService<IProcessExecutor>();
+    private const string _xdgOpen = "xdg-open";
+
+    private readonly IEnvironmentVariableProvider _environmentVariableProvider =
+        serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>();
+
+    private readonly IFileSystem _fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
 
     protected override ProcessStartInfo GetProcessStartInfoForUrl( string url, BrowserMode browserMode )
     {
-        // In some scenarios, like building from Visual Studio Code, starting a process with the URL as the file name doesn't work.
-        // We try to use xdg-open to open the URL and if xdg-open is available.
-        // xdg-open should be available on most Linux distributions.
+        // In some scenarios, like building from Visual Studio Code, starting a process with the URL as the file name doesn't
+        // work. The URL is therefore opened with xdg-open when it is on the path, which is the case on most Linux
+        // distributions.
+        var xdgOpenPath = this.FindOnPath( _xdgOpen );
 
-        var whichXdgOpen = this._processExecutor.Start( new ProcessStartInfo( "which xdg-open" ) { UseShellExecute = true } );
-        whichXdgOpen.WaitForExit();
+        if ( xdgOpenPath != null )
+        {
+            // The output is not redirected. xdg-open starts the browser with the same standard output, and nothing reads
+            // it, so a redirected browser would block once the pipe is full.
+            return new ProcessStartInfo( xdgOpenPath, $"\"{url.Replace( "\"", "%22" )}\"" ) { UseShellExecute = false };
+        }
 
-        if ( whichXdgOpen.ExitCode == 0 )
-        {
-            // xdg-open is available.
-            return new ProcessStartInfo( "xdg-open", url ) { UseShellExecute = true, RedirectStandardOutput = true, RedirectStandardError = true };
-        }
-        else
-        {
-            // xdg-open is not available.
-            return base.GetProcessStartInfoForUrl( url, browserMode );
-        }
+        return base.GetProcessStartInfoForUrl( url, browserMode );
     }
+
+    private string? FindOnPath( string fileName )
+        => this._environmentVariableProvider.GetEnvironmentVariable( "PATH" )
+            ?.Split( new[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries )
+            .Select( directory => Path.Combine( directory, fileName ) )
+            .FirstOrDefault( this._fileSystem.FileExists );
 }

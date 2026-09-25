@@ -47,6 +47,7 @@ launchSettings.json
 /.config/dotnet-tools.json
 global.json
 nuget.config
+nuget.wsl.config
 *.g.ps1
 *.g.json
 eng/docker-context/.g/

@@ -3,8 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using PostSharp.Engineering.BuildTools;
+using PostSharp.Engineering.BuildTools.Build;
 using PostSharp.Engineering.BuildTools.Build.Model;
 using PostSharp.Engineering.BuildTools.Build.Solutions;
+using PostSharp.Engineering.BuildTools.ContinuousIntegration.Model;
 using PostSharp.Engineering.BuildTools.Docker;
 using BackstageDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.BackstageDependencies.V2027_0;
 
@@ -38,6 +40,10 @@ var product = new Product( BackstageDependencies.Backstage )
         ]
     },
     GenerateNuGetConfig = true,
+
+    // Writes nuget.wsl.config beside nuget.config. Its sources are the same, but with the paths of the engine inside
+    // WSL, which is where DockerBuild.ps1 runs a Linux test container on a Windows development machine.
+    AddWslSupport = true,
     DotNetSdkVersion = new DotNetSdkVersion( dotNet10SdkVersion ),
 
     Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
@@ -59,7 +65,36 @@ var product = new Product( BackstageDependencies.Backstage )
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
         "Metalama.Backstage.Tools.$(PackageVersion).nupkg",         // Required by Metalama.Framework.Engine and Metalama.Vsx.
         "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.
-        "PostSharp.Backstage.Tools.$(PackageVersion).nupkg" )       // Required by PostSharp and PostSharp.Vsx.
+        "PostSharp.Backstage.Tools.$(PackageVersion).nupkg" ),      // Required by PostSharp and PostSharp.Vsx.
+
+    // The platform tests in src/tests/Platform run the platform-specific code of the packages on the platform itself.
+    // They consume the packages of the Debug build. Linux and Windows run in a container, one per suite. macOS runs on
+    // the agent, because no container engine provides a macOS container.
+    AdditionalCiBuildConfigurations =
+    [
+        ..DockerTestsAdditionalCiBuildConfiguration.WithCompositeConfiguration(
+            CreateDockerTestConfiguration( DockerTestPlatform.WindowsX64, "Windows x64" ),
+            CreateDockerTestConfiguration( DockerTestPlatform.LinuxX64, "Linux x64" ),
+            CreateDockerTestConfiguration( DockerTestPlatform.LinuxArm64, "Linux ARM64" ) ),
+        new PowershellAdditionalCiBuildConfiguration(
+            "PlatformTestsMacOSArm64",
+            "Platform Tests (macOS ARM64)",
+            "src/tests/Platform/RunMacOSTests.ps1",
+            "" )
+        {
+            BuildSnapshotDependency = BuildConfiguration.Debug,
+            ProjectFolder = DockerTestsAdditionalCiBuildConfiguration.DefaultProjectFolder,
+            BuildAgentRequirements = new BuildAgentRequirements(
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.name", "Mac OS X" ),
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.arch", "aarch64" ) )
+        }
+    ]
 };
 
 return new EngineeringApp( product ).Run( args );
+
+static DockerTestsAdditionalCiBuildConfiguration CreateDockerTestConfiguration( DockerTestPlatform platform, string title )
+    => new( $"DockerTests{platform}", $"Docker Tests ({title})", platform, "src/tests/Platform/Docker" )
+    {
+        BuildSnapshotDependency = BuildConfiguration.Debug
+    };

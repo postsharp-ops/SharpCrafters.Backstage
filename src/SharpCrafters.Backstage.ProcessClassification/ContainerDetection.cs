@@ -47,11 +47,21 @@ public static class ContainerDetection
             return false;
         }
 
+        return IsLinuxContainer( "/", logger );
+    }
+
+    /// <summary>
+    /// Determines whether the Linux system whose root directory is <paramref name="rootDirectory"/> is a container.
+    /// </summary>
+    /// <param name="rootDirectory">The root directory, which is <c>/</c> except in a test.</param>
+    /// <param name="logger">A logger that receives the reason for the answer, or <c>null</c>.</param>
+    internal static bool IsLinuxContainer( string rootDirectory, ILogger? logger )
+    {
         string? ReadFileSafe( string path )
         {
             try
             {
-                return File.ReadAllText( path );
+                return File.ReadAllText( Path.Combine( rootDirectory, path ) );
             }
             catch ( Exception e )
             {
@@ -61,9 +71,22 @@ public static class ContainerDetection
             }
         }
 
+        // Docker creates /.dockerenv, and Podman creates /run/.containerenv, in every container that they start. These
+        // files are the only signature of a container under control groups v2, where /proc/1/cgroup is '0::/' and so
+        // names no container engine, when the first process of the container does not declare the container either.
+        foreach ( var markerFile in new[] { ".dockerenv", "run/.containerenv" } )
+        {
+            if ( File.Exists( Path.Combine( rootDirectory, markerFile ) ) )
+            {
+                logger?.Trace?.Log( $"Running inside a container based on the file '/{markerFile}'." );
+
+                return true;
+            }
+        }
+
         // If the process is running inside a Docker container
         // init (pid '1') process control group collection will have /docker/ as a part of the groups hierarchies.
-        var process1ControlGroup = ReadFileSafe( "/proc/1/cgroup" );
+        var process1ControlGroup = ReadFileSafe( "proc/1/cgroup" );
 
         if ( !string.IsNullOrEmpty( process1ControlGroup ) )
         {
@@ -75,7 +98,7 @@ public static class ContainerDetection
             }
         }
 
-        var process1Environment = ReadFileSafe( "/proc/1/environ" );
+        var process1Environment = ReadFileSafe( "proc/1/environ" );
 
         if ( !string.IsNullOrEmpty( process1Environment ) )
         {
