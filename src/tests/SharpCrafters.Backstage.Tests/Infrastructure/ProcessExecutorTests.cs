@@ -112,11 +112,9 @@ public sealed class ProcessExecutorTests : TestsBase
     /// Windows keeps a handle on the working directory of a running process, so the directory can be deleted only
     /// after the process has ended. The other operating systems do not, so the test is skipped there.
     /// </remarks>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void ProcessIsTerminatedWhenTheTimeoutExpires()
     {
-        Skip.IfNot( IsWindows, "A process holds a handle on its working directory only on Windows." );
-
         var workingDirectory = Path.Combine( Path.GetTempPath(), $"Metalama.ProcessExecutorTests.{Guid.NewGuid():N}" );
         Directory.CreateDirectory( workingDirectory );
 

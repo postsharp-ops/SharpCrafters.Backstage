@@ -1,0 +1,23 @@
+<Project>
+
+    <!--
+      A blocker. It replaces the Directory.Packages.props of the repository, which pins the dependencies of the product
+      rather than those of a consumer. Keep the versions of the test packages equal to those of the root file.
+    -->
+
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageVersion Include="Metalama.Backstage" Version="$(BackstageVersion)" />
+        <PackageVersion Include="SharpCrafters.Backstage.Testing" Version="$(BackstageVersion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageVersion Include="xunit" Version="2.9.3" />
+        <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    </ItemGroup>
+
+</Project>

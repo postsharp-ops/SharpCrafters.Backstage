@@ -145,7 +145,7 @@ public sealed class ConfigurationManagerStressTests : IDisposable
 
         // The real service and not the substitute, because this test uses the real file system and therefore has to
         // exclude the other processes of the machine exactly as the product does.
-        services.AddSingleton<INamedLockService>( serviceProvider => new NamedLockService( serviceProvider ) );
+        services.AddSingleton<INamedLockService>( serviceProvider => NamedLockServiceFactory.Create( serviceProvider ) );
 
         services.AddSingleton<IJsonSerializationService>(
             _ => new JsonSerializationService( new IJsonTypeInfoResolver[] { TestConfigurationJsonContext.Default } ) );

@@ -1,0 +1,5 @@
+.artifacts/
+
+# The global.json of the repository root is generated and ignored. This one is not: it shadows the root one, whose
+# pinned SDK and PostSharp.Engineering SDK a test image does not carry.
+!global.json

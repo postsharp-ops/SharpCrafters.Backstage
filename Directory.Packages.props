@@ -6,7 +6,7 @@
 
   <!-- Set versions of dependencies that need special treatment or consist of multiple packages of the same version. -->
   <PropertyGroup>
-    <PostSharpEngineeringVersion Condition="'$(PostSharpEngineeringVersion)'==''">2023.2.460</PostSharpEngineeringVersion>
+    <PostSharpEngineeringVersion Condition="'$(PostSharpEngineeringVersion)'==''">2023.2.466</PostSharpEngineeringVersion>
 
     <!-- NewtonsoftJsonMinVersion must match the version shipped by the lowest version of Visual Studio that
          Metalama.Vsx supports, which is 17.14. -->
@@ -53,7 +53,6 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.20" />
     <PackageVersion Include="xunit" Version="$(xUnitApiVersion)" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageVersion Include="Xunit.SkippableFact" Version="1.5.61" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
   </ItemGroup>
 </Project>

@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SharpCrafters.Backstage.Threading
 {
-    public sealed partial class NamedLockService
+    public abstract partial class NamedLockService
     {
         /// <summary>
         /// The part of <see cref="INamedLock"/> that does not depend on the primitive backing the lock, namely

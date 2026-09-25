@@ -4,7 +4,7 @@
 
 namespace SharpCrafters.Backstage.Threading
 {
-    public sealed partial class NamedLockService
+    public abstract partial class NamedLockService
     {
         /// <summary>
         /// A lock backed by a named <see cref="Mutex"/>, and therefore shared by all the processes of the machine.
@@ -12,6 +12,7 @@ namespace SharpCrafters.Backstage.Threading
         /// </summary>
         private sealed class OperatingSystemLock : NamedLockBase
         {
+            private readonly NamedLockService _service;
             private readonly Mutex _mutex;
 
             /// <summary>
@@ -22,6 +23,7 @@ namespace SharpCrafters.Backstage.Threading
             /// <param name="mutex">The mutex, whose ownership is transferred to this object.</param>
             public OperatingSystemLock( NamedLockService service, string name, Mutex mutex ) : base( service, name )
             {
+                this._service = service;
                 this._mutex = mutex;
             }
 
@@ -32,39 +34,17 @@ namespace SharpCrafters.Backstage.Threading
 
                 try
                 {
-                    if ( !cancellationToken.CanBeCanceled )
-                    {
-                        return this._mutex.WaitOne( timeout );
-                    }
-
-                    // Mutex.WaitOne has no cancellable overload, so the wait handle of the token is waited upon
-                    // alongside the mutex itself. The array is allocated for each wait, which is acceptable
-                    // because this path is taken only when the caller actually supplied a token, and only when
-                    // the lock was found to be owned.
-                    var index = WaitHandle.WaitAny( new WaitHandle[] { this._mutex, cancellationToken.WaitHandle }, timeout );
-
-                    switch ( index )
-                    {
-                        case 0:
-                            return true;
-
-                        case 1:
-                            // The token was signalled first, so the mutex was not acquired and must not be
-                            // released.
-                            throw new OperationCanceledException( cancellationToken );
-
-                        default:
-                            // WaitHandle.WaitTimeout.
-                            return false;
-                    }
+                    return cancellationToken.CanBeCanceled
+                        ? this._service.WaitCancellable( this._mutex, timeout, cancellationToken )
+                        : this._mutex.WaitOne( timeout );
                 }
                 catch ( AbandonedMutexException e )
                 {
                     // The previous owner terminated without releasing the mutex. The wait has nonetheless
                     // succeeded and this thread now owns it, so the acquisition is reported as successful and the
                     // caller is told through the event that the protected state may be inconsistent.
-                    // WaitAny reports which handle was abandoned, and WaitOne reports -1; only the mutex, which is
-                    // at index 0, can ever be the one.
+                    // WaitAny reports which handle was abandoned, and WaitOne reports -1. The derived classes pass
+                    // the mutex at index 0, so only that index can ever be the one.
                     if ( e.MutexIndex is 0 or -1 )
                     {
                         wasAbandoned = true;

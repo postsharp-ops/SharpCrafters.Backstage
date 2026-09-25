@@ -1,0 +1,47 @@
+<Project>
+
+    <!--
+      A blocker. It does not import the Directory.Build.props above it. The platform tests stand in for an application
+      that consumes the Backstage packages, and such an application has none of the build configuration of this
+      repository: no strong naming, no packaging, no PostSharp.Engineering SDK and no analyzers.
+    -->
+
+    <PropertyGroup>
+        <PlatformTestsDirectory>$(MSBuildThisFileDirectory)</PlatformTestsDirectory>
+        <RepositoryDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', '..'))</RepositoryDirectory>
+
+        <!--
+          The name of the run, which separates the build output of the runs that share this directory: the repository is
+          mounted into every test container, so the suites and the platforms write into the same tree. The launcher of a
+          suite passes it. The SDK globs **/*.cs under a project, so the output must not be inside the project directory.
+        -->
+        <PlatformTestsRun Condition="'$(PlatformTestsRun)' == ''">local</PlatformTestsRun>
+        <BaseIntermediateOutputPath>$(PlatformTestsDirectory).artifacts/$(PlatformTestsRun)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+        <BaseOutputPath>$(PlatformTestsDirectory).artifacts/$(PlatformTestsRun)/bin/$(MSBuildProjectName)/</BaseOutputPath>
+
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <!--
+      BackstageVersion, the version of the packages under test. It comes from the file that the build writes beside the
+      packages, so the version tested is always the version built. The path is relative, so it resolves the same way on a
+      host, inside a container and on a build agent, where the artifact dependency extracts the packages there. The
+      eng/Versions.g.props file would give the same value, but it imports the file by an absolute path of the host that
+      built the product, which does not exist inside a container.
+    -->
+    <PropertyGroup>
+        <BackstageVersionFile>$(RepositoryDirectory)artifacts/publish/private/Backstage.version.props</BackstageVersionFile>
+    </PropertyGroup>
+
+    <Import Project="$(BackstageVersionFile)" Condition="Exists('$(BackstageVersionFile)')" />
+
+    <Target Name="VerifyBackstageVersion" BeforeTargets="Restore;CollectPackageReferences">
+        <Error Condition="'$(BackstageVersion)' == ''"
+               Text="The file '$(BackstageVersionFile)' is missing. Build the product with 'Build.ps1 build' before running the platform tests." />
+    </Target>
+
+</Project>

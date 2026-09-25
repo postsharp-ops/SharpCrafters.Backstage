@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <AssemblyName>SharpCrafters.Backstage.PlatformTests</AssemblyName>
+        <RootNamespace>SharpCrafters.Backstage.PlatformTests</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The product, as an application consumes it: through the packages of the build. -->
+        <PackageReference Include="Metalama.Backstage" />
+
+        <!-- For TestLicenseKeyProvider, which signs license keys with the test authority. -->
+        <PackageReference Include="SharpCrafters.Backstage.Testing" />
+
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.runner.visualstudio" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The second process of the cross-process tests. Its files are copied to the output directory of the tests. -->
+        <ProjectReference Include="../PlatformTestHelper/PlatformTestHelper.csproj" />
+    </ItemGroup>
+
+</Project>

@@ -4,6 +4,7 @@
 
 using Microsoft.Win32;
 using SharpCrafters.Backstage.Configuration.Registry;
+using SharpCrafters.Backstage.Testing;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -32,8 +33,6 @@ namespace SharpCrafters.Backstage.Tests.Registry;
 #pragma warning disable CA1416 // Every test is guarded by a platform check, and so is the clean-up.
 public sealed class WindowsRegistryServiceTests : IDisposable
 {
-    private const string _skipReason = "The registry exists on Windows only.";
-
     private static bool IsWindows => RuntimeInformation.IsOSPlatform( OSPlatform.Windows );
 
     /// <summary>
@@ -85,11 +84,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// Every value is written with the kind that PostSharp 2026.0 reads it with. That version casts what it reads,
     /// so a value of another kind makes it fall back to its default without saying anything.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void AValueIsWrittenWithTheKindTheOtherVersionExpects()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using ( var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath ) )
         {
             Assert.NotNull( key );
@@ -110,11 +107,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// <see cref="RegistryValueConverters"/> assumes: it reads a date as a <see cref="long"/> and a Boolean as an
     /// <see cref="int"/>, and treats anything else as absent.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void AValueComesBackAsTheTypeTheCodecExpects()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
         Assert.NotNull( key );
 
@@ -131,11 +126,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// A date survives a round trip through the real registry, which is what a trial start date and a lease
     /// expiration depend on.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void ADateSurvivesTheRealRegistry()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         var date = new DateTime( 2026, 9, 18, 14, 35, 46, DateTimeKind.Utc );
 
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
@@ -149,11 +142,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// <summary>
     /// The unnamed value of a key is a value like any other, which is where the lease of a license server is kept.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void TheUnnamedValueIsAValue()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
         Assert.NotNull( key );
 
@@ -165,11 +156,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
         Assert.Equal( "the default value", directKey.GetValue( null ) );
     }
 
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void AnAbsentValueIsNull()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
         Assert.NotNull( key );
 
@@ -180,11 +169,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// Deleting a value that is not there does nothing rather than throwing, which the schemas rely on: they delete
     /// the value of a member that has become absent without first asking whether it was ever written.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void DeletingAValueThatIsNotThereDoesNothing()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
         Assert.NotNull( key );
 
@@ -200,22 +187,18 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// A key that does not exist is reported as absent rather than created, which is how a product that has never
     /// run is told apart from one that has.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void OpeningAKeyThatIsNotThereGivesNothing()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         Assert.Null( this._service.OpenKey( RegistryHiveKind.CurrentUser, this._keyPath ) );
     }
 
     /// <summary>
     /// Creating a key creates every key above it, which is what lets a schema name a path several levels deep.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void CreatingAKeyCreatesThePathAboveIt()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using ( var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath + @"\One\Two" ) )
         {
             Assert.NotNull( key );
@@ -229,11 +212,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
         Assert.Equal( "a value", subKey.GetValue( "AString" ) );
     }
 
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void TheNamesOfTheValuesAndOfTheSubKeysAreEnumerated()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
         Assert.NotNull( key );
 
@@ -248,11 +229,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// <summary>
     /// A sub-key is deleted with everything below it, which is what clearing a cache of leases does.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void ASubKeyIsDeletedWithEverythingBelowIt()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath + @"\One\Two" )?.Dispose();
 
         using var key = this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath );
@@ -274,11 +253,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// returned to the pool at once — unless <c>REG_NOTIFY_THREAD_AGNOSTIC</c> is passed. Either mistake leaves the
     /// first change notified and every later one lost, with nothing to show for it.
     /// </remarks>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void AChangeIsNotifiedAndSoIsTheNextOne()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath )?.Dispose();
 
         using var changed = new SemaphoreSlim( 0 );
@@ -303,11 +280,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// A change below the key is a change of the key, which is what lets one watch cover a configuration object that
     /// spreads over a key and its sub-keys.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void AChangeBelowTheKeyIsNotified()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath )?.Dispose();
 
         using var changed = new SemaphoreSlim( 0 );
@@ -327,11 +302,9 @@ public sealed class WindowsRegistryServiceTests : IDisposable
     /// The watch stops when it is given up, so that a long-running process that has finished with a key is not
     /// woken by it and does not hold its handle.
     /// </summary>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void TheWatchStopsWhenItIsGivenUp()
     {
-        Skip.IfNot( IsWindows, _skipReason );
-
         this._service.CreateKey( RegistryHiveKind.CurrentUser, this._keyPath )?.Dispose();
 
         using var changed = new SemaphoreSlim( 0 );

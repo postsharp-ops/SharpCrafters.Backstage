@@ -77,7 +77,7 @@ public static class RegisterCoreServices
             .AddSingleton<IVcsStatusService>( serviceProvider => new GitStatusService( serviceProvider ) )
             .AddSingleton<IHttpClientFactory>( _ => new HttpClientFactory() )
             .AddSingleton<IJsonSerializationService>( _ => new JsonSerializationService( options.JsonTypeInfoResolvers ) )
-            .AddSingleton( CreateNamedLockService )
+            .AddNamedLockService()
             .AddSingleton<IPlatformInfo>( serviceProvider => new PlatformInfo( serviceProvider ) )
             .AddSingleton<BackstageBackgroundTasksService>( _ => new BackstageBackgroundTasksService() )
             .AddSingleton<ITempFileManager>( serviceProvider => new TempFileManager( serviceProvider ) )
@@ -224,6 +224,17 @@ public static class RegisterCoreServices
     }
 
     /// <summary>
+    /// Registers the <see cref="INamedLockService"/> of the current operating system, which
+    /// <see cref="NamedLockServiceFactory"/> creates, and routes its events to the log.
+    /// </summary>
+    /// <remarks>
+    /// The service resolves the <see cref="INamedLockServiceEnvironment"/> and the <see cref="EarlyLoggerFactory"/>,
+    /// which <see cref="AddCoreServices"/> registers before calling this method.
+    /// </remarks>
+    internal static ServiceProviderBuilder AddNamedLockService( this ServiceProviderBuilder serviceProviderBuilder )
+        => serviceProviderBuilder.AddSingleton( CreateNamedLockService );
+
+    /// <summary>
     /// Creates the named lock service and routes its events to the log.
     /// </summary>
     /// <remarks>
@@ -240,7 +251,7 @@ public static class RegisterCoreServices
     /// </remarks>
     private static INamedLockService CreateNamedLockService( IServiceProvider serviceProvider )
     {
-        var service = new NamedLockService( serviceProvider );
+        var service = NamedLockServiceFactory.Create( serviceProvider );
         var logger = serviceProvider.GetRequiredBackstageService<EarlyLoggerFactory>().GetLogger( "NamedLock" );
 
         service.ReportFilter = kind => logger.Trace != null || LockEventArgs.IsWarningKind( kind );

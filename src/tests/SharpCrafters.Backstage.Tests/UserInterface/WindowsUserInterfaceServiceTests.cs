@@ -27,10 +27,6 @@ public sealed class WindowsUserInterfaceServiceTests : TestsBase
     private const string _injectedUri = "evil://attacker-controlled";
     private const string _legitimateUri = "https://metalama.net/legitimate";
 
-    // This service and the CommandLineToArgvW helper are Windows-only. Fully qualified to avoid binding to the
-    // TestRuntimeInformation member of the base class.
-    private static bool IsWindows => System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform( OSPlatform.Windows );
-
     public WindowsUserInterfaceServiceTests( ITestOutputHelper logger ) : base( logger ) { }
 
     public static IEnumerable<object[]> MaliciousTitles()
@@ -49,15 +45,10 @@ public sealed class WindowsUserInterfaceServiceTests : TestsBase
     /// Verifies that a toast notification whose title contains quotes/backslashes followed by extra switches cannot
     /// inject additional arguments (such as an attacker-controlled <c>--uri</c>) into the desktop tool's argv.
     /// </summary>
-    [Theory]
+    [PlatformTheory( TestPlatforms.Windows )]
     [MemberData( nameof(MaliciousTitles) )]
     public async Task ToastTitleCannotInjectCommandLineArguments( string maliciousTitle )
     {
-        if ( !IsWindows )
-        {
-            return;
-        }
-
         var args = await this.ShowNotificationAndGetArgumentsAsync( new ToastNotification( ToastNotificationKinds.News, maliciousTitle, null, _legitimateUri ) );
 
         // The malicious title must reach the child process as a single, verbatim argument.
@@ -71,14 +62,9 @@ public sealed class WindowsUserInterfaceServiceTests : TestsBase
     /// <summary>
     /// Verifies that the notification text (also potentially untrusted) cannot inject additional arguments.
     /// </summary>
-    [Fact]
+    [PlatformFact( TestPlatforms.Windows )]
     public async Task ToastTextCannotInjectCommandLineArguments()
     {
-        if ( !IsWindows )
-        {
-            return;
-        }
-
         var maliciousText = "Body\" --uri \"" + _injectedUri;
 
         var args = await this.ShowNotificationAndGetArgumentsAsync(
@@ -92,14 +78,9 @@ public sealed class WindowsUserInterfaceServiceTests : TestsBase
     /// <summary>
     /// Verifies that a benign notification still passes its title and URI through to the child process unchanged.
     /// </summary>
-    [Fact]
+    [PlatformFact( TestPlatforms.Windows )]
     public async Task BenignToastNotificationPassesArgumentsCorrectly()
     {
-        if ( !IsWindows )
-        {
-            return;
-        }
-
         const string title = "Metalama 2026.1 released";
 
         var args = await this.ShowNotificationAndGetArgumentsAsync(

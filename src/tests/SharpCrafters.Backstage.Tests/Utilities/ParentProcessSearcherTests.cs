@@ -4,6 +4,8 @@
 
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
+using System;
+using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -67,5 +69,63 @@ public sealed class ParentProcessSearcherTests : TestsBase
 
         Assert.False( result );
         Assert.False( isDomainNameRead );
+    }
+
+    [Theory]
+    [InlineData( "1234 (dotnet) S 1000 1234 1000 0 -1", 1000 )]
+
+    // The name of the process is between parentheses and can contain spaces and parentheses.
+    [InlineData( "1234 (Platform Test () S 1000 1234 1000 0 -1", 1000 )]
+    [InlineData( "1234 (a) b (c)) R 42 1234 1000 0 -1", 42 )]
+    public void TheParentProcessIdentifierIsReadFromTheLinuxStatus( string processStatus, int expected )
+        => Assert.Equal( expected, ParentProcessSearchLinux.GetParentProcessId( processStatus ) );
+
+    [Theory]
+
+    // Linux keeps 15 characters of the name, so a name of that length is completed from the executable.
+    [InlineData( "SharpCrafters.B", "/app/SharpCrafters.Backstage.PlatformTestHelper", "SharpCrafters.Backstage.PlatformTestHelper" )]
+
+    // A process whose name was not taken from its executable, such as a script run by an interpreter, keeps its name.
+    [InlineData( "long-script-nam", "/usr/bin/bash", "long-script-nam" )]
+    [InlineData( "SharpCrafters.B", null, "SharpCrafters.B" )]
+    public void ATruncatedLinuxNameIsCompletedFromTheExecutable( string commandName, string? executablePath, string expected )
+        => Assert.Equal( expected, ParentProcessSearchLinux.GetUntruncatedName( commandName, executablePath ) );
+
+    [Theory]
+    [InlineData( "    1 /usr/local/share/dotnet/dotnet", 1, "dotnet" )]
+    [InlineData( "  512 -zsh", 512, "-zsh" )]
+
+    // The path of the executable can contain spaces.
+    [InlineData( "  812 /Applications/Visual Studio Code.app/Contents/MacOS/Electron", 812, "Electron" )]
+    [InlineData( "  812 /tmp/Platform Test (Helper)", 812, "Platform Test (Helper)" )]
+    public void TheParentProcessIsReadFromTheOutputOfPs( string output, int expectedParentProcessId, string expectedImageName )
+    {
+        Assert.Equal( expectedImageName, ParentProcessSearchMac.GetImageName( output, out var parentProcessId ) );
+        Assert.Equal( expectedParentProcessId, parentProcessId );
+    }
+
+    [Theory]
+    [InlineData( ".dockerenv" )]
+    [InlineData( "run/.containerenv" )]
+    public void ALinuxContainerIsDetectedFromTheFileOfItsEngine( string markerFile )
+    {
+        // Under control groups v2, /proc/1/cgroup names no container engine.
+        var root = Path.Combine( Path.GetTempPath(), "ContainerDetection", Guid.NewGuid().ToString( "N" ) );
+        Directory.CreateDirectory( Path.Combine( root, "proc", "1" ) );
+        File.WriteAllText( Path.Combine( root, "proc", "1", "cgroup" ), "0::/\n" );
+
+        try
+        {
+            Assert.False( ContainerDetection.IsLinuxContainer( root, null ) );
+
+            Directory.CreateDirectory( Path.GetDirectoryName( Path.Combine( root, markerFile ) )! );
+            File.WriteAllText( Path.Combine( root, markerFile ), "" );
+
+            Assert.True( ContainerDetection.IsLinuxContainer( root, null ) );
+        }
+        finally
+        {
+            Directory.Delete( root, recursive: true );
+        }
     }
 }
