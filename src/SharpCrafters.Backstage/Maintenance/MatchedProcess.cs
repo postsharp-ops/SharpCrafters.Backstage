@@ -11,7 +11,7 @@ namespace SharpCrafters.Backstage.Maintenance;
 /// What is done with it is decided by the <see cref="IProcessShutdownStrategy"/> that asked for it.
 /// </summary>
 /// <remarks>
-/// It does not own <see cref="Process"/>, which the caller of <see cref="IProcessManager.GetCandidateProcesses"/> disposes.
+/// It does not own <see cref="Process"/>, which the caller of <see cref="IProcessManager.GetMatchingProcesses"/> disposes.
 /// </remarks>
 internal sealed class MatchedProcess
 {

@@ -16,14 +16,12 @@ namespace SharpCrafters.Backstage.Maintenance;
 internal interface IProcessManager : IBackstageService
 {
     /// <summary>
-    /// Gets the processes that may match one of <paramref name="processSpecs"/>. The caller owns them, and disposes all of
-    /// them once it has acted on the ones that <see cref="GetMatchingProcesses"/> selects.
+    /// Gets the running processes that match one of <paramref name="processSpecs"/>, except the current process and its
+    /// parents.
     /// </summary>
-    List<Process> GetCandidateProcesses( ImmutableArray<ProcessSpec> processSpecs );
-
-    /// <summary>
-    /// Selects, among <paramref name="candidates"/>, the processes that match one of <paramref name="processSpecs"/>, except
-    /// the current process and its parents.
-    /// </summary>
-    IEnumerable<MatchedProcess> GetMatchingProcesses( IEnumerable<Process> candidates, ImmutableArray<ProcessSpec> processSpecs );
+    /// <returns>
+    /// The matching processes. The caller owns them and disposes their <see cref="MatchedProcess.Process"/>. The processes
+    /// that were examined and do not match are disposed before the method returns.
+    /// </returns>
+    IReadOnlyList<MatchedProcess> GetMatchingProcesses( ImmutableArray<ProcessSpec> processSpecs );
 }
