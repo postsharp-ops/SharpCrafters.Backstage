@@ -27,16 +27,38 @@ public sealed class LinuxUserInterfaceTests : IDisposable
 
     [PlatformFact( TestPlatforms.Linux )]
     [UnsupportedOSPlatform( "windows" )]
-    public async Task AWebPageIsOpenedWithXdgOpen()
+    public Task AWebPageIsOpenedWithXdgOpen() => this.OpenWebPageAsync( withNonExecutableShadow: false );
+
+    /// <summary>
+    /// The shell skips a file of the path that has no execute permission, and so must the service.
+    /// </summary>
+    [PlatformFact( TestPlatforms.Linux )]
+    [UnsupportedOSPlatform( "windows" )]
+    public Task ANonExecutableXdgOpenEarlierOnThePathIsSkipped() => this.OpenWebPageAsync( withNonExecutableShadow: true );
+
+    [UnsupportedOSPlatform( "windows" )]
+    private async Task OpenWebPageAsync( bool withNonExecutableShadow )
     {
         const string url = "https://www.postsharp.net/platform-tests";
         var recordPath = Path.Combine( this._directory, "url.txt" );
+        var stubDirectory = Directory.CreateDirectory( Path.Combine( this._directory, "stub" ) ).FullName;
+        var path = stubDirectory;
 
         // The stub writes the address to a temporary file and renames it, so that the record appears complete.
-        var stubPath = Path.Combine( this._directory, "xdg-open" );
+        var stubPath = Path.Combine( stubDirectory, "xdg-open" );
         File.WriteAllText( stubPath, $"#!/bin/sh\nprintf '%s' \"$1\" > '{recordPath}.tmp' && mv '{recordPath}.tmp' '{recordPath}'\n" );
         File.SetUnixFileMode( stubPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute );
-        Environment.SetEnvironmentVariable( "PATH", $"{this._directory}{Path.PathSeparator}{this._originalPath}" );
+
+        if ( withNonExecutableShadow )
+        {
+            var shadowDirectory = Directory.CreateDirectory( Path.Combine( this._directory, "shadow" ) ).FullName;
+            var shadowPath = Path.Combine( shadowDirectory, "xdg-open" );
+            File.WriteAllText( shadowPath, "#!/bin/sh\nexit 1\n" );
+            File.SetUnixFileMode( shadowPath, UnixFileMode.UserRead | UnixFileMode.UserWrite );
+            path = $"{shadowDirectory}{Path.PathSeparator}{path}";
+        }
+
+        Environment.SetEnvironmentVariable( "PATH", $"{path}{Path.PathSeparator}{this._originalPath}" );
 
         var recorded = new TaskCompletionSource( TaskCreationOptions.RunContinuationsAsynchronously );
         using var watcher = new FileSystemWatcher( this._directory, Path.GetFileName( recordPath ) ) { EnableRaisingEvents = true };

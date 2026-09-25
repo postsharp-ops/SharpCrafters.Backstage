@@ -37,20 +37,4 @@ internal static class StringExtensions
         => s.IndexOf( c );
 #pragma warning restore CA1307
 #endif
-
-    /// <summary>
-    /// Replaces every occurrence of a string, compared by the values of its characters.
-    /// </summary>
-    /// <remarks>
-    /// The overload of <see cref="string.Replace(string, string)"/> that takes a comparison was added in .NET Core 2.0
-    /// and does not exist on .NET Framework or .NET Standard 2.0, whose overload without a comparison is ordinal.
-    /// </remarks>
-    public static string ReplaceOrdinal( this string s, string oldValue, string newValue )
-#if NET5_0_OR_GREATER
-        => s.Replace( oldValue, newValue, StringComparison.Ordinal );
-#else
-#pragma warning disable CA1307
-        => s.Replace( oldValue, newValue );
-#pragma warning restore CA1307
-#endif
 }

@@ -6,11 +6,11 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 
 namespace SharpCrafters.Backstage.Tools;
 
@@ -23,8 +23,6 @@ internal sealed class BackstageToolsExecutor : IBackstageToolsExecutor
     private readonly IBackstageToolsLocator _locator;
     private readonly IFileSystem _fileSystem;
     private readonly ProductProfile _productProfile;
-
-    private static readonly char[] _charactersRequiringQuoting = { ' ', '\t', '\n', '\v', '"' };
 
     public BackstageToolsExecutor( IServiceProvider serviceProvider )
     {
@@ -61,7 +59,7 @@ internal sealed class BackstageToolsExecutor : IBackstageToolsExecutor
         {
             processStartInfo = new ProcessStartInfo()
             {
-                FileName = programPath, Arguments = FormatArguments( arguments ), UseShellExecute = tool.UseShellExecute, WindowStyle = tool.WindowStyle
+                FileName = programPath, Arguments = CommandLineArguments.Format( arguments ), UseShellExecute = tool.UseShellExecute, WindowStyle = tool.WindowStyle
             };
         }
         else
@@ -74,95 +72,12 @@ internal sealed class BackstageToolsExecutor : IBackstageToolsExecutor
 
             processStartInfo = new ProcessStartInfo()
             {
-                FileName = dotnetPath, Arguments = FormatArguments( allArguments ), UseShellExecute = tool.UseShellExecute, WindowStyle = tool.WindowStyle
+                FileName = dotnetPath, Arguments = CommandLineArguments.Format( allArguments ), UseShellExecute = tool.UseShellExecute, WindowStyle = tool.WindowStyle
             };
         }
 
         this._logger.Info?.Log( $"Starting '{processStartInfo.FileName} {processStartInfo.Arguments}." );
 
         return this._processExecutor.Start( processStartInfo );
-    }
-
-    /// <summary>
-    /// Joins an argument vector into a single command-line string, quoting each argument as required so that it
-    /// round-trips through the Windows <c>CommandLineToArgvW</c> parsing rules. This prevents untrusted argument
-    /// values from injecting additional arguments. Equivalent to the .NET <c>PasteArguments</c> implementation,
-    /// which we cannot use directly because it is internal and because <c>ProcessStartInfo.ArgumentList</c>
-    /// is not available on all target frameworks.
-    /// </summary>
-    private static string FormatArguments( IReadOnlyList<string> arguments )
-    {
-        var builder = new StringBuilder();
-
-        foreach ( var argument in arguments )
-        {
-            AppendArgument( builder, argument );
-        }
-
-        return builder.ToString();
-    }
-
-    private static void AppendArgument( StringBuilder builder, string argument )
-    {
-        if ( builder.Length != 0 )
-        {
-            builder.Append( ' ' );
-        }
-
-        // An argument with no whitespace or quote can be appended verbatim.
-        if ( argument.Length != 0 && argument.IndexOfAny( _charactersRequiringQuoting ) < 0 )
-        {
-            builder.Append( argument );
-
-            return;
-        }
-
-        builder.Append( '"' );
-
-        var index = 0;
-
-        while ( index < argument.Length )
-        {
-            var c = argument[index++];
-
-            if ( c == '\\' )
-            {
-                var backslashCount = 1;
-
-                while ( index < argument.Length && argument[index] == '\\' )
-                {
-                    index++;
-                    backslashCount++;
-                }
-
-                if ( index == argument.Length )
-                {
-                    // Backslashes immediately preceding the closing quote must be doubled.
-                    builder.Append( '\\', backslashCount * 2 );
-                }
-                else if ( argument[index] == '"' )
-                {
-                    // Backslashes preceding a quote must be doubled, plus one to escape the quote itself.
-                    builder.Append( '\\', ( backslashCount * 2 ) + 1 );
-                    builder.Append( '"' );
-                    index++;
-                }
-                else
-                {
-                    builder.Append( '\\', backslashCount );
-                }
-            }
-            else if ( c == '"' )
-            {
-                builder.Append( '\\' );
-                builder.Append( '"' );
-            }
-            else
-            {
-                builder.Append( c );
-            }
-        }
-
-        builder.Append( '"' );
     }
 }
