@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using System.Linq;
 namespace SharpCrafters.Backstage.Maintenance;
 
 /// <summary>
-/// The base of the strategies of this package, which find their processes from a list of <see cref="KillableProcessSpec"/>
+/// The base of the strategies of this package, which find their processes from a list of <see cref="ProcessSpec"/>
 /// and act on each one in turn.
 /// </summary>
 internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrategy
@@ -22,17 +23,20 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
     protected SpecifiedProcessShutdownStrategy( IServiceProvider serviceProvider )
     {
         this._processManager = serviceProvider.GetRequiredBackstageService<IProcessManager>();
+        this.Logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessShutdown" );
     }
+
+    protected ILogger Logger { get; }
 
     /// <summary>
     /// Gets the processes that this strategy acts on.
     /// </summary>
-    protected abstract ImmutableArray<KillableProcessSpec> ProcessSpecs { get; }
+    protected abstract ImmutableArray<ProcessSpec> ProcessSpecs { get; }
 
     /// <summary>
     /// Called once, before the processes are acted on, for instance to ask a build server to exit.
     /// </summary>
-    protected virtual void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<KillableProcess> processes ) { }
+    protected virtual void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<MatchedProcess> processes ) { }
 
     /// <summary>
     /// Acts on one process.
@@ -41,7 +45,7 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
     /// Started when the first process was acted on. <see cref="GetRemainingTime"/> gives how long the strategy may still
     /// wait, so that the timeout applies to all the processes together.
     /// </param>
-    protected abstract ProcessShutdownResult ShutDownProcess( KillableProcess process, ProcessShutdownOptions options, Stopwatch stopwatch );
+    protected abstract ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch );
 
     public IReadOnlyList<ProcessShutdownResult> ShutDownProcesses( ProcessShutdownOptions options )
     {
@@ -52,7 +56,7 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
         {
             // The process that runs the command and its parents are never selected, so that a tool of the product, or a
             // build that runs the command, survives it.
-            var processes = this._processManager.GetKillableProcesses( candidates, this.ProcessSpecs ).ToList();
+            var processes = this._processManager.GetMatchingProcesses( candidates, this.ProcessSpecs ).ToList();
 
             this.OnProcessesFound( options, processes );
 
@@ -88,8 +92,32 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
     /// <summary>
     /// Ends a process and reports the result.
     /// </summary>
-    protected static ProcessShutdownResult Kill( KillableProcess process, string description )
-        => process.Kill( out var errorMessage )
-            ? new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.Ended )
-            : new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.StillRunning, $"it could not be ended: {errorMessage}" );
+    protected ProcessShutdownResult Kill( MatchedProcess match, string description )
+    {
+        var process = match.Process;
+
+        try
+        {
+            if ( !process.HasExited )
+            {
+                this.Logger.Trace?.Log( $"Ending the process '{process.ProcessName}' ({process.Id})." );
+
+                process.Kill();
+                process.WaitForExit();
+            }
+
+            return new ProcessShutdownResult( description, process.Id, ProcessShutdownOutcome.Ended );
+        }
+        catch ( InvalidOperationException ) when ( process.HasExited )
+        {
+            // The process exited on its own meanwhile.
+            return new ProcessShutdownResult( description, process.Id, ProcessShutdownOutcome.Exited );
+        }
+        catch ( Exception e )
+        {
+            this.Logger.Error?.Log( $"Could not end the process '{process.ProcessName}' ({process.Id}): {e.Message}" );
+
+            return new ProcessShutdownResult( description, process.Id, ProcessShutdownOutcome.StillRunning, $"it could not be ended: {e.Message}" );
+        }
+    }
 }

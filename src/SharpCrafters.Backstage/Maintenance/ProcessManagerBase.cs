@@ -17,7 +17,7 @@ using System.Linq;
 namespace SharpCrafters.Backstage.Maintenance;
 
 /// <summary>
-/// Finds the processes that match a list of <see cref="KillableProcessSpec"/>, for the implementations of
+/// Finds the processes that match a list of <see cref="ProcessSpec"/>, for the implementations of
 /// <see cref="IProcessShutdownStrategy"/>. The implementation differs by operating system in how it reads the modules
 /// of a process.
 /// </summary>
@@ -97,7 +97,7 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// <remarks>
     /// <para>
     /// The caller owns the processes, and disposes all of them once it has acted on the ones that
-    /// <see cref="GetKillableProcesses"/> selects.
+    /// <see cref="GetMatchingProcesses"/> selects.
     /// </para>
     /// <para>
     /// The standalone processes are enumerated on every operating system, and not on Windows alone, because the language
@@ -107,7 +107,7 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// </para>
     /// </remarks>
 #pragma warning disable CA1307
-    public List<Process> GetCandidateProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
+    public List<Process> GetCandidateProcesses( ImmutableArray<ProcessSpec> processSpecs )
     {
         var processes = new List<Process>();
 
@@ -135,14 +135,14 @@ internal abstract class ProcessManagerBase : IProcessManager
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The <see cref="KillableProcess"/> objects do not own their processes: the caller of <see cref="GetCandidateProcesses"/>
+    /// The <see cref="MatchedProcess"/> objects do not own their processes: the caller of <see cref="GetCandidateProcesses"/>
     /// disposes them.
     /// </para>
     /// <para>
     /// The current process and its parents are never selected: see <see cref="ExcludeCurrentProcessAndParents{T}"/>.
     /// </para>
     /// </remarks>
-    public IEnumerable<KillableProcess> GetKillableProcesses( IEnumerable<Process> candidates, ImmutableArray<KillableProcessSpec> processSpecs )
+    public IEnumerable<MatchedProcess> GetMatchingProcesses( IEnumerable<Process> candidates, ImmutableArray<ProcessSpec> processSpecs )
     {
         foreach ( var process in this.ExcludeCurrentProcessAndParents( candidates, p => p.Id ) )
         {
@@ -158,7 +158,7 @@ internal abstract class ProcessManagerBase : IProcessManager
         }
     }
 
-    private KillableProcess? SelectDotNetProcess( Process process, ImmutableArray<KillableProcessSpec> processSpecs )
+    private MatchedProcess? SelectDotNetProcess( Process process, ImmutableArray<ProcessSpec> processSpecs )
     {
         if ( !this.TryGetModulePaths( process, out var modules ) )
         {
@@ -193,7 +193,7 @@ internal abstract class ProcessManagerBase : IProcessManager
 
                 this.Logger.Trace?.Log( $"Process '{process.ProcessName}' '{mainModule}' ({process.Id}) should be killed." );
 
-                return new KillableProcess( process, this.Logger, mainModule, processSpec );
+                return new MatchedProcess( process, processSpec, mainModule );
             }
         }
 
@@ -206,7 +206,7 @@ internal abstract class ProcessManagerBase : IProcessManager
         return null;
     }
 
-    private KillableProcess? SelectStandaloneProcess( Process process, ImmutableArray<KillableProcessSpec> processSpecs )
+    private MatchedProcess? SelectStandaloneProcess( Process process, ImmutableArray<ProcessSpec> processSpecs )
     {
         var processSpec = processSpecs.FirstOrDefault(
             s => s.IsStandaloneProcess && string.Equals( s.Name, process.ProcessName, StringComparison.OrdinalIgnoreCase ) );
@@ -228,7 +228,7 @@ internal abstract class ProcessManagerBase : IProcessManager
             return null;
         }
 
-        return new KillableProcess( process, this.Logger, null, processSpec );
+        return new MatchedProcess( process, processSpec, null );
     }
 
     /// <summary>
