@@ -52,7 +52,7 @@ public abstract class ComponentInfoBase : IComponentInfo
     /// Initializes a new instance of the <see cref="ComponentInfoBase"/> class.
     /// </summary>
     /// <param name="metadataAssembly">The assembly whose metadata describes the component. It must carry the three attributes listed on this class.</param>
-    /// <param name="productProfile">The profile of the product family, which names the environment variables that override the prerelease flag and the build date at build time.</param>
+    /// <param name="productProfile">The profile of the product family, which names the environment variables that override the prerelease flag and the build date for testing.</param>
     protected ComponentInfoBase( Assembly metadataAssembly, ProductProfile productProfile )
     {
         var reader = AssemblyMetadataReader.GetInstance( metadataAssembly );

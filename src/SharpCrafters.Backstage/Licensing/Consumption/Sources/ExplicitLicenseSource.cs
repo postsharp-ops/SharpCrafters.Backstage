@@ -32,10 +32,9 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
         if ( !LicenseKeyData.TryDeserialize( this._licenseString, out _, out var errorMessage ) )
         {
             reportMessage(
-                new LicensingMessage( $"The license key set in {this.Description} is invalid. {errorMessage}" )
-                {
-                    Kind = LicensingMessageKind.InvalidLicenseKey
-                } );
+                new LicensingMessage(
+                    $"The license key set in {this.Description} is invalid. {errorMessage}",
+                    LicensingMessageKind.InvalidLicenseKey ) );
 
             return [];
         }

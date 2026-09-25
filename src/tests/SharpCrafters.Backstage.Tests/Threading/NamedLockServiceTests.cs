@@ -336,6 +336,42 @@ public sealed class NamedLockServiceTests : IDisposable
     }
 
     [Fact]
+    public void ServiceProviderConstructor_ReadsThePrefixOfTheEnvironment()
+    {
+        var service = this.CreateService();
+
+        Assert.Equal( MetalamaProduct.Profile.GlobalLockNamePrefix, service.GlobalLockNamePrefix );
+    }
+
+    [Fact]
+    public void ConstructorWithoutServiceProvider_AcquiresAndReleasesALock()
+    {
+        // A component that starts no service, such as an MSBuild task, constructs the service from the prefix alone.
+        var name = CreateName();
+        var service = new NamedLockService( "Global\\Test_" );
+        service.LockEventReported += this.OnLockEvent;
+
+        Assert.Equal( "Global\\Test_", service.GlobalLockNamePrefix );
+
+        using ( var @lock = service.GetLock( name ) )
+        {
+            Assert.True( @lock.TryAcquire( TimeSpan.Zero, out var handle ) );
+
+            handle!.Dispose();
+        }
+
+        var kinds = this.GetEvents().Where( e => e.Name == name ).Select( e => e.Kind ).ToList();
+
+        Assert.Equal( new[] { LockEventKind.Created, LockEventKind.Acquired, LockEventKind.Released }, kinds );
+    }
+
+    [Theory]
+    [InlineData( null )]
+    [InlineData( "" )]
+    public void ConstructorWithoutServiceProvider_RejectsAnEmptyPrefix( string? prefix )
+        => Assert.Throws<ArgumentException>( () => new NamedLockService( prefix! ) );
+
+    [Fact]
     public void UncontendedAcquisition_ReportsCreatedAcquiredAndReleased()
     {
         var name = CreateName();

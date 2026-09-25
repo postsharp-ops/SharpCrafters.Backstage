@@ -87,7 +87,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         }
 
         // Report a licensing message (this is typically reported as a compiler diagnostic).
-        reportMessage?.Invoke( new LicensingMessage( messageText ) { IsError = true, Kind = messageKind } );
+        reportMessage?.Invoke( new LicensingMessage( messageText, messageKind ) { IsError = true } );
 
         // Publish the event, so that the user interface can show a notification, unless the application provides its own UI.
         if ( showsToastNotification )
@@ -146,10 +146,8 @@ internal sealed class LicenseConsumer : ILicenseConsumer
                 reportMessage?.Invoke(
                     new LicensingMessage(
                         $"The license key '{license.Properties.DisplayName}' is bound to the " +
-                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{projectNames}'." )
-                    {
-                        Kind = LicensingMessageKind.NamespaceMismatch
-                    } );
+                        $"'{license.Properties.LicensedNamespace}' namespace, but current project name is '{projectNames}'.",
+                        LicensingMessageKind.NamespaceMismatch ) );
 
                 this._logger.Warning?.Log(
                     $"TryConsume({{{requirement}}}: license key '{license.Properties.DisplayName}' ignored because it is bound to the namespace" +

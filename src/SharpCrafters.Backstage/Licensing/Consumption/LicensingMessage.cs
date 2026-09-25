@@ -6,15 +6,17 @@ using JetBrains.Annotations;
 
 namespace SharpCrafters.Backstage.Licensing.Consumption;
 
+/// <summary>
+/// A message that licensing reports to the application, which typically reports it as a diagnostic.
+/// </summary>
+/// <param name="Text">The text of the message.</param>
+/// <param name="Kind">
+/// What the message is about. See <see cref="LicensingMessageKind"/> for what an application does with it.
+/// </param>
 [PublicAPI]
-public sealed record LicensingMessage( string Text )
+public sealed record LicensingMessage( string Text, LicensingMessageKind Kind )
 {
     public bool IsError { get; init; }
-
-    /// <summary>
-    /// Gets what the message is about. See <see cref="LicensingMessageKind"/> for what an application does with it.
-    /// </summary>
-    public LicensingMessageKind Kind { get; init; } = LicensingMessageKind.Default;
 
     public override string ToString() => $"{(this.IsError ? "Error" : "Warning")}: {this.Text}";
 }

@@ -163,7 +163,7 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             message += $" The license key originates from {source.Description}.";
         }
 
-        reportMessage?.Invoke( new LicensingMessage( message ) { Kind = errorKind } );
+        reportMessage?.Invoke( new LicensingMessage( message, errorKind ) );
         this._logger.Warning?.Log( message );
     }
 

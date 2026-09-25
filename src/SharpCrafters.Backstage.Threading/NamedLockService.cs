@@ -107,19 +107,44 @@ public sealed partial class NamedLockService : INamedLockService
     private readonly ITestFaultInjector? _testFaultInjector;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NamedLockService"/> class.
+    /// Initializes a new instance of the <see cref="NamedLockService"/> class from a service provider.
     /// </summary>
     /// <param name="serviceProvider">
-    /// An optional service provider, from which the test synchronization points are resolved. It is
-    /// <see langword="null"/> in production, where nothing is registered for them anyway.
+    /// The service provider. It must provide the <see cref="INamedLockServiceEnvironment"/>. The test synchronization
+    /// points and the test faults are resolved from it when they are registered, which is never the case in production.
     /// </param>
     public NamedLockService( IServiceProvider serviceProvider )
+        : this(
+            serviceProvider.GetRequiredBackstageService<INamedLockServiceEnvironment>().GlobalLockNamePrefix,
+
+            // Resolved untyped, because ITestSynchronizationProvider is shared with the layers above and therefore
+            // cannot derive from IBackstageService.
+            (ITestSynchronizationProvider?) serviceProvider.GetService( typeof(ITestSynchronizationProvider) ),
+            (ITestFaultInjector?) serviceProvider.GetService( typeof(ITestFaultInjector) ) ) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NamedLockService"/> class without a service provider. A component
+    /// that starts no service, such as an MSBuild task, uses this constructor.
+    /// </summary>
+    /// <param name="globalLockNamePrefix">
+    /// The prefix of the names of the machine-wide locks of the product, for instance <c>Global\Metalama_</c>. It is
+    /// the value of <see cref="INamedLockServiceEnvironment.GlobalLockNamePrefix"/> for the product.
+    /// </param>
+    /// <param name="testSynchronizationProvider">The test synchronization points, or <see langword="null"/> in production.</param>
+    /// <param name="testFaultInjector">The test faults, or <see langword="null"/> in production.</param>
+    public NamedLockService(
+        string globalLockNamePrefix,
+        ITestSynchronizationProvider? testSynchronizationProvider = null,
+        ITestFaultInjector? testFaultInjector = null )
     {
-        // Resolved untyped, because ITestSynchronizationProvider is shared with the layers above and therefore
-        // cannot derive from IBackstageService.
-        this._testSynchronizationProvider = (ITestSynchronizationProvider?) serviceProvider.GetService( typeof(ITestSynchronizationProvider) );
-        this._testFaultInjector = (ITestFaultInjector?) serviceProvider.GetService( typeof(ITestFaultInjector) );
-        this.GlobalLockNamePrefix = serviceProvider.GetRequiredBackstageService<INamedLockServiceEnvironment>().GlobalLockNamePrefix;
+        if ( string.IsNullOrEmpty( globalLockNamePrefix ) )
+        {
+            throw new ArgumentException( "The prefix of the lock names must not be empty.", nameof(globalLockNamePrefix) );
+        }
+
+        this.GlobalLockNamePrefix = globalLockNamePrefix;
+        this._testSynchronizationProvider = testSynchronizationProvider;
+        this._testFaultInjector = testFaultInjector;
     }
 
     /// <summary>

@@ -11,6 +11,7 @@ using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
 using System.Security.Cryptography;
 using System.Text;
@@ -103,6 +104,11 @@ internal sealed class SimulatedInstallation : IDisposable
         services.AddSingleton<IUserIdentityProvider>( new TestUserIdentityProvider { UserName = user.UserName, MachineName = machineName } );
         services.AddSingleton<IMachineIdProvider>( new TestMachineIdProvider { MachineId = MachineIdOf( machineName ) } );
         services.AddSingleton<IConfigurationManager>( serviceProvider => new InMemoryConfigurationManager( serviceProvider ) );
+
+        // A simulated developer, not a build server: an unattended process never leases, so a simulation that detected
+        // itself as unattended, in a container or on a build agent, would send nothing at all and would report a server
+        // that is never used. The test detector also needs no initialization, which this provider does not run.
+        services.AddSingleton<IUnattendedProcessDetector>( new TestUnattendedProcessDetector { IsCurrentProcessUnattended = false } );
 
         this._serviceProvider = services.BuildServiceProvider();
     }

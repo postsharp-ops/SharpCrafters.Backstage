@@ -91,7 +91,7 @@ public sealed class SelfRegisteredEditionContext
     /// <summary>
     /// Reports a message that does not stop the registration.
     /// </summary>
-    public void Report( string message ) => this.ReportMessage?.Invoke( new LicensingMessage( message ) );
+    public void Report( string message ) => this.ReportMessage?.Invoke( new LicensingMessage( message, LicensingMessageKind.Default ) );
 
     /// <summary>
     /// Builds the key of a license and registers it.

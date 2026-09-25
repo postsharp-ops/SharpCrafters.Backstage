@@ -51,6 +51,11 @@ var product = new Product( BackstageDependencies.Backstage )
         "SharpCrafters.Backstage.$(PackageVersion).nupkg",
         "SharpCrafters.Backstage.Commands.$(PackageVersion).nupkg", // Required by Metalama.Tool.
         "SharpCrafters.Common.$(PackageVersion).nupkg",             // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
+        "SharpCrafters.Common.Abstractions.$(PackageVersion).nupkg",             // Required by SharpCrafters.Common and SharpCrafters.Backstage.Threading.
+        "SharpCrafters.Backstage.Abstractions.$(PackageVersion).nupkg",          // Required by the three packages below.
+        "SharpCrafters.Backstage.Threading.$(PackageVersion).nupkg",             // Required by SharpCrafters.Backstage.
+        "SharpCrafters.Backstage.FileLocks.$(PackageVersion).nupkg",             // Required by SharpCrafters.Backstage.
+        "SharpCrafters.Backstage.ProcessClassification.$(PackageVersion).nupkg", // Required by SharpCrafters.Backstage.
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
         "Metalama.Backstage.Tools.$(PackageVersion).nupkg",         // Required by Metalama.Framework.Engine and Metalama.Vsx.
         "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.

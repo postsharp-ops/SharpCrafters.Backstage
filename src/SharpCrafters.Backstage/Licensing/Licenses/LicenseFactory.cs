@@ -76,7 +76,7 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
 
                 if ( warning != null )
                 {
-                    reportMessage?.Invoke( new LicensingMessage( warning ) { Kind = LicensingMessageKind.InsecureLicenseServer } );
+                    reportMessage?.Invoke( new LicensingMessage( warning, LicensingMessageKind.InsecureLicenseServer ) );
                     this._logger.Warning?.Log( warning );
                 }
 
