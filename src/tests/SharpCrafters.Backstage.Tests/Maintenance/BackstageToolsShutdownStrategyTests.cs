@@ -5,9 +5,11 @@
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tools;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Xunit;
@@ -23,8 +25,15 @@ public sealed class BackstageToolsShutdownStrategyTests : TestsBase
     {
         base.ConfigureServices( services );
 
-        // The real process manager: the test starts a real process, which is what the strategy has to find.
+        // The real process manager: the test starts a real process, which is what the strategy has to find. The parents of
+        // the test process do not matter here, so none is reported.
+        services.AddService( typeof(IParentProcessSearch), _ => new NoParentProcessSearch() );
         services.AddService( typeof(IProcessManager), serviceProvider => new WindowsProcessManager( serviceProvider ) );
+    }
+
+    private sealed class NoParentProcessSearch : IParentProcessSearch
+    {
+        public IReadOnlyList<ProcessInfo> GetParentProcesses( ISet<string>? pivots = null ) => [];
     }
 
     /// <summary>

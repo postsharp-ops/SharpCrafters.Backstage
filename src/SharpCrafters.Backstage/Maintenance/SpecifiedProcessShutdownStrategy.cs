@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -49,17 +50,9 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
 
         try
         {
-            using var currentProcess = Process.GetCurrentProcess();
-            var processes = new List<KillableProcess>();
-
-            foreach ( var process in this._processManager.GetKillableProcesses( candidates, this.ProcessSpecs ) )
-            {
-                // The process that runs the command is never acted on, so that a tool of the product can run it too.
-                if ( process.Process.Id != currentProcess.Id )
-                {
-                    processes.Add( process );
-                }
-            }
+            // The process that runs the command and its parents are never selected, so that a tool of the product, or a
+            // build that runs the command, survives it.
+            var processes = this._processManager.GetKillableProcesses( candidates, this.ProcessSpecs ).ToList();
 
             this.OnProcessesFound( options, processes );
 
