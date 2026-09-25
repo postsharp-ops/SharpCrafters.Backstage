@@ -21,15 +21,15 @@ public sealed class ToolProcessesTests : TestsBase
     public ToolProcessesTests( ITestOutputHelper logger ) : base( logger ) { }
 
     /// <summary>
-    /// Tests that a running desktop notifier is found. A product stops its tools before files are replaced, for instance
-    /// by a <c>shutdown</c> command, and a notifier that is not found keeps them locked and is left behind.
+    /// Tests that a running desktop notifier is ended and reported. A product ends its tools before files are replaced,
+    /// for instance from a <c>shutdown</c> command, and a notifier that is not ended keeps them locked.
     /// </summary>
     /// <remarks>
     /// The notifier is impersonated by a copy of <c>cmd.exe</c> named after it, which waits for input that never comes.
     /// It runs on Windows only, where the notifier exists.
     /// </remarks>
     [SkippableFact]
-    public void ARunningNotifierIsFound()
+    public void ARunningNotifierIsShutDown()
     {
         Skip.IfNot( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "The desktop notifier exists on Windows only." );
 
@@ -45,14 +45,21 @@ public sealed class ToolProcessesTests : TestsBase
 
         try
         {
-            using var toolProcesses = new WindowsProcessManager( this.ServiceProvider ).GetToolProcesses();
+            var results = new WindowsProcessManager( this.ServiceProvider ).ShutDownToolProcesses();
 
-            var found = Assert.Single( toolProcesses, p => p.Process.Id == process.Id );
-            Assert.Same( BackstageTool.DesktopWindows, found.Tool );
+            var result = Assert.Single( results, r => r.ProcessId == process.Id );
+            Assert.Same( BackstageTool.DesktopWindows, result.Tool );
+            Assert.True( result.HasExited, result.ErrorMessage );
+            Assert.Null( result.ErrorMessage );
+            Assert.True( process.HasExited );
         }
         finally
         {
-            process.Kill();
+            if ( !process.HasExited )
+            {
+                process.Kill();
+            }
+
             process.WaitForExit();
 
             try

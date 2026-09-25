@@ -72,13 +72,14 @@ internal abstract partial class ProcessManagerBase
             }
         }
 
-        private void Kill()
+        private bool Kill( out string? errorMessage )
         {
             var process = this.Process;
+            errorMessage = null;
 
             if ( process.HasExited )
             {
-                return;
+                return true;
             }
 
             try
@@ -87,14 +88,20 @@ internal abstract partial class ProcessManagerBase
 
                 process.Kill();
                 process.WaitForExit();
+
+                return true;
             }
             catch ( InvalidOperationException ) when ( process.HasExited )
             {
                 // Nothing to do. We lost a race that ended the process.   
+                return true;
             }
             catch ( Exception e )
             {
                 this._logger.Error?.Log( $"Could not kill process '{process.ProcessName}' (PID: {process.Id}): {e.Message}." );
+                errorMessage = e.Message;
+
+                return false;
             }
         }
 
@@ -108,17 +115,23 @@ internal abstract partial class ProcessManagerBase
 
         public void Dispose() => this.Process.Dispose();
 
-        public void ShutdownOrKill()
+        /// <summary>
+        /// Asks the process to shut down when its specification allows it, and kills it otherwise or when it does not exit.
+        /// </summary>
+        /// <returns><c>true</c> when the process has exited, <c>false</c> when it could not be killed.</returns>
+        public bool ShutdownOrKill( out string? errorMessage )
         {
             if ( this.Spec.CanShutdown )
             {
                 if ( this.Shutdown() )
                 {
-                    return;
+                    errorMessage = null;
+
+                    return true;
                 }
             }
 
-            this.Kill();
+            return this.Kill( out errorMessage );
         }
     }
 }

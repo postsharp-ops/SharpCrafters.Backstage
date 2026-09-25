@@ -278,30 +278,30 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     protected IEnumerable<KillableProcess> GetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
         => this.GetDotNetProcesses( processSpecs ).Concat( this.GetStandaloneProcesses( processSpecs ) );
 
-    public BackstageToolProcessCollection GetToolProcesses()
+    public IReadOnlyList<ToolProcessShutdownResult> ShutDownToolProcesses()
     {
         var specs = this._toolProcesses.Select( t => t.Spec ).ToImmutableArray();
-        var toolProcesses = new List<BackstageToolProcess>();
+        var results = new List<ToolProcessShutdownResult>();
 
-        try
+        using var currentProcess = Process.GetCurrentProcess();
+
+        foreach ( var process in this.GetProcesses( specs ) )
         {
-            foreach ( var process in this.GetProcesses( specs ) )
+            using ( process )
             {
-                // The process passes from the KillableProcess, which is dropped, to the BackstageToolProcess.
-                toolProcesses.Add( new BackstageToolProcess( this._toolProcesses.Single( t => t.Spec == process.Spec ).Tool, process.Process ) );
+                if ( process.Process.Id == currentProcess.Id )
+                {
+                    continue;
+                }
+
+                var tool = this._toolProcesses.Single( t => t.Spec == process.Spec ).Tool;
+                var hasExited = process.ShutdownOrKill( out var errorMessage );
+
+                results.Add( new ToolProcessShutdownResult( tool, process.Process.Id, hasExited, errorMessage ) );
             }
         }
-        catch
-        {
-            foreach ( var toolProcess in toolProcesses )
-            {
-                toolProcess.Dispose();
-            }
 
-            throw;
-        }
-
-        return new BackstageToolProcessCollection( toolProcesses );
+        return results;
     }
 
     public virtual void KillCompilerProcesses( bool shouldEmitWarnings )
@@ -312,7 +312,8 @@ internal abstract partial class ProcessManagerBase : IProcessManager
             {
                 if ( process.Spec.CanShutdownOrKill )
                 {
-                    process.ShutdownOrKill();
+                    // Failures are logged by ShutdownOrKill.
+                    process.ShutdownOrKill( out _ );
                 }
                 else if ( shouldEmitWarnings )
                 {
