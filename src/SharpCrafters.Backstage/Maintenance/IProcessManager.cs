@@ -5,7 +5,6 @@
 using SharpCrafters.Backstage.Extensibility;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
