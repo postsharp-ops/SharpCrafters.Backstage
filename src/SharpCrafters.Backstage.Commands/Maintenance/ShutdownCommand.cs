@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Maintenance;
 using System;
 
 namespace SharpCrafters.Backstage.Commands.Maintenance;
@@ -21,7 +22,7 @@ internal class ShutdownCommand : BaseCommand<ShutdownCommandSettings>
     {
         context.Console.WriteHeading( $"Shutting down the {context.BackstageCommandOptions.ProductProfile.Name} processes" );
 
-        var running = ProcessShutdownRunner.Run( context, settings.Force, TimeSpan.FromSeconds( settings.Timeout ), !settings.NoWarn );
+        var running = ProcessShutdownRunner.Run( context, new ProcessShutdownOptions( settings.Force, TimeSpan.FromSeconds( settings.Timeout ), settings.All ), !settings.NoWarn );
 
         if ( running > 0 )
         {

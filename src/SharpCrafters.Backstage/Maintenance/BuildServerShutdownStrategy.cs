@@ -39,8 +39,8 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
     }
 
     protected override ImmutableArray<KillableProcessSpec> ProcessSpecs { get; } = ImmutableArray.Create(
-        new KillableProcessSpec( _compilerServerName, KillableModuleKind.Both, true, true ),
-        new KillableProcessSpec( "MSBuild", KillableModuleKind.Both, false, true ) );
+        new KillableProcessSpec( _compilerServerName, KillableModuleKind.Both, true ),
+        new KillableProcessSpec( "MSBuild", KillableModuleKind.Both, false ) );
 
     protected override void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<KillableProcess> processes )
     {

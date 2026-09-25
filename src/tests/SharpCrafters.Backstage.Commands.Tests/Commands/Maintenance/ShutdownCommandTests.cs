@@ -43,6 +43,17 @@ public sealed class ShutdownCommandTests : CommandsTestsBase
     public async Task KillIsTheSameCommand()
         => await this.TestCommandAsync( "kill", "Stub server (process 1234): exited" );
 
+    /// <summary>
+    /// Tests that <c>--all</c> reaches the strategies. Without it, the processes of the integrated development
+    /// environments are never ended, and the user who asked for them would be left with their files locked.
+    /// </summary>
+    [Fact]
+    public async Task AllReachesTheStrategies()
+    {
+        await this.TestCommandAsync( "shutdown", "Stub server (process 1234): exited", "ended" );
+        await this.TestCommandAsync( "shutdown --all", "Stub server (process 1234): ended" );
+    }
+
     private sealed class StubStrategy : IProcessShutdownStrategy
     {
         private readonly string _description;
@@ -55,6 +66,6 @@ public sealed class ShutdownCommandTests : CommandsTestsBase
         }
 
         public IReadOnlyList<ProcessShutdownResult> ShutDownProcesses( ProcessShutdownOptions options )
-            => [new ProcessShutdownResult( this._description, this._processId, ProcessShutdownOutcome.Exited )];
+            => [new ProcessShutdownResult( this._description, this._processId, options.All ? ProcessShutdownOutcome.Ended : ProcessShutdownOutcome.Exited )];
     }
 }
