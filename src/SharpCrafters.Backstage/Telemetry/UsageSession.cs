@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry.Metrics;
 using System;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ internal sealed class UsageSession : IUsageSession
     private readonly IDateTimeProvider _time;
     private readonly IConfigurationManager _configurationManager;
     private readonly BackstageBackgroundTasksService _backgroundTasksService;
+    private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
     private bool _isDisposed;
 
@@ -45,6 +47,7 @@ internal sealed class UsageSession : IUsageSession
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
         this._time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
+        this._unattendedProcessDetector = serviceProvider.GetRequiredBackstageService<IUnattendedProcessDetector>();
 
         // Initialize the Metrics collection.
         if ( shouldCollectMetrics )
@@ -68,10 +71,9 @@ internal sealed class UsageSession : IUsageSession
     {
         var time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
 
-        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var applicationInfoProvider = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>();
+        var applicationInfo = applicationInfoProvider.Application;
         var reportedComponent = applicationInfo.GetLatestVendorComponent( serviceProvider.GetRequiredBackstageService<ProductProfile>().Company );
-
-        var loggerFactory = serviceProvider.GetLoggerFactory();
 
         this.Metrics.Add( new StringMetric( "MetricsEventKind", this._kind ) );
 
@@ -85,9 +87,9 @@ internal sealed class UsageSession : IUsageSession
 
         this.Metrics.Add( new StringMetric( "Application.Name", reportedComponent.Name ) );
         this.Metrics.Add( new StringMetric( "Application.Version", reportedComponent.PackageVersion ) );
-        this.Metrics.Add( new BoolMetric( "Application.IsUnattended", applicationInfo.IsUnattendedProcess( loggerFactory ) ) );
+        this.Metrics.Add( new BoolMetric( "Application.IsUnattended", this._unattendedProcessDetector.IsCurrentProcessUnattended ) );
         this.Metrics.Add( new StringMetric( "Application.ProcessName", Process.GetCurrentProcess().ProcessName ) );
-        this.Metrics.Add( new StringMetric( "Application.ProcessKind", applicationInfo.ProcessKind.ToString() ) );
+        this.Metrics.Add( new StringMetric( "Application.ProcessKind", applicationInfoProvider.ProcessKind.ToString() ) );
         this.Metrics.Add( new StringMetric( "Application.EntryAssembly", Path.GetFileName( Assembly.GetEntryAssembly()?.Location ) ) );
 
         this.Metrics.Add( new DateTimeMetric( "Time", time.UtcNow ) );
@@ -144,4 +146,4 @@ internal sealed class UsageSession : IUsageSession
             this._logger.Trace.Log( $"  {metric.Name}: {metric}" );
         }
     }
-}
+}

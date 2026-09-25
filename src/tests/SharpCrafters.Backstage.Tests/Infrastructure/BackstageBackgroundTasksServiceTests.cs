@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

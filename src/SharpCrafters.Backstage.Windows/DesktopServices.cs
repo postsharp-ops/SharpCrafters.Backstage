@@ -10,17 +10,23 @@ using System;
 namespace SharpCrafters.Backstage.Windows;
 
 /// <summary>
-/// Creates the Backstage services of the notifier process in the process-wide <see cref="BackstageServiceFactory"/>
-/// from the application info that the product supplies to <see cref="BackstageDesktopProgram.Run"/>.
+/// Creates the Backstage services of the notifier process from the application info that the product supplies to
+/// <see cref="BackstageDesktopProgram.Run"/>, and holds them for the lifetime of the process.
 /// </summary>
+/// <remarks>
+/// The notifier is a process of its own, so one provider per process is the lifetime it needs. The provider is held
+/// here rather than in the process-wide <see cref="BackstageServiceFactory"/> provider, which is obsolete.
+/// </remarks>
 internal static class DesktopServices
 {
+    private static readonly object _sync = new();
     private static BackstageDesktopApplicationInfo? _applicationInfo;
+    private static IServiceProvider? _serviceProvider;
 
     /// <summary>
     /// Gets the service provider when it has been created, or <c>null</c> when no command has requested it yet.
     /// </summary>
-    public static IServiceProvider? ServiceProvider => BackstageServiceFactory.IsInitialized ? BackstageServiceFactory.ServiceProvider : null;
+    public static IServiceProvider? ServiceProvider => _serviceProvider;
 
     /// <summary>
     /// Stores the application info. It is called once by <see cref="BackstageDesktopProgram.Run"/>.
@@ -45,23 +51,31 @@ internal static class DesktopServices
                               ?? throw new InvalidOperationException(
                                   $"{nameof(BackstageDesktopProgram)}.{nameof(BackstageDesktopProgram.Run)} has not been called." );
 
-        BackstageServiceFactory.Initialize(
-            new BackstageInitializationOptions( applicationInfo, applicationInfo.Product )
+        lock ( _sync )
+        {
+            if ( _serviceProvider != null )
             {
-                AddLicensing = false,
-                IsDevelopmentEnvironment = settings.IsDevelopmentEnvironment,
-                AddSupportServices = true,
-                AddUserInterface = true,
+                return _serviceProvider;
+            }
 
-                // We don't want to open more toast notifications.
-                DetectToastNotifications = false
-            },
-            applicationInfo.Name );
+            var serviceProvider = BackstageServiceFactory.CreateServiceProvider(
+                new BackstageInitializationOptions( applicationInfo, applicationInfo.Product )
+                {
+                    AddLicensing = false,
+                    IsDevelopmentEnvironment = settings.IsDevelopmentEnvironment,
+                    AddSupportServices = true,
+                    AddUserInterface = true,
 
-        var serviceProvider = BackstageServiceFactory.ServiceProvider;
-        var logger = serviceProvider.GetLoggerFactory().GetLogger( "App" );
-        logger.Trace?.Log( $"Executing: {string.Join( ' ', Environment.GetCommandLineArgs() )}" );
+                    // We don't want to open more toast notifications.
+                    DetectToastNotifications = false
+                } );
 
-        return serviceProvider;
+            var logger = serviceProvider.GetLoggerFactory().GetLogger( "App" );
+            logger.Trace?.Log( $"Executing: {string.Join( ' ', Environment.GetCommandLineArgs() )}" );
+
+            _serviceProvider = serviceProvider;
+
+            return serviceProvider;
+        }
     }
 }

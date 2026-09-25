@@ -3,8 +3,9 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Utilities;
-using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -21,8 +22,20 @@ namespace SharpCrafters.Backstage.Infrastructure
     /// <summary>
     /// Provides access to file system using API in <see cref="System.IO" /> namespace.
     /// </summary>
-    internal sealed class FileSystem : IFileSystem
+    public sealed class FileSystem : IFileSystem
     {
+        /// <summary>
+        /// Gets a file system that a process which started no services can use.
+        /// </summary>
+        /// <remarks>
+        /// Every member works except <see cref="GetTempFileName"/>, which needs the standard directories and
+        /// therefore a service provider. It exists because the layers above have consumers that are not hosts --
+        /// build tools, test programs and the like -- and requiring them to start the services in order to read a
+        /// file is the wrong price. A process that does have a provider keeps resolving <see cref="IFileSystem"/>
+        /// from it, so a test can still substitute one.
+        /// </remarks>
+        public static IFileSystem Default { get; } = new FileSystem();
+
         private readonly IServiceProvider? _serviceProvider;
 
         /// <summary>
@@ -407,7 +420,6 @@ namespace SharpCrafters.Backstage.Infrastructure
         }
 
 #if !NET5_0_OR_GREATER
-
         /// <summary>
         /// Reads a text file without blocking the calling thread on the platforms where <c>File.ReadAllTextAsync</c>
         /// does not exist. The stream is opened with <see cref="FileOptions.Asynchronous"/>, otherwise the read would

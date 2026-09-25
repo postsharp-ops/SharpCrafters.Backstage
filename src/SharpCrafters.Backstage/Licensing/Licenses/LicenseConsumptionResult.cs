@@ -16,7 +16,14 @@ namespace SharpCrafters.Backstage.Licensing.Licenses;
 /// </remarks>
 /// <param name="Properties">The properties of the licence, or <see langword="null"/> when it cannot be used.</param>
 /// <param name="ErrorMessage">The reason the licence cannot be used, or <see langword="null"/> when it can.</param>
-internal readonly record struct LicenseConsumptionResult( LicenseConsumptionProperties? Properties, string? ErrorMessage )
+/// <param name="ErrorKind">
+/// What that reason is about, which an application maps to a diagnostic of its own. It is
+/// <see cref="LicensingMessageKind.Default"/> when the licence can be used.
+/// </param>
+internal readonly record struct LicenseConsumptionResult(
+    LicenseConsumptionProperties? Properties,
+    string? ErrorMessage,
+    LicensingMessageKind ErrorKind = LicensingMessageKind.Default )
 {
     [MemberNotNullWhen( true, nameof(Properties) )]
     [MemberNotNullWhen( false, nameof(ErrorMessage) )]
@@ -24,5 +31,6 @@ internal readonly record struct LicenseConsumptionResult( LicenseConsumptionProp
 
     public static LicenseConsumptionResult Success( LicenseConsumptionProperties properties ) => new( properties, null );
 
-    public static LicenseConsumptionResult Failure( string errorMessage ) => new( null, errorMessage );
+    public static LicenseConsumptionResult Failure( string errorMessage, LicensingMessageKind errorKind = LicensingMessageKind.Default )
+        => new( null, errorMessage, errorKind );
 }

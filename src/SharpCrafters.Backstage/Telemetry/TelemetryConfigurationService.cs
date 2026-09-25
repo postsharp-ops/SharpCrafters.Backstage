@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Utilities;
 using System;
 
@@ -19,6 +20,7 @@ internal sealed class TelemetryConfigurationService : ITelemetryConfigurationSer
     private readonly ILogger _logger;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly RandomNumberGenerator _randomNumberGenerator;
+    private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
     private TelemetryDisabledReason _globallyDisabledReason;
     private bool _initialized;
@@ -33,6 +35,7 @@ internal sealed class TelemetryConfigurationService : ITelemetryConfigurationSer
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._dateTimeProvider.DateChanged += this.OnDateChanged;
         this._randomNumberGenerator = serviceProvider.GetRequiredBackstageService<RandomNumberGenerator>();
+        this._unattendedProcessDetector = serviceProvider.GetRequiredBackstageService<IUnattendedProcessDetector>();
     }
 
     private void OnDateChanged()
@@ -92,7 +95,7 @@ internal sealed class TelemetryConfigurationService : ITelemetryConfigurationSer
     private TelemetryDisabledReason ComputeGlobalTelemetryDisabledReason()
     {
         // Check if the current application supports telemetry.
-        var applicationInfo = this._serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var applicationInfo = this._serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         var isApplicationTelemetryEnabled = applicationInfo.IsTelemetryEnabled;
 
         if ( !isApplicationTelemetryEnabled )
@@ -103,7 +106,7 @@ internal sealed class TelemetryConfigurationService : ITelemetryConfigurationSer
         }
 
         // Check if the current process is unattended.
-        if ( applicationInfo.IsUnattendedProcess( this._serviceProvider.GetLoggerFactory() ) )
+        if ( this._unattendedProcessDetector.IsCurrentProcessUnattended )
         {
             this._logger.Trace?.Log( $"Telemetry is disabled because the current process is unattended." );
 

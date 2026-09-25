@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The profiling feature of the diagnostics, which drives the JetBrains dotTrace and dotMemory command line
+         tools from inside a product process. It is a project of its own because it is the only thing in this
+         repository that needs JetBrains.Profiler.SelfApi, and that package brings four assemblies that would
+         otherwise flow to every consumer of SharpCrafters.Backstage and be published beside their own files.
+
+         Nothing references this project today. It is kept rather than deleted because the feature is useful to
+         whoever is investigating a performance problem in the field, and how a product opts into it is a question
+         for the day one of them wants to. Until then the assemblies reach nobody. -->
+
+    <PropertyGroup>
+        <TargetFrameworks>netframework4.7.2;net10.0;netstandard2.0</TargetFrameworks>
+        <PackageDescription>The optional profiling feature of Backstage, which drives the JetBrains dotTrace and dotMemory command line tools from inside a product process. It is separate from SharpCrafters.Backstage so that the products that do not profile do not carry the JetBrains assemblies. This package should only be installed as a dependency.</PackageDescription>
+        <RootNamespace>SharpCrafters.Backstage.Profiling</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The reason this project exists. The package has no netstandard2.0 asset, so the feature compiles to
+             nothing there, exactly as it did when it lived in the main assembly. -->
+        <PackageReference Include="JetBrains.Profiler.SelfApi" Condition="'$(TargetFramework)'!='netstandard2.0'" />
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
+    </ItemGroup>
+
+</Project>

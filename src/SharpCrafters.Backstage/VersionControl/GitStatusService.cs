@@ -6,7 +6,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
-using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -264,14 +264,17 @@ internal sealed class GitStatusService : IVcsStatusService
         {
             if ( this._queriesInFlight.TryGetValue( repositoryRoot, out var running ) )
             {
-                this._testSynchronizationProvider?.SyncPoint( TestSynchronizationPoints.ForService( TestSynchronizationPoints.JoinedQuery, repositoryRoot ), cancellationToken );
+                this._testSynchronizationProvider?.SyncPoint(
+                    TestSynchronizationPoints.ForService( TestSynchronizationPoints.JoinedQuery, repositoryRoot ),
+                    cancellationToken );
 
                 return running;
             }
 
             var query = new TaskCompletionSource<VcsStatusRecord?>( TaskCreationOptions.RunContinuationsAsynchronously );
 
-            this._testSynchronizationProvider?.SyncPoint( TestSynchronizationPoints.ForService( TestSynchronizationPoints.BeforeRegisteringQuery, repositoryRoot ) );
+            this._testSynchronizationProvider?.SyncPoint(
+                TestSynchronizationPoints.ForService( TestSynchronizationPoints.BeforeRegisteringQuery, repositoryRoot ) );
 
             // The loop repeats rather than reading the entry that won the race, because that entry can be removed
             // again between the failed insertion and the read.

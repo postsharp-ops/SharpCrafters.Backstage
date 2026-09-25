@@ -3,7 +3,6 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
-using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using System.Runtime.InteropServices;
 
@@ -34,10 +33,4 @@ public interface IRuntimeInformation : IBackstageService
     /// </summary>
 
     Architecture OSArchitecture { get; }
-
-    /// <summary>
-    /// Gets the kind of the current process (e.g. <see cref="Diagnostics.ProcessKind.Rider"/>),
-    /// abstracted so a fake can simulate a host without depending on the real process name.
-    /// </summary>
-    ProcessKind ProcessKind { get; }
 }

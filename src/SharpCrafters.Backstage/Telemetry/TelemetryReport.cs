@@ -34,7 +34,7 @@ internal abstract class TelemetryReport
         // (at least for Matomo reporting).
         this.ReportedComponent = serviceProvider
             .GetRequiredBackstageService<IApplicationInfoProvider>()
-            .CurrentApplication
+            .Application
             .GetLatestVendorComponent( serviceProvider.GetRequiredBackstageService<ProductProfile>().Company );
 
         // Gets the first-use date.

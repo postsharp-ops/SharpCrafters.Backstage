@@ -83,7 +83,7 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this.Logger = serviceProvider.GetRequiredBackstageService<EarlyLoggerFactory>().GetLogger( "Configuration" );
 
-        var applicationInfo = serviceProvider.GetBackstageService<IApplicationInfoProvider>()?.CurrentApplication;
+        var applicationInfo = serviceProvider.GetBackstageService<IApplicationInfoProvider>()?.Application;
 
         // The registry is not available on every platform, and a schema that cannot be reached is worse than no
         // schema: it would answer every read with a default and swallow every write.
@@ -140,8 +140,7 @@ public sealed class RegistryConfigurationManager : IConfigurationManager
             }
             else
             {
-                this.Logger.Trace?.Log(
-                    "Cannot watch " + this._registryService.GetDisplayPath( keyGroup.Key.Hive, keyGroup.Key.KeyPath ) + " for changes." );
+                this.Logger.Trace?.Log( "Cannot watch " + this._registryService.GetDisplayPath( keyGroup.Key.Hive, keyGroup.Key.KeyPath ) + " for changes." );
             }
         }
     }

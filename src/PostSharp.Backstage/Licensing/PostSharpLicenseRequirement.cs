@@ -8,7 +8,7 @@ using SharpCrafters.Backstage.Licensing.Consumption;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// The requirement of a feature of PostSharp: the one package the feature needs.

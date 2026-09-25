@@ -10,7 +10,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace SharpCrafters.Backstage.Worker.WebServer;
+namespace SharpCrafters.Backstage.Worker.Worker.WebServer;
 
 /// <summary>
 /// Middleware requiring the per-session token of <see cref="SetupWebServerToken"/> on every request of the local

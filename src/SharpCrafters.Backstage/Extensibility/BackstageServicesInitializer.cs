@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Rss;
@@ -19,6 +20,7 @@ internal sealed class BackstageServicesInitializer : IBackstageService
     private readonly IProfilingService? _profilingService;
     private readonly ITelemetryConfigurationService? _telemetryConfigurationService;
     private readonly ShutdownService? _shutdownService;
+    private readonly IUnattendedProcessDetector? _unattendedProcessDetector;
     private bool _isInitialized;
 
     public BackstageServicesInitializer( IServiceProvider serviceProvider, BackstageInitializationOptions options )
@@ -29,6 +31,7 @@ internal sealed class BackstageServicesInitializer : IBackstageService
         this._profilingService = serviceProvider.GetBackstageService<IProfilingService>();
         this._shutdownService = serviceProvider.GetBackstageService<ShutdownService>();
         this._telemetryConfigurationService = serviceProvider.GetBackstageService<ITelemetryConfigurationService>();
+        this._unattendedProcessDetector = serviceProvider.GetBackstageService<IUnattendedProcessDetector>();
     }
 
     /// <summary>
@@ -47,6 +50,9 @@ internal sealed class BackstageServicesInitializer : IBackstageService
 
         // Before anything is enqueued, so that a background task that fails is reported instead of vanishing. See #1765.
         this._backgroundTasksService.SetLogger( this._serviceProvider.GetLoggerFactory().GetLogger( "BackgroundTasks" ) );
+
+        // Before the telemetry configuration, which reads the answer.
+        this._unattendedProcessDetector?.Initialize();
 
         this._profilingService?.Initialize();
         this._telemetryConfigurationService?.Initialize();

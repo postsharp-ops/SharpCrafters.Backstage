@@ -3,8 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
-using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Linq;
 using Xunit;
@@ -96,8 +96,7 @@ public sealed class ContinuousIntegrationDetectorTests : TestsBase
     /// </summary>
     [Theory]
     [MemberData( nameof(ServerVariables) )]
-    public void ServerIsNotDetectedFromVariableAlone( string variable, string value )
-        => Assert.Null( this.Detect( [(variable, value)] ) );
+    public void ServerIsNotDetectedFromVariableAlone( string variable, string value ) => Assert.Null( this.Detect( [(variable, value)] ) );
 
     /// <summary>
     /// Verifies that an agent process alone does not identify a server. A self-hosted agent installed on a development
@@ -192,8 +191,7 @@ public sealed class ContinuousIntegrationDetectorTests : TestsBase
     /// </summary>
     [Fact]
     public void ServerIsNotDetectedWhenTheProcessesOfTheMachineCannotBeEnumerated()
-        => Assert.Null(
-            this.Detect( [("GITHUB_ACTIONS", "true")], getRunningProcesses: () => throw new InvalidOperationException( "Test." ) ) );
+        => Assert.Null( this.Detect( [("GITHUB_ACTIONS", "true")], getRunningProcesses: () => throw new InvalidOperationException( "Test." ) ) );
 
     /// <summary>
     /// Detects the continuous integration server from the given facts.

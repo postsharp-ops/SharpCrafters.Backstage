@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using Spectre.Console.Cli;
 
-namespace SharpCrafters.Backstage.Worker.WebServer;
+namespace SharpCrafters.Backstage.Worker.Worker.WebServer;
 
 [UsedImplicitly]
 internal class WebServerCommandSettings : CommandSettings

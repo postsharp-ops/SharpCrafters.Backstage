@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+﻿// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
@@ -14,9 +14,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources;
 internal sealed class ExplicitLicenseSource : LicenseSourceBase
 {
     private readonly string _licenseString;
-    private readonly string _licensePropertyName;
 
-    public override string Description => $"the MSBuild property or environment variable named {this._licensePropertyName}";
+    public override string Description { get; }
 
     public override LicenseSourceKind Kind { get; }
 
@@ -32,7 +31,10 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
         // mistyped value is a likely mistake, and the value itself must not reach a build log. See issue #1859.
         if ( !LicenseKeyData.TryDeserialize( this._licenseString, out _, out var errorMessage ) )
         {
-            reportMessage( new LicensingMessage( $"The license key set in {this.Description} is invalid. {errorMessage}" ) );
+            reportMessage(
+                new LicensingMessage(
+                    $"The license key set in {this.Description} is invalid. {errorMessage}",
+                    LicensingMessageKind.InvalidLicenseKey ) );
 
             return [];
         }
@@ -40,11 +42,27 @@ internal sealed class ExplicitLicenseSource : LicenseSourceBase
         return [this._licenseString];
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExplicitLicenseSource"/> class that describes itself as the license
+    /// property of the product, which is where an application that has one license property reads its license from.
+    /// </summary>
     public ExplicitLicenseSource( string licenseString, LicenseSourceKind kind, IServiceProvider services )
+        : this(
+            licenseString,
+            $"the MSBuild property or environment variable named {services.GetRequiredBackstageService<ProductProfile>().LicensePropertyName}",
+            kind,
+            services ) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExplicitLicenseSource"/> class with the description that the
+    /// application supplied, which is what an application that reads its licenses from several places gives for each
+    /// of them.
+    /// </summary>
+    public ExplicitLicenseSource( string licenseString, string description, LicenseSourceKind kind, IServiceProvider services )
         : base( services )
     {
         this._licenseString = licenseString;
-        this._licensePropertyName = services.GetRequiredBackstageService<ProductProfile>().LicensePropertyName;
+        this.Description = description;
         this.Kind = kind;
     }
 

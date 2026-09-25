@@ -4,8 +4,9 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using System;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// The requirements that PostSharp asks for. There is one per package, because a requirement names exactly one.
@@ -66,4 +67,32 @@ public static class PostSharpLicenseRequirements
     /// Gets the requirement of the aspects of the PostSharp Caching library.
     /// </summary>
     public static LicenseRequirement Caching { get; } = new PostSharpLicenseRequirement( "PostSharp Caching", LicensedPackages.Caching );
+
+    /// <summary>
+    /// Gets the requirement of one package.
+    /// </summary>
+    /// <param name="package">
+    /// One package. <see cref="LicensedPackages.None"/>, <see cref="LicensedPackages.All"/> and any other combination
+    /// of packages is rejected, because a requirement names exactly one.
+    /// </param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="package"/> is not one package.</exception>
+    /// <remarks>
+    /// The compiler works out which package an aspect needs from the assembly that declares it, and what that gives is
+    /// a value of the enumeration rather than the name of one of the properties above. This method turns the one into
+    /// the other. It returns the instances above, so a requirement obtained twice for one package is one object.
+    /// </remarks>
+    public static LicenseRequirement ForPackage( LicensedPackages package )
+        => package switch
+        {
+            LicensedPackages.Essentials => Essentials,
+            LicensedPackages.Framework => Framework,
+            LicensedPackages.Common => Common,
+            LicensedPackages.Aggregatable => Aggregatable,
+            LicensedPackages.Threading => Threading,
+            LicensedPackages.Model => Model,
+            LicensedPackages.Xaml => Xaml,
+            LicensedPackages.Diagnostics => Diagnostics,
+            LicensedPackages.Caching => Caching,
+            _ => throw new ArgumentOutOfRangeException( nameof(package), package, "A requirement names exactly one package." )
+        };
 }

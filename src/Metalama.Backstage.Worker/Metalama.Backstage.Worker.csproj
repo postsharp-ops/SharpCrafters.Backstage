@@ -3,7 +3,6 @@
     <PropertyGroup>
         <MetalamaBackstageDirectory>$(MSBuildProjectDirectory)\..\Metalama.Backstage</MetalamaBackstageDirectory>
         <OutputType>exe</OutputType>
-        <RootNamespace>Metalama.Backstage</RootNamespace>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>

@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Windows;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Windows;
 
 /// <summary>
 /// The description of the desktop notifier process of Metalama.

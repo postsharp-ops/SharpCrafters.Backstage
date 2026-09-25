@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Concurrent;
 

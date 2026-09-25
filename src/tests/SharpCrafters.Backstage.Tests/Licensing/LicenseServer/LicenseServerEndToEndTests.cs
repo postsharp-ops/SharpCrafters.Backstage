@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
@@ -32,19 +33,16 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     /// Asserts that a registration succeeded, naming the reason when it did not. The message of a result cannot be
     /// read unless it failed, so it is read only on the failing branch.
     /// </summary>
-    private static void AssertSucceeded( LicenseRegistrationResult result )
-        => Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
+    private static void AssertSucceeded( LicenseRegistrationResult result ) => Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
 
     /// <summary>
     /// Silences the warning about a license server reached over HTTP, as a user would by editing their licensing
     /// configuration.
     /// </summary>
     private void AllowInsecureLicenseServer()
-        => this.ConfigurationManager!.Update<SharpCrafters.Backstage.Licensing.LicensingConfiguration>(
-            configuration => configuration with { AllowInsecureLicenseServer = true } );
+        => this.ConfigurationManager!.Update<LicensingConfiguration>( configuration => configuration with { AllowInsecureLicenseServer = true } );
 
-    private ILicenseConsumptionService ConsumptionService
-        => this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
+    private ILicenseConsumptionService ConsumptionService => this.ServiceProvider.GetRequiredBackstageService<ILicenseConsumptionService>();
 
     private async Task<bool> TryConsumeAsync( LicenseConsumptionOptions? options = null )
     {
@@ -118,7 +116,7 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
 
         var registered = Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
-        Assert.Equal( SharpCrafters.Backstage.Licensing.LicenseProduct.MetalamaEnterprise, registered.Product );
+        Assert.Equal( LicenseProduct.MetalamaEnterprise, registered.Product );
     }
 
     /// <summary>
@@ -545,7 +543,10 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         server.FaultMode = LicenseServerFault.Unreachable;
 
         Assert.False( await this.TryConsumeAsync() );
-        Assert.Contains( this.Messages, m => m.Text.Contains( "Cannot get a lease", StringComparison.Ordinal ) );
+
+        Assert.Contains(
+            this.Messages,
+            m => m.Kind == LicensingMessageKind.LicenseServerLeaseFailed && m.Text.Contains( "Cannot get a lease", StringComparison.Ordinal ) );
     }
 
     /// <summary>
@@ -584,10 +585,7 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
         var server = this.CreateServer();
 
         var canConsume = await this.TryConsumeAsync(
-            new LicenseConsumptionOptions
-            {
-                ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile
-            } );
+            new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile } );
 
         Assert.True( canConsume );
         server.AssertContacted();
@@ -735,11 +733,15 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     /// because the application information is read once.
     /// </summary>
     private void MakeTheProcessUnattended()
-        => this.ApplicationInfo = new TestApplicationInfo(
+    {
+        this.ApplicationInfo = new TestApplicationInfo(
             "License Server Test App",
             false,
             "2027.0.1",
-            new DateTime( 2026, 1, 15, 0, 0, 0, DateTimeKind.Utc ) ) { IsUnattendedProcess = true };
+            new DateTime( 2026, 1, 15, 0, 0, 0, DateTimeKind.Utc ) );
+
+        this.UnattendedProcessDetector.IsCurrentProcessUnattended = true;
+    }
 
     /// <summary>
     /// Tests the rule that matters most to the pool of a team: an unattended process is licensed by the unattended
@@ -765,7 +767,7 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
 
         var consumer = await service.CreateConsumerAsync( null, this.Messages.Add );
 
-        Assert.True( consumer.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseType == SharpCrafters.Backstage.Licensing.LicenseType.Unattended ) ) );
+        Assert.True( consumer.TryConsume( new DelegateLicenseRequirement( context => context.License.LicenseType == LicenseType.Unattended ) ) );
         server.AssertNotContacted();
     }
 
@@ -887,7 +889,11 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
             new LicenseConsumptionOptions { ProjectLicenseKey = server.Url, IgnoredLicenseSources = LicenseSourceKind.UserProfile } );
 
         Assert.False( canConsume );
-        Assert.Contains( this.Messages, m => m.Text.Contains( "not eligible for a license server", StringComparison.Ordinal ) );
+
+        Assert.Contains(
+            this.Messages,
+            m => m.Kind == LicensingMessageKind.LicenseServerLeaseFailed
+                 && m.Text.Contains( "not eligible for a license server", StringComparison.Ordinal ) );
     }
 
     // ---------------------------------------------------------------------------------------------------------------

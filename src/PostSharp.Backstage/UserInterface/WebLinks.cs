@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.UserInterface;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.UserInterface;
 
 #pragma warning disable CA1822
 

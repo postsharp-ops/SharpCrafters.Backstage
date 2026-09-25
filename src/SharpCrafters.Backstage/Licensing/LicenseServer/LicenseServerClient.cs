@@ -41,6 +41,7 @@ internal sealed class LicenseServerClient : IBackstageService
     /// none. A command line has no user interface to notify, and must not fail for want of one.
     /// </summary>
     private readonly IEventDispatcher? _eventDispatcher;
+
     private readonly LicensingInitializationOptions _options;
 
     public LicenseServerClient( IServiceProvider serviceProvider, LicensingInitializationOptions options )
@@ -49,7 +50,7 @@ internal sealed class LicenseServerClient : IBackstageService
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._machineIdProvider = serviceProvider.GetRequiredBackstageService<IMachineIdProvider>();
         this._userIdentityProvider = serviceProvider.GetRequiredBackstageService<IUserIdentityProvider>();
-        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         this._leaseStore = serviceProvider.GetRequiredBackstageService<LicenseLeaseStore>();
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
         this._eventDispatcher = serviceProvider.GetBackstageService<IEventDispatcher>();
@@ -109,8 +110,7 @@ internal sealed class LicenseServerClient : IBackstageService
 
                 // The build is licensed and hears nothing. The person is told, because the lease they are living on
                 // has an end and this is the only warning they will get before it arrives.
-                this._eventDispatcher?.Publish(
-                    new LicenseLeaseRenewalFailedEvent( licenseServerUrl, storedLease.EndTime, renewalResult.ErrorMessage! ) );
+                this._eventDispatcher?.Publish( new LicenseLeaseRenewalFailedEvent( licenseServerUrl, storedLease.EndTime, renewalResult.ErrorMessage! ) );
 
                 return LicenseLeaseResult.Success( storedLease );
             }
@@ -193,8 +193,7 @@ internal sealed class LicenseServerClient : IBackstageService
 
         if ( statusCode != HttpStatusCode.OK )
         {
-            return LicenseLeaseResult.Failure(
-                $"The license server at '{licenseServerUrl}' returned {(int) statusCode} {statusCode}." );
+            return LicenseLeaseResult.Failure( $"The license server at '{licenseServerUrl}' returned {(int) statusCode} {statusCode}." );
         }
 
         var now = this._dateTimeProvider.UtcNow;
@@ -252,6 +251,7 @@ internal sealed class LicenseServerClient : IBackstageService
         builder.Append( "/Lease.ashx?user=" ).Append( Uri.EscapeDataString( this._userIdentityProvider.UserName ) );
         builder.Append( "&machine=" ).Append( Uri.EscapeDataString( this._userIdentityProvider.MachineName ) );
         builder.Append( '-' ).Append( machineHash.ToString( "x", CultureInfo.InvariantCulture ) );
+
         // A server reads an absent version as 4.9.9, that is, as a client older than PostSharp 5, so a version is
         // always sent even when the application does not declare one.
         builder.Append( "&version=" ).Append( Uri.EscapeDataString( this._applicationInfo.PackageVersion ?? "0.0" ) );

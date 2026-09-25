@@ -42,12 +42,17 @@ internal sealed class BufferingLoggerFactory : ILoggerFactory
         {
             this._parent = parent;
             this._category = category;
+            this.Trace = new Writer( parent, category, logger => logger.Trace );
             this.Info = new Writer( parent, category, logger => logger.Info );
             this.Warning = new Writer( parent, category, logger => logger.Warning );
             this.Error = new Writer( parent, category, logger => logger.Error );
         }
 
-        public ILogWriter? Trace => null;
+        // Tracing is buffered like the other severities. The components that write before the real factory exists,
+        // such as the configuration manager and the named locks, write mostly at this severity, and the replay must
+        // include those messages. The writer does not filter anything: when the factory that receives the replay has
+        // no writer for a severity, it discards the messages of that severity.
+        public ILogWriter? Trace { get; }
 
         public ILogWriter? Info { get; }
 

@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// Computes what a PostSharp license grants.

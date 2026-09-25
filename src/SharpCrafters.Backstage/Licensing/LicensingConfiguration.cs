@@ -222,7 +222,7 @@ public sealed record LicensingConfiguration : ConfigurationFile
         // ReSharper disable once RedundantSuppressNullableWarningExpression
         if ( !LicenseKeyData.TryDeserialize( licenseKey!, out var licenseKeyData, out var errorMessage ) )
         {
-            reportMessage?.Invoke( new LicensingMessage( errorMessage ) );
+            reportMessage?.Invoke( new LicensingMessage( errorMessage, LicensingMessageKind.InvalidLicenseKey ) );
 
             return null;
         }

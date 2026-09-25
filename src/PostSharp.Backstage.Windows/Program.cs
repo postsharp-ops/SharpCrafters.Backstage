@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Windows;
 using System;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Windows;
 
 /// <summary>
 /// The entry point of the desktop notifier of PostSharp, which binds the notifier library to the PostSharp product.

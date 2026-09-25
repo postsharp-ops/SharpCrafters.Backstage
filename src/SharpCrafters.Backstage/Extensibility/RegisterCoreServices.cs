@@ -7,11 +7,12 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.ProcessClassification;
+using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
-using SharpCrafters.Backstage.Utilities;
 using SharpCrafters.Backstage.VersionControl;
 using System;
 using System.Collections.Immutable;
@@ -54,18 +55,20 @@ public static class RegisterCoreServices
     public static ServiceProviderBuilder AddCoreServices( this ServiceProviderBuilder serviceProviderBuilder, CoreInitializationOptions options )
     {
         var applicationInfo = options.ApplicationInfo;
+        var applicationInfoProvider = new ApplicationInfoProvider( applicationInfo );
 
         serviceProviderBuilder
             .AddSingleton( options.ProductProfile )
+            .AddSingleton<INamedLockServiceEnvironment>( options.ProductProfile )
             .AddSingleton( _ => new EarlyLoggerFactory() )
             .AddSingleton<IEventDispatcher>( serviceProvider => new EventDispatcher( serviceProvider ) )
             .AddSingleton( _ => new RandomNumberGenerator() )
             .AddSingleton<IEnvironmentVariableProvider>( _ => new EnvironmentVariableProvider() )
             .AddSingleton<IRuntimeInformation>( _ => new RuntimeInformationProvider() )
-            .AddSingleton<IMachineIdProvider>( CreateMachineIdProvider )
+            .AddSingleton( CreateMachineIdProvider )
             .AddSingleton<IUserIdentityProvider>( _ => new UserIdentityProvider() )
             .AddSingleton<IRecoverableExceptionService>( serviceProvider => new RecoverableExceptionService( serviceProvider ) )
-            .AddSingleton<IApplicationInfoProvider>( new ApplicationInfoProvider( applicationInfo ) )
+            .AddSingleton<IApplicationInfoProvider>( _ => applicationInfoProvider )
             .AddSingleton<IUserDeviceDetectionService>( serviceProvider => new WindowsUserDeviceDetectionService( serviceProvider ) )
             .AddSingleton<IDateTimeProvider>( _ => new CurrentDateTimeProvider() )
             .AddSingleton<IFileSystem>( serviceProvider => new FileSystem( serviceProvider ) )
@@ -74,17 +77,18 @@ public static class RegisterCoreServices
             .AddSingleton<IVcsStatusService>( serviceProvider => new GitStatusService( serviceProvider ) )
             .AddSingleton<IHttpClientFactory>( _ => new HttpClientFactory() )
             .AddSingleton<IJsonSerializationService>( _ => new JsonSerializationService( options.JsonTypeInfoResolvers ) )
-            .AddSingleton<INamedLockService>( CreateNamedLockService )
+            .AddSingleton( CreateNamedLockService )
             .AddSingleton<IPlatformInfo>( serviceProvider => new PlatformInfo( serviceProvider ) )
             .AddSingleton<BackstageBackgroundTasksService>( _ => new BackstageBackgroundTasksService() )
             .AddSingleton<ITempFileManager>( serviceProvider => new TempFileManager( serviceProvider ) )
-            .AddSingleton( serviceProvider => new ShutdownService( serviceProvider ) );
+            .AddSingleton( serviceProvider => new ShutdownService( serviceProvider ) )
+            .AddProcessClassificationServices();
 
         if ( options.AddDiagnostics )
         {
             if ( options.DiagnosticsOptions.CreateLoggingFactory == null )
             {
-                serviceProviderBuilder.AddDiagnostics( applicationInfo.ProcessKind, options.DiagnosticsOptions );
+                serviceProviderBuilder.AddDiagnostics( applicationInfoProvider.ProcessKind, options.DiagnosticsOptions );
             }
             else
             {
@@ -143,7 +147,10 @@ public static class RegisterCoreServices
                 var configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
                 var configuration = configurationManager.Get<DiagnosticsConfiguration>();
 
-                DebuggerHelper.Launch( configuration, processKind );
+                if ( configuration.Debugging.Processes.TryGetValue( processKind.ToString(), out var launchDebugger ) && launchDebugger )
+                {
+                    DebuggerHelper.LaunchOnce();
+                }
 
                 var productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
                 var consoleTracing = Environment.GetEnvironmentVariable( productProfile.GetEnvironmentVariableName( "CONSOLE_TRACE" ) );
@@ -173,7 +180,7 @@ public static class RegisterCoreServices
                         configuration = configurationManager.Get<DiagnosticsConfiguration>();
                     }
 
-                    var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+                    var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>();
 
                     loggerFactory = new LoggerFactory(
                         serviceProvider,
@@ -186,7 +193,10 @@ public static class RegisterCoreServices
                 return loggerFactory;
             } );
 
-        serviceProviderBuilder.AddSingleton<IProfilingService>( serviceProvider => new ProfilingService( serviceProvider ) );
+        // The profiling feature is not registered here. It lives in SharpCrafters.Backstage.Profiling, because it
+        // is the only thing in this repository that needs JetBrains.Profiler.SelfApi and that package brings four
+        // assemblies every consumer would otherwise publish. A product that wants it calls AddProfiling; the
+        // initializer resolves the service optionally and does nothing when it is absent.
     }
 
     /// <summary>

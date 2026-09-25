@@ -6,8 +6,8 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Threading;
-using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Globalization;
 using System.IO;
@@ -33,7 +33,7 @@ internal sealed class TelemetryLogger : IBackstageService
         this._logsDirectory = serviceProvider.GetRequiredBackstageService<IStandardDirectories>().TelemetryLogsDirectory;
         this._fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(TelemetryLogger) );
-        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         this._source = $"{applicationInfo.Name} {applicationInfo.PackageVersion}";
     }
 

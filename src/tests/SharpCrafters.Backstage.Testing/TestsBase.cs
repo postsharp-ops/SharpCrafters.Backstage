@@ -20,6 +20,7 @@ using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Repositories;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Telemetry;
@@ -119,11 +120,12 @@ namespace SharpCrafters.Backstage.Testing
 
         protected TestRuntimeInformation RuntimeInformation => this._defaultTestContext.Value.RuntimeInformation;
 
+        protected TestUnattendedProcessDetector UnattendedProcessDetector { get; } = new();
+
         /// <summary>
         /// Gets the licensing authority provider registered in the service provider of the current test.
         /// </summary>
-        protected ILicensingAuthorityProvider LicensingAuthorityProvider
-            => this.ServiceProvider.GetRequiredBackstageService<ILicensingAuthorityProvider>();
+        protected ILicensingAuthorityProvider LicensingAuthorityProvider => this.ServiceProvider.GetRequiredBackstageService<ILicensingAuthorityProvider>();
 
         /// <summary>
         /// Creates the licensing authority provider registered in the service provider of the current test. The
@@ -148,18 +150,14 @@ namespace SharpCrafters.Backstage.Testing
         protected void AddLicenseGroup( string minimalVersion, params string[] licenseKeys )
         {
             var configurationManager = this.ConfigurationManager
-                                       ?? throw new InvalidOperationException(
-                                           "The current test does not use the in-memory configuration manager." );
+                                       ?? throw new InvalidOperationException( "The current test does not use the in-memory configuration manager." );
 
             var configuration = configurationManager.Get<LicensingConfiguration>();
 
             var groups = configuration.LicensesByMinimalVersion ?? ImmutableDictionary<string, ImmutableArray<string?>>.Empty;
 
             configurationManager.Set(
-                configuration with
-                {
-                    LicensesByMinimalVersion = groups.SetItem( minimalVersion, ImmutableArray.Create<string?>( licenseKeys ) )
-                } );
+                configuration with { LicensesByMinimalVersion = groups.SetItem( minimalVersion, ImmutableArray.Create<string?>( licenseKeys ) ) } );
         }
 
         private TestFileSystem? _uniqueFileSystem;
@@ -178,7 +176,11 @@ namespace SharpCrafters.Backstage.Testing
         }
 
         protected TestsBase( ITestOutputHelper logger, IApplicationInfo? applicationInfo = null )
-            : this( logger, new BackstageInitializationOptions( applicationInfo ?? new TestApplicationInfo(), MetalamaProduct.Instance ) { AutoUploadTelemetry = false } ) { }
+            : this(
+                logger,
+                new BackstageInitializationOptions(
+                    applicationInfo ?? new TestApplicationInfo(),
+                    MetalamaProduct.Instance ) { AutoUploadTelemetry = false } ) { }
 
         /// <summary>
         /// Method that can add services. 
@@ -324,11 +326,13 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<IUserIdentityProvider>( this.UserIdentity )
                 .AddSingleton<IPlatformInfo>( serviceProvider => new PlatformInfo( serviceProvider ) )
                 .AddSingleton( this.BackgroundTasks )
+
                 // As for the file system, there must be a single instance even when CloneServiceCollection is used:
                 // one instance stands for one network, so a hook registered by the test is seen by every provider.
                 .AddSingleton<IHttpClientFactory>( serviceProvider => this._uniqueHttpClientFactory ??= new TestHttpClientFactory( serviceProvider ) )
                 .AddSingleton( options.Product.Profile )
-                .AddSingleton<IWebLinks>( options.Product.WebLinks )
+                .AddSingleton<INamedLockServiceEnvironment>( options.Product.Profile )
+                .AddSingleton( options.Product.WebLinks )
                 .AddSingleton( _ => new RandomNumberGenerator( 0 ) )
 
                 // We must always have a single instance of the file system even if we use CloneServiceCollection.
@@ -337,10 +341,11 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<IEnvironmentVariableProvider>( this.EnvironmentVariableProvider )
                 .AddSingleton<IRecoverableExceptionService>( new TestRecoverableExceptionService() )
                 .AddSingleton<IUserDeviceDetectionService>( this.UserDeviceDetection )
-                .AddSingleton<IJsonSerializationService>( _ => new JsonSerializationService( [BackstageJsonContext.Default, .. options.AdditionalJsonTypeInfoResolvers] ) )
+                .AddSingleton<IJsonSerializationService>(
+                    _ => new JsonSerializationService( [BackstageJsonContext.Default, .. options.AdditionalJsonTypeInfoResolvers] ) )
                 .AddSingleton<IConfigurationManager>( serviceProvider => new InMemoryConfigurationManager( serviceProvider ) )
                 .AddSingleton<ITempFileManager>( serviceProvider => new TempFileManager( serviceProvider ) )
-                .AddSingleton<ILicenseProductCatalog>( options.LicensingOptions.ProductCatalog ?? options.Product.LicenseProductCatalog )
+                .AddSingleton( options.LicensingOptions.ProductCatalog ?? options.Product.LicenseProductCatalog )
                 .AddSingleton( serviceProvider => new LicenseServerUrlValidator( serviceProvider ) )
                 .AddSingleton( serviceProvider => new LicenseLeaseStore( serviceProvider ) )
                 .AddSingleton( serviceProvider => new LicenseServerClient( serviceProvider, options.LicensingOptions ) )
@@ -370,7 +375,8 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<ITelemetryUploader>( serviceProvider => new TelemetryUploader( serviceProvider ) )
                 .AddSingleton<TelemetryLogger>( serviceProvider => new TelemetryLogger( serviceProvider ) )
                 .AddSingleton<IRssClient>( serviceProvider => new RssClient( serviceProvider ) )
-                .AddSingleton<ILicensingAuthorityProvider>( this.CreateLicensingAuthorityProvider )
+                .AddSingleton( this.CreateLicensingAuthorityProvider )
+                .AddSingleton<IUnattendedProcessDetector>( this.UnattendedProcessDetector )
 
                 // The default that AddBackstageServices registers before the services of the product. This is not
                 // that method, so the product's own registrations are not run here: a test that wants the answer of a

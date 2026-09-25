@@ -12,7 +12,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Worker.Upload
+namespace SharpCrafters.Backstage.Worker.Worker.Upload
 {
     [UsedImplicitly]
     internal class UploadCommand : AsyncCommand<UploadCommandSettings>

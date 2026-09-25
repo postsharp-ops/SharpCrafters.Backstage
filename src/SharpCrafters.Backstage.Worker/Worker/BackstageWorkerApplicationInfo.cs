@@ -4,10 +4,10 @@
 
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Application;
-using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.ProcessClassification;
 using System.Reflection;
 
-namespace SharpCrafters.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker.Worker;
 
 /// <summary>
 /// The description of the worker process of a product. The executable of the product derives a class from it that
@@ -32,11 +32,10 @@ public abstract class BackstageWorkerApplicationInfo : ApplicationInfoBase
     public BackstageProduct Product { get; }
 
     /// <inheritdoc />
-    public override ProcessKind ProcessKind => ProcessKind.BackstageWorker;
+    public override ProcessKind? ProcessKind => ProcessClassification.ProcessKind.BackstageWorker;
 
     /// <inheritdoc />
     public override bool IsLongRunningProcess => false;
 
-    /// <inheritdoc />
-    public override bool IsUnattendedProcess( ILoggerFactory loggerFactory ) => true;
+    public override bool IsWorkerProcess => true;
 }

@@ -5,7 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace SharpCrafters.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker.Worker;
 
 /// <summary>
 /// The data that the commands of the worker receive.

@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -126,8 +127,7 @@ public sealed record DiagnosticsConfiguration : ConfigurationFile
     /// <summary>
     /// Creates the default value of the <see cref="CrashDumps"/> property.
     /// </summary>
-    private static CrashDumpConfiguration CreateDefaultCrashDumps()
-        => new() { Processes = _defaultProcesses, ExceptionTypes = ImmutableArray.Create( "*" ) };
+    private static CrashDumpConfiguration CreateDefaultCrashDumps() => new() { Processes = _defaultProcesses, ExceptionTypes = ImmutableArray.Create( "*" ) };
 
     /// <summary>
     /// Creates the default value of the <see cref="Profiling"/> property.

@@ -6,10 +6,11 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.ProcessClassification;
+using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Threading;
-using SharpCrafters.Backstage.Utilities;
-using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -159,12 +160,13 @@ namespace SharpCrafters.Backstage.Configuration
         {
             this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
 
-            if ( !string.IsNullOrEmpty( Environment.GetEnvironmentVariable( this._productProfile.GetEnvironmentVariableName( "DEBUG_CONFIGURATION_MANAGER" ) ) ) )
+            if ( !string.IsNullOrEmpty(
+                    Environment.GetEnvironmentVariable( this._productProfile.GetEnvironmentVariableName( "DEBUG_CONFIGURATION_MANAGER" ) ) ) )
             {
-                DebuggerHelper.Launch();
+                DebuggerHelper.LaunchOnce();
             }
 
-            var applicationInfo = serviceProvider.GetBackstageService<IApplicationInfoProvider>()?.CurrentApplication;
+            var applicationInfo = serviceProvider.GetBackstageService<IApplicationInfoProvider>()?.Application;
             this._fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
             this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
             this._environmentVariableProvider = serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>();
@@ -277,8 +279,7 @@ namespace SharpCrafters.Backstage.Configuration
         /// </summary>
         /// <param name="location">One of the <c>Location</c> constants of this class.</param>
         /// <param name="context">The path of the file concerned, or <see cref="InstanceContext"/>.</param>
-        private void SyncPoint( string location, string context )
-            => this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( location, context ) );
+        private void SyncPoint( string location, string context ) => this._testSynchronizationProvider?.SyncPoint( GetSyncPointName( location, context ) );
 
         private void OnFileChanged( FileSystemEventArgs e )
         {
@@ -911,7 +912,9 @@ namespace SharpCrafters.Backstage.Configuration
                     return true;
                 }
 
-                this.ReportLockFailure( fileName, $"Timeout while waiting {_lockTimeout.TotalSeconds} s for the lock protecting '{fileName}' before {operation}." );
+                this.ReportLockFailure(
+                    fileName,
+                    $"Timeout while waiting {_lockTimeout.TotalSeconds} s for the lock protecting '{fileName}' before {operation}." );
 
                 return false;
             }

@@ -2,7 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System.Globalization;
 
 namespace SharpCrafters.Backstage.VersionControl;
@@ -61,8 +61,7 @@ internal static class TestSynchronizationPoints
     /// <param name="location">One of the constants of this class.</param>
     /// <param name="repositoryRoot">The repository being queried, so that a test can pin one repository without
     /// pinning every other repository that the process queries.</param>
-    public static string ForService( string location, string repositoryRoot )
-        => Compose( nameof(GitStatusService), location, repositoryRoot );
+    public static string ForService( string location, string repositoryRoot ) => Compose( nameof(GitStatusService), location, repositoryRoot );
 
     /// <summary>
     /// Composes the name of a synchronization point of <see cref="VcsStatusCache"/>, following the
@@ -70,8 +69,7 @@ internal static class TestSynchronizationPoints
     /// </summary>
     /// <param name="location">One of the constants of this class.</param>
     /// <param name="repositoryRoot">The repository whose record is being read or written.</param>
-    public static string ForCache( string location, string repositoryRoot )
-        => Compose( nameof(VcsStatusCache), location, repositoryRoot );
+    public static string ForCache( string location, string repositoryRoot ) => Compose( nameof(VcsStatusCache), location, repositoryRoot );
 
     private static string Compose( string className, string location, string repositoryRoot )
         => string.Format( CultureInfo.InvariantCulture, "{0}.{1}:{2}", className, location, repositoryRoot );

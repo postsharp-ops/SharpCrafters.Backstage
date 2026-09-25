@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Windows;
 using System;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.Windows;
 
 /// <summary>
 /// The entry point of the desktop notifier of Metalama, which binds the notifier library to the Metalama product.

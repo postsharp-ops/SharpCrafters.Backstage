@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Testing;
-using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

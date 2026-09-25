@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.VersionControl;
-using SharpCrafters.Common;
+using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.IO;
 using System.Linq;

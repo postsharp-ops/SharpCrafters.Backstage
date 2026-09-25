@@ -5,6 +5,7 @@
 using Metalama.Backstage;
 using Microsoft.Extensions.DependencyInjection;
 using PostSharp.Backstage;
+using PostSharp.Backstage.Licensing;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;

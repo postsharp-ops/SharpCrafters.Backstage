@@ -2,11 +2,11 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Generic;
 
@@ -15,8 +15,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
     internal abstract class LicenseSourceBase : ILicenseSource
     {
         private readonly IServiceProvider _services;
-        private readonly IApplicationInfo _applicationInfo;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
         public abstract string Description { get; }
 
@@ -25,8 +25,8 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
         protected LicenseSourceBase( IServiceProvider services )
         {
             this._services = services;
-            this._applicationInfo = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
             this._loggerFactory = services.GetLoggerFactory();
+            this._unattendedProcessDetector = services.GetRequiredBackstageService<IUnattendedProcessDetector>();
         }
 
         /// <summary>
@@ -47,15 +47,12 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
 
             // Asking the question logs, and most sources hold no license server at all, so it is asked at most once
             // and only when a license server is actually met.
-            bool? isUnattendedProcess = null;
 
             foreach ( var licenseString in this.GetLicenseStrings( reportMessage ) )
             {
                 if ( LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
                 {
-                    isUnattendedProcess ??= this._applicationInfo.IsUnattendedProcess( this._loggerFactory );
-
-                    if ( isUnattendedProcess.Value )
+                    if ( this._unattendedProcessDetector.IsCurrentProcessUnattended )
                     {
                         // An unattended process is licensed by the unattended license, which costs nothing, so it must
                         // never take a seat from the pool of the team: a build server builds far more often than a
@@ -77,7 +74,7 @@ namespace SharpCrafters.Backstage.Licensing.Consumption.Sources
                 }
                 else
                 {
-                    reportMessage( new LicensingMessage( errorMessage ) );
+                    reportMessage( new LicensingMessage( errorMessage, LicensingMessageKind.InvalidLicenseKey ) );
                 }
             }
         }

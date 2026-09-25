@@ -7,7 +7,7 @@ using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Licenses;
 
-namespace PostSharp.Backstage;
+namespace PostSharp.Backstage.Licensing;
 
 /// <summary>
 /// Throttles an audit by the identity of the license, which is how PostSharp 2026.0 throttles it.

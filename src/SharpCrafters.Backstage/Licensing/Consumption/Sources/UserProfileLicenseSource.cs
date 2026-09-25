@@ -29,7 +29,7 @@ internal sealed class UserProfileLicenseSource : LicenseSourceBase
     public UserProfileLicenseSource( IServiceProvider services )
         : base( services )
     {
-        this._currentVersion = services.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication.GetLicensingVersion();
+        this._currentVersion = services.GetRequiredBackstageService<IApplicationInfoProvider>().Application.GetLicensingVersion();
 
         var configurationManager = services.GetRequiredBackstageService<IConfigurationManager>();
         this._licensingConfiguration = configurationManager.Get<LicensingConfiguration>();

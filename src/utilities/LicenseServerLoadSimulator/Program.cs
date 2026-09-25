@@ -69,24 +69,27 @@ simulation.PrintSummary();
 
 return 0;
 
-/// <summary>
-/// The factory of HTTP clients of this tool, which has no service provider of its own.
-/// </summary>
-internal sealed class SimpleHttpClientFactory : IHttpClientFactory
+namespace SharpCrafters.Backstage.LicenseServerLoadSimulator
 {
-    public HttpClient Create() => this.Create( HttpClientOptions.Default );
-
-    public HttpClient Create( HttpClientOptions options )
+    /// <summary>
+    /// The factory of HTTP clients of this tool, which has no service provider of its own.
+    /// </summary>
+    internal sealed class SimpleHttpClientFactory : IHttpClientFactory
     {
-        var client = options.UseDefaultCredentials
-            ? new HttpClient( new HttpClientHandler { UseDefaultCredentials = true } )
-            : new HttpClient();
+        public HttpClient Create() => this.Create( HttpClientOptions.Default );
 
-        if ( options.Timeout != null )
+        public HttpClient Create( HttpClientOptions options )
         {
-            client.Timeout = options.Timeout.Value;
-        }
+            var client = options.UseDefaultCredentials
+                ? new HttpClient( new HttpClientHandler { UseDefaultCredentials = true } )
+                : new HttpClient();
 
-        return client;
+            if ( options.Timeout != null )
+            {
+                client.Timeout = options.Timeout.Value;
+            }
+
+            return client;
+        }
     }
 }

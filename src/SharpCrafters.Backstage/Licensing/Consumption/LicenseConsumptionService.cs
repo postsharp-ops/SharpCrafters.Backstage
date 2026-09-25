@@ -47,9 +47,23 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
     {
         options ??= LicenseConsumptionOptions.Default;
 
-        var sources = new List<ILicenseSource>( this._sources.Count + 1 );
+        var explicitLicenses = options.ExplicitLicenses.IsDefault ? ImmutableArray<ExplicitLicense>.Empty : options.ExplicitLicenses;
+
+        var sources = new List<ILicenseSource>( this._sources.Count + explicitLicenses.Length + 1 );
 
         sources.AddRange( this._sources.Where( s => (s.Kind & options.IgnoredLicenseSources) == 0 ) );
+
+        // The explicit licenses keep the order of the list, because the sources of equal priority are drained in the
+        // order they are added here and OrderBy is stable.
+        foreach ( var explicitLicense in explicitLicenses )
+        {
+            sources.Add(
+                new ExplicitLicenseSource(
+                    explicitLicense.LicenseString,
+                    explicitLicense.SourceDescription,
+                    LicenseSourceKind.Project,
+                    this._serviceProvider ) );
+        }
 
         if ( !string.IsNullOrEmpty( options.ProjectLicenseKey ) )
         {
@@ -97,7 +111,13 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
 
                 if ( !consumptionResult.IsSuccess )
                 {
-                    await this.ReportUnusableLicenseAsync( license, source, consumptionResult.ErrorMessage!, reportMessage, cancellationToken );
+                    await this.ReportUnusableLicenseAsync(
+                        license,
+                        source,
+                        consumptionResult.ErrorMessage!,
+                        consumptionResult.ErrorKind,
+                        reportMessage,
+                        cancellationToken );
 
                     continue;
                 }
@@ -122,6 +142,7 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
         ILicense license,
         ILicenseSource source,
         string errorMessage,
+        LicensingMessageKind errorKind,
         Action<LicensingMessage>? reportMessage,
         CancellationToken cancellationToken )
     {
@@ -142,7 +163,7 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             message += $" The license key originates from {source.Description}.";
         }
 
-        reportMessage?.Invoke( new LicensingMessage( message ) );
+        reportMessage?.Invoke( new LicensingMessage( message, errorKind ) );
         this._logger.Warning?.Log( message );
     }
 

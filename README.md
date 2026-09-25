@@ -7,6 +7,26 @@ The product name inside the build system and on TeamCity is `Backstage`. The rep
 `SharpCrafters.Backstage`, the neutral packages `SharpCrafters.Backstage*` and `SharpCrafters.Common`, and the product
 customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 
+## Packages
+
+| Package | Contents |
+|---|---|
+| `SharpCrafters.Common.Abstractions` | The interfaces of the hooks that production code exposes for deterministic testing. It has no dependency |
+| `SharpCrafters.Common` | The implementations of those hooks, which tests register. It depends on `SharpCrafters.Common.Abstractions` |
+| `SharpCrafters.Backstage.Abstractions` | The contracts that the packages below share: the logger, the service marker interface and the environment variables. It has no dependency |
+| `SharpCrafters.Backstage.Threading` | Named locks. It depends on the two abstractions packages |
+| `SharpCrafters.Backstage.FileLocks` | The retry of file operations and the detection of the processes holding a file. It depends on `SharpCrafters.Backstage.Abstractions` |
+| `SharpCrafters.Backstage.ProcessClassification` | The process kinds, the detection of a container and the launch of a debugger. It depends on `SharpCrafters.Backstage.Abstractions` |
+| `SharpCrafters.Backstage` | The services: dependency injection, logging, configuration, the file system, the detection of an unattended process and of a continuous integration server, telemetry, licensing and user interface |
+| `SharpCrafters.Backstage.Commands` | The command line over those services |
+| `SharpCrafters.Backstage.Profiling` | The optional profiling feature, which needs `JetBrains.Profiler.SelfApi`. No product references it |
+| `Metalama.Backstage`, `PostSharp.Backstage` | What each product family adds: its profile, its licence catalogue, its web links and its telemetry endpoints |
+
+A type belongs in one of the packages that depend only on the abstractions when a component that starts no service
+needs it, such as a build task loaded by MSBuild. Those packages must not gain a dependency on
+`SharpCrafters.Backstage`. A type that needs the logging implementation, the configuration or the standard directories
+belongs in `SharpCrafters.Backstage`.
+
 ## Documentation
 
 | Document | Subject |

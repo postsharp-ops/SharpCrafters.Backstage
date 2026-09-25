@@ -13,7 +13,7 @@ public class VersionCommand : BaseCommand<BaseCommandSettings>
 {
     protected override void Execute( ExtendedCommandContext context, BaseCommandSettings settings )
     {
-        var applicationInfo = context.ServiceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var applicationInfo = context.ServiceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
         context.Console.WriteMessage( "Application: " + applicationInfo.Name );
         context.Console.WriteMessage( "PackageVersion: " + applicationInfo.PackageVersion );
         context.Console.WriteMessage( "AssemblyVersion: " + applicationInfo.AssemblyVersion );

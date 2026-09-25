@@ -9,13 +9,13 @@ using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Telemetry;
-using SharpCrafters.Backstage.Worker.Upload;
-using SharpCrafters.Backstage.Worker.WebServer;
+using SharpCrafters.Backstage.Worker.Worker.Upload;
+using SharpCrafters.Backstage.Worker.Worker.WebServer;
 using Spectre.Console.Cli;
 using System;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Worker;
+namespace SharpCrafters.Backstage.Worker.Worker;
 
 /// <summary>
 /// The entry point of the worker application, which the executable of a product calls from its <c>Main</c> method.

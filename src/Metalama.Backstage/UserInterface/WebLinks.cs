@@ -5,7 +5,7 @@
 using JetBrains.Annotations;
 using SharpCrafters.Backstage.UserInterface;
 
-namespace Metalama.Backstage;
+namespace Metalama.Backstage.UserInterface;
 
 #pragma warning disable CA1822
 

@@ -72,7 +72,7 @@ internal sealed class LeasedLicense : AuditableLicense
 
         if ( !leaseResult.IsSuccess )
         {
-            return LicenseConsumptionResult.Failure( leaseResult.ErrorMessage! );
+            return LicenseConsumptionResult.Failure( leaseResult.ErrorMessage!, LicensingMessageKind.LicenseServerLeaseFailed );
         }
 
         var innerResult = await this.GetInnerLicense( leaseResult.Lease! ).GetConsumptionPropertiesAsync( options, cancellationToken );
@@ -87,7 +87,8 @@ internal sealed class LeasedLicense : AuditableLicense
             // The equivalent of PostSharp's PS0149. It is reported as a message and not raised, so that another
             // licence can still satisfy the requirement.
             return LicenseConsumptionResult.Failure(
-                $"the license key leased from '{this.LicenseServerUrl}' is not eligible for a license server" );
+                $"the license key leased from '{this.LicenseServerUrl}' is not eligible for a license server",
+                LicensingMessageKind.LicenseServerLeaseFailed );
         }
 
         return innerResult;

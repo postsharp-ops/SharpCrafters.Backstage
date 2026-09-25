@@ -42,6 +42,8 @@ var product = new Product( BackstageDependencies.Backstage )
 
     Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
 
+    // TODO: Should be reviewed before publishing first release.
+    
     // Only the packages that a public package of a product depends on are public. SharpCrafters.Backstage.Testing
     // is consumed by test projects only, and the worker and Windows libraries are project references of the
     // product executables, so they are not packed at all.
@@ -49,6 +51,11 @@ var product = new Product( BackstageDependencies.Backstage )
         "SharpCrafters.Backstage.$(PackageVersion).nupkg",
         "SharpCrafters.Backstage.Commands.$(PackageVersion).nupkg", // Required by Metalama.Tool.
         "SharpCrafters.Common.$(PackageVersion).nupkg",             // Required by Metalama.Framework.Engine and Metalama.Patterns.Caching.Backend.
+        "SharpCrafters.Common.Abstractions.$(PackageVersion).nupkg",             // Required by SharpCrafters.Common and SharpCrafters.Backstage.Threading.
+        "SharpCrafters.Backstage.Abstractions.$(PackageVersion).nupkg",          // Required by the three packages below.
+        "SharpCrafters.Backstage.Threading.$(PackageVersion).nupkg",             // Required by SharpCrafters.Backstage.
+        "SharpCrafters.Backstage.FileLocks.$(PackageVersion).nupkg",             // Required by SharpCrafters.Backstage.
+        "SharpCrafters.Backstage.ProcessClassification.$(PackageVersion).nupkg", // Required by SharpCrafters.Backstage.
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
         "Metalama.Backstage.Tools.$(PackageVersion).nupkg",         // Required by Metalama.Framework.Engine and Metalama.Vsx.
         "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.

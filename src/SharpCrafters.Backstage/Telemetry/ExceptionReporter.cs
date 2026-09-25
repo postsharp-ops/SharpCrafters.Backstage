@@ -407,10 +407,10 @@ internal sealed class ExceptionReporter : IExceptionReportManager, IExceptionCap
     /// </remarks>
     public bool ShouldReportIssue( string hash )
     {
-        if ( !this._applicationInfoProvider.CurrentApplication.ShouldCreateLocalCrashReports )
+        if ( !this._applicationInfoProvider.Application.ShouldCreateLocalCrashReports )
         {
             this._logger.Trace?.Log(
-                $"The issue {hash} should not be reported because the errors in the application '{this._applicationInfoProvider.CurrentApplication}' should never be reported." );
+                $"The issue {hash} should not be reported because the errors in the application '{this._applicationInfoProvider.Application}' should never be reported." );
 
             return false;
         }
@@ -564,7 +564,7 @@ internal sealed class ExceptionReporter : IExceptionReportManager, IExceptionCap
             this._telemetryConfigurationService.EnsureActivated();
 
             adapter ??= DefaultExceptionAdapter.Instance;
-            var applicationInfo = this._applicationInfoProvider.CurrentApplication;
+            var applicationInfo = this._applicationInfoProvider.Application;
 
             // Get stack traces.
             var stackTraces = new List<string?>();
@@ -675,7 +675,7 @@ internal sealed class ExceptionReporter : IExceptionReportManager, IExceptionCap
         IExceptionAdapter adapter,
         ExceptionSensitiveDataHelper scrubber )
     {
-        var applicationInfo = this._applicationInfoProvider.CurrentApplication;
+        var applicationInfo = this._applicationInfoProvider.Application;
 
         var stringWriter = new StringWriter();
 

@@ -59,12 +59,10 @@ public static class RegisterServiceExtensions
 
         var userInterfaceOptions = product.UserInterfaceOptions with
         {
-            OpenWelcomePage = options.OpenWelcomePage,
-            DetectToastNotifications = options.DetectToastNotifications,
-            AddRssClient = options.AddRssClient
+            OpenWelcomePage = options.OpenWelcomePage, DetectToastNotifications = options.DetectToastNotifications, AddRssClient = options.AddRssClient
         };
 
-        if ( options.AddRssClient && !options.AddSupportServices )
+        if ( options is { AddRssClient: true, AddSupportServices: false } )
         {
             throw new ArgumentOutOfRangeException(
                 nameof(options),

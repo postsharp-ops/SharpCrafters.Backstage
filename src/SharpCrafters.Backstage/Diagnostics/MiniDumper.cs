@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Maintenance;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Utilities;
 using System;
@@ -41,9 +42,9 @@ internal sealed class MiniDumper : IMiniDumper
         this._tempFileManager = serviceProvider.GetRequiredBackstageService<ITempFileManager>();
         this._platformInfo = serviceProvider.GetRequiredBackstageService<IPlatformInfo>();
 
-        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().CurrentApplication;
+        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>();
         this._processKind = applicationInfo.ProcessKind;
-        this._isProcessEnabled = this._configuration.Processes.TryGetValue( applicationInfo.ProcessKind.ToString(), out var isEnabled ) && isEnabled;
+        this._isProcessEnabled = this._configuration.Processes.TryGetValue( this._processKind.ToString(), out var isEnabled ) && isEnabled;
 
         // The MiniDumper class is instantiated for each project, but the handler must be global.
         // We will use the latest available configuration in the process.
