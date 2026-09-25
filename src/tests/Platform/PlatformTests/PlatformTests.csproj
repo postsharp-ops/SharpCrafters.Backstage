@@ -9,6 +9,9 @@
         <!-- The product, as an application consumes it: through the packages of the build. -->
         <PackageReference Include="Metalama.Backstage" />
 
+        <!-- The commands, which the process management suite runs as a user runs them. -->
+        <PackageReference Include="SharpCrafters.Backstage.Commands" />
+
         <!-- For TestLicenseKeyProvider, which signs license keys with the test authority. -->
         <PackageReference Include="SharpCrafters.Backstage.Testing" />
 
