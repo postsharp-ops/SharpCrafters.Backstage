@@ -38,9 +38,28 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( "Lists all registered licenses." );
 
+                        // One command per edition that the product family gives away and that a user registers by
+                        // hand, named by the alias the family gave it. The trial is one of them. An edition that
+                        // another program registers on the user's behalf declares that it is not offered here, so the
+                        // help does not describe something nobody obtains this way; and a family that gives away
+                        // nothing would otherwise advertise a command whose only outcome is an error.
+                        var editions = options.Product.LicenseProductCatalog.SelfRegisteredEditions
+                            .Where( e => e.IsAvailableFromCommandLine )
+                            .ToList();
+
+                        // The register command takes only a key or a URL, so its help names the commands that register
+                        // an edition without a key, by the aliases of this product family.
+                        var registerDescription = "Registers a new license key or license server URL.";
+
+                        if ( editions.Count > 0 )
+                        {
+                            registerDescription +=
+                                $" To register an edition that requires no license key, use {string.Join( " or ", editions.Select( e => $"'license {e.Alias}'" ) )}.";
+                        }
+
                         license.AddCommand<RegisterLicenseCommand>( "register" )
                             .WithData( options )
-                            .WithDescription( "Registers a new license key or license server URL." );
+                            .WithDescription( registerDescription );
 
                         license.AddCommand<UnregisterCommand>( "unregister" )
                             .WithData( options )
@@ -50,13 +69,7 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( "Acquires a lease from the registered license server and prints the license it leases." );
 
-                        // One command per edition that the product family gives away and that a user registers by
-                        // hand, named by the alias the family gave it. The trial is one of them. An edition that
-                        // another program registers on the user's behalf declares that it is not offered here, so the
-                        // help does not describe something nobody obtains this way; and a family that gives away
-                        // nothing would otherwise advertise a command whose only outcome is an error.
-                        foreach ( var edition in options.Product.LicenseProductCatalog.SelfRegisteredEditions
-                                     .Where( e => e.IsAvailableFromCommandLine ) )
+                        foreach ( var edition in editions )
                         {
                             license.AddCommand<RegisterEditionCommand>( edition.Alias )
                                 .WithData( options )
