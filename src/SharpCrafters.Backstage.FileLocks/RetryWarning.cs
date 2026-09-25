@@ -15,7 +15,12 @@ namespace SharpCrafters.Backstage.FileLocks;
 /// </para>
 /// <para>
 /// The delegate is called at most once for each call of a <see cref="RetryHelper"/> method, at the first failed attempt
-/// that reaches the threshold. It is not called when the operation succeeds before the threshold is reached.
+/// that reaches the threshold. This includes the last attempt that the budget allows, just before the exception
+/// propagates. The delegate is not called when the operation succeeds before the threshold is reached.
+/// </para>
+/// <para>
+/// The thresholds are compared with the number of failed attempts and the time of the whole call. When the method
+/// retries one operation for each file, the attempts of all the files count.
 /// </para>
 /// </remarks>
 public sealed class RetryWarning

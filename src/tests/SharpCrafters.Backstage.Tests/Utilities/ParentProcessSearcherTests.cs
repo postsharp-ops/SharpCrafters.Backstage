@@ -48,5 +48,24 @@ public sealed class ParentProcessSearcherTests : TestsBase
     [InlineData( "gael", "User Manager", false )]
     [InlineData( "SYSTEM", "NT AUTHORITY", false )]
     public void WindowsContainerIsDetectedFromTheAccount( string userName, string userDomainName, bool expected )
-        => Assert.Equal( expected, ContainerDetection.IsWindowsContainerAccount( userName, userDomainName ) );
+        => Assert.Equal( expected, ContainerDetection.IsWindowsContainerAccount( userName, () => userDomainName ) );
+
+    [Fact]
+    public void TheDomainNameIsNotReadForAnOrdinaryAccount()
+    {
+        // Reading Environment.UserDomainName can block on an account lookup, so it is read only for a container account.
+        var isDomainNameRead = false;
+
+        var result = ContainerDetection.IsWindowsContainerAccount(
+            "gael",
+            () =>
+            {
+                isDomainNameRead = true;
+
+                return "User Manager";
+            } );
+
+        Assert.False( result );
+        Assert.False( isDomainNameRead );
+    }
 }

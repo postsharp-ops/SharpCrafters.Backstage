@@ -3,7 +3,6 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace SharpCrafters.Backstage.FileLocks
 {
@@ -52,28 +51,53 @@ namespace SharpCrafters.Backstage.FileLocks
             Action<Exception>? onException = null,
             RetryWarning? warning = null,
             RetryBudget? budget = null )
+            => Retry( action, retryPredicate, logger, onException, warning, budget, new StopwatchRetryClock() );
+
+        /// <summary>
+        /// Executes a <see cref="Func{TResult}"/> and retries it upon failure, measuring the time and waiting with the
+        /// given clock. A test passes a clock that advances without waiting.
+        /// </summary>
+        internal static T Retry<T>(
+            Func<T> action,
+            Predicate<Exception>? retryPredicate,
+            ILogger? logger,
+            Action<Exception>? onException,
+            RetryWarning? warning,
+            RetryBudget? budget,
+            IRetryClock clock )
             => RetryCore(
                 action,
                 retryPredicate,
                 logger,
                 onException,
                 warning?.CreateReporter( () => null ),
-                budget );
+                budget,
+                new RetryProgress( clock ) );
 
-        [ExcludeFromCodeCoverage]
+        /// <summary>
+        /// Executes one operation and retries it upon failure.
+        /// </summary>
+        /// <param name="progress">
+        /// The progress of the whole call of the public method. It is shared by the operations of a call that retries
+        /// one operation for each file, so that the time limit of the budget and the thresholds of the warning apply to
+        /// the call and not to each file.
+        /// </param>
+        /// <remarks>
+        /// The number of attempts of the budget applies to this operation. The time of the budget, and the number of
+        /// failed attempts and the time given to <paramref name="onFailedAttempt"/>, are counted for the whole call.
+        /// </remarks>
         private static T RetryCore<T>(
             Func<T> action,
             Predicate<Exception>? retryPredicate,
             ILogger? logger,
             Action<Exception>? onException,
             Action<int, TimeSpan, Exception>? onFailedAttempt,
-            RetryBudget? budget )
+            RetryBudget? budget,
+            RetryProgress progress )
         {
             var delay = 10.0;
             budget ??= RetryBudget.Default;
             retryPredicate ??= e => e is UnauthorizedAccessException or IOException || (uint) e.HResult == 0x80070020;
-
-            var startTime = DateTime.UtcNow;
 
             for ( var i = 0; /* nothing */; i++ )
             {
@@ -81,24 +105,32 @@ namespace SharpCrafters.Backstage.FileLocks
                 {
                     return action();
                 }
-                catch ( Exception e ) when ( budget.AllowsAnotherAttempt( i + 1, DateTime.UtcNow - startTime ) && retryPredicate( e ) )
+                catch ( Exception e ) when ( retryPredicate( e ) )
                 {
-                    var elapsed = DateTime.UtcNow - startTime;
-
-                    logger?.Warning?.Log( $"{nameof(RetryHelper)} caught {e.GetType().Name} '{e.Message}'. Retrying in {delay}." );
+                    progress.FailedAttempts++;
+                    var elapsed = progress.Elapsed;
 
                     if ( i == 0 )
                     {
                         onException?.Invoke( e );
                     }
 
-                    onFailedAttempt?.Invoke( i + 1, elapsed, e );
+                    // Called before the budget is checked, so that a warning whose threshold is reached by the last
+                    // attempt is still reported.
+                    onFailedAttempt?.Invoke( progress.FailedAttempts, elapsed, e );
+
+                    if ( !budget.AllowsAnotherAttempt( i + 1, elapsed ) )
+                    {
+                        throw;
+                    }
+
+                    logger?.Warning?.Log( $"{nameof(RetryHelper)} caught {e.GetType().Name} '{e.Message}'. Retrying in {delay}." );
 
                     var wait = budget.CapDelay( TimeSpan.FromMilliseconds( delay ), elapsed );
 
                     if ( wait > TimeSpan.Zero )
                     {
-                        Thread.Sleep( wait );
+                        progress.Sleep( wait );
                     }
 
                     delay *= 1.2;
@@ -124,7 +156,14 @@ namespace SharpCrafters.Backstage.FileLocks
         /// The action is executed once for each file and receives the file name as an argument.
         /// </summary>
         /// <remarks>
-        /// The <paramref name="warning"/> is reported at most once for the whole call, not once for each file.
+        /// <para>
+        /// The <paramref name="warning"/> is reported at most once for the whole call, not once for each file. Its
+        /// thresholds are compared with the number of failed attempts and the time of the whole call.
+        /// </para>
+        /// <para>
+        /// The time of the <paramref name="budget"/> is also counted for the whole call. Its number of attempts applies
+        /// to each file.
+        /// </para>
         /// </remarks>
         public static void RetryWithLockDetection(
             IReadOnlyList<string> files,
@@ -134,8 +173,24 @@ namespace SharpCrafters.Backstage.FileLocks
             ILogger? logger = null,
             RetryWarning? warning = null,
             RetryBudget? budget = null )
+            => RetryWithLockDetection( files, action, serviceProvider, retryPredicate, logger, warning, budget, new StopwatchRetryClock() );
+
+        /// <summary>
+        /// Executes an action once for each file while retrying, measuring the time and waiting with the given clock. A
+        /// test passes a clock that advances without waiting.
+        /// </summary>
+        internal static void RetryWithLockDetection(
+            IReadOnlyList<string> files,
+            Action<string> action,
+            IServiceProvider? serviceProvider,
+            Predicate<Exception>? retryPredicate,
+            ILogger? logger,
+            RetryWarning? warning,
+            RetryBudget? budget,
+            IRetryClock clock )
         {
             var context = new DeadlockDetectionContext( serviceProvider, logger, files, warning );
+            var progress = new RetryProgress( clock );
 
             ExecuteWithLockDetection(
                 () =>
@@ -153,7 +208,8 @@ namespace SharpCrafters.Backstage.FileLocks
                             logger,
                             context.OnRecoverableException,
                             context.OnFailedAttempt,
-                            budget );
+                            budget,
+                            progress );
                     }
 
                     return true;
@@ -220,7 +276,14 @@ namespace SharpCrafters.Backstage.FileLocks
             var context = new DeadlockDetectionContext( serviceProvider, logger, files, warning );
 
             return ExecuteWithLockDetection(
-                () => RetryCore( action, retryPredicate, logger, context.OnRecoverableException, context.OnFailedAttempt, budget ),
+                () => RetryCore(
+                    action,
+                    retryPredicate,
+                    logger,
+                    context.OnRecoverableException,
+                    context.OnFailedAttempt,
+                    budget,
+                    new RetryProgress( new StopwatchRetryClock() ) ),
                 context );
         }
 

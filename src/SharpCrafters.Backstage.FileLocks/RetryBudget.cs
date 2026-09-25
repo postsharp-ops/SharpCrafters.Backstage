@@ -43,20 +43,23 @@ public sealed class RetryBudget
     }
 
     /// <summary>
-    /// Gets the maximal number of attempts, or <see langword="null"/> when only the time is limited.
+    /// Gets the maximal number of attempts, or <see langword="null"/> when only the time is limited. When a
+    /// <see cref="RetryHelper"/> method retries one operation for each file, the number applies to each file.
     /// </summary>
     public int? MaxAttempts { get; }
 
     /// <summary>
-    /// Gets the maximal total time, or <see langword="null"/> when only the number of attempts is limited.
+    /// Gets the maximal total time, or <see langword="null"/> when only the number of attempts is limited. The time is
+    /// counted from the first attempt of the call of the <see cref="RetryHelper"/> method, including when the method
+    /// retries one operation for each file.
     /// </summary>
     public TimeSpan? Duration { get; }
 
     /// <summary>
     /// Determines whether another attempt is allowed.
     /// </summary>
-    /// <param name="attemptsMade">The number of attempts that have failed so far.</param>
-    /// <param name="elapsed">The time since the first attempt started.</param>
+    /// <param name="attemptsMade">The number of attempts of the current operation that have failed so far.</param>
+    /// <param name="elapsed">The time since the first attempt of the call started.</param>
     internal bool AllowsAnotherAttempt( int attemptsMade, TimeSpan elapsed )
         => (this.MaxAttempts == null || attemptsMade < this.MaxAttempts.Value)
            && (this.Duration == null || elapsed < this.Duration.Value);

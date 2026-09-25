@@ -71,7 +71,8 @@ internal sealed class UsageSession : IUsageSession
     {
         var time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
 
-        var applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
+        var applicationInfoProvider = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>();
+        var applicationInfo = applicationInfoProvider.Application;
         var reportedComponent = applicationInfo.GetLatestVendorComponent( serviceProvider.GetRequiredBackstageService<ProductProfile>().Company );
 
         this.Metrics.Add( new StringMetric( "MetricsEventKind", this._kind ) );
@@ -88,7 +89,7 @@ internal sealed class UsageSession : IUsageSession
         this.Metrics.Add( new StringMetric( "Application.Version", reportedComponent.PackageVersion ) );
         this.Metrics.Add( new BoolMetric( "Application.IsUnattended", this._unattendedProcessDetector.IsCurrentProcessUnattended ) );
         this.Metrics.Add( new StringMetric( "Application.ProcessName", Process.GetCurrentProcess().ProcessName ) );
-        this.Metrics.Add( new StringMetric( "Application.ProcessKind", applicationInfo.ProcessKind.ToString() ) );
+        this.Metrics.Add( new StringMetric( "Application.ProcessKind", applicationInfoProvider.ProcessKind.ToString() ) );
         this.Metrics.Add( new StringMetric( "Application.EntryAssembly", Path.GetFileName( Assembly.GetEntryAssembly()?.Location ) ) );
 
         this.Metrics.Add( new DateTimeMetric( "Time", time.UtcNow ) );
@@ -145,4 +146,4 @@ internal sealed class UsageSession : IUsageSession
             this._logger.Trace.Log( $"  {metric.Name}: {metric}" );
         }
     }
-}
+}

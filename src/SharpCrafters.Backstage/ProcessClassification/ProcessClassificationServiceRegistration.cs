@@ -10,7 +10,7 @@ public static class ProcessClassificationServiceRegistration
 {
     public static ServiceProviderBuilder AddProcessClassificationServices( this ServiceProviderBuilder builder )
     {
-        builder.AddSingleton( ParentProcessSearch.Create );
+        builder.AddSingleton<IParentProcessSearch>( ParentProcessSearch.Create );
         builder.AddSingleton<IContainerDetector>( serviceProvider => new ContainerDetector( serviceProvider ) );
         builder.AddSingleton<IUnattendedProcessDetector>( serviceProvider => new UnattendedProcessDetector( serviceProvider ) );
 

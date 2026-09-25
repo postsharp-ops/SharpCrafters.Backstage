@@ -3,15 +3,15 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
-using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
 
-internal abstract class ParentProcessSearch : IBackstageService
+internal abstract class ParentProcessSearch : IParentProcessSearch
 {
+    /// <inheritdoc />
     public abstract IReadOnlyList<ProcessInfo> GetParentProcesses( ISet<string>? pivots = null );
 
     protected ILogger Logger { get; }

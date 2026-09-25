@@ -18,12 +18,12 @@ public sealed class RetryWarningContext
     }
 
     /// <summary>
-    /// Gets the number of attempts that have failed so far.
+    /// Gets the number of attempts of the call that have failed so far, counting the attempts of every file.
     /// </summary>
     public int Attempts { get; }
 
     /// <summary>
-    /// Gets the time since the first attempt started.
+    /// Gets the time since the first attempt of the call started.
     /// </summary>
     public TimeSpan Elapsed { get; }
 

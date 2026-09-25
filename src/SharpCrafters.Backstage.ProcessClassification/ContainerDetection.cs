@@ -26,7 +26,9 @@ public static class ContainerDetection
     {
         if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
-            if ( IsWindowsContainerAccount( Environment.UserName, Environment.UserDomainName ) )
+            // The domain name is read only when the user name matches, because reading it can require a lookup of the
+            // account that blocks when a domain controller is unreachable.
+            if ( IsWindowsContainerAccount( Environment.UserName, () => Environment.UserDomainName ) )
             {
                 logger?.Trace?.Log( $"Running inside a Windows container, detected from the account '{Environment.UserName}'." );
 
@@ -111,13 +113,16 @@ public static class ContainerDetection
     /// the same file system layout as a Windows installation.
     /// </summary>
     /// <param name="userName">The value of <see cref="Environment.UserName"/>.</param>
-    /// <param name="userDomainName">The value of <see cref="Environment.UserDomainName"/>.</param>
+    /// <param name="getUserDomainName">
+    /// Returns the value of <see cref="Environment.UserDomainName"/>. It is called only when
+    /// <paramref name="userName"/> is the name of a container account.
+    /// </param>
     /// <remarks>
     /// The two values are parameters rather than read here, so that a test can state the rule without running
     /// inside a container.
     /// </remarks>
-    internal static bool IsWindowsContainerAccount( string userName, string userDomainName )
+    internal static bool IsWindowsContainerAccount( string userName, Func<string> getUserDomainName )
         => (StringComparer.OrdinalIgnoreCase.Equals( userName, "ContainerUser" )
             || StringComparer.OrdinalIgnoreCase.Equals( userName, "ContainerAdministrator" ))
-           && StringComparer.OrdinalIgnoreCase.Equals( userDomainName, "User Manager" );
+           && StringComparer.OrdinalIgnoreCase.Equals( getUserDomainName(), "User Manager" );
 }

@@ -48,12 +48,10 @@ internal sealed class BufferingLoggerFactory : ILoggerFactory
             this.Error = new Writer( parent, category, logger => logger.Error );
         }
 
-        // Buffered like the other severities, and not discarded. What a component writes before the real
-        // factory exists is mostly tracing -- the detection of an unattended process says what it saw and why
-        // it concluded what it did, and says all of it at this severity. Dropping it here left the caller of
-        // ProcessUtilities.IsCurrentProcessUnattended with an empty explanation, which is the one thing that
-        // method promises to replay. The writer decides nothing: a message is discarded later anyway if the
-        // factory it is replayed into has no writer for the severity.
+        // Tracing is buffered like the other severities. The components that write before the real factory exists,
+        // such as the configuration manager and the named locks, write mostly at this severity, and the replay must
+        // include those messages. The writer does not filter anything: when the factory that receives the replay has
+        // no writer for a severity, it discards the messages of that severity.
         public ILogWriter? Trace { get; }
 
         public ILogWriter? Info { get; }

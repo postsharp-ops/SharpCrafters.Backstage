@@ -12,10 +12,9 @@ namespace SharpCrafters.Backstage.ProcessClassification;
 /// <remarks>
 /// <para>
 /// The classification is a pure function of the two parameters, so that a test can exercise every arm of the table
-/// without the corresponding process existing. The callers cache the result for the current process:
-/// <c>SharpCrafters.Backstage.Utilities.ProcessUtilities.ProcessKind</c> and
-/// <c>Metalama.Framework.CompilerExtensions.ProcessKindHelper.CurrentProcessKind</c> are both computed once, in a
-/// static property initializer.
+/// without the corresponding process existing. <see cref="GetCurrentProcessKind"/> does not cache its result. The
+/// callers that need the kind of the current process more than once store it: the application info provider of the
+/// Backstage services computes it once for each service provider.
 /// </para>
 /// <para>
 /// Every arm below names the host of PB-2027.0 that it serves. The platform baseline is defined in
@@ -35,7 +34,15 @@ namespace SharpCrafters.Backstage.ProcessClassification;
 /// </remarks>
 public static class ProcessKindDetector
 {
-    public static ProcessKind GetCurrentProcessKind() => GetProcessKind( Process.GetCurrentProcess().ProcessName, Environment.CommandLine );
+    /// <summary>
+    /// Classifies the current process. The result is not cached, so a caller that reads it more than once stores it.
+    /// </summary>
+    public static ProcessKind GetCurrentProcessKind()
+    {
+        using var process = Process.GetCurrentProcess();
+
+        return GetProcessKind( process.ProcessName, Environment.CommandLine );
+    }
 
     /// <summary>
     /// Classifies a process from its name and its command line.

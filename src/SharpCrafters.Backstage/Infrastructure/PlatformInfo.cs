@@ -69,7 +69,7 @@ namespace SharpCrafters.Backstage.Infrastructure
             // bundled .NET installation, which only ships the SDKs Rider itself needs (see #1627).
             // Skip those hints so we fall through to the system installation, which has the SDKs
             // Rider actually used to evaluate the user's project.
-            var skipEnvVarHints = this._applicationInfoProvider.Application.ProcessKind == ProcessKind.Rider;
+            var skipEnvVarHints = this._applicationInfoProvider.ProcessKind == ProcessKind.Rider;
 
             if ( skipEnvVarHints )
             {

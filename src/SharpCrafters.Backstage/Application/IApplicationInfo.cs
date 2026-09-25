@@ -12,12 +12,20 @@ namespace SharpCrafters.Backstage.Application
     /// </summary>
     public interface IApplicationInfo : IComponentInfo
     {
+        /// <summary>
+        /// Gets the kind of the process that the application runs in, or <see langword="null"/> when the kind must be
+        /// detected from the name and the command line of the process. Read the kind from
+        /// <see cref="IApplicationInfoProvider.ProcessKind"/>, which performs that detection when this property is
+        /// <see langword="null"/>.
+        /// </summary>
         ProcessKind? ProcessKind { get; }
 
         bool IsLongRunningProcess { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the application itself is
+        /// Gets a value indicating whether the application is the background worker process of a product. The worker
+        /// has no user interface, so <see cref="IUnattendedProcessDetector"/> classifies it as unattended without
+        /// examining the process.
         /// </summary>
         bool IsWorkerProcess { get; }
 

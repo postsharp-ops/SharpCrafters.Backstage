@@ -8,5 +8,10 @@ namespace SharpCrafters.Backstage.Testing;
 
 public class TestUnattendedProcessDetector : IUnattendedProcessDetector
 {
+    /// <summary>
+    /// Does nothing. The answer is the value that the test assigns to <see cref="IsCurrentProcessUnattended"/>.
+    /// </summary>
+    public void Initialize() { }
+
     public bool IsCurrentProcessUnattended { get; set; }
 }

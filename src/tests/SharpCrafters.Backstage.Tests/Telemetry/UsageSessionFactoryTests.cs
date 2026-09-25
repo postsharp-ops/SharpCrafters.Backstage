@@ -6,6 +6,7 @@ using Metalama.Backstage;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Telemetry.Metrics;
 using SharpCrafters.Backstage.Testing;
@@ -54,6 +55,10 @@ public sealed class UsageSessionFactoryTests : TestsBase
     // This field can be modified by tests before the first use of the service provider.
     private TestApplicationInfo _applicationInfo = new() { IsTelemetryEnabled = true };
 
+    // The kind that the application info provider detects when the application declares none. It can be modified by
+    // tests before the first use of the service provider.
+    private ProcessKind _detectedProcessKind = ProcessKind.Other;
+
     public UsageSessionFactoryTests( ITestOutputHelper logger ) : base( logger )
     {
         this.Time.Set( _testTime );
@@ -69,7 +74,7 @@ public sealed class UsageSessionFactoryTests : TestsBase
 
     protected override void ConfigureServices( ServiceProviderBuilder services )
         => services
-            .AddSingleton<IApplicationInfoProvider>( new ApplicationInfoProvider( this._applicationInfo ) )
+            .AddSingleton<IApplicationInfoProvider>( new ApplicationInfoProvider( this._applicationInfo, () => this._detectedProcessKind ) )
             .AddSingleton( serviceProvider => new TelemetryLogger( serviceProvider ) )
             .AddSingleton<ITelemetryUploader>( new NullTelemetryUploader() )
             .AddSingleton<TelemetryReportUploader>( serviceProvider => new TelemetryReportUploader( serviceProvider ) )
@@ -146,6 +151,22 @@ public sealed class UsageSessionFactoryTests : TestsBase
             "true";
 
         this.AssertReportingDisabled();
+    }
+
+    [Fact]
+    public void ProcessKindMetricIsTheDetectedKindWhenTheApplicationDeclaresNone()
+    {
+        // Most applications derive from ApplicationInfoBase, whose ProcessKind is null, so the kind must come from the
+        // detection of the application info provider and not from the application info.
+        this._applicationInfo = new TestApplicationInfo { IsTelemetryEnabled = true, ProcessKind = null };
+        this._detectedProcessKind = ProcessKind.Rider;
+
+        var session = this.CreateUsageSession();
+
+        var metric = Assert.IsType<StringMetric>( Assert.Single( session.Metrics, m => m.Name == "Application.ProcessKind" ) );
+        Assert.Equal( nameof(ProcessKind.Rider), metric.Value );
+
+        session.Dispose();
     }
 
     [Fact]

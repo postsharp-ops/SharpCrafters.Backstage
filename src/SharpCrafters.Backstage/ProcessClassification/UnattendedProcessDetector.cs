@@ -22,28 +22,57 @@ internal class UnattendedProcessDetector : IUnattendedProcessDetector
     /// </summary>
     public const string ForceAttendedVariableName = "FORCE_ATTENDED";
 
+    private readonly object _sync = new();
     private readonly ILogger _logger;
-    private readonly Lazy<bool> _isUnattendedLazy;
     private readonly IContainerDetector _containerDetector;
     private readonly ProductProfile _productProfile;
-    private readonly ParentProcessSearch _parentProcessSearch;
+    private readonly IParentProcessSearch _parentProcessSearch;
+    private readonly IEnvironmentVariableProvider _environmentVariableProvider;
+    private readonly IApplicationInfo _applicationInfo;
 
     public UnattendedProcessDetector( IServiceProvider serviceProvider )
     {
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(UnattendedProcessDetector) );
-        this._isUnattendedLazy = new Lazy<bool>( this.IsCurrentProcessUnattendedCore );
         this._containerDetector = serviceProvider.GetRequiredBackstageService<IContainerDetector>();
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
-        this._parentProcessSearch = serviceProvider.GetRequiredBackstageService<ParentProcessSearch>();
+        this._parentProcessSearch = serviceProvider.GetRequiredBackstageService<IParentProcessSearch>();
+        this._environmentVariableProvider = serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>();
+        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
     }
 
-    public bool IsCurrentProcessUnattended => this._isUnattendedLazy.Value;
+    private bool? _isCurrentProcessUnattended;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A second call does nothing, so that the answer does not change during the lifetime of the service.
+    /// </remarks>
+    public void Initialize()
+    {
+        lock ( this._sync )
+        {
+            this._isCurrentProcessUnattended ??= this.IsCurrentProcessUnattendedCore();
+        }
+    }
+
+    /// <inheritdoc />
+    public bool IsCurrentProcessUnattended
+        => this._isCurrentProcessUnattended
+           ?? throw new InvalidOperationException( $"{nameof(UnattendedProcessDetector)}.{nameof(this.Initialize)} has not been called." );
 
     private bool IsCurrentProcessUnattendedCore()
     {
+        // The worker is started in the background by a product process and has no user interface. Its parent has
+        // usually exited, so the examination of the process below would say nothing about the user.
+        if ( this._applicationInfo.IsWorkerProcess )
+        {
+            this._logger.Trace?.Log( "Unattended mode detected because the application is a worker process." );
+
+            return true;
+        }
+
         var variableName = this._productProfile.GetEnvironmentVariableName( ForceAttendedVariableName );
 
-        if ( bool.TryParse( Environment.GetEnvironmentVariable( variableName ), out var forceAttended ) && forceAttended )
+        if ( bool.TryParse( this._environmentVariableProvider.GetEnvironmentVariable( variableName ), out var forceAttended ) && forceAttended )
         {
             this._logger.Trace?.Log( $"Attended mode forced by the '{variableName}' environment variable." );
 
@@ -142,7 +171,7 @@ internal class UnattendedProcessDetector : IUnattendedProcessDetector
             return true;
         }
 
-        var continuousIntegrationContext = new ContinuousIntegrationContext( new EnvironmentVariableProvider(), () => parentProcessNames, this._logger );
+        var continuousIntegrationContext = new ContinuousIntegrationContext( this._environmentVariableProvider, () => parentProcessNames, this._logger );
         var continuousIntegrationServerName = ContinuousIntegrationDetector.GetServerName( continuousIntegrationContext );
 
         if ( continuousIntegrationServerName != null )

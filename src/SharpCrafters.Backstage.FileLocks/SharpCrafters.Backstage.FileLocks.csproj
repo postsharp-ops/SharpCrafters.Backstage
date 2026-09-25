@@ -11,4 +11,8 @@
       <ProjectReference Include="..\SharpCrafters.Backstage.Abstractions\SharpCrafters.Backstage.Abstractions.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
+    </ItemGroup>
+
 </Project>

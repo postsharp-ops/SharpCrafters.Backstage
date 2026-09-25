@@ -11,20 +11,21 @@ customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 
 | Package | Contents |
 |---|---|
-| `SharpCrafters.Common` | The hooks that production code exposes for deterministic testing. It has no dependency |
-| `SharpCrafters.Backstage.Infrastructure` | Named locks, the detection of the processes holding a file, the runtime information, the detection of an unattended process and of a continuous integration server, the process kinds, and the contracts of the services those rest on. Its only dependency is `SharpCrafters.Common` |
-| `SharpCrafters.Backstage` | The services: dependency injection, logging, configuration, the file system, telemetry, licensing and user interface |
+| `SharpCrafters.Common.Abstractions` | The interfaces of the hooks that production code exposes for deterministic testing. It has no dependency |
+| `SharpCrafters.Common` | The implementations of those hooks, which tests register. It depends on `SharpCrafters.Common.Abstractions` |
+| `SharpCrafters.Backstage.Abstractions` | The contracts that the packages below share: the logger, the service marker interface and the environment variables. It has no dependency |
+| `SharpCrafters.Backstage.Threading` | Named locks. It depends on the two abstractions packages |
+| `SharpCrafters.Backstage.FileLocks` | The retry of file operations and the detection of the processes holding a file. It depends on `SharpCrafters.Backstage.Abstractions` |
+| `SharpCrafters.Backstage.ProcessClassification` | The process kinds, the detection of a container and the launch of a debugger. It depends on `SharpCrafters.Backstage.Abstractions` |
+| `SharpCrafters.Backstage` | The services: dependency injection, logging, configuration, the file system, the detection of an unattended process and of a continuous integration server, telemetry, licensing and user interface |
 | `SharpCrafters.Backstage.Commands` | The command line over those services |
+| `SharpCrafters.Backstage.Profiling` | The optional profiling feature, which needs `JetBrains.Profiler.SelfApi`. No product references it |
 | `Metalama.Backstage`, `PostSharp.Backstage` | What each product family adds: its profile, its licence catalogue, its web links and its telemetry endpoints |
 
-A type belongs in `SharpCrafters.Backstage.Infrastructure` when a build tool loaded by MSBuild needs it. Such a tool
-is merged into a single assembly and can take no dependency, so that package must keep having none beyond
-`SharpCrafters.Common`. A type that needs the logging implementation, the configuration or the standard directories
+A type belongs in one of the packages that depend only on the abstractions when a component that starts no service
+needs it, such as a build task loaded by MSBuild. Those packages must not gain a dependency on
+`SharpCrafters.Backstage`. A type that needs the logging implementation, the configuration or the standard directories
 belongs in `SharpCrafters.Backstage`.
-
-A few of those source files are also compiled by projects that can reference nothing at all, not even a package. They
-travel in the `shared\` folder of the infrastructure package, and `SharedSourcesProbe` compiles them the way such a
-project does, so that the form they take outside this repository is checked by the build.
 
 ## Documentation
 
