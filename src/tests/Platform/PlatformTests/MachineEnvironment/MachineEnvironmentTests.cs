@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
-using SharpCrafters.Backstage.PlatformTests.Conditions;
+using SharpCrafters.Backstage.Testing;
 using Xunit;
 
 namespace SharpCrafters.Backstage.PlatformTests.MachineEnvironment;

@@ -33,7 +33,6 @@ The tests reference the packages of the build through `PackageReference`, as an 
 |---|---|
 | `PlatformTests/` | The tests. One namespace per suite. |
 | `PlatformTestHelper/` | The second process of the cross-process tests. |
-| `PlatformTests/Conditions/` | `[PlatformFact]`, which selects the operating systems and the kinds of host of a test. |
 | `Docker/<Suite>/` | One Docker test per suite: `test.psd1` gives its platforms, and `RunTest.ps1` starts its container. |
 | `Images/linux/Dockerfile` | The Linux image. Windows uses the image of the product build, `eng/docker/build.Dockerfile`. |
 | `RunSuite.ps1` | Builds and runs the tests of a suite where it runs, inside a container or on macOS. |
@@ -41,7 +40,9 @@ The tests reference the packages of the build through `PackageReference`, as an 
 
 A test declares where it runs with `[PlatformFact( TestPlatforms.Unix )]` or
 `[PlatformFact( TestPlatforms.All, TestHosts.Container )]`. The kind of host comes from the variable
-`BACKSTAGE_PLATFORM_TEST_HOST`, which the launchers set, because detecting it is part of the code under test.
+`BACKSTAGE_PLATFORM_TEST_HOST`, which the launchers set, because detecting it is part of the code under test. The
+attributes are in `SharpCrafters.Backstage.Testing`, and the unit tests use them as well, for instance
+`[PlatformFact( TestPlatforms.Windows )]` for a test of the registry.
 
 ## Running the tests
 

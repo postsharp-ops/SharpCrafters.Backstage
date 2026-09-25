@@ -4,7 +4,6 @@
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Licenses;
-using SharpCrafters.Backstage.PlatformTests.Conditions;
 using SharpCrafters.Backstage.Testing;
 using Xunit;
 

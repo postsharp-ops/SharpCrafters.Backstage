@@ -4,6 +4,7 @@
 
 using Metalama.Backstage;
 using SharpCrafters.Backstage.Threading;
+using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.Collections.Generic;
@@ -83,13 +84,28 @@ public sealed class NamedLockServiceTests : IDisposable
     }
 
     /// <summary>
-    /// Creates a service whose events are recorded by this test and whose synchronization points this test can
-    /// arm.
+    /// Creates the service of the current operating system, whose events are recorded by this test and whose
+    /// synchronization points this test can arm.
     /// </summary>
     /// <returns>The service.</returns>
-    private NamedLockService CreateService()
+    private NamedLockService CreateService() => this.Observe( NamedLockServiceFactory.Create( this.CreateServiceProvider() ) );
+
+    /// <summary>
+    /// Creates the service of Windows, for a test of the security descriptor with which it creates a mutex.
+    /// </summary>
+    /// <returns>The service.</returns>
+    private NamedLockService CreateWindowsService() => this.Observe( new WindowsNamedLockService( this.CreateServiceProvider() ) );
+
+    /// <summary>
+    /// Creates the service of Linux and macOS, for a test of the polled wait. It runs on Windows as well.
+    /// </summary>
+    /// <returns>The service.</returns>
+    private NamedLockService CreateUnixService() => this.Observe( new UnixNamedLockService( this.CreateServiceProvider() ) );
+
+    private IServiceProvider CreateServiceProvider() => new TestServiceProvider( this._syncProvider, this._faultInjector );
+
+    private NamedLockService Observe( NamedLockService service )
     {
-        var service = new NamedLockService( new TestServiceProvider( this._syncProvider, this._faultInjector ) );
         service.LockEventReported += this.OnLockEvent;
 
         return service;
@@ -344,11 +360,11 @@ public sealed class NamedLockServiceTests : IDisposable
     }
 
     [Fact]
-    public void ConstructorWithoutServiceProvider_AcquiresAndReleasesALock()
+    public void FactoryWithoutServiceProvider_AcquiresAndReleasesALock()
     {
-        // A component that starts no service, such as an MSBuild task, constructs the service from the prefix alone.
+        // A component that starts no service, such as an MSBuild task, creates the service from the prefix alone.
         var name = CreateName();
-        var service = new NamedLockService( "Global\\Test_" );
+        var service = NamedLockServiceFactory.Create( "Global\\Test_" );
         service.LockEventReported += this.OnLockEvent;
 
         Assert.Equal( "Global\\Test_", service.GlobalLockNamePrefix );
@@ -368,8 +384,23 @@ public sealed class NamedLockServiceTests : IDisposable
     [Theory]
     [InlineData( null )]
     [InlineData( "" )]
-    public void ConstructorWithoutServiceProvider_RejectsAnEmptyPrefix( string? prefix )
-        => Assert.Throws<ArgumentException>( () => new NamedLockService( prefix! ) );
+    public void FactoryWithoutServiceProvider_RejectsAnEmptyPrefix( string? prefix )
+        => Assert.Throws<ArgumentException>( () => NamedLockServiceFactory.Create( prefix! ) );
+
+    [Fact]
+    public void TheFactoryCreatesTheServiceOfTheCurrentOperatingSystem()
+    {
+        var service = NamedLockServiceFactory.Create( "Global\\Test_" );
+
+        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+        {
+            Assert.IsType<WindowsNamedLockService>( service );
+        }
+        else
+        {
+            Assert.IsType<UnixNamedLockService>( service );
+        }
+    }
 
     [Fact]
     public void UncontendedAcquisition_ReportsCreatedAcquiredAndReleased()
@@ -830,14 +861,13 @@ public sealed class NamedLockServiceTests : IDisposable
     /// <remarks>
     /// This is the case that failed on Linux: the runtime refused to wait on the named mutex together with the handle
     /// of the token, and threw <see cref="PlatformNotSupportedException"/> for every cancellable acquisition of a
-    /// contended lock. On Windows the polled wait is forced, and on Linux and macOS it is the only one.
+    /// contended lock. The test runs the implementation of Linux and macOS, which also runs on Windows.
     /// </remarks>
     [Fact]
     public async Task PolledWait_ACancellableContenderAcquiresOnceTheOwnerReleases()
     {
         var name = CreateName();
-        var service = this.CreateService();
-        service.ForcePolledCancellableWait();
+        var service = this.CreateUnixService();
 
         using var ownerLock = service.GetLock( name );
         using var contenderLock = service.GetLock( name );
@@ -868,8 +898,7 @@ public sealed class NamedLockServiceTests : IDisposable
     public async Task PolledWait_CancellingAContenderThatIsBlocked_ThrowsAndDoesNotAcquire()
     {
         var name = CreateName();
-        var service = this.CreateService();
-        service.ForcePolledCancellableWait();
+        var service = this.CreateUnixService();
 
         using var ownerLock = service.GetLock( name );
         using var contenderLock = service.GetLock( name );
@@ -907,8 +936,7 @@ public sealed class NamedLockServiceTests : IDisposable
     public async Task PolledWait_ReturnsWithoutTheLockWhenTheTimeoutElapses()
     {
         var name = CreateName();
-        var service = this.CreateService();
-        service.ForcePolledCancellableWait();
+        var service = this.CreateUnixService();
 
         using var ownerLock = service.GetLock( name );
         using var contenderLock = service.GetLock( name );
@@ -1064,14 +1092,12 @@ public sealed class NamedLockServiceTests : IDisposable
     /// the classifier treats as specific to the name.
     /// </para>
     /// </remarks>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void ANameTakenByAnotherKindOfObjectDegradesWithoutAffectingTheOtherNames()
     {
-        Skip.IfNot(
-            RuntimeInformation.IsOSPlatform( OSPlatform.Windows ),
-            "Unix does not keep a namespace shared by the kinds of synchronization object, so a semaphore of the same name does not collide with a mutex." );
-
-        var service = this.CreateService();
+        // Unix does not keep a namespace shared by the kinds of synchronization object, so a semaphore of the same name
+        // does not collide with a mutex there.
+        var service = this.CreateWindowsService();
         var takenName = CreateName();
         var freeName = CreateName();
 
@@ -1106,7 +1132,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void TheCreationOfAMutexIsRetriedWhenItIsDenied()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
         var faultPoint = GetFaultPointName( NamedLockService.BeforeCreateWithAccessControlLocation, name );
 
@@ -1129,7 +1155,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void ANameThatIsAlwaysDeniedDegrades()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
         var faultPoint = GetFaultPointName( NamedLockService.BeforeCreateWithAccessControlLocation, name );
 
@@ -1166,7 +1192,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void APlatformWithoutSecurityDescriptorsCreatesTheMutexWithoutOne()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
 
         this._faultInjector.ArmFault(
@@ -1202,7 +1228,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void ACancellationIsObservedBetweenTwoCreationAttempts()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
         var faultPoint = GetFaultPointName( NamedLockService.BeforeCreateWithAccessControlLocation, name );
 
@@ -1288,7 +1314,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void AnUnrecognizedFailureDegradesInsteadOfEscaping()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
 
         this._faultInjector.ArmFault(
@@ -1314,7 +1340,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void ADefectOfTheCallerIsNotDegradedAway()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
 
         this._faultInjector.ArmFault(
@@ -1347,7 +1373,7 @@ public sealed class NamedLockServiceTests : IDisposable
     [Fact]
     public void AMachineThatCannotProvideNamedObjectsDegradesEveryName()
     {
-        var service = this.CreateService();
+        var service = this.CreateWindowsService();
         var name = CreateName();
 
         this._faultInjector.ArmFault(

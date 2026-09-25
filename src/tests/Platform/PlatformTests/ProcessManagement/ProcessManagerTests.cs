@@ -5,7 +5,7 @@
 using Metalama.Backstage;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Maintenance;
-using SharpCrafters.Backstage.PlatformTests.Conditions;
+using SharpCrafters.Backstage.Testing;
 using Xunit;
 
 namespace SharpCrafters.Backstage.PlatformTests.ProcessManagement;

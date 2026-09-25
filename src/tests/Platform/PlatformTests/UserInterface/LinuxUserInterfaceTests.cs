@@ -3,7 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.PlatformTests.Conditions;
+using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.UserInterface;
 using System.Runtime.Versioning;
 using Xunit;

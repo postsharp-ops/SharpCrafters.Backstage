@@ -3,11 +3,11 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Common.Testing.Hooks;
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -320,16 +320,12 @@ public sealed class FileSystemAtomicWriteTests : IDisposable
     /// <returns>A task that completes when the test does.</returns>
     /// <remarks>
     /// The retry gives up eventually, and the attempt that gives up must clean up after itself like the others.
-    /// The condition is held for the whole operation by a reader that is never closed until it has failed.
+    /// The condition is held for the whole operation by a reader that is never closed until it has failed. It exists on
+    /// Windows only: see the remarks of <see cref="RetriesTheSubstitutionWhileAReaderHoldsTheDestination"/>.
     /// </remarks>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public async Task ASubstitutionThatKeepsFailingLeavesNoTemporaryFile()
     {
-        // Skipped rather than returned from, so that a run on a platform where this cannot be exercised reports a
-        // skip instead of a pass. See the remarks of RetriesTheSubstitutionWhileAReaderHoldsTheDestination: on
-        // Unix an open descriptor does not prevent the substitution, so it cannot be made to fail this way.
-        Skip.IfNot( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "The substitution can only be made to fail on Windows." );
-
         var path = this.GetPath();
         File.WriteAllText( path, _previousContent );
 
@@ -361,13 +357,9 @@ public sealed class FileSystemAtomicWriteTests : IDisposable
     /// does not prevent, so there is nothing to retry and nothing to assert.
     /// </para>
     /// </remarks>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public async Task RetriesTheSubstitutionWhileAReaderHoldsTheDestination()
     {
-        Skip.IfNot(
-            RuntimeInformation.IsOSPlatform( OSPlatform.Windows ),
-            "On Unix the substitution is a rename, which an open descriptor does not prevent." );
-
         var path = this.GetPath();
         File.WriteAllText( path, _previousContent );
 

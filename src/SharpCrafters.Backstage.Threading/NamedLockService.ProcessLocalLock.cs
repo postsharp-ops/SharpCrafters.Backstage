@@ -4,7 +4,7 @@
 
 namespace SharpCrafters.Backstage.Threading
 {
-    public sealed partial class NamedLockService
+    public abstract partial class NamedLockService
     {
         /// <summary>
         /// A lock backed by a monitor of the current process, used when the operating system cannot provide a

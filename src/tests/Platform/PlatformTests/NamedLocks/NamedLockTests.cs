@@ -3,7 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using Metalama.Backstage;
-using SharpCrafters.Backstage.PlatformTests.Conditions;
+using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Threading;
 using Xunit;
 
@@ -15,7 +15,7 @@ namespace SharpCrafters.Backstage.PlatformTests.NamedLocks;
 /// </summary>
 public sealed class NamedLockTests
 {
-    private readonly NamedLockService _service = new( MetalamaProduct.Profile.GlobalLockNamePrefix ) { ReportFilter = _ => true };
+    private readonly NamedLockService _service = NamedLockServiceFactory.Create( MetalamaProduct.Profile.GlobalLockNamePrefix );
 
     private readonly List<LockEventKind> _events = [];
 

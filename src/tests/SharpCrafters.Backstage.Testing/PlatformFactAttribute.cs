@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace SharpCrafters.Backstage.PlatformTests.Conditions;
+namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
 /// A test that runs on the given operating systems and kinds of host, and is reported as skipped elsewhere.

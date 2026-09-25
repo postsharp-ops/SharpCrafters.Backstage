@@ -4,6 +4,7 @@
 
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -31,7 +32,8 @@ internal sealed class LinuxUserInterfaceService( IServiceProvider serviceProvide
         {
             // The output is not redirected. xdg-open starts the browser with the same standard output, and nothing reads
             // it, so a redirected browser would block once the pipe is full.
-            return new ProcessStartInfo( xdgOpenPath, $"\"{url.Replace( "\"", "%22" )}\"" ) { UseShellExecute = false };
+            // The URL is one quoted argument. A quote inside it is percent-encoded, which is its meaning in a URL.
+            return new ProcessStartInfo( xdgOpenPath, $"\"{url.ReplaceOrdinal( "\"", "%22" )}\"" ) { UseShellExecute = false };
         }
 
         return base.GetProcessStartInfoForUrl( url, browserMode );

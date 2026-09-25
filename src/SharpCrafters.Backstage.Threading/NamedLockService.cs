@@ -7,15 +7,20 @@ using SharpCrafters.Common.Testing.Hooks;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.Threading;
 
 /// <summary>
-/// The implementation of <see cref="INamedLockService"/> backed by the named synchronization objects of the
-/// operating system.
+/// The base of the implementations of <see cref="INamedLockService"/> backed by the named synchronization objects of
+/// the operating system. <see cref="NamedLockServiceFactory"/> creates the implementation for the current operating
+/// system.
 /// </summary>
 /// <remarks>
+/// <para>
+/// This class holds what the operating systems share: the process-local locks to which a lock degrades, the events,
+/// and the detection of a reentrant acquisition. A derived class creates the mutex and implements the wait with a
+/// cancellation token, which are the two operations that differ between Windows and Unix.
+/// </para>
 /// <para>
 /// The assembly of this class references only the abstractions of the services, so that a component that starts no
 /// service can use it. This is why the class reports its activity through the <see cref="LockEventReported"/> event
@@ -29,7 +34,7 @@ namespace SharpCrafters.Backstage.Threading;
 /// to create the object.
 /// </para>
 /// </remarks>
-public sealed partial class NamedLockService : INamedLockService
+public abstract partial class NamedLockService : INamedLockService
 {
     /// <summary>
     /// The time after which holding a lock is reported as <see cref="LockEventKind.HeldTooLong"/>.
@@ -42,12 +47,6 @@ public sealed partial class NamedLockService : INamedLockService
     /// meantime with a more restrictive security descriptor.
     /// </summary>
     private const int _maxCreationAttempts = 4;
-
-    /// <summary>
-    /// The longest time for which a cancellable wait on a mutex is not cancelled, on the platforms where the wait is
-    /// polled. See <see cref="_isCancellableWaitPolled"/>.
-    /// </summary>
-    private const int _cancellationPollingIntervalMilliseconds = 100;
 
     /// <summary>
     /// The names of the locks held by the current thread, used to detect a reentrant acquisition. The field is
@@ -85,12 +84,6 @@ public sealed partial class NamedLockService : INamedLockService
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> _processLocalMonitors = new( StringComparer.Ordinal );
 
     /// <summary>
-    /// Whether to pass a security descriptor when creating a mutex. It is latched to <see langword="false"/> the
-    /// first time the platform rejects one, so that the cost is paid only once.
-    /// </summary>
-    private volatile bool _useAccessControl = true;
-
-    /// <summary>
     /// Whether the operating system has proved unable to provide named objects at all, in which case every
     /// subsequent lock goes straight to a process-local monitor.
     /// </summary>
@@ -100,17 +93,6 @@ public sealed partial class NamedLockService : INamedLockService
     /// condition of issue 272 holds, and that condition affects every name at once.
     /// </remarks>
     private volatile bool _areNamedObjectsUnavailable;
-
-    /// <summary>
-    /// Whether a cancellable wait on a mutex is a sequence of short waits on the mutex alone, instead of one wait on
-    /// the mutex and on the wait handle of the token together.
-    /// </summary>
-    /// <remarks>
-    /// Only Windows supports a wait on a named mutex together with another handle. On Linux and macOS,
-    /// <see cref="WaitHandle.WaitAny(WaitHandle[], TimeSpan)"/> throws <see cref="PlatformNotSupportedException"/>.
-    /// The field is not constant so that a test can exercise the polled wait on Windows.
-    /// </remarks>
-    private volatile bool _isCancellableWaitPolled = !RuntimeInformation.IsOSPlatform( OSPlatform.Windows );
 
     /// <summary>
     /// The provider of the test synchronization points, which is never registered in production and is therefore
@@ -131,7 +113,7 @@ public sealed partial class NamedLockService : INamedLockService
     /// The service provider. It must provide the <see cref="INamedLockServiceEnvironment"/>. The test synchronization
     /// points and the test faults are resolved from it when they are registered, which is never the case in production.
     /// </param>
-    public NamedLockService( IServiceProvider serviceProvider )
+    private protected NamedLockService( IServiceProvider serviceProvider )
         : this(
             serviceProvider.GetRequiredBackstageService<INamedLockServiceEnvironment>().GlobalLockNamePrefix,
 
@@ -141,8 +123,8 @@ public sealed partial class NamedLockService : INamedLockService
             (ITestFaultInjector?) serviceProvider.GetService( typeof(ITestFaultInjector) ) ) { }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NamedLockService"/> class without a service provider. A component
-    /// that starts no service, such as an MSBuild task, uses this constructor.
+    /// Initializes a new instance of the <see cref="NamedLockService"/> class without a service provider, for a
+    /// component that starts no service, such as an MSBuild task.
     /// </summary>
     /// <param name="globalLockNamePrefix">
     /// The prefix of the names of the machine-wide locks of the product, for instance <c>Global\Metalama_</c>. It is
@@ -150,7 +132,7 @@ public sealed partial class NamedLockService : INamedLockService
     /// </param>
     /// <param name="testSynchronizationProvider">The test synchronization points, or <see langword="null"/> in production.</param>
     /// <param name="testFaultInjector">The test faults, or <see langword="null"/> in production.</param>
-    public NamedLockService(
+    private protected NamedLockService(
         string globalLockNamePrefix,
         ITestSynchronizationProvider? testSynchronizationProvider = null,
         ITestFaultInjector? testFaultInjector = null )
@@ -242,7 +224,7 @@ public sealed partial class NamedLockService : INamedLockService
     /// </remarks>
 
     // CA1822: see the remark on SyncPoint above.
-    private void InjectFault( string location, string name )
+    private protected void InjectFault( string location, string name )
     {
         this._testFaultInjector?.InjectFault( GetSyncPointName( location, name ) );
     }
@@ -311,10 +293,34 @@ public sealed partial class NamedLockService : INamedLockService
     internal void ForceProcessLocalLocks() => this._areNamedObjectsUnavailable = true;
 
     /// <summary>
-    /// Makes this service wait for a mutex with a cancellable token as it does on Linux and macOS, so that a test can
-    /// exercise that wait on Windows.
+    /// Creates the named mutex, after <see cref="Mutex.TryOpenExisting(string, out Mutex)"/> has found none.
     /// </summary>
-    internal void ForcePolledCancellableWait() => this._isCancellableWaitPolled = true;
+    /// <param name="name">The name of the operating system object.</param>
+    /// <returns>The mutex, not owned.</returns>
+    /// <remarks>
+    /// The method throws when the operating system refuses to create the object, and the caller classifies the
+    /// exception. An <see cref="UnauthorizedAccessException"/> makes the caller open the object again, because
+    /// another process probably created it in the meantime.
+    /// </remarks>
+    private protected abstract Mutex CreateMutex( string name );
+
+    /// <summary>
+    /// Waits for a mutex with a token that can be cancelled.
+    /// </summary>
+    /// <param name="mutex">The mutex.</param>
+    /// <param name="timeout">The maximal waiting time, or <see cref="Timeout.InfiniteTimeSpan"/>.</param>
+    /// <param name="cancellationToken">A token that can be cancelled, and that aborts the wait.</param>
+    /// <returns><see langword="true"/> if the mutex was acquired, or <see langword="false"/> if the timeout elapsed.</returns>
+    /// <exception cref="OperationCanceledException">The token was cancelled before the mutex was acquired.</exception>
+    /// <exception cref="AbandonedMutexException">
+    /// The previous owner terminated without releasing the mutex, which this thread now owns. The caller treats it as
+    /// an acquisition.
+    /// </exception>
+    /// <remarks>
+    /// A wait without a token that can be cancelled does not come here: it is a single <see cref="WaitHandle.WaitOne(TimeSpan)"/>
+    /// on every operating system.
+    /// </remarks>
+    private protected abstract bool WaitCancellable( Mutex mutex, TimeSpan timeout, CancellationToken cancellationToken );
 
     /// <summary>
     /// Opens or creates the named mutex, or returns <see langword="null"/> when the operating system cannot
@@ -351,40 +357,7 @@ public sealed partial class NamedLockService : INamedLockService
                         return existingMutex;
                     }
 
-                    if ( this._useAccessControl )
-                    {
-                        try
-                        {
-                            // Creating a mutex without a security descriptor uses the default security, which
-                            // differs between systems and can make the object unusable by another user.
-                            // MutexAcl.Create falls back to the default security on the platforms where a
-                            // security descriptor is not a meaningful concept.
-                            this.InjectFault( BeforeCreateWithAccessControlLocation, name );
-
-                            var securedMutex = MutexAcl.Create( false, name, MutexAcl.AllowUsingMutexToEveryone );
-
-                            this.Report( LockEventKind.Created, name );
-
-                            return securedMutex;
-                        }
-                        catch ( PlatformNotSupportedException e )
-                        {
-                            this._useAccessControl = false;
-
-                            if ( this.IsReportEnabled )
-                            {
-                                this.Report( LockEventKind.Created, name, detail: $"security descriptors are unavailable: {e.Message}" );
-                            }
-                        }
-                    }
-
-                    this.InjectFault( BeforeCreateLocation, name );
-
-                    var mutex = new Mutex( false, name );
-
-                    this.Report( LockEventKind.Created, name, detail: "created without a security descriptor" );
-
-                    return mutex;
+                    return this.CreateMutex( name );
                 }
                 catch ( UnauthorizedAccessException e )
                 {
@@ -501,7 +474,7 @@ public sealed partial class NamedLockService : INamedLockService
     /// Gets a value indicating whether anything is listening to <see cref="LockEventReported"/>, so that a caller
     /// can skip composing a detail that would be discarded.
     /// </summary>
-    private bool IsReportEnabled => this.LockEventReported != null;
+    private protected bool IsReportEnabled => this.LockEventReported != null;
 
     /// <summary>
     /// Determines whether an event of a given kind would be reported, so that no object is created for one that
@@ -534,7 +507,7 @@ public sealed partial class NamedLockService : INamedLockService
     /// on the critical path of every compilation, so an allocation for each of those would be paid by every user
     /// to serve a diagnostic facility that is normally switched off.
     /// </remarks>
-    private void Report( LockEventKind kind, string name, TimeSpan duration = default, string? detail = null )
+    private protected void Report( LockEventKind kind, string name, TimeSpan duration = default, string? detail = null )
     {
         // The delegate is copied to a local so that a handler unsubscribing on another thread between the null
         // check and the invocation cannot cause a NullReferenceException.
@@ -601,6 +574,6 @@ public sealed partial class NamedLockService : INamedLockService
     /// A raw timestamp is used instead of a <see cref="Stopwatch"/> instance because a lock is acquired very
     /// frequently on the critical path of a compilation and must not allocate.
     /// </remarks>
-    private static TimeSpan GetElapsed( long startTimestamp )
+    private protected static TimeSpan GetElapsed( long startTimestamp )
         => TimeSpan.FromSeconds( (double) (Stopwatch.GetTimestamp() - startTimestamp) / Stopwatch.Frequency );
 }

@@ -2,10 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
 
@@ -68,7 +68,7 @@ internal sealed class ParentProcessSearchMac : ParentProcessSearch<int>
     internal static string GetImageName( string output, out int parentProcessId )
     {
         var trimmedOutput = output.Trim();
-        var separator = trimmedOutput.IndexOf( ' ' );
+        var separator = trimmedOutput.IndexOfOrdinal( ' ' );
 
         if ( separator < 0 )
         {

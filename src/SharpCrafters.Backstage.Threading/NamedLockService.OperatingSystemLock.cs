@@ -2,11 +2,9 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using System.Diagnostics;
-
 namespace SharpCrafters.Backstage.Threading
 {
-    public sealed partial class NamedLockService
+    public abstract partial class NamedLockService
     {
         /// <summary>
         /// A lock backed by a named <see cref="Mutex"/>, and therefore shared by all the processes of the machine.
@@ -36,44 +34,17 @@ namespace SharpCrafters.Backstage.Threading
 
                 try
                 {
-                    if ( !cancellationToken.CanBeCanceled )
-                    {
-                        return this._mutex.WaitOne( timeout );
-                    }
-
-                    if ( this._service._isCancellableWaitPolled )
-                    {
-                        return this.WaitByPolling( timeout, cancellationToken );
-                    }
-
-                    // Mutex.WaitOne has no cancellable overload, so the wait handle of the token is waited upon
-                    // alongside the mutex itself. The array is allocated for each wait, which is acceptable
-                    // because this path is taken only when the caller actually supplied a token, and only when
-                    // the lock was found to be owned.
-                    var index = WaitHandle.WaitAny( new WaitHandle[] { this._mutex, cancellationToken.WaitHandle }, timeout );
-
-                    switch ( index )
-                    {
-                        case 0:
-                            return true;
-
-                        case 1:
-                            // The token was signalled first, so the mutex was not acquired and must not be
-                            // released.
-                            throw new OperationCanceledException( cancellationToken );
-
-                        default:
-                            // WaitHandle.WaitTimeout.
-                            return false;
-                    }
+                    return cancellationToken.CanBeCanceled
+                        ? this._service.WaitCancellable( this._mutex, timeout, cancellationToken )
+                        : this._mutex.WaitOne( timeout );
                 }
                 catch ( AbandonedMutexException e )
                 {
                     // The previous owner terminated without releasing the mutex. The wait has nonetheless
                     // succeeded and this thread now owns it, so the acquisition is reported as successful and the
                     // caller is told through the event that the protected state may be inconsistent.
-                    // WaitAny reports which handle was abandoned, and WaitOne reports -1; only the mutex, which is
-                    // at index 0, can ever be the one.
+                    // WaitAny reports which handle was abandoned, and WaitOne reports -1. The derived classes pass
+                    // the mutex at index 0, so only that index can ever be the one.
                     if ( e.MutexIndex is 0 or -1 )
                     {
                         wasAbandoned = true;
@@ -82,60 +53,6 @@ namespace SharpCrafters.Backstage.Threading
                     }
 
                     throw;
-                }
-            }
-
-            /// <summary>
-            /// Waits for the mutex in slices of at most <see cref="_cancellationPollingIntervalMilliseconds"/>, and
-            /// observes the token between two slices.
-            /// </summary>
-            /// <param name="timeout">The maximal waiting time, or <see cref="Timeout.InfiniteTimeSpan"/>.</param>
-            /// <param name="cancellationToken">A token that aborts the wait.</param>
-            /// <returns><see langword="true"/> if the mutex was acquired.</returns>
-            /// <remarks>
-            /// <para>
-            /// This is the cancellable wait on Linux and macOS. There, the runtime does not wait on a named
-            /// synchronization object together with another handle:
-            /// <see cref="WaitHandle.WaitAny(WaitHandle[], TimeSpan)"/> throws <see cref="PlatformNotSupportedException"/>,
-            /// so every cancellable acquisition of a contended lock failed.
-            /// </para>
-            /// <para>
-            /// A slice only bounds the time taken to observe a cancellation. It does not delay the acquisition:
-            /// <see cref="WaitHandle.WaitOne(TimeSpan)"/> returns as soon as the owner releases the mutex.
-            /// </para>
-            /// </remarks>
-            private bool WaitByPolling( TimeSpan timeout, CancellationToken cancellationToken )
-            {
-                var slice = TimeSpan.FromMilliseconds( _cancellationPollingIntervalMilliseconds );
-                var isInfinite = timeout == Timeout.InfiniteTimeSpan;
-                var startTimestamp = Stopwatch.GetTimestamp();
-
-                while ( true )
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var currentSlice = slice;
-
-                    if ( !isInfinite )
-                    {
-                        var remaining = timeout - GetElapsed( startTimestamp );
-
-                        if ( remaining < slice )
-                        {
-                            currentSlice = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
-                        }
-                    }
-
-                    if ( this._mutex.WaitOne( currentSlice ) )
-                    {
-                        return true;
-                    }
-
-                    if ( currentSlice < slice )
-                    {
-                        // The last slice was the rest of the timeout.
-                        return false;
-                    }
                 }
             }
 
