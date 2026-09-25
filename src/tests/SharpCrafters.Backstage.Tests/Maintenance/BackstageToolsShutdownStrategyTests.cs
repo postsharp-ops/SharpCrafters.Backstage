@@ -16,13 +16,21 @@ using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Maintenance;
 
-public sealed class ToolProcessesTests : TestsBase
+public sealed class BackstageToolsShutdownStrategyTests : TestsBase
 {
-    public ToolProcessesTests( ITestOutputHelper logger ) : base( logger ) { }
+    public BackstageToolsShutdownStrategyTests( ITestOutputHelper logger ) : base( logger ) { }
+
+    protected override void ConfigureServices( ServiceProviderBuilder services )
+    {
+        base.ConfigureServices( services );
+
+        // The real process manager: the test starts a real process, which is what the strategy has to find.
+        services.AddService( typeof(IProcessManager), serviceProvider => new WindowsProcessManager( serviceProvider ) );
+    }
 
     /// <summary>
-    /// Tests that a running desktop notifier is ended and reported. A product ends its tools before files are replaced,
-    /// for instance from a <c>shutdown</c> command, and a notifier that is not ended keeps them locked.
+    /// Tests that a running desktop notifier is ended and reported, even without <c>--force</c>. The <c>shutdown</c> command
+    /// ends the tools before files are replaced, and a notifier that is not ended keeps them locked.
     /// </summary>
     /// <remarks>
     /// The notifier is impersonated by a copy of <c>cmd.exe</c> named after it, which waits for input that never comes.
@@ -45,12 +53,13 @@ public sealed class ToolProcessesTests : TestsBase
 
         try
         {
-            var results = new WindowsProcessManager( this.ServiceProvider ).ShutDownToolProcesses();
+            var results = new BackstageToolsShutdownStrategy( this.ServiceProvider )
+                .ShutDownProcesses( new ProcessShutdownOptions( false, TimeSpan.Zero ) );
 
             var result = Assert.Single( results, r => r.ProcessId == process.Id );
-            Assert.Same( BackstageTool.DesktopWindows, result.Tool );
-            Assert.True( result.HasExited, result.ErrorMessage );
-            Assert.Null( result.ErrorMessage );
+            Assert.Equal( ProcessShutdownOutcome.Ended, result.Outcome );
+            Assert.Equal( $"{profile.Name} notifier", result.Description );
+            Assert.Null( result.Reason );
             Assert.True( process.HasExited );
         }
         finally

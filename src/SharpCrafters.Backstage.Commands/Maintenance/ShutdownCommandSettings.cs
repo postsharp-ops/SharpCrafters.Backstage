@@ -8,11 +8,15 @@ using System.ComponentModel;
 
 namespace SharpCrafters.Backstage.Commands.Maintenance;
 
-internal class KillCommandSettings : BaseCommandSettings
+internal class ShutdownCommandSettings : BaseCommandSettings
 {
-    [Description( "How long to wait for the processes to exit before they are ended, in seconds." )]
+    [Description( "Cancels the work of the processes, and ends the ones that have not exited when the timeout has elapsed." )]
+    [CommandOption( "--force" )]
+    public bool Force { get; init; }
+
+    [Description( "How long to wait for the processes to exit, in seconds." )]
     [CommandOption( "--timeout <SECONDS>" )]
-    [DefaultValue( 10 )]
+    [DefaultValue( 60 )]
     public int Timeout { get; init; }
 
     public override ValidationResult Validate()
