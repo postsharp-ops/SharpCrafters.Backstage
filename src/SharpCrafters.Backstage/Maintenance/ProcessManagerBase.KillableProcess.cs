@@ -11,7 +11,11 @@ namespace SharpCrafters.Backstage.Maintenance;
 
 internal abstract partial class ProcessManagerBase
 {
-    protected sealed class KillableProcess
+    /// <summary>
+    /// A process that matches a <see cref="KillableProcessSpec"/>. It owns <see cref="Process"/> and disposes it when it is
+    /// disposed.
+    /// </summary>
+    protected sealed class KillableProcess : IDisposable
     {
         private readonly ILogger _logger;
         private readonly string? _mainModule;
@@ -101,6 +105,8 @@ internal abstract partial class ProcessManagerBase
             this.Spec = spec;
             this._mainModule = mainModule;
         }
+
+        public void Dispose() => this.Process.Dispose();
 
         public void ShutdownOrKill()
         {

@@ -139,66 +139,101 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         return null;
     }
 
+    /// <summary>
+    /// Returns the <see cref="KillableProcess"/> that <paramref name="select"/> creates for each of <paramref name="processes"/>,
+    /// and disposes each process for which it returns <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    /// Each process is either owned by the <see cref="KillableProcess"/> returned to the caller, or disposed here. When the
+    /// caller stops the enumeration early, or <paramref name="select"/> throws, the processes that remain are disposed too.
+    /// </remarks>
+    private static IEnumerable<KillableProcess> SelectOrDispose( Process[] processes, Func<Process, KillableProcess?> select )
+    {
+        // The index of the first process that has been neither returned nor disposed.
+        var next = 0;
+
+        try
+        {
+            while ( next < processes.Length )
+            {
+                var process = processes[next];
+                var killableProcess = select( process );
+                next++;
+
+                if ( killableProcess == null )
+                {
+                    process.Dispose();
+                }
+                else
+                {
+                    yield return killableProcess;
+                }
+            }
+        }
+        finally
+        {
+            for ( var i = next; i < processes.Length; i++ )
+            {
+                processes[i].Dispose();
+            }
+        }
+    }
+
     protected IEnumerable<KillableProcess> GetDotNetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
     {
         var dotnetProcesses = Process.GetProcessesByName( "dotnet" );
 
         this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
 
-        foreach ( var process in dotnetProcesses )
-        {
-            if ( !this.TryGetModulePaths( process, out var modules ) )
-            {
-                this.Logger.Trace?.Log( $"Cannot get module paths for process {process.Id}." );
+        return SelectOrDispose( dotnetProcesses, process => this.SelectDotNetProcess( process, processSpecs ) );
+    }
 
+    private KillableProcess? SelectDotNetProcess( Process process, ImmutableArray<KillableProcessSpec> processSpecs )
+    {
+        if ( !this.TryGetModulePaths( process, out var modules ) )
+        {
+            this.Logger.Trace?.Log( $"Cannot get module paths for process {process.Id}." );
+
+            return null;
+        }
+
+        this.Logger.Trace?.Log( $"Process {process.Id} modules: {string.Join( ", ", modules )}." );
+
+        var moduleFileNames = modules.Select( s => Path.GetFileNameWithoutExtension( s ).ToLowerInvariant() ).ToList();
+
+        foreach ( var processSpec in processSpecs )
+        {
+            if ( !processSpec.IsDotNet )
+            {
                 continue;
             }
 
-            this.Logger.Trace?.Log( $"Process {process.Id} modules: {string.Join( ", ", modules )}." );
+            var moduleIndex = moduleFileNames.IndexOf( processSpec.Name.ToLowerInvariant() );
 
-            var moduleFileNames = modules.Select( s => Path.GetFileNameWithoutExtension( s ).ToLowerInvariant() ).ToList();
-
-            var hasMatch = false;
-
-            foreach ( var processSpec in processSpecs )
+            if ( moduleIndex >= 0 )
             {
-                if ( !processSpec.IsDotNet )
+                var mainModule = modules[moduleIndex];
+
+                if ( this.ReferencesProduct( process, modules ) == false )
                 {
-                    continue;
+                    this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' '{mainModule}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
+
+                    return null;
                 }
 
-                var moduleIndex = moduleFileNames.IndexOf( processSpec.Name.ToLowerInvariant() );
+                this.Logger.Trace?.Log( $"Process '{process.ProcessName}' '{mainModule}' ({process.Id}) should be killed." );
 
-                if ( moduleIndex >= 0 )
-                {
-                    var mainModule = modules[moduleIndex];
-
-                    if ( this.ReferencesProduct( process, modules ) == false )
-                    {
-                        this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' '{mainModule}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
-                    }
-                    else
-                    {
-                        this.Logger.Trace?.Log( $"Process '{process.ProcessName}' '{mainModule}' ({process.Id}) should be killed." );
-
-                        yield return new KillableProcess( process, this.Logger, mainModule, processSpec );
-
-                        hasMatch = true;
-                    }
-
-                    break;
-                }
-            }
-
-            if ( !hasMatch )
-            {
-                if ( this.ReferencesProduct( process, modules ) != false )
-                {
-                    this.Logger.Trace?.Log(
-                        $"Do not kill '{process.ProcessName}' ({process.Id}) even if it references {this._productProfile.Name} because it is not a known process." );
-                }
+                return new KillableProcess( process, this.Logger, mainModule, processSpec );
             }
         }
+
+        if ( this.ReferencesProduct( process, modules ) != false )
+        {
+            this.Logger.Trace?.Log(
+                $"Do not kill '{process.ProcessName}' ({process.Id}) even if it references {this._productProfile.Name} because it is not a known process." );
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -212,28 +247,29 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// </remarks>
 #pragma warning disable CA1307
     protected IEnumerable<KillableProcess> GetStandaloneProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
-    {
-        foreach ( var processSpec in processSpecs.Where( p => p.IsStandaloneProcess ) )
-        {
-            foreach ( var process in Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ) )
-            {
-                if ( !this.TryGetModulePaths( process, out var modules ) )
-                {
-                    continue;
-                }
-
-                if ( this.ReferencesProduct( process, modules ) == false )
-                {
-                    this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
-
-                    continue;
-                }
-
-                yield return new KillableProcess( process, this.Logger, null, processSpec );
-            }
-        }
-    }
+        => processSpecs.Where( p => p.IsStandaloneProcess )
+            .SelectMany(
+                processSpec => SelectOrDispose(
+                    Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ),
+                    process => this.SelectStandaloneProcess( process, processSpec ) ) );
 #pragma warning restore CA1307
+
+    private KillableProcess? SelectStandaloneProcess( Process process, KillableProcessSpec processSpec )
+    {
+        if ( !this.TryGetModulePaths( process, out var modules ) )
+        {
+            return null;
+        }
+
+        if ( this.ReferencesProduct( process, modules ) == false )
+        {
+            this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
+
+            return null;
+        }
+
+        return new KillableProcess( process, this.Logger, null, processSpec );
+    }
 
     /// <summary>
     /// Gets the processes that match one of <paramref name="processSpecs"/>, whether they run as an assembly under
@@ -242,27 +278,47 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     protected IEnumerable<KillableProcess> GetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
         => this.GetDotNetProcesses( processSpecs ).Concat( this.GetStandaloneProcesses( processSpecs ) );
 
-    public IReadOnlyList<BackstageToolProcess> GetToolProcesses()
+    public BackstageToolProcessCollection GetToolProcesses()
     {
         var specs = this._toolProcesses.Select( t => t.Spec ).ToImmutableArray();
+        var toolProcesses = new List<BackstageToolProcess>();
 
-        return this.GetProcesses( specs )
-            .Select( p => new BackstageToolProcess( this._toolProcesses.Single( t => t.Spec == p.Spec ).Tool, p.Process ) )
-            .ToList();
+        try
+        {
+            foreach ( var process in this.GetProcesses( specs ) )
+            {
+                // The process passes from the KillableProcess, which is dropped, to the BackstageToolProcess.
+                toolProcesses.Add( new BackstageToolProcess( this._toolProcesses.Single( t => t.Spec == process.Spec ).Tool, process.Process ) );
+            }
+        }
+        catch
+        {
+            foreach ( var toolProcess in toolProcesses )
+            {
+                toolProcess.Dispose();
+            }
+
+            throw;
+        }
+
+        return new BackstageToolProcessCollection( toolProcesses );
     }
 
     public virtual void KillCompilerProcesses( bool shouldEmitWarnings )
     {
         foreach ( var process in this.ExcludeCurrentProcessAndParents( this.GetProcesses( this._processesToKill ), p => p.Process.Id ) )
         {
-            if ( process.Spec.CanShutdownOrKill )
+            using ( process )
             {
-                process.ShutdownOrKill();
-            }
-            else if ( shouldEmitWarnings )
-            {
-                this.Logger.Warning?.Log(
-                    $"The process {process.Process.Id} ({process.Spec.DisplayName ?? process.Spec.Name}), if it uses {this._productProfile.Name}, must be closed manually." );
+                if ( process.Spec.CanShutdownOrKill )
+                {
+                    process.ShutdownOrKill();
+                }
+                else if ( shouldEmitWarnings )
+                {
+                    this.Logger.Warning?.Log(
+                        $"The process {process.Process.Id} ({process.Spec.DisplayName ?? process.Spec.Name}), if it uses {this._productProfile.Name}, must be closed manually." );
+                }
             }
         }
     }
