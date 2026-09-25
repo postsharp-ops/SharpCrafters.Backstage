@@ -53,6 +53,12 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// </summary>
     private readonly ImmutableArray<KillableProcessSpec> _processesToKill;
 
+    /// <summary>
+    /// The specifications of the tool applications of the product, which are also the last items of
+    /// <see cref="_processesToKill"/>, with the tool that each one matches.
+    /// </summary>
+    private readonly ImmutableArray<(KillableProcessSpec Spec, Tools.BackstageTool Tool)> _toolProcesses;
+
     protected ILogger Logger { get; }
 
     /// <summary>
@@ -69,16 +75,20 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         this.Logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessManager" );
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
 
-        this._processesToKill = _commonProcessesToKill.AddRange(
+        this._toolProcesses = ImmutableArray.Create(
             // The Backstage Worker runs under 'dotnet' (hosting the worker assembly), so it is matched as a DotNet module.
-            new KillableProcessSpec( Tools.BackstageTool.Worker.GetAssemblyName( this._productProfile ), KillableModuleKind.DotNet, false, true ),
+            (new KillableProcessSpec( Tools.BackstageTool.Worker.GetAssemblyName( this._productProfile ), KillableModuleKind.DotNet, false, true ),
+             Tools.BackstageTool.Worker),
 
             // The Backstage Desktop tray app is a standalone '.exe'.
-            new KillableProcessSpec(
-                Tools.BackstageTool.DesktopWindows.GetAssemblyName( this._productProfile ),
-                KillableModuleKind.StandaloneProcess,
-                false,
-                true ) );
+            (new KillableProcessSpec(
+                 Tools.BackstageTool.DesktopWindows.GetAssemblyName( this._productProfile ),
+                 KillableModuleKind.StandaloneProcess,
+                 false,
+                 true ),
+             Tools.BackstageTool.DesktopWindows) );
+
+        this._processesToKill = _commonProcessesToKill.AddRange( this._toolProcesses.Select( t => t.Spec ) );
     }
 
     protected virtual bool TryGetModulePaths( Process process, [NotNullWhen( true )] out List<string>? modules )
@@ -215,6 +225,8 @@ internal abstract partial class ProcessManagerBase : IProcessManager
                 if ( this.ReferencesProduct( process, modules ) == false )
                 {
                     this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
+
+                    continue;
                 }
 
                 yield return new KillableProcess( process, this.Logger, null, processSpec );
@@ -229,6 +241,15 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// </summary>
     protected IEnumerable<KillableProcess> GetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
         => this.GetDotNetProcesses( processSpecs ).Concat( this.GetStandaloneProcesses( processSpecs ) );
+
+    public IReadOnlyList<BackstageToolProcess> GetToolProcesses()
+    {
+        var specs = this._toolProcesses.Select( t => t.Spec ).ToImmutableArray();
+
+        return this.GetProcesses( specs )
+            .Select( p => new BackstageToolProcess( this._toolProcesses.Single( t => t.Spec == p.Spec ).Tool, p.Process ) )
+            .ToList();
+    }
 
     public virtual void KillCompilerProcesses( bool shouldEmitWarnings )
     {
