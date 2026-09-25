@@ -37,14 +37,21 @@ public sealed class BackstageCommandOptions
     /// own, for instance <c>builder => builder.AddTools()</c>. It is <see langword="null"/> when the host has no such
     /// package, and the commands that start a tool application then report that the tool is unavailable.
     /// </param>
+    /// <param name="registerServices">
+    /// Registers the services that the host of the commands contributes, after the services of Backstage. A host registers
+    /// there the <see cref="SharpCrafters.Backstage.Maintenance.IProcessShutdownStrategy"/> implementations of its product,
+    /// with <see cref="SharpCrafters.Backstage.Maintenance.ProcessShutdownServiceExtensions.AddProcessShutdownStrategy"/>,
+    /// which the <c>shutdown</c>, <c>kill</c> and <c>cleanup</c> commands run after those of Backstage.
+    /// </param>
     public BackstageCommandOptions(
         IApplicationInfo applicationInfo,
         BackstageProduct product,
         Action<ServiceProviderBuilder>? addToolsExtractor = null,
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
-        AnsiSupport ansiSupport = AnsiSupport.Detect ) : this(
-        new CommandServiceProvider( applicationInfo, product, addToolsExtractor ),
+        AnsiSupport ansiSupport = AnsiSupport.Detect,
+        Action<ServiceProviderBuilder>? registerServices = null ) : this(
+        new CommandServiceProvider( applicationInfo, product, addToolsExtractor, registerServices ),
         product,
         standardOutput,
         errorOutput,

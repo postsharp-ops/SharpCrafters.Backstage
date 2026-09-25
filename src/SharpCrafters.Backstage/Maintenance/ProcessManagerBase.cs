@@ -15,49 +15,13 @@ using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
-internal abstract partial class ProcessManagerBase : IProcessManager
+/// <summary>
+/// Finds the processes that match a list of <see cref="KillableProcessSpec"/>, for the implementations of
+/// <see cref="IProcessShutdownStrategy"/>. The implementation differs by operating system in how it reads the modules
+/// of a process.
+/// </summary>
+internal abstract class ProcessManagerBase : IProcessManager
 {
-    /// <summary>
-    /// The processes that every product stops or reports. The tool applications of the product are added by the
-    /// constructor, because their names depend on the product.
-    /// </summary>
-    private static readonly ImmutableArray<KillableProcessSpec> _commonProcessesToKill = ImmutableArray.Create(
-        new KillableProcessSpec( "VBCSCompiler", KillableModuleKind.Both, true, true ),
-        new KillableProcessSpec( "MSBuild", KillableModuleKind.Both, false, true ),
-        new KillableProcessSpec( "servicehub.roslyncodeanalysisservice", KillableModuleKind.Both, false, false, "Visual Studio" ),
-
-        // Visual Studio 2026 runs the Roslyn analysis process under this name instead. See issue #1463. Like the
-        // process that it replaces, it is reported to the user rather than stopped, because Visual Studio owns it.
-        // Ending a child process of the integrated development environment leaves that environment in an
-        // inconsistent state, and Visual Studio starts the analysis process again as soon as a document is opened,
-        // which would lock the files again before the clean-up finished.
-        new KillableProcessSpec( "devhub", KillableModuleKind.Both, false, false, "Visual Studio" ),
-        new KillableProcessSpec( "jetbrains.resharper.roslyn.worker", KillableModuleKind.DotNet, false, false, "Rider/Resharper" ),
-        new KillableProcessSpec( "jetbrains.roslyn.worker", KillableModuleKind.DotNet, false, false, "Rider/Resharper" ),
-        new KillableProcessSpec( "omnisharp", KillableModuleKind.DotNet, false, false, "Visual Studio Code / Omnisharp" ),
-
-        // The language server of the Visual Studio Code C# Dev Kit. It runs either as its own executable or as an
-        // assembly under 'dotnet', so it is matched as both kinds of module. Like OmniSharp above, which is the
-        // language server that preceded it, it is reported to the user rather than stopped, because Visual Studio
-        // Code owns it and starts it again.
-        new KillableProcessSpec(
-            "microsoft.codeanalysis.languageserver",
-            KillableModuleKind.Both,
-            false,
-            false,
-            "Visual Studio Code / C# Dev Kit" ) );
-
-    /// <summary>
-    /// The common processes followed by the tool applications of the product.
-    /// </summary>
-    private readonly ImmutableArray<KillableProcessSpec> _processesToKill;
-
-    /// <summary>
-    /// The specifications of the tool applications of the product, which are also the last items of
-    /// <see cref="_processesToKill"/>, with the tool that each one matches.
-    /// </summary>
-    private readonly ImmutableArray<(KillableProcessSpec Spec, Tools.BackstageTool Tool)> _toolProcesses;
-
     private const string _dotNetProcessName = "dotnet";
 
     protected ILogger Logger { get; }
@@ -72,21 +36,6 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     {
         this.Logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessManager" );
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
-
-        this._toolProcesses = ImmutableArray.Create(
-            // The Backstage Worker runs under 'dotnet' (hosting the worker assembly), so it is matched as a DotNet module.
-            (new KillableProcessSpec( Tools.BackstageTool.Worker.GetAssemblyName( this._productProfile ), KillableModuleKind.DotNet, false, true ),
-             Tools.BackstageTool.Worker),
-
-            // The Backstage Desktop tray app is a standalone '.exe'.
-            (new KillableProcessSpec(
-                 Tools.BackstageTool.DesktopWindows.GetAssemblyName( this._productProfile ),
-                 KillableModuleKind.StandaloneProcess,
-                 false,
-                 true ),
-             Tools.BackstageTool.DesktopWindows) );
-
-        this._processesToKill = _commonProcessesToKill.AddRange( this._toolProcesses.Select( t => t.Spec ) );
     }
 
     protected virtual bool TryGetModulePaths( Process process, [NotNullWhen( true )] out List<string>? modules )
@@ -154,7 +103,7 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// </para>
     /// </remarks>
 #pragma warning disable CA1307
-    protected List<Process> GetCandidateProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
+    public List<Process> GetCandidateProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
     {
         var processes = new List<Process>();
 
@@ -184,7 +133,7 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// The <see cref="KillableProcess"/> objects do not own their processes: the caller of <see cref="GetCandidateProcesses"/>
     /// disposes them.
     /// </remarks>
-    protected IEnumerable<KillableProcess> GetKillableProcesses( IEnumerable<Process> candidates, ImmutableArray<KillableProcessSpec> processSpecs )
+    public IEnumerable<KillableProcess> GetKillableProcesses( IEnumerable<Process> candidates, ImmutableArray<KillableProcessSpec> processSpecs )
     {
         foreach ( var process in candidates )
         {
@@ -197,14 +146,6 @@ internal abstract partial class ProcessManagerBase : IProcessManager
             {
                 yield return killableProcess;
             }
-        }
-    }
-
-    private static void Dispose( List<Process> processes )
-    {
-        foreach ( var process in processes )
-        {
-            process.Dispose();
         }
     }
 
@@ -279,62 +220,5 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         }
 
         return new KillableProcess( process, this.Logger, null, processSpec );
-    }
-
-    public IReadOnlyList<ToolProcessShutdownResult> ShutDownToolProcesses()
-    {
-        var specs = this._toolProcesses.Select( t => t.Spec ).ToImmutableArray();
-        var results = new List<ToolProcessShutdownResult>();
-        var candidates = this.GetCandidateProcesses( specs );
-
-        try
-        {
-            using var currentProcess = Process.GetCurrentProcess();
-
-            foreach ( var process in this.GetKillableProcesses( candidates, specs ) )
-            {
-                if ( process.Process.Id == currentProcess.Id )
-                {
-                    continue;
-                }
-
-                var tool = this._toolProcesses.Single( t => t.Spec == process.Spec ).Tool;
-                var hasExited = process.ShutdownOrKill( out var errorMessage );
-
-                results.Add( new ToolProcessShutdownResult( tool, process.Process.Id, hasExited, errorMessage ) );
-            }
-        }
-        finally
-        {
-            Dispose( candidates );
-        }
-
-        return results;
-    }
-
-    public virtual void KillCompilerProcesses( bool shouldEmitWarnings )
-    {
-        var candidates = this.GetCandidateProcesses( this._processesToKill );
-
-        try
-        {
-            foreach ( var process in this.GetKillableProcesses( candidates, this._processesToKill ) )
-            {
-                if ( process.Spec.CanShutdownOrKill )
-                {
-                    // Failures are logged by ShutdownOrKill.
-                    process.ShutdownOrKill( out _ );
-                }
-                else if ( shouldEmitWarnings )
-                {
-                    this.Logger.Warning?.Log(
-                        $"The process {process.Process.Id} ({process.Spec.DisplayName ?? process.Spec.Name}), if it uses {this._productProfile.Name}, must be closed manually." );
-                }
-            }
-        }
-        finally
-        {
-            Dispose( candidates );
-        }
     }
 }
