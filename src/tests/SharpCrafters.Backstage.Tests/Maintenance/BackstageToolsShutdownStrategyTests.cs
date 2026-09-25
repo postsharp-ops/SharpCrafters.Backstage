@@ -10,7 +10,6 @@ using SharpCrafters.Backstage.Tools;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -36,11 +35,9 @@ public sealed class BackstageToolsShutdownStrategyTests : TestsBase
     /// The notifier is impersonated by a copy of <c>cmd.exe</c> named after it, which waits for input that never comes.
     /// It runs on Windows only, where the notifier exists.
     /// </remarks>
-    [SkippableFact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void ARunningNotifierIsShutDown()
     {
-        Skip.IfNot( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ), "The desktop notifier exists on Windows only." );
-
         var profile = this.ServiceProvider.GetRequiredBackstageService<ProductProfile>();
         var directory = Path.Combine( Path.GetTempPath(), "ToolProcessesTests", Guid.NewGuid().ToString( "N" ) );
         Directory.CreateDirectory( directory );
