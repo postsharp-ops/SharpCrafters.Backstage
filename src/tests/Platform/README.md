@@ -35,7 +35,7 @@ The tests reference the packages of the build through `PackageReference`, as an 
 | `PlatformTestHelper/` | The second process of the cross-process tests. |
 | `PlatformTests/Conditions/` | `[PlatformFact]`, which selects the operating systems and the kinds of host of a test. |
 | `Docker/<Suite>/` | One Docker test per suite: `test.psd1` gives its platforms, and `RunTest.ps1` starts its container. |
-| `Images/<os>/Dockerfile` | The image of each operating system. |
+| `Images/linux/Dockerfile` | The Linux image. Windows uses the image of the product build, `eng/docker/build.Dockerfile`. |
 | `RunSuite.ps1` | Builds and runs the tests of a suite where it runs, inside a container or on macOS. |
 | `RunMacOSTests.ps1` | Runs every suite on a macOS agent. |
 

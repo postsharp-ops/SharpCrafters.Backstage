@@ -16,14 +16,34 @@ function Invoke-PlatformTestSuite
     )
 
     $containerOs = if ($Platform -like 'linux-*') { 'linux' } else { 'windows' }
-    $dockerBuild = Join-Path ( Resolve-Path ( Join-Path $PSScriptRoot '../../..' ) ).Path 'DockerBuild.ps1'
+    $repositoryRoot = ( Resolve-Path ( Join-Path $PSScriptRoot '../../..' ) ).Path
+    $dockerBuild = Join-Path $repositoryRoot 'DockerBuild.ps1'
+
+    if ($containerOs -eq 'windows')
+    {
+        # Windows uses the image of the product build: Windows Server 2025 with the .NET 10 SDK and PowerShell 7. A Windows
+        # image is several gigabytes, and this one is already in the registry and in the image cache of the agents. The
+        # Dockerfile and the context are those of the product build, so DockerBuild.ps1 computes the same content-hash
+        # tag and reuses the image instead of building another one. The context directory is created when missing, which
+        # the content hash treats as empty, as the product build does.
+        $dockerfile = Join-Path $repositoryRoot 'eng/docker/build.Dockerfile'
+        $context = Join-Path $repositoryRoot 'eng/docker-context/build'
+        New-Item -ItemType Directory -Force $context | Out-Null
+    }
+    else
+    {
+        # Linux has no product build image, because the product builds on Windows only.
+        $dockerfile = Join-Path $PSScriptRoot 'Images/linux/Dockerfile'
+        $context = Split-Path $dockerfile
+    }
 
     # A hashtable, not an array. Splatting an array does not bind the named parameters of DockerBuild.ps1: they fall into
     # its -BuildArgs parameter, and the script runs an ordinary product build instead of the test container.
     $arguments = @{
         Test = $true
         OS = $containerOs
-        Dockerfile = Join-Path $PSScriptRoot "Images/$containerOs/Dockerfile"
+        Dockerfile = $dockerfile
+        Context = $context
 
         # The tests compare what the product detects with the kind of host that this variable declares.
         Env = @( 'BACKSTAGE_PLATFORM_TEST_HOST=container' )

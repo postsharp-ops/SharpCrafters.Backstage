@@ -44,6 +44,9 @@ var product = new Product( BackstageDependencies.Backstage )
     // Writes nuget.wsl.config beside nuget.config. Its sources are the same, but with the paths of the engine inside
     // WSL, which is where DockerBuild.ps1 runs a Linux test container on a Windows development machine.
     AddWslSupport = true,
+
+    // Writes each TeamCity build configuration to its own file under .teamcity/buildTypes instead of into settings.kts.
+    GenerateTeamCityBuildTypesInSeparateFiles = true,
     DotNetSdkVersion = new DotNetSdkVersion( dotNet10SdkVersion ),
 
     Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
