@@ -2,7 +2,9 @@
 # TeamCity configuration 'Platform Tests (macOS ARM64)' runs this script after restoring the artifacts of the Debug build.
 #
 # The host needs PowerShell 7 only. The script installs the .NET SDK into the artifacts directory of the tests, and it
-# points HOME at a directory of its own, so that the tests do not write into the profile of the agent account.
+# points HOME at a directory of its own, which holds the state of the .NET SDK. It does not isolate the data directory of
+# the product: on macOS, the runtime resolves ~/Library/Application Support from the account of the user rather than
+# from HOME.
 
 $ErrorActionPreference = 'Stop'
 

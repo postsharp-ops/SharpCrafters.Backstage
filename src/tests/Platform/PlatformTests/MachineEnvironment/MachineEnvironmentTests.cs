@@ -18,17 +18,23 @@ public sealed class MachineEnvironmentTests
     private readonly IServiceProvider _serviceProvider = PlatformTestServices.CreateServiceProvider();
 
     /// <summary>
-    /// On Unix, the temporary directory is under the application data directory of the user, because <c>/tmp</c> is
-    /// writable by every user (issue #1650).
+    /// The application data directory is under the local application data directory of the operating system, which
+    /// Linux and macOS provide, so that the fallback for the platforms without one is not taken. On Unix, the temporary
+    /// directory is under the application data directory, because <c>/tmp</c> is writable by every user (issue #1650).
     /// </summary>
+    /// <remarks>
+    /// The home directory is not the reference. On macOS, the runtime resolves the local application data directory,
+    /// <c>~/Library/Application Support</c>, from the account of the user, whereas the user profile follows the
+    /// <c>HOME</c> variable, which the macOS runner of these tests redirects.
+    /// </remarks>
     [PlatformFact( TestPlatforms.Unix )]
-    public void TheDataDirectoriesAreInTheHomeDirectoryOfTheUser()
+    public void TheDataDirectoriesAreInTheLocalApplicationDataOfTheUser()
     {
         var directories = this._serviceProvider.GetRequiredBackstageService<IStandardDirectories>();
-        var home = Environment.GetFolderPath( Environment.SpecialFolder.UserProfile );
+        var localApplicationData = Environment.GetFolderPath( Environment.SpecialFolder.LocalApplicationData );
 
-        Assert.False( string.IsNullOrEmpty( home ) );
-        Assert.StartsWith( home + Path.DirectorySeparatorChar, directories.ApplicationDataDirectory, StringComparison.Ordinal );
+        Assert.False( string.IsNullOrEmpty( localApplicationData ) );
+        Assert.StartsWith( localApplicationData + Path.DirectorySeparatorChar, directories.ApplicationDataDirectory, StringComparison.Ordinal );
         Assert.StartsWith( directories.ApplicationDataDirectory + Path.DirectorySeparatorChar, directories.TempDirectory, StringComparison.Ordinal );
     }
 
