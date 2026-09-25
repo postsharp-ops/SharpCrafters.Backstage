@@ -823,6 +823,109 @@ public sealed class NamedLockServiceTests : IDisposable
         await this.WithTimeout( owner.Completed );
     }
 
+    /// <summary>
+    /// Verifies that a contender with a cancellable token acquires the lock once the owner releases it, when the wait
+    /// is polled as on Linux and macOS.
+    /// </summary>
+    /// <remarks>
+    /// This is the case that failed on Linux: the runtime refused to wait on the named mutex together with the handle
+    /// of the token, and threw <see cref="PlatformNotSupportedException"/> for every cancellable acquisition of a
+    /// contended lock. On Windows the polled wait is forced, and on Linux and macOS it is the only one.
+    /// </remarks>
+    [Fact]
+    public async Task PolledWait_ACancellableContenderAcquiresOnceTheOwnerReleases()
+    {
+        var name = CreateName();
+        var service = this.CreateService();
+        service.ForcePolledCancellableWait();
+
+        using var ownerLock = service.GetLock( name );
+        using var contenderLock = service.GetLock( name );
+        using var cancellation = new CancellationTokenSource();
+
+        var owner = new LockHolder( ownerLock, TimeSpan.Zero );
+        Assert.True( await this.WithTimeout( owner.Acquired ) );
+
+        var blocked = this.WaitForEventAsync( LockEventKind.Blocked, name );
+        var contender = new LockHolder( contenderLock, Timeout.InfiniteTimeSpan, cancellation.Token );
+
+        await blocked;
+
+        Assert.False( contender.Acquired.IsCompleted );
+
+        owner.Release();
+
+        Assert.True( await this.WithTimeout( contender.Acquired ) );
+
+        contender.Release();
+        await this.WithTimeout( Task.WhenAll( owner.Completed, contender.Completed ) );
+    }
+
+    /// <summary>
+    /// Verifies that cancelling a contender that is inside a polled wait throws and does not acquire the lock.
+    /// </summary>
+    [Fact]
+    public async Task PolledWait_CancellingAContenderThatIsBlocked_ThrowsAndDoesNotAcquire()
+    {
+        var name = CreateName();
+        var service = this.CreateService();
+        service.ForcePolledCancellableWait();
+
+        using var ownerLock = service.GetLock( name );
+        using var contenderLock = service.GetLock( name );
+        using var cancellation = new CancellationTokenSource();
+
+        var owner = new LockHolder( ownerLock, TimeSpan.Zero );
+        Assert.True( await this.WithTimeout( owner.Acquired ) );
+
+        var beforeWait = NamedLockService.GetSyncPointName( NamedLockService.BeforeWaitLocation, name );
+        this._syncProvider.EnableSyncPoint( beforeWait );
+
+        var contender = new LockHolder( contenderLock, Timeout.InfiniteTimeSpan, cancellation.Token );
+
+        await this.WithTimeout( this._syncProvider.WaitForSyncPointReachedAsync( beforeWait, this._timeout.Token ) );
+
+        // Released first and cancelled afterwards, so that the contender is inside the polled wait and observes the
+        // cancellation between two slices.
+        this._syncProvider.ReleaseSyncPoint( beforeWait );
+        cancellation.Cancel();
+
+        await Assert.ThrowsAsync<OperationCanceledException>( () => this.WithTimeout( contender.Acquired ) );
+
+        owner.Release();
+        await this.WithTimeout( owner.Completed );
+    }
+
+    /// <summary>
+    /// Verifies that a polled wait with a finite timeout returns without the lock when the owner keeps it.
+    /// </summary>
+    /// <remarks>
+    /// The timeout is longer than one slice and not a multiple of it, so that the wait takes several slices and ends
+    /// on a shorter one. The outcome does not depend on timing: the owner holds the lock until the contender returns.
+    /// </remarks>
+    [Fact]
+    public async Task PolledWait_ReturnsWithoutTheLockWhenTheTimeoutElapses()
+    {
+        var name = CreateName();
+        var service = this.CreateService();
+        service.ForcePolledCancellableWait();
+
+        using var ownerLock = service.GetLock( name );
+        using var contenderLock = service.GetLock( name );
+        using var cancellation = new CancellationTokenSource();
+
+        var owner = new LockHolder( ownerLock, TimeSpan.Zero );
+        Assert.True( await this.WithTimeout( owner.Acquired ) );
+
+        var contender = new LockHolder( contenderLock, TimeSpan.FromMilliseconds( 250 ), cancellation.Token );
+
+        Assert.False( await this.WithTimeout( contender.Acquired ) );
+        Assert.Contains( this.GetEvents(), e => e.Kind == LockEventKind.TimedOut && e.Name == name );
+
+        owner.Release();
+        await this.WithTimeout( owner.Completed );
+    }
+
     [Fact]
     public async Task CancellingAnOwnerPinnedAfterAcquiring_StillYieldsAUsableLock()
     {

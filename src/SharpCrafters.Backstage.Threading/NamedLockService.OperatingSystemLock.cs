@@ -2,6 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using System.Diagnostics;
+
 namespace SharpCrafters.Backstage.Threading
 {
     public sealed partial class NamedLockService
@@ -12,6 +14,7 @@ namespace SharpCrafters.Backstage.Threading
         /// </summary>
         private sealed class OperatingSystemLock : NamedLockBase
         {
+            private readonly NamedLockService _service;
             private readonly Mutex _mutex;
 
             /// <summary>
@@ -22,6 +25,7 @@ namespace SharpCrafters.Backstage.Threading
             /// <param name="mutex">The mutex, whose ownership is transferred to this object.</param>
             public OperatingSystemLock( NamedLockService service, string name, Mutex mutex ) : base( service, name )
             {
+                this._service = service;
                 this._mutex = mutex;
             }
 
@@ -35,6 +39,11 @@ namespace SharpCrafters.Backstage.Threading
                     if ( !cancellationToken.CanBeCanceled )
                     {
                         return this._mutex.WaitOne( timeout );
+                    }
+
+                    if ( this._service._isCancellableWaitPolled )
+                    {
+                        return this.WaitByPolling( timeout, cancellationToken );
                     }
 
                     // Mutex.WaitOne has no cancellable overload, so the wait handle of the token is waited upon
@@ -73,6 +82,60 @@ namespace SharpCrafters.Backstage.Threading
                     }
 
                     throw;
+                }
+            }
+
+            /// <summary>
+            /// Waits for the mutex in slices of at most <see cref="_cancellationPollingIntervalMilliseconds"/>, and
+            /// observes the token between two slices.
+            /// </summary>
+            /// <param name="timeout">The maximal waiting time, or <see cref="Timeout.InfiniteTimeSpan"/>.</param>
+            /// <param name="cancellationToken">A token that aborts the wait.</param>
+            /// <returns><see langword="true"/> if the mutex was acquired.</returns>
+            /// <remarks>
+            /// <para>
+            /// This is the cancellable wait on Linux and macOS. There, the runtime does not wait on a named
+            /// synchronization object together with another handle:
+            /// <see cref="WaitHandle.WaitAny(WaitHandle[], TimeSpan)"/> throws <see cref="PlatformNotSupportedException"/>,
+            /// so every cancellable acquisition of a contended lock failed.
+            /// </para>
+            /// <para>
+            /// A slice only bounds the time taken to observe a cancellation. It does not delay the acquisition:
+            /// <see cref="WaitHandle.WaitOne(TimeSpan)"/> returns as soon as the owner releases the mutex.
+            /// </para>
+            /// </remarks>
+            private bool WaitByPolling( TimeSpan timeout, CancellationToken cancellationToken )
+            {
+                var slice = TimeSpan.FromMilliseconds( _cancellationPollingIntervalMilliseconds );
+                var isInfinite = timeout == Timeout.InfiniteTimeSpan;
+                var startTimestamp = Stopwatch.GetTimestamp();
+
+                while ( true )
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var currentSlice = slice;
+
+                    if ( !isInfinite )
+                    {
+                        var remaining = timeout - GetElapsed( startTimestamp );
+
+                        if ( remaining < slice )
+                        {
+                            currentSlice = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+                        }
+                    }
+
+                    if ( this._mutex.WaitOne( currentSlice ) )
+                    {
+                        return true;
+                    }
+
+                    if ( currentSlice < slice )
+                    {
+                        // The last slice was the rest of the timeout.
+                        return false;
+                    }
                 }
             }
 

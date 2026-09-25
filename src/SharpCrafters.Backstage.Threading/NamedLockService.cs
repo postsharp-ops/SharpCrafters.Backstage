@@ -7,6 +7,7 @@ using SharpCrafters.Common.Testing.Hooks;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.Threading;
 
@@ -41,6 +42,12 @@ public sealed partial class NamedLockService : INamedLockService
     /// meantime with a more restrictive security descriptor.
     /// </summary>
     private const int _maxCreationAttempts = 4;
+
+    /// <summary>
+    /// The longest time for which a cancellable wait on a mutex is not cancelled, on the platforms where the wait is
+    /// polled. See <see cref="_isCancellableWaitPolled"/>.
+    /// </summary>
+    private const int _cancellationPollingIntervalMilliseconds = 100;
 
     /// <summary>
     /// The names of the locks held by the current thread, used to detect a reentrant acquisition. The field is
@@ -93,6 +100,17 @@ public sealed partial class NamedLockService : INamedLockService
     /// condition of issue 272 holds, and that condition affects every name at once.
     /// </remarks>
     private volatile bool _areNamedObjectsUnavailable;
+
+    /// <summary>
+    /// Whether a cancellable wait on a mutex is a sequence of short waits on the mutex alone, instead of one wait on
+    /// the mutex and on the wait handle of the token together.
+    /// </summary>
+    /// <remarks>
+    /// Only Windows supports a wait on a named mutex together with another handle. On Linux and macOS,
+    /// <see cref="WaitHandle.WaitAny(WaitHandle[], TimeSpan)"/> throws <see cref="PlatformNotSupportedException"/>.
+    /// The field is not constant so that a test can exercise the polled wait on Windows.
+    /// </remarks>
+    private volatile bool _isCancellableWaitPolled = !RuntimeInformation.IsOSPlatform( OSPlatform.Windows );
 
     /// <summary>
     /// The provider of the test synchronization points, which is never registered in production and is therefore
@@ -291,6 +309,12 @@ public sealed partial class NamedLockService : INamedLockService
     /// the machine and cannot be arranged from inside the process.
     /// </remarks>
     internal void ForceProcessLocalLocks() => this._areNamedObjectsUnavailable = true;
+
+    /// <summary>
+    /// Makes this service wait for a mutex with a cancellable token as it does on Linux and macOS, so that a test can
+    /// exercise that wait on Windows.
+    /// </summary>
+    internal void ForcePolledCancellableWait() => this._isCancellableWaitPolled = true;
 
     /// <summary>
     /// Opens or creates the named mutex, or returns <see langword="null"/> when the operating system cannot
