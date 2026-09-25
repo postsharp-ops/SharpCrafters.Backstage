@@ -5,6 +5,7 @@
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -38,11 +39,11 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessShutdown" );
     }
 
-    protected override ImmutableArray<KillableProcessSpec> ProcessSpecs { get; } = ImmutableArray.Create(
-        new KillableProcessSpec( _compilerServerName, KillableModuleKind.Both, true ),
-        new KillableProcessSpec( "MSBuild", KillableModuleKind.Both, false ) );
+    protected override ImmutableArray<ProcessSpec> ProcessSpecs { get; } = ImmutableArray.Create(
+        new ProcessSpec( _compilerServerName, ProcessModuleKind.Both ),
+        new ProcessSpec( "MSBuild", ProcessModuleKind.Both ) );
 
-    protected override void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<KillableProcess> processes )
+    protected override void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<MatchedProcess> processes )
     {
         if ( processes.Count == 0 )
         {
@@ -64,12 +65,12 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         }
     }
 
-    protected override ProcessShutdownResult ShutDownProcess( KillableProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
+    protected override ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
     {
         var isCompilerServer = string.Equals( process.Spec.Name, _compilerServerName, StringComparison.OrdinalIgnoreCase );
         var description = isCompilerServer ? "Compiler server (VBCSCompiler)" : "MSBuild node";
 
-        if ( isCompilerServer && process.Shutdown() )
+        if ( isCompilerServer && this.RequestShutdown( process, GetRemainingTime( options, stopwatch ) ) )
         {
             return new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.Exited );
         }
@@ -90,5 +91,44 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
             : "an MSBuild node exits when it has been idle for some minutes; use --force to end it";
 
         return new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.StillRunning, reason );
+    }
+
+    /// <summary>
+    /// Asks a compiler server to shut down, as <c>VBCSCompiler -shutdown</c> does: the same executable, or the same
+    /// assembly under <c>dotnet</c>, run with <c>-shutdown</c>, lets the compilations of the server end and then stops it.
+    /// </summary>
+    /// <returns><c>true</c> when the server has exited within <paramref name="timeout"/>.</returns>
+    private bool RequestShutdown( MatchedProcess match, TimeSpan timeout )
+    {
+        var process = match.Process;
+
+        try
+        {
+            if ( process.HasExited )
+            {
+                return true;
+            }
+
+            this._logger.Trace?.Log( $"Asking the compiler server {process.Id} to shut down." );
+
+            var arguments = match.MainModule != null ? new[] { match.MainModule, "-shutdown" } : new[] { "-shutdown" };
+
+            var startInfo = new ProcessStartInfo( process.MainModule!.FileName, CommandLineArguments.Format( arguments ) )
+            {
+                UseShellExecute = false, RedirectStandardOutput = true
+            };
+
+            using var shutdownProcess = Process.Start( startInfo )!;
+            shutdownProcess.StandardOutput.ReadToEnd();
+            shutdownProcess.WaitForExit();
+
+            return process.WaitForExit( (int) timeout.TotalMilliseconds );
+        }
+        catch ( Exception e ) when ( e is Win32Exception or InvalidOperationException )
+        {
+            this._logger.Warning?.Log( $"Could not ask the compiler server {process.Id} to shut down: {e.Message}" );
+
+            return false;
+        }
     }
 }

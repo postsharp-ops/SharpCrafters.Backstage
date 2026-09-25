@@ -30,20 +30,20 @@ internal sealed class DevelopmentEnvironmentShutdownStrategy : SpecifiedProcessS
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
     }
 
-    protected override ImmutableArray<KillableProcessSpec> ProcessSpecs { get; } = ImmutableArray.Create(
-        new KillableProcessSpec( "servicehub.roslyncodeanalysisservice", KillableModuleKind.Both, false, "Visual Studio" ),
+    protected override ImmutableArray<ProcessSpec> ProcessSpecs { get; } = ImmutableArray.Create(
+        new ProcessSpec( "servicehub.roslyncodeanalysisservice", ProcessModuleKind.Both, "Visual Studio" ),
 
         // Visual Studio 2026 runs the Roslyn analysis process under this name instead. See issue #1463.
-        new KillableProcessSpec( "devhub", KillableModuleKind.Both, false, "Visual Studio" ),
-        new KillableProcessSpec( "jetbrains.resharper.roslyn.worker", KillableModuleKind.DotNet, false, "Rider/Resharper" ),
-        new KillableProcessSpec( "jetbrains.roslyn.worker", KillableModuleKind.DotNet, false, "Rider/Resharper" ),
-        new KillableProcessSpec( "omnisharp", KillableModuleKind.DotNet, false, "Visual Studio Code / Omnisharp" ),
+        new ProcessSpec( "devhub", ProcessModuleKind.Both, "Visual Studio" ),
+        new ProcessSpec( "jetbrains.resharper.roslyn.worker", ProcessModuleKind.DotNet, "Rider/Resharper" ),
+        new ProcessSpec( "jetbrains.roslyn.worker", ProcessModuleKind.DotNet, "Rider/Resharper" ),
+        new ProcessSpec( "omnisharp", ProcessModuleKind.DotNet, "Visual Studio Code / Omnisharp" ),
 
         // The language server of the Visual Studio Code C# Dev Kit, which runs either as its own executable or as an
         // assembly under 'dotnet'.
-        new KillableProcessSpec( "microsoft.codeanalysis.languageserver", KillableModuleKind.Both, false, "Visual Studio Code / C# Dev Kit" ) );
+        new ProcessSpec( "microsoft.codeanalysis.languageserver", ProcessModuleKind.Both, "Visual Studio Code / C# Dev Kit" ) );
 
-    protected override ProcessShutdownResult ShutDownProcess( KillableProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
+    protected override ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
     {
         var description = process.Spec.DisplayName ?? process.Spec.Name;
 

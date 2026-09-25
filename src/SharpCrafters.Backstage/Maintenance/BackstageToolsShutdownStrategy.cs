@@ -31,15 +31,15 @@ internal sealed class BackstageToolsShutdownStrategy : SpecifiedProcessShutdownS
 
         this.ProcessSpecs = ImmutableArray.Create(
             // The worker runs under 'dotnet', which hosts the worker assembly, so it is matched as a module.
-            new KillableProcessSpec( BackstageTool.Worker.GetAssemblyName( this._productProfile ), KillableModuleKind.DotNet, false ),
+            new ProcessSpec( BackstageTool.Worker.GetAssemblyName( this._productProfile ), ProcessModuleKind.DotNet ),
 
             // The notifier is an executable of its own.
-            new KillableProcessSpec( BackstageTool.DesktopWindows.GetAssemblyName( this._productProfile ), KillableModuleKind.StandaloneProcess, false ) );
+            new ProcessSpec( BackstageTool.DesktopWindows.GetAssemblyName( this._productProfile ), ProcessModuleKind.StandaloneProcess ) );
     }
 
-    protected override ImmutableArray<KillableProcessSpec> ProcessSpecs { get; }
+    protected override ImmutableArray<ProcessSpec> ProcessSpecs { get; }
 
-    protected override ProcessShutdownResult ShutDownProcess( KillableProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
+    protected override ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
     {
         var tool = process.Spec.Name == BackstageTool.Worker.GetAssemblyName( this._productProfile ) ? "worker" : "notifier";
 
