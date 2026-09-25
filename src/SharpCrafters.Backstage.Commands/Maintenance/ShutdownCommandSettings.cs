@@ -14,6 +14,10 @@ internal class ShutdownCommandSettings : BaseCommandSettings
     [CommandOption( "--force" )]
     public bool Force { get; init; }
 
+    [Description( "Also ends the processes that are left running by default, such as those of integrated development environments." )]
+    [CommandOption( "--all" )]
+    public bool All { get; init; }
+
     [Description( "How long to wait for the processes to exit, in seconds." )]
     [CommandOption( "--timeout <SECONDS>" )]
     [DefaultValue( 60 )]

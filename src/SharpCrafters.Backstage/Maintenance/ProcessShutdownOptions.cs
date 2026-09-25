@@ -16,5 +16,9 @@ namespace SharpCrafters.Backstage.Maintenance;
 /// remain.
 /// </param>
 /// <param name="Timeout">How long the strategy waits for its processes to exit.</param>
+/// <param name="All">
+/// <c>true</c> to also end the processes that are left running by default because they belong to an application that the
+/// user works in, such as an integrated development environment. <c>false</c> to report them only.
+/// </param>
 [PublicAPI]
-public sealed record ProcessShutdownOptions( bool Force, TimeSpan Timeout );
+public sealed record ProcessShutdownOptions( bool Force, TimeSpan Timeout, bool All = false );

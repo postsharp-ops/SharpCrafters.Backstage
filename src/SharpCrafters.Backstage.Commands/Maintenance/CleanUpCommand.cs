@@ -17,7 +17,8 @@ internal class CleanUpCommand : BaseCommand<CleanUpCommandSettings>
 
             // The processes are ended before the clean-up, unless --no-kill is used, because they hold the files that it
             // deletes. The clean-up proceeds even if some processes remain, as it always has.
-            ProcessShutdownRunner.Run( context, true, TimeSpan.FromSeconds( 10 ), !settings.NoWarn );
+            // Its --all option is about the files, not the processes: the development environments are left running.
+            ProcessShutdownRunner.Run( context, new ProcessShutdownOptions( true, TimeSpan.FromSeconds( 10 ) ), !settings.NoWarn );
         }
 
         context.Console.WriteHeading( "Cleaning up temporary files. " );

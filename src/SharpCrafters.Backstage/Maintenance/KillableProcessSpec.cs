@@ -4,11 +4,10 @@
 
 namespace SharpCrafters.Backstage.Maintenance;
 
-internal readonly record struct KillableProcessSpec( string Name, KillableModuleKind Kind, bool CanShutdown, bool CanKill, string? DisplayName = null )
+internal readonly record struct KillableProcessSpec( string Name, KillableModuleKind Kind, bool CanShutdown, string? DisplayName = null )
 {
     public bool IsDotNet => (this.Kind & KillableModuleKind.DotNet) != 0;
 
     public bool IsStandaloneProcess => (this.Kind & KillableModuleKind.StandaloneProcess) != 0;
 
-    public bool CanShutdownOrKill => this.CanShutdown || this.CanKill;
 }

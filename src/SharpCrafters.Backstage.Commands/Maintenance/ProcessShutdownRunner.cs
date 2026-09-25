@@ -16,12 +16,15 @@ namespace SharpCrafters.Backstage.Commands.Maintenance;
 /// </summary>
 internal static class ProcessShutdownRunner
 {
-    /// <param name="timeout">How long all the strategies together may wait for their processes.</param>
+    /// <param name="options">
+    /// The options of every strategy. Their <see cref="ProcessShutdownOptions.Timeout"/> is how long all the strategies
+    /// together may wait for their processes.
+    /// </param>
     /// <param name="reportDevelopmentEnvironments">
     /// <c>false</c> to leave out of the report the processes that are only reported, which is what <c>--no-warn</c> asks.
     /// </param>
     /// <returns>The number of processes that may still be running.</returns>
-    public static int Run( ExtendedCommandContext context, bool force, TimeSpan timeout, bool reportDevelopmentEnvironments )
+    public static int Run( ExtendedCommandContext context, ProcessShutdownOptions options, bool reportDevelopmentEnvironments )
     {
         var console = context.Console;
 
@@ -34,10 +37,9 @@ internal static class ProcessShutdownRunner
 
         foreach ( var strategy in strategies )
         {
-            var remaining = timeout - stopwatch.Elapsed;
-            var options = new ProcessShutdownOptions( force, remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero );
+            var remaining = options.Timeout - stopwatch.Elapsed;
 
-            foreach ( var result in strategy.ShutDownProcesses( options ) )
+            foreach ( var result in strategy.ShutDownProcesses( options with { Timeout = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero } ) )
             {
                 var subject = result.ProcessId == 0 ? result.Description : $"{result.Description} (process {result.ProcessId})";
 

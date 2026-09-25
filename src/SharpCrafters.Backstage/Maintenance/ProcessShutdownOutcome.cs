@@ -25,8 +25,9 @@ public enum ProcessShutdownOutcome
     NotActedOn,
 
     /// <summary>
-    /// The process is reported and deliberately left alone, because the user has to close it, for instance an
-    /// integrated development environment. It does not make the command fail.
+    /// The process is reported and deliberately left alone, because it belongs to an application that the user works in,
+    /// for instance an integrated development environment, and <see cref="ProcessShutdownOptions.All"/> was not set. It
+    /// does not make the command fail.
     /// </summary>
     Reported
 }
