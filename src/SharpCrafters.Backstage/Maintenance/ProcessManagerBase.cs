@@ -5,7 +5,6 @@
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.ProcessClassification;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -59,6 +58,8 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// </summary>
     private readonly ImmutableArray<(KillableProcessSpec Spec, Tools.BackstageTool Tool)> _toolProcesses;
 
+    private const string _dotNetProcessName = "dotnet";
+
     protected ILogger Logger { get; }
 
     /// <summary>
@@ -67,11 +68,8 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// </summary>
     private readonly ProductProfile _productProfile;
 
-    private readonly IParentProcessSearch _parentProcessSearch;
-
     protected ProcessManagerBase( IServiceProvider serviceProvider )
     {
-        this._parentProcessSearch = serviceProvider.GetRequiredBackstageService<IParentProcessSearch>();
         this.Logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessManager" );
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
 
@@ -140,52 +138,74 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     }
 
     /// <summary>
-    /// Returns the <see cref="KillableProcess"/> that <paramref name="select"/> creates for each of <paramref name="processes"/>,
-    /// and disposes each process for which it returns <c>null</c>.
+    /// Gets the processes that may match one of <paramref name="processSpecs"/>: the <c>dotnet</c> processes, and the
+    /// processes named after a specification of a standalone process.
     /// </summary>
     /// <remarks>
-    /// Each process is either owned by the <see cref="KillableProcess"/> returned to the caller, or disposed here. When the
-    /// caller stops the enumeration early, or <paramref name="select"/> throws, the processes that remain are disposed too.
+    /// <para>
+    /// The caller owns the processes, and disposes all of them once it has acted on the ones that
+    /// <see cref="GetKillableProcesses"/> selects.
+    /// </para>
+    /// <para>
+    /// The standalone processes are enumerated on every operating system, and not on Windows alone, because the language
+    /// server of the Visual Studio Code C# Dev Kit runs as its own executable on Linux and on macOS as well. The
+    /// comparison of the process name is case insensitive, which is what <see cref="Process.GetProcessesByName(string)"/>
+    /// performs on every platform.
+    /// </para>
     /// </remarks>
-    private static IEnumerable<KillableProcess> SelectOrDispose( Process[] processes, Func<Process, KillableProcess?> select )
+#pragma warning disable CA1307
+    protected List<Process> GetCandidateProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
     {
-        // The index of the first process that has been neither returned nor disposed.
-        var next = 0;
+        var processes = new List<Process>();
 
-        try
+        if ( processSpecs.Any( s => s.IsDotNet ) )
         {
-            while ( next < processes.Length )
-            {
-                var process = processes[next];
-                var killableProcess = select( process );
-                next++;
+            var dotnetProcesses = Process.GetProcessesByName( _dotNetProcessName );
 
-                if ( killableProcess == null )
-                {
-                    process.Dispose();
-                }
-                else
-                {
-                    yield return killableProcess;
-                }
-            }
+            this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
+
+            processes.AddRange( dotnetProcesses );
         }
-        finally
+
+        foreach ( var processSpec in processSpecs.Where( s => s.IsStandaloneProcess ) )
         {
-            for ( var i = next; i < processes.Length; i++ )
+            processes.AddRange( Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ) );
+        }
+
+        return processes;
+    }
+#pragma warning restore CA1307
+
+    /// <summary>
+    /// Selects, among <paramref name="candidates"/>, the processes that match one of <paramref name="processSpecs"/>, whether
+    /// they run as an assembly under the <c>dotnet</c> process name or as their own executable.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="KillableProcess"/> objects do not own their processes: the caller of <see cref="GetCandidateProcesses"/>
+    /// disposes them.
+    /// </remarks>
+    protected IEnumerable<KillableProcess> GetKillableProcesses( IEnumerable<Process> candidates, ImmutableArray<KillableProcessSpec> processSpecs )
+    {
+        foreach ( var process in candidates )
+        {
+            // The name comes from the snapshot that Process.GetProcessesByName took, so it is available after the process exits.
+            var killableProcess = string.Equals( process.ProcessName, _dotNetProcessName, StringComparison.OrdinalIgnoreCase )
+                ? this.SelectDotNetProcess( process, processSpecs )
+                : this.SelectStandaloneProcess( process, processSpecs );
+
+            if ( killableProcess != null )
             {
-                processes[i].Dispose();
+                yield return killableProcess;
             }
         }
     }
 
-    protected IEnumerable<KillableProcess> GetDotNetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
+    private static void Dispose( List<Process> processes )
     {
-        var dotnetProcesses = Process.GetProcessesByName( "dotnet" );
-
-        this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
-
-        return SelectOrDispose( dotnetProcesses, process => this.SelectDotNetProcess( process, processSpecs ) );
+        foreach ( var process in processes )
+        {
+            process.Dispose();
+        }
     }
 
     private KillableProcess? SelectDotNetProcess( Process process, ImmutableArray<KillableProcessSpec> processSpecs )
@@ -236,26 +256,16 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         return null;
     }
 
-    /// <summary>
-    /// Gets the processes that run as their own executable and that match one of <paramref name="processSpecs"/>.
-    /// </summary>
-    /// <remarks>
-    /// The enumeration is performed on every operating system, and not on Windows alone, because the language
-    /// server of the Visual Studio Code C# Dev Kit runs as its own executable on Linux and on macOS as well. The
-    /// comparison of the process name is case insensitive, which is what <see cref="Process.GetProcessesByName(string)"/>
-    /// performs on every platform.
-    /// </remarks>
-#pragma warning disable CA1307
-    protected IEnumerable<KillableProcess> GetStandaloneProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
-        => processSpecs.Where( p => p.IsStandaloneProcess )
-            .SelectMany(
-                processSpec => SelectOrDispose(
-                    Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ),
-                    process => this.SelectStandaloneProcess( process, processSpec ) ) );
-#pragma warning restore CA1307
-
-    private KillableProcess? SelectStandaloneProcess( Process process, KillableProcessSpec processSpec )
+    private KillableProcess? SelectStandaloneProcess( Process process, ImmutableArray<KillableProcessSpec> processSpecs )
     {
+        var processSpec = processSpecs.FirstOrDefault(
+            s => s.IsStandaloneProcess && string.Equals( s.Name, process.ProcessName, StringComparison.OrdinalIgnoreCase ) );
+
+        if ( processSpec == default )
+        {
+            return null;
+        }
+
         if ( !this.TryGetModulePaths( process, out var modules ) )
         {
             return null;
@@ -271,23 +281,17 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         return new KillableProcess( process, this.Logger, null, processSpec );
     }
 
-    /// <summary>
-    /// Gets the processes that match one of <paramref name="processSpecs"/>, whether they run as an assembly under
-    /// the <c>dotnet</c> process name or as their own executable.
-    /// </summary>
-    protected IEnumerable<KillableProcess> GetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
-        => this.GetDotNetProcesses( processSpecs ).Concat( this.GetStandaloneProcesses( processSpecs ) );
-
     public IReadOnlyList<ToolProcessShutdownResult> ShutDownToolProcesses()
     {
         var specs = this._toolProcesses.Select( t => t.Spec ).ToImmutableArray();
         var results = new List<ToolProcessShutdownResult>();
+        var candidates = this.GetCandidateProcesses( specs );
 
-        using var currentProcess = Process.GetCurrentProcess();
-
-        foreach ( var process in this.GetProcesses( specs ) )
+        try
         {
-            using ( process )
+            using var currentProcess = Process.GetCurrentProcess();
+
+            foreach ( var process in this.GetKillableProcesses( candidates, specs ) )
             {
                 if ( process.Process.Id == currentProcess.Id )
                 {
@@ -300,15 +304,21 @@ internal abstract partial class ProcessManagerBase : IProcessManager
                 results.Add( new ToolProcessShutdownResult( tool, process.Process.Id, hasExited, errorMessage ) );
             }
         }
+        finally
+        {
+            Dispose( candidates );
+        }
 
         return results;
     }
 
     public virtual void KillCompilerProcesses( bool shouldEmitWarnings )
     {
-        foreach ( var process in this.ExcludeCurrentProcessAndParents( this.GetProcesses( this._processesToKill ), p => p.Process.Id ) )
+        var candidates = this.GetCandidateProcesses( this._processesToKill );
+
+        try
         {
-            using ( process )
+            foreach ( var process in this.GetKillableProcesses( candidates, this._processesToKill ) )
             {
                 if ( process.Spec.CanShutdownOrKill )
                 {
@@ -322,56 +332,9 @@ internal abstract partial class ProcessManagerBase : IProcessManager
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Removes the current process and its parent processes from the processes to stop.
-    /// </summary>
-    /// <param name="processes">The processes to stop.</param>
-    /// <param name="getProcessId">Gets the identifier of a process.</param>
-    /// <remarks>
-    /// <para>
-    /// A process that asks for the clean-up must survive it, and so must the processes that wait for it. The parent of
-    /// the current process is often one of the processes to stop: <c>dotnet build</c> and <c>dotnet test</c> run MSBuild
-    /// in their own process, and so does a <c>dotnet</c> tool started from a build. Stopping a parent would end the
-    /// operation that asked for the clean-up.
-    /// </para>
-    /// <para>
-    /// When the parent processes cannot be determined, only the current process is excluded, and a warning is logged.
-    /// </para>
-    /// </remarks>
-    internal IEnumerable<T> ExcludeCurrentProcessAndParents<T>( IEnumerable<T> processes, Func<T, int> getProcessId )
-    {
-#if NET
-        var excludedProcessIds = new HashSet<int> { Environment.ProcessId };
-#else
-        var excludedProcessIds = new HashSet<int> { Process.GetCurrentProcess().Id };
-#endif
-
-        try
+        finally
         {
-            foreach ( var parent in this._parentProcessSearch.GetParentProcesses() )
-            {
-                excludedProcessIds.Add( parent.ProcessId );
-            }
-        }
-        catch ( Exception e )
-        {
-            this.Logger.Warning?.Log( $"Cannot determine the parent processes, so only the current process is excluded from the clean-up: {e.Message}" );
-        }
-
-        foreach ( var process in processes )
-        {
-            var processId = getProcessId( process );
-
-            if ( excludedProcessIds.Contains( processId ) )
-            {
-                this.Logger.Trace?.Log( $"Do not stop the process {processId}, because it is the current process or one of its parents." );
-
-                continue;
-            }
-
-            yield return process;
+            Dispose( candidates );
         }
     }
 }
