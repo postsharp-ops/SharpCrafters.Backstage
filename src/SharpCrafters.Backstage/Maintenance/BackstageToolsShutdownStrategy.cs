@@ -7,7 +7,8 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Tools;
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -39,10 +40,13 @@ internal sealed class BackstageToolsShutdownStrategy : SpecifiedProcessShutdownS
 
     protected override ImmutableArray<ProcessSpec> ProcessSpecs { get; }
 
-    protected override ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
+    protected override IReadOnlyList<ProcessShutdownResult> ShutDown( IReadOnlyList<MatchedProcess> processes, ProcessShutdownOptions options )
+        => processes.Select( process => this.Kill( process, this.GetDescription( process ) ) ).ToList();
+
+    private string GetDescription( MatchedProcess process )
     {
         var tool = process.Spec.Name == BackstageTool.Worker.GetAssemblyName( this._productProfile ) ? "worker" : "notifier";
 
-        return Kill( process, $"{this._productProfile.Name} {tool}" );
+        return $"{this._productProfile.Name} {tool}";
     }
 }

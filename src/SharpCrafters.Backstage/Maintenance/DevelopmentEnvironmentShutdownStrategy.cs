@@ -6,7 +6,8 @@ using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -43,16 +44,19 @@ internal sealed class DevelopmentEnvironmentShutdownStrategy : SpecifiedProcessS
         // assembly under 'dotnet'.
         new ProcessSpec( "microsoft.codeanalysis.languageserver", ProcessModuleKind.Both, "Visual Studio Code / C# Dev Kit" ) );
 
-    protected override ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
-    {
-        var description = process.Spec.DisplayName ?? process.Spec.Name;
+    protected override IReadOnlyList<ProcessShutdownResult> ShutDown( IReadOnlyList<MatchedProcess> processes, ProcessShutdownOptions options )
+        => processes.Select(
+                process =>
+                {
+                    var description = process.Spec.DisplayName ?? process.Spec.Name;
 
-        return options.All
-            ? Kill( process, description )
-            : new ProcessShutdownResult(
-                description,
-                process.Process.Id,
-                ProcessShutdownOutcome.Reported,
-                $"if it uses {this._productProfile.Name}, close it, or use --all to end it" );
-    }
+                    return options.All
+                        ? this.Kill( process, description )
+                        : new ProcessShutdownResult(
+                            description,
+                            process.Process.Id,
+                            ProcessShutdownOutcome.Reported,
+                            $"if it uses {this._productProfile.Name}, close it, or use --all to end it" );
+                } )
+            .ToList();
 }

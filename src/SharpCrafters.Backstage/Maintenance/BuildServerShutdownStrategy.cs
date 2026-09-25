@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -43,17 +44,28 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         new ProcessSpec( _compilerServerName, ProcessModuleKind.Both ),
         new ProcessSpec( "MSBuild", ProcessModuleKind.Both ) );
 
-    protected override void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<MatchedProcess> processes )
+    protected override IReadOnlyList<ProcessShutdownResult> ShutDown( IReadOnlyList<MatchedProcess> processes, ProcessShutdownOptions options )
     {
         if ( processes.Count == 0 )
         {
-            return;
+            return [];
         }
 
-        // Found before the request, so that the servers that exit on it are reported too.
+        // One timeout for the whole procedure, which is what the user asked to wait.
+        var stopwatch = Stopwatch.StartNew();
+
+        // The build servers of the .NET SDK first. The processes were found before, so that the ones that exit on the
+        // request are reported as well.
+        this.RequestDotNetBuildServerShutdown( options.Timeout );
+
+        return processes.Select( process => this.ShutDown( process, options, GetRemainingTime( options.Timeout, stopwatch ) ) ).ToList();
+    }
+
+    private void RequestDotNetBuildServerShutdown( TimeSpan timeout )
+    {
         try
         {
-            if ( !this._processExecutor.TryExecute( new ProcessStartInfo( "dotnet", "build-server shutdown" ), options.Timeout, out _ ) )
+            if ( !this._processExecutor.TryExecute( new ProcessStartInfo( "dotnet", "build-server shutdown" ), timeout, out _ ) )
             {
                 this._logger.Warning?.Log( "'dotnet build-server shutdown' did not complete successfully." );
             }
@@ -65,12 +77,13 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         }
     }
 
-    protected override ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
+    /// <param name="timeout">How long the procedure may still wait.</param>
+    private ProcessShutdownResult ShutDown( MatchedProcess process, ProcessShutdownOptions options, TimeSpan timeout )
     {
         var isCompilerServer = string.Equals( process.Spec.Name, _compilerServerName, StringComparison.OrdinalIgnoreCase );
         var description = isCompilerServer ? "Compiler server (VBCSCompiler)" : "MSBuild node";
 
-        if ( isCompilerServer && this.RequestShutdown( process, GetRemainingTime( options, stopwatch ) ) )
+        if ( isCompilerServer && this.RequestShutdown( process, timeout ) )
         {
             return new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.Exited );
         }
@@ -78,10 +91,10 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         if ( options.Force )
         {
             // An MSBuild node has no shutdown request of its own, and ending it is what the option asks for.
-            return Kill( process, description );
+            return this.Kill( process, description );
         }
 
-        if ( process.Process.WaitForExit( (int) GetRemainingTime( options, stopwatch ).TotalMilliseconds ) )
+        if ( process.Process.WaitForExit( (int) timeout.TotalMilliseconds ) )
         {
             return new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.Exited );
         }
@@ -130,5 +143,12 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
 
             return false;
         }
+    }
+
+    private static TimeSpan GetRemainingTime( TimeSpan timeout, Stopwatch stopwatch )
+    {
+        var remaining = timeout - stopwatch.Elapsed;
+
+        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
     }
 }

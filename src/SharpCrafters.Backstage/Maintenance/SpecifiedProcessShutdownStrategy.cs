@@ -13,9 +13,12 @@ using System.Linq;
 namespace SharpCrafters.Backstage.Maintenance;
 
 /// <summary>
-/// The base of the strategies of this package, which find their processes from a list of <see cref="ProcessSpec"/>
-/// and act on each one in turn.
+/// The base of the strategies of this package, which find their processes from a list of <see cref="ProcessSpec"/>.
 /// </summary>
+/// <remarks>
+/// The base class finds the processes, gives them to <see cref="ShutDown"/>, and disposes them. How they are stopped is
+/// the whole of what a derived strategy decides.
+/// </remarks>
 internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrategy
 {
     private readonly IProcessManager _processManager;
@@ -34,38 +37,24 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
     protected abstract ImmutableArray<ProcessSpec> ProcessSpecs { get; }
 
     /// <summary>
-    /// Called once, before the processes are acted on, for instance to ask a build server to exit.
+    /// Stops the processes that this strategy found.
     /// </summary>
-    protected virtual void OnProcessesFound( ProcessShutdownOptions options, IReadOnlyList<MatchedProcess> processes ) { }
-
-    /// <summary>
-    /// Acts on one process.
-    /// </summary>
-    /// <param name="stopwatch">
-    /// Started when the first process was acted on. <see cref="GetRemainingTime"/> gives how long the strategy may still
-    /// wait, so that the timeout applies to all the processes together.
+    /// <param name="processes">
+    /// The processes that match <see cref="ProcessSpecs"/>, except the current process and its parents. The list is empty
+    /// when none is running. The base class disposes the processes.
     /// </param>
-    protected abstract ProcessShutdownResult ShutDownProcess( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch );
+    /// <returns>One result per process.</returns>
+    protected abstract IReadOnlyList<ProcessShutdownResult> ShutDown( IReadOnlyList<MatchedProcess> processes, ProcessShutdownOptions options );
 
     public IReadOnlyList<ProcessShutdownResult> ShutDownProcesses( ProcessShutdownOptions options )
     {
-        var results = new List<ProcessShutdownResult>();
         var candidates = this._processManager.GetCandidateProcesses( this.ProcessSpecs );
 
         try
         {
             // The process that runs the command and its parents are never selected, so that a tool of the product, or a
             // build that runs the command, survives it.
-            var processes = this._processManager.GetMatchingProcesses( candidates, this.ProcessSpecs ).ToList();
-
-            this.OnProcessesFound( options, processes );
-
-            var stopwatch = Stopwatch.StartNew();
-
-            foreach ( var process in processes )
-            {
-                results.Add( this.ShutDownProcess( process, options, stopwatch ) );
-            }
+            return this.ShutDown( this._processManager.GetMatchingProcesses( candidates, this.ProcessSpecs ).ToList(), options );
         }
         finally
         {
@@ -74,19 +63,6 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
                 candidate.Dispose();
             }
         }
-
-        return results;
-    }
-
-    /// <summary>
-    /// Gets the time that remains before <see cref="ProcessShutdownOptions.Timeout"/> has elapsed since
-    /// <paramref name="stopwatch"/> was started.
-    /// </summary>
-    protected static TimeSpan GetRemainingTime( ProcessShutdownOptions options, Stopwatch stopwatch )
-    {
-        var remaining = options.Timeout - stopwatch.Elapsed;
-
-        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
     }
 
     /// <summary>
