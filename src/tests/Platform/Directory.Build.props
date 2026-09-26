@@ -16,6 +16,11 @@
           suite passes it. The SDK globs **/*.cs under a project, so the output must not be inside the project directory.
         -->
         <PlatformTestsRun Condition="'$(PlatformTestsRun)' == ''">local</PlatformTestsRun>
+
+        <!-- The tests are written with xunit.v3 and run by VSTest (xunit.runner.visualstudio), because the build runs
+             'dotnet test' in its VSTest mode. xunit.v3 declares a test project a Microsoft.Testing.Platform application,
+             which that mode refuses with the .NET 10 SDK and later. -->
+        <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
         <BaseIntermediateOutputPath>$(PlatformTestsDirectory).artifacts/$(PlatformTestsRun)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
         <BaseOutputPath>$(PlatformTestsDirectory).artifacts/$(PlatformTestsRun)/bin/$(MSBuildProjectName)/</BaseOutputPath>
 

@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <!-- An xunit.v3 test project is an executable. -->
+        <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <Nullable>enable</Nullable>
@@ -14,7 +16,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
         <PackageReference Include="Microsoft.AspNetCore.TestHost" />
-        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.v3" />
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

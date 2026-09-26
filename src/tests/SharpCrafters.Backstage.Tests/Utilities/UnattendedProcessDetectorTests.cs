@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Utilities;
 

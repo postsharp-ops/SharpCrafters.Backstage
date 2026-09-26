@@ -6,7 +6,6 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Tools;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Tools;
 

@@ -9,7 +9,6 @@ using SharpCrafters.Backstage.Testing;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.ConfigurationManager;
 

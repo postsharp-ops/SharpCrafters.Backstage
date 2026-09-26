@@ -13,7 +13,6 @@ using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Testing;
 using System.Collections.Immutable;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Diagnostics;
 

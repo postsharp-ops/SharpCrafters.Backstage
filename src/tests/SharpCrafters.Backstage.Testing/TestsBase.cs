@@ -35,7 +35,7 @@ using System;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit.Abstractions;
+using Xunit;
 using ILoggerFactory = SharpCrafters.Backstage.Diagnostics.ILoggerFactory;
 
 namespace SharpCrafters.Backstage.Testing

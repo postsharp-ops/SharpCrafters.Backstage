@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Testing;
 using System;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Licenses;
 

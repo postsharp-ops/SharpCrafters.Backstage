@@ -5,6 +5,11 @@
 
     <PropertyGroup>
         <NoWarn>$(NoWarn);NU1903</NoWarn>
+
+        <!-- The tests are written with xunit.v3 and run by VSTest (xunit.runner.visualstudio), because the build runs
+             'dotnet test' in its VSTest mode. xunit.v3 declares a test project a Microsoft.Testing.Platform application,
+             which that mode refuses with the .NET 10 SDK and later. -->
+        <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
     </PropertyGroup>
 
 </Project>

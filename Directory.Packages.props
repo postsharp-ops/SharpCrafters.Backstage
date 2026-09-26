@@ -18,8 +18,8 @@
          Metalama.Backstage. -->
     <SystemTextJsonMinVersion>9.0.10</SystemTextJsonMinVersion>
 
-    <!-- xUnitApiVersion is the version of xUnit against which the testing projects are built. -->
-    <xUnitApiVersion>2.9.3</xUnitApiVersion>
+    <!-- xUnitApiVersion is the version of xunit.v3 against which the testing projects are built. -->
+    <xUnitApiVersion>4.0.1</xUnitApiVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,8 +51,11 @@
   <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" /> <!-- Must be the lowest supported Visual Studio, which is 17.14. -->
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="8.0.20" />
-    <PackageVersion Include="xunit" Version="$(xUnitApiVersion)" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="xunit.v3" Version="$(xUnitApiVersion)" />
+    <!-- The test helpers are a library, not a test project: they reference the extensibility and assertions only. -->
+    <PackageVersion Include="xunit.v3.extensibility.core" Version="$(xUnitApiVersion)" />
+    <PackageVersion Include="xunit.v3.assert" Version="$(xUnitApiVersion)" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
   </ItemGroup>
 </Project>

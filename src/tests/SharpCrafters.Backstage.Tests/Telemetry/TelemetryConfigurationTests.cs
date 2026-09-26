@@ -11,7 +11,6 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Utilities;
 using System;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Telemetry;
 

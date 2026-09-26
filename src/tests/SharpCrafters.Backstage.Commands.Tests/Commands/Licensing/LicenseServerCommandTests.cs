@@ -9,7 +9,6 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Commands.Tests.Commands.Licensing;
 

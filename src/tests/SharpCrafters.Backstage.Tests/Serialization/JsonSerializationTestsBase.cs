@@ -8,7 +8,6 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Serialization;
 
