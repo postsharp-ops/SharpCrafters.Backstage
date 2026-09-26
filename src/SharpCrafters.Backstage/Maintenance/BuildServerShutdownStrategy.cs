@@ -51,14 +51,15 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
             return [];
         }
 
-        // One timeout for the whole procedure, which is what the user asked to wait.
+        // One timeout for the whole procedure, which is what the user asked to wait. Every wait below takes the part of
+        // it that remains, so that the waits do not add up.
         var stopwatch = Stopwatch.StartNew();
 
         // The build servers of the .NET SDK first. The processes were found before, so that the ones that exit on the
         // request are reported as well.
         this.RequestDotNetBuildServerShutdown( options.Timeout );
 
-        return processes.Select( process => this.ShutDown( process, options, GetRemainingTime( options.Timeout, stopwatch ) ) ).ToList();
+        return processes.Select( process => this.ShutDown( process, options, stopwatch ) ).ToList();
     }
 
     private void RequestDotNetBuildServerShutdown( TimeSpan timeout )
@@ -77,13 +78,13 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         }
     }
 
-    /// <param name="timeout">How long the procedure may still wait.</param>
-    private ProcessShutdownResult ShutDown( MatchedProcess process, ProcessShutdownOptions options, TimeSpan timeout )
+    /// <param name="stopwatch">Measures the time spent since the procedure started, against <see cref="ProcessShutdownOptions.Timeout"/>.</param>
+    private ProcessShutdownResult ShutDown( MatchedProcess process, ProcessShutdownOptions options, Stopwatch stopwatch )
     {
         var isCompilerServer = string.Equals( process.Spec.Name, _compilerServerName, StringComparison.OrdinalIgnoreCase );
         var description = isCompilerServer ? "Compiler server (VBCSCompiler)" : "MSBuild node";
 
-        if ( isCompilerServer && this.RequestShutdown( process, timeout ) )
+        if ( isCompilerServer && this.RequestShutdown( process, options.Timeout, stopwatch ) )
         {
             return new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.Exited );
         }
@@ -94,7 +95,7 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
             return this.Kill( process, description );
         }
 
-        if ( process.Process.WaitForExit( (int) timeout.TotalMilliseconds ) )
+        if ( process.Process.WaitForExit( ProcessExecutor.GetRemainingMilliseconds( options.Timeout, stopwatch ) ) )
         {
             return new ProcessShutdownResult( description, process.Process.Id, ProcessShutdownOutcome.Exited );
         }
@@ -110,8 +111,9 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
     /// Asks a compiler server to shut down, as <c>VBCSCompiler -shutdown</c> does: the same executable, or the same
     /// assembly under <c>dotnet</c>, run with <c>-shutdown</c>, lets the compilations of the server end and then stops it.
     /// </summary>
-    /// <returns><c>true</c> when the server has exited within <paramref name="timeout"/>.</returns>
-    private bool RequestShutdown( MatchedProcess match, TimeSpan timeout )
+    /// <returns><c>true</c> when the server has exited before <paramref name="timeout"/> has elapsed on
+    /// <paramref name="stopwatch"/>.</returns>
+    private bool RequestShutdown( MatchedProcess match, TimeSpan timeout, Stopwatch stopwatch )
     {
         var process = match.Process;
 
@@ -125,17 +127,17 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
             this._logger.Trace?.Log( $"Asking the compiler server {process.Id} to shut down." );
 
             var arguments = match.MainModule != null ? new[] { match.MainModule, "-shutdown" } : new[] { "-shutdown" };
+            var startInfo = new ProcessStartInfo( process.MainModule!.FileName, CommandLineArguments.Format( arguments ) );
 
-            var startInfo = new ProcessStartInfo( process.MainModule!.FileName, CommandLineArguments.Format( arguments ) )
+            // Bounded like every other wait of the procedure: the executor ends the request when the time is up.
+            var remaining = TimeSpan.FromMilliseconds( ProcessExecutor.GetRemainingMilliseconds( timeout, stopwatch ) );
+
+            if ( !this._processExecutor.TryExecute( startInfo, remaining, out _ ) )
             {
-                UseShellExecute = false, RedirectStandardOutput = true
-            };
+                this._logger.Trace?.Log( $"The shutdown request to the compiler server {process.Id} did not complete successfully." );
+            }
 
-            using var shutdownProcess = Process.Start( startInfo )!;
-            shutdownProcess.StandardOutput.ReadToEnd();
-            shutdownProcess.WaitForExit();
-
-            return process.WaitForExit( (int) timeout.TotalMilliseconds );
+            return process.WaitForExit( ProcessExecutor.GetRemainingMilliseconds( timeout, stopwatch ) );
         }
         catch ( Exception e ) when ( e is Win32Exception or InvalidOperationException )
         {
@@ -143,12 +145,5 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
 
             return false;
         }
-    }
-
-    private static TimeSpan GetRemainingTime( TimeSpan timeout, Stopwatch stopwatch )
-    {
-        var remaining = timeout - stopwatch.Elapsed;
-
-        return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
     }
 }
