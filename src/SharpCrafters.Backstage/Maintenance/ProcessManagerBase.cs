@@ -16,42 +16,14 @@ using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
-internal abstract partial class ProcessManagerBase : IProcessManager
+/// <summary>
+/// Finds the processes that match a list of <see cref="ProcessSpec"/>, for the implementations of
+/// <see cref="IProcessShutdownStrategy"/>. The implementation differs by operating system in how it reads the modules
+/// of a process.
+/// </summary>
+internal abstract class ProcessManagerBase : IProcessManager
 {
-    /// <summary>
-    /// The processes that every product stops or reports. The tool applications of the product are added by the
-    /// constructor, because their names depend on the product.
-    /// </summary>
-    private static readonly ImmutableArray<KillableProcessSpec> _commonProcessesToKill = ImmutableArray.Create(
-        new KillableProcessSpec( "VBCSCompiler", KillableModuleKind.Both, true, true ),
-        new KillableProcessSpec( "MSBuild", KillableModuleKind.Both, false, true ),
-        new KillableProcessSpec( "servicehub.roslyncodeanalysisservice", KillableModuleKind.Both, false, false, "Visual Studio" ),
-
-        // Visual Studio 2026 runs the Roslyn analysis process under this name instead. See issue #1463. Like the
-        // process that it replaces, it is reported to the user rather than stopped, because Visual Studio owns it.
-        // Ending a child process of the integrated development environment leaves that environment in an
-        // inconsistent state, and Visual Studio starts the analysis process again as soon as a document is opened,
-        // which would lock the files again before the clean-up finished.
-        new KillableProcessSpec( "devhub", KillableModuleKind.Both, false, false, "Visual Studio" ),
-        new KillableProcessSpec( "jetbrains.resharper.roslyn.worker", KillableModuleKind.DotNet, false, false, "Rider/Resharper" ),
-        new KillableProcessSpec( "jetbrains.roslyn.worker", KillableModuleKind.DotNet, false, false, "Rider/Resharper" ),
-        new KillableProcessSpec( "omnisharp", KillableModuleKind.DotNet, false, false, "Visual Studio Code / Omnisharp" ),
-
-        // The language server of the Visual Studio Code C# Dev Kit. It runs either as its own executable or as an
-        // assembly under 'dotnet', so it is matched as both kinds of module. Like OmniSharp above, which is the
-        // language server that preceded it, it is reported to the user rather than stopped, because Visual Studio
-        // Code owns it and starts it again.
-        new KillableProcessSpec(
-            "microsoft.codeanalysis.languageserver",
-            KillableModuleKind.Both,
-            false,
-            false,
-            "Visual Studio Code / C# Dev Kit" ) );
-
-    /// <summary>
-    /// The common processes followed by the tool applications of the product.
-    /// </summary>
-    private readonly ImmutableArray<KillableProcessSpec> _processesToKill;
+    private const string _dotNetProcessName = "dotnet";
 
     protected ILogger Logger { get; }
 
@@ -68,17 +40,6 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         this._parentProcessSearch = serviceProvider.GetRequiredBackstageService<IParentProcessSearch>();
         this.Logger = serviceProvider.GetLoggerFactory().GetLogger( "ProcessManager" );
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
-
-        this._processesToKill = _commonProcessesToKill.AddRange(
-            // The Backstage Worker runs under 'dotnet' (hosting the worker assembly), so it is matched as a DotNet module.
-            new KillableProcessSpec( Tools.BackstageTool.Worker.GetAssemblyName( this._productProfile ), KillableModuleKind.DotNet, false, true ),
-
-            // The Backstage Desktop tray app is a standalone '.exe'.
-            new KillableProcessSpec(
-                Tools.BackstageTool.DesktopWindows.GetAssemblyName( this._productProfile ),
-                KillableModuleKind.StandaloneProcess,
-                false,
-                true ) );
     }
 
     protected virtual bool TryGetModulePaths( Process process, [NotNullWhen( true )] out List<string>? modules )
@@ -129,121 +90,171 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         return null;
     }
 
-    protected IEnumerable<KillableProcess> GetDotNetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
-    {
-        var dotnetProcesses = Process.GetProcessesByName( "dotnet" );
-
-        this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
-
-        foreach ( var process in dotnetProcesses )
-        {
-            if ( !this.TryGetModulePaths( process, out var modules ) )
-            {
-                this.Logger.Trace?.Log( $"Cannot get module paths for process {process.Id}." );
-
-                continue;
-            }
-
-            this.Logger.Trace?.Log( $"Process {process.Id} modules: {string.Join( ", ", modules )}." );
-
-            var moduleFileNames = modules.Select( s => Path.GetFileNameWithoutExtension( s ).ToLowerInvariant() ).ToList();
-
-            var hasMatch = false;
-
-            foreach ( var processSpec in processSpecs )
-            {
-                if ( !processSpec.IsDotNet )
-                {
-                    continue;
-                }
-
-                var moduleIndex = moduleFileNames.IndexOf( processSpec.Name.ToLowerInvariant() );
-
-                if ( moduleIndex >= 0 )
-                {
-                    var mainModule = modules[moduleIndex];
-
-                    if ( this.ReferencesProduct( process, modules ) == false )
-                    {
-                        this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' '{mainModule}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
-                    }
-                    else
-                    {
-                        this.Logger.Trace?.Log( $"Process '{process.ProcessName}' '{mainModule}' ({process.Id}) should be killed." );
-
-                        yield return new KillableProcess( process, this.Logger, mainModule, processSpec );
-
-                        hasMatch = true;
-                    }
-
-                    break;
-                }
-            }
-
-            if ( !hasMatch )
-            {
-                if ( this.ReferencesProduct( process, modules ) != false )
-                {
-                    this.Logger.Trace?.Log(
-                        $"Do not kill '{process.ProcessName}' ({process.Id}) even if it references {this._productProfile.Name} because it is not a known process." );
-                }
-            }
-        }
-    }
-
     /// <summary>
-    /// Gets the processes that run as their own executable and that match one of <paramref name="processSpecs"/>.
+    /// Gets the processes that may match one of <paramref name="processSpecs"/>: the <c>dotnet</c> processes, and the
+    /// processes named after a specification of a standalone process.
     /// </summary>
     /// <remarks>
-    /// The enumeration is performed on every operating system, and not on Windows alone, because the language
+    /// <para>
+    /// The standalone processes are enumerated on every operating system, and not on Windows alone, because the language
     /// server of the Visual Studio Code C# Dev Kit runs as its own executable on Linux and on macOS as well. The
     /// comparison of the process name is case insensitive, which is what <see cref="Process.GetProcessesByName(string)"/>
     /// performs on every platform.
+    /// </para>
     /// </remarks>
 #pragma warning disable CA1307
-    protected IEnumerable<KillableProcess> GetStandaloneProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
+    private List<Process> GetCandidateProcesses( ImmutableArray<ProcessSpec> processSpecs )
     {
-        foreach ( var processSpec in processSpecs.Where( p => p.IsStandaloneProcess ) )
+        var processes = new List<Process>();
+
+        try
         {
-            foreach ( var process in Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ) )
+            if ( processSpecs.Any( s => s.IsDotNet ) )
             {
-                if ( !this.TryGetModulePaths( process, out var modules ) )
-                {
-                    continue;
-                }
+                var dotnetProcesses = Process.GetProcessesByName( _dotNetProcessName );
 
-                if ( this.ReferencesProduct( process, modules ) == false )
-                {
-                    this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
-                }
+                this.Logger.Trace?.Log( $"Found {dotnetProcesses.Length} 'dotnet' processes." );
 
-                yield return new KillableProcess( process, this.Logger, null, processSpec );
+                processes.AddRange( dotnetProcesses );
             }
+
+            foreach ( var processSpec in processSpecs.Where( s => s.IsStandaloneProcess ) )
+            {
+                processes.AddRange( Process.GetProcessesByName( processSpec.Name.ToLowerInvariant() ) );
+            }
+
+            return processes;
+        }
+        catch
+        {
+            Dispose( processes );
+
+            throw;
         }
     }
 #pragma warning restore CA1307
 
     /// <summary>
-    /// Gets the processes that match one of <paramref name="processSpecs"/>, whether they run as an assembly under
+    /// Gets the running processes that match one of <paramref name="processSpecs"/>, whether they run as an assembly under
     /// the <c>dotnet</c> process name or as their own executable.
     /// </summary>
-    protected IEnumerable<KillableProcess> GetProcesses( ImmutableArray<KillableProcessSpec> processSpecs )
-        => this.GetDotNetProcesses( processSpecs ).Concat( this.GetStandaloneProcesses( processSpecs ) );
-
-    public virtual void KillCompilerProcesses( bool shouldEmitWarnings )
+    /// <remarks>
+    /// The current process and its parents are never selected: see <see cref="ExcludeCurrentProcessAndParents{T}"/>. The
+    /// caller owns the matching processes. The others are disposed here, so they never leave this method.
+    /// </remarks>
+    public IReadOnlyList<MatchedProcess> GetMatchingProcesses( ImmutableArray<ProcessSpec> processSpecs )
     {
-        foreach ( var process in this.ExcludeCurrentProcessAndParents( this.GetProcesses( this._processesToKill ), p => p.Process.Id ) )
+        var candidates = this.GetCandidateProcesses( processSpecs );
+        var matches = new List<MatchedProcess>();
+
+        try
         {
-            if ( process.Spec.CanShutdownOrKill )
+            foreach ( var process in this.ExcludeCurrentProcessAndParents( candidates, p => p.Id ) )
             {
-                process.ShutdownOrKill();
-            }
-            else if ( shouldEmitWarnings )
-            {
-                this.Logger.Warning?.Log(
-                    $"The process {process.Process.Id} ({process.Spec.DisplayName ?? process.Spec.Name}), if it uses {this._productProfile.Name}, must be closed manually." );
+                // The name comes from the snapshot that Process.GetProcessesByName took, so it is available after the
+                // process exits.
+                var match = string.Equals( process.ProcessName, _dotNetProcessName, StringComparison.OrdinalIgnoreCase )
+                    ? this.SelectDotNetProcess( process, processSpecs )
+                    : this.SelectStandaloneProcess( process, processSpecs );
+
+                if ( match != null )
+                {
+                    matches.Add( match );
+                }
             }
         }
+        catch
+        {
+            Dispose( candidates );
+
+            throw;
+        }
+
+        var matchingProcesses = new HashSet<Process>( matches.Select( m => m.Process ) );
+        Dispose( candidates.Where( p => !matchingProcesses.Contains( p ) ) );
+
+        return matches;
+    }
+
+    private static void Dispose( IEnumerable<Process> processes )
+    {
+        foreach ( var process in processes )
+        {
+            process.Dispose();
+        }
+    }
+
+    private MatchedProcess? SelectDotNetProcess( Process process, ImmutableArray<ProcessSpec> processSpecs )
+    {
+        if ( !this.TryGetModulePaths( process, out var modules ) )
+        {
+            this.Logger.Trace?.Log( $"Cannot get module paths for process {process.Id}." );
+
+            return null;
+        }
+
+        this.Logger.Trace?.Log( $"Process {process.Id} modules: {string.Join( ", ", modules )}." );
+
+        var moduleFileNames = modules.Select( s => Path.GetFileNameWithoutExtension( s ).ToLowerInvariant() ).ToList();
+
+        foreach ( var processSpec in processSpecs )
+        {
+            if ( !processSpec.IsDotNet )
+            {
+                continue;
+            }
+
+            var moduleIndex = moduleFileNames.IndexOf( processSpec.Name.ToLowerInvariant() );
+
+            if ( moduleIndex >= 0 )
+            {
+                var mainModule = modules[moduleIndex];
+
+                if ( this.ReferencesProduct( process, modules ) == false )
+                {
+                    this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' '{mainModule}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
+
+                    return null;
+                }
+
+                this.Logger.Trace?.Log( $"Process '{process.ProcessName}' '{mainModule}' ({process.Id}) should be killed." );
+
+                return new MatchedProcess( process, processSpec, mainModule );
+            }
+        }
+
+        if ( this.ReferencesProduct( process, modules ) != false )
+        {
+            this.Logger.Trace?.Log(
+                $"Do not kill '{process.ProcessName}' ({process.Id}) even if it references {this._productProfile.Name} because it is not a known process." );
+        }
+
+        return null;
+    }
+
+    private MatchedProcess? SelectStandaloneProcess( Process process, ImmutableArray<ProcessSpec> processSpecs )
+    {
+        var processSpec = processSpecs.FirstOrDefault(
+            s => s.IsStandaloneProcess && string.Equals( s.Name, process.ProcessName, StringComparison.OrdinalIgnoreCase ) );
+
+        if ( processSpec == default )
+        {
+            return null;
+        }
+
+        if ( !this.TryGetModulePaths( process, out var modules ) )
+        {
+            return null;
+        }
+
+        if ( this.ReferencesProduct( process, modules ) == false )
+        {
+            this.Logger.Trace?.Log( $"Do not kill '{process.ProcessName}' ({process.Id}) because it does not contain {this._productProfile.Name}." );
+
+            return null;
+        }
+
+        return new MatchedProcess( process, processSpec, null );
     }
 
     /// <summary>
@@ -253,10 +264,10 @@ internal abstract partial class ProcessManagerBase : IProcessManager
     /// <param name="getProcessId">Gets the identifier of a process.</param>
     /// <remarks>
     /// <para>
-    /// A process that asks for the clean-up must survive it, and so must the processes that wait for it. The parent of
+    /// A process that asks for the shutdown must survive it, and so must the processes that wait for it. The parent of
     /// the current process is often one of the processes to stop: <c>dotnet build</c> and <c>dotnet test</c> run MSBuild
     /// in their own process, and so does a <c>dotnet</c> tool started from a build. Stopping a parent would end the
-    /// operation that asked for the clean-up.
+    /// operation that asked for the shutdown.
     /// </para>
     /// <para>
     /// When the parent processes cannot be determined, only the current process is excluded, and a warning is logged.
@@ -267,7 +278,12 @@ internal abstract partial class ProcessManagerBase : IProcessManager
 #if NET
         var excludedProcessIds = new HashSet<int> { Environment.ProcessId };
 #else
-        var excludedProcessIds = new HashSet<int> { Process.GetCurrentProcess().Id };
+        HashSet<int> excludedProcessIds;
+
+        using ( var currentProcess = Process.GetCurrentProcess() )
+        {
+            excludedProcessIds = [currentProcess.Id];
+        }
 #endif
 
         try
@@ -279,7 +295,7 @@ internal abstract partial class ProcessManagerBase : IProcessManager
         }
         catch ( Exception e )
         {
-            this.Logger.Warning?.Log( $"Cannot determine the parent processes, so only the current process is excluded from the clean-up: {e.Message}" );
+            this.Logger.Warning?.Log( $"Cannot determine the parent processes, so only the current process is excluded from the shutdown: {e.Message}" );
         }
 
         foreach ( var process in processes )

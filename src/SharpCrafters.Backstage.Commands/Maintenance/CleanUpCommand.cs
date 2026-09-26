@@ -2,9 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Application;
-using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Maintenance;
+using System;
 
 namespace SharpCrafters.Backstage.Commands.Maintenance;
 
@@ -14,11 +13,12 @@ internal class CleanUpCommand : BaseCommand<CleanUpCommandSettings>
     {
         if ( settings is { All: true, DoNotKill: false } )
         {
-            context.Console.WriteHeading( $"Killing {context.ServiceProvider.GetRequiredBackstageService<ProductProfile>().Name} processes" );
+            context.Console.WriteHeading( $"Killing the {context.BackstageCommandOptions.ProductProfile.Name} processes" );
 
-            // Automatically kill processes before Cleanup unless --no-kill option is used.
-            var processManager = context.ServiceProvider.GetRequiredBackstageService<IProcessManager>();
-            processManager.KillCompilerProcesses( true );
+            // The processes are ended before the clean-up, unless --no-kill is used, because they hold the files that it
+            // deletes. The clean-up proceeds even if some processes remain, as it always has.
+            // Its --all option is about the files, not the processes: the development environments are left running.
+            ProcessShutdownRunner.Run( context, new ProcessShutdownOptions( true, TimeSpan.FromSeconds( 10 ) ), !settings.NoWarn );
         }
 
         context.Console.WriteHeading( "Cleaning up temporary files. " );

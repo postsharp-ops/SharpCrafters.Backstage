@@ -8,7 +8,7 @@ using System;
 namespace SharpCrafters.Backstage.Maintenance;
 
 [Flags]
-internal enum KillableModuleKind
+internal enum ProcessModuleKind
 {
     [UsedImplicitly]
     None,

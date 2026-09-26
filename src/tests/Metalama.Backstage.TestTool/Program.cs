@@ -4,6 +4,7 @@
 
 using Metalama.Backstage.Tools;
 using SharpCrafters.Backstage.Commands;
+using SharpCrafters.Backstage.Maintenance;
 using Spectre.Console.Cli;
 
 namespace Metalama.Backstage.TestTool;
@@ -14,7 +15,13 @@ internal static class Program
     {
         var app = new CommandApp();
 
-        var options = new BackstageCommandOptions( new ApplicationInfo(), MetalamaProduct.Instance, builder => builder.AddTools() );
+        // The integrated development environments load the analyzers of Metalama, so they are reported by the shutdown
+        // commands, as Metalama.Tool does.
+        var options = new BackstageCommandOptions(
+            new ApplicationInfo(),
+            MetalamaProduct.Instance,
+            builder => builder.AddTools(),
+            registerServices: builder => builder.AddDevelopmentEnvironmentShutdownStrategy() );
 
         BackstageCommandFactory.ConfigureCommandApp(
             app,

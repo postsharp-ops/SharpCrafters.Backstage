@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Maintenance;
 using System;
 
 namespace SharpCrafters.Backstage.Commands
@@ -16,12 +17,18 @@ namespace SharpCrafters.Backstage.Commands
         private readonly IApplicationInfo _applicationInfo;
         private readonly BackstageProduct _product;
         private readonly Action<ServiceProviderBuilder>? _addToolsExtractor;
+        private readonly Action<ServiceProviderBuilder>? _registerServices;
 
-        public CommandServiceProvider( IApplicationInfo applicationInfo, BackstageProduct product, Action<ServiceProviderBuilder>? addToolsExtractor )
+        public CommandServiceProvider(
+            IApplicationInfo applicationInfo,
+            BackstageProduct product,
+            Action<ServiceProviderBuilder>? addToolsExtractor,
+            Action<ServiceProviderBuilder>? registerServices )
         {
             this._applicationInfo = applicationInfo;
             this._product = product;
             this._addToolsExtractor = addToolsExtractor;
+            this._registerServices = registerServices;
         }
 
         public IServiceProvider GetServiceProvider( CommandServiceProviderArgs args )
@@ -49,6 +56,14 @@ namespace SharpCrafters.Backstage.Commands
             initializationOptions = args.TransformOptions( initializationOptions );
 
             serviceProviderBuilder.AddBackstageServices( initializationOptions );
+
+            // The strategies that Backstage contributes for every product, then those of the host. The collection keeps
+            // every registration, and the commands run them in this order.
+            serviceProviderBuilder
+                .AddBuildServerShutdownStrategy()
+                .AddBackstageToolsShutdownStrategy();
+
+            this._registerServices?.Invoke( serviceProviderBuilder );
 
             return serviceCollection.BuildServiceProvider().InitializeBackstageServices();
         }
