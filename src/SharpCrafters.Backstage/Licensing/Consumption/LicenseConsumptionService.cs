@@ -154,8 +154,12 @@ internal sealed class LicenseConsumptionService : ILicenseConsumptionService
             registrationProperties = registrationResult.Properties;
         }
 
+        // The registration properties exist only for a key whose signature is valid. A key whose signature cannot be
+        // verified is still named by the identifier it carries, which is what the user can look up.
+        var licenseId = registrationProperties?.LicenseId ?? (license as License)?.GetUnverifiedLicenseId();
+
         var message =
-            $"Cannot use the license '{registrationProperties?.LicenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationProperties?.Description}': {errorMessage}"
+            $"Cannot use the license '{licenseId?.ToString( CultureInfo.InvariantCulture ) ?? registrationProperties?.Description}': {errorMessage}"
                 .TrimEnd( '.' ) + ".";
 
         if ( source.GetType() != typeof(UserProfileLicenseSource) )

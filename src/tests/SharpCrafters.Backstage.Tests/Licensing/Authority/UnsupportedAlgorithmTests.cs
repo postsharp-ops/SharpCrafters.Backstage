@@ -4,8 +4,10 @@
 
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
+using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -19,7 +21,11 @@ namespace SharpCrafters.Backstage.Tests.Licensing.Authority;
 /// </summary>
 public sealed class UnsupportedAlgorithmTests : LicensingTestsBase
 {
-    private const string _expectedErrorMessage = "the license key is signed with a cryptographic algorithm that this platform does not support";
+    private const int _licenseId = 800;
+
+    // The key is signed by the test authority of Elliptic Curve DSA, which the provider of these tests cannot instantiate.
+    private static readonly string _expectedErrorMessage =
+        $"the license key is signed by the licensing authority {TestLicensingAuthorityProvider.ECDsaTestKeyId}, whose cryptographic algorithm this platform does not support";
 
     public UnsupportedAlgorithmTests( ITestOutputHelper logger ) : base( logger ) { }
 
@@ -35,7 +41,7 @@ public sealed class UnsupportedAlgorithmTests : LicensingTestsBase
     {
         var builder = new LicenseKeyDataBuilder
         {
-            LicenseId = 800,
+            LicenseId = _licenseId,
             Product = LicenseProduct.MetalamaProfessional,
             LicenseType = LicenseType.Business,
             Generation = LicenseGeneration.Current,
@@ -76,6 +82,26 @@ public sealed class UnsupportedAlgorithmTests : LicensingTestsBase
         Assert.False( registrationResult.IsSuccess );
         var errorMessage = registrationResult.ErrorMessage;
         Assert.Contains( _expectedErrorMessage, errorMessage, StringComparison.Ordinal );
+    }
+
+    /// <summary>
+    /// Tests that the message reported for such a key names it by its identifier. The registration properties, which
+    /// normally give the name, cannot be read from a key whose signature cannot be verified.
+    /// </summary>
+    [Fact]
+    public async Task ConsumptionServiceNamesTheKey()
+    {
+        var messages = new List<LicensingMessage>();
+
+        var licenseConsumptionService = new LicenseConsumptionService(
+            this.ServiceProvider,
+            [new ExplicitLicenseSource( CreateSignedLicenseKey(), LicenseSourceKind.Test, this.ServiceProvider )] );
+
+        await licenseConsumptionService.CreateConsumerAsync( LicenseConsumptionOptions.Default, messages.Add );
+
+        var message = Assert.Single( messages ).Text;
+
+        Assert.StartsWith( $"Cannot use the license '{_licenseId}': {_expectedErrorMessage}", message, StringComparison.Ordinal );
     }
 
     /// <summary>

@@ -292,6 +292,13 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             return true;
         }
 
+        /// <summary>
+        /// Gets the identifier of the license that the key names, without verifying the signature of the key, so that a
+        /// message about a key that cannot be used can still name it.
+        /// </summary>
+        /// <returns>The identifier, or <c>null</c> if the key cannot be parsed.</returns>
+        internal int? GetUnverifiedLicenseId() => this.TryGetLicenseKeyData( out var data, out _ ) ? data.LicenseId : null;
+
         private bool TryGetLicenseKeyData( [MaybeNullWhen( false )] out LicenseKeyData data, [MaybeNullWhen( true )] out string errorMessage )
         {
             this.Logger.Trace?.Log( $"Deserializing license '{this._licenseKey}'." );
