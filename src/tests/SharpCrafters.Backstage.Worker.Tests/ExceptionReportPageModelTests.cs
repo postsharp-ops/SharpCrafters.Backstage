@@ -9,7 +9,6 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Worker.Pages;
 using System.Diagnostics.CodeAnalysis;
 using Xunit;
-using Xunit.Abstractions;
 using IConfigurationManager = SharpCrafters.Backstage.Configuration.IConfigurationManager;
 
 namespace SharpCrafters.Backstage.Worker.Tests;

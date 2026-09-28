@@ -8,7 +8,6 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Worker.Pages;
 using System;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Worker.Tests;
 

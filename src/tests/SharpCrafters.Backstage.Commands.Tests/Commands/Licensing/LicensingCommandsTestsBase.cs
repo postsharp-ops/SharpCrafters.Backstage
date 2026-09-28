@@ -4,7 +4,7 @@
 
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Testing;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace SharpCrafters.Backstage.Commands.Tests.Commands.Licensing
 {

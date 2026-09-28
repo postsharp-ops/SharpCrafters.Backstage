@@ -8,7 +8,6 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Registration;
 

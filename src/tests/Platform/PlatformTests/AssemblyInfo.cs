@@ -5,4 +5,4 @@
 using Xunit;
 
 // The tests change the environment of the process, such as PATH, and end processes of the machine, so they run one at a time.
-[assembly: CollectionBehavior( DisableTestParallelization = true )]
+[assembly: Xunit.v3.Parallelization( Mode = Xunit.Sdk.ParallelMode.None )]

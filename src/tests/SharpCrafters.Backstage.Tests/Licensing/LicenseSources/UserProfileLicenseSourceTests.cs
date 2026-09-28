@@ -5,7 +5,6 @@
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
 using System.IO.Abstractions.TestingHelpers;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.LicenseSources
 {

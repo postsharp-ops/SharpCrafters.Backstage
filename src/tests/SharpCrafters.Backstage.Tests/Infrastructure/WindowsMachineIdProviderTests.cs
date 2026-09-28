@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Testing;
 using System;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Infrastructure;
 

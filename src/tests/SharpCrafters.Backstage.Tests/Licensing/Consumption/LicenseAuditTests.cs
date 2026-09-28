@@ -23,7 +23,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Consumption;
 
@@ -123,7 +122,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
             var (matomoRequest, _) = Assert.Single( this.HttpClientFactory.ProcessedRequests, r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" );
             var matomoRequestUri = matomoRequest.RequestUri?.ToString();
 
-            this.Logger.WriteLine( matomoRequestUri );
+            this.Logger.WriteLine( matomoRequestUri ?? "(no request)" );
 
             Assert.Equal( HttpMethod.Get, matomoRequest.Method );
 
@@ -153,7 +152,7 @@ public sealed class LicenseAuditTests : LicenseConsumptionServiceTestsBase
 
             var thirdMatomoRequestUri = thirdMatomoRequest.RequestUri?.ToString();
 
-            this.Logger.WriteLine( thirdMatomoRequestUri );
+            this.Logger.WriteLine( thirdMatomoRequestUri ?? "(no request)" );
 
             Assert.Equal( HttpMethod.Get, thirdMatomoRequest.Method );
 

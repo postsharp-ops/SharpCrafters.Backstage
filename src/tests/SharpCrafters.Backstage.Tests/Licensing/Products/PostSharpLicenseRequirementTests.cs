@@ -11,7 +11,6 @@ using SharpCrafters.Backstage.Tests.Licensing.Consumption;
 using System;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Products;
 

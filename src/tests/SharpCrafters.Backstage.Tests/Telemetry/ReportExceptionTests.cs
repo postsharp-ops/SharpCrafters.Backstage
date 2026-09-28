@@ -20,7 +20,6 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Telemetry;
 

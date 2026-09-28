@@ -16,7 +16,6 @@ using System.Net.Http;
 using System.Security;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.UserInterface;
 

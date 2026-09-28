@@ -8,7 +8,7 @@ using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Testing;
 using System;
 using System.Collections.Generic;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.LicenseServer;
 

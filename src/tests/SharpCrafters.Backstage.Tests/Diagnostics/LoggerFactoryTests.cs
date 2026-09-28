@@ -16,7 +16,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Xunit;
-using Xunit.Abstractions;
 using LoggerFactory = SharpCrafters.Backstage.Diagnostics.LoggerFactory;
 
 namespace SharpCrafters.Backstage.Tests.Diagnostics;

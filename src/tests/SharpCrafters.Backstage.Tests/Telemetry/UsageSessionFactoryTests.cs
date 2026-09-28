@@ -16,7 +16,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Telemetry;
 
@@ -298,7 +297,7 @@ public sealed class UsageSessionFactoryTests : TestsBase
                 var (matomoRequest, _) = Assert.Single( this.HttpClientFactory.ProcessedRequests, r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" );
                 var matomoRequestUri = matomoRequest.RequestUri?.ToString();
 
-                this.Logger.WriteLine( matomoRequestUri );
+                this.Logger.WriteLine( matomoRequestUri ?? "(no request)" );
 
                 Assert.Equal(
                     $"https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&action_name=usage&_id=633a82166c05736f&uid=633a82166c05736f&dimension3=Metalama&dimension4=0.0&dimension5={expectedDeviceAge}&new_visit=1&rand={random}",

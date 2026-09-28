@@ -16,7 +16,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Maintenance;
 

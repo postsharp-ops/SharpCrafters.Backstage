@@ -5,7 +5,6 @@
 using SharpCrafters.Backstage.Testing;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Commands.Tests.Commands.Telemetry
 {

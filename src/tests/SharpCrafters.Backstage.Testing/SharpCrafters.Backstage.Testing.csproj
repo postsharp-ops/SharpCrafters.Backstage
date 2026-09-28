@@ -22,7 +22,8 @@
         <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.v3.extensibility.core" />
+        <PackageReference Include="xunit.v3.assert" />
         <PackageReference Include="System.IO.Abstractions" />
         <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
 		<PackageReference Include="Newtonsoft.Json" />

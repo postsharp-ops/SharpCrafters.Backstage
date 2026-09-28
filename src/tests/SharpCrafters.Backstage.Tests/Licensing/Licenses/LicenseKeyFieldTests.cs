@@ -10,7 +10,6 @@ using System;
 using System.Globalization;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Licenses;
 

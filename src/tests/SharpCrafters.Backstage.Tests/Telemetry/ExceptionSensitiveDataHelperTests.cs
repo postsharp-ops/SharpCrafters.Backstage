@@ -143,7 +143,7 @@ namespace SharpCrafters.Backstage.Tests.Telemetry
                 var theoryMethod = this.GetType().GetMethod( theoryMethodName )!;
 
                 return theoryMethod.GetCustomAttributes<InlineDataAttribute>()
-                    .Select( a => a.GetData( theoryMethod ).Single().Cast<string>().ToArray() );
+                    .Select( a => a.Data.Cast<string>().ToArray() );
             }
 
             StringBuilder inputBuilder = new();

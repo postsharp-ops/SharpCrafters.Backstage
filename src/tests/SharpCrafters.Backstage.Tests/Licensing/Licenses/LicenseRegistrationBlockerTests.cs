@@ -5,7 +5,6 @@
 using SharpCrafters.Backstage.Licensing.Licenses;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing.Licenses;
 

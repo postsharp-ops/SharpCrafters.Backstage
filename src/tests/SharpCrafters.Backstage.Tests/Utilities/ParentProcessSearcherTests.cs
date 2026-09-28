@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Testing;
 using System;
 using System.IO;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Utilities;
 

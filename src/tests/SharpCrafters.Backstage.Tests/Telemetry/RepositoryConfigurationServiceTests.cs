@@ -6,7 +6,6 @@ using SharpCrafters.Backstage.Repositories;
 using SharpCrafters.Backstage.Testing;
 using System.IO;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Telemetry;
 

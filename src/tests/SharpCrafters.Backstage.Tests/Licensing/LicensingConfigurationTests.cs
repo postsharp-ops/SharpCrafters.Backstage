@@ -9,7 +9,6 @@ using SharpCrafters.Backstage.Serialization;
 using System;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Tests.Licensing
 {

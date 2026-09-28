@@ -10,7 +10,7 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Testing;
 using System;
 using System.Linq;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace SharpCrafters.Backstage.Tests.Licensing
 {

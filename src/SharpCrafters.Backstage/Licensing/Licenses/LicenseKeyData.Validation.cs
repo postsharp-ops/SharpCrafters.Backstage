@@ -115,7 +115,10 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             }
             catch ( PlatformNotSupportedException )
             {
-                errorMessage = "the license key is signed with a cryptographic algorithm that this platform does not support";
+                // The authority is named because it tells which algorithm signed the key: the finite field DSA authorities
+                // are unavailable on macOS since .NET 11, and a key they signed must be reissued by another authority.
+                errorMessage =
+                    $"the license key is signed by the licensing authority {this.SignatureKeyId}, whose cryptographic algorithm this platform does not support";
 
                 return false;
             }
