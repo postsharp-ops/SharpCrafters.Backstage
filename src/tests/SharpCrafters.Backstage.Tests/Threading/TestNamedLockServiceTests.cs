@@ -235,15 +235,37 @@ public sealed class TestNamedLockServiceTests : IDisposable
 
         using var @lock = this._locks.GetLock( _name );
 
-        IDisposable? releaser = null;
+        var acquired = new TaskCompletionSource<IDisposable?>( TaskCreationOptions.RunContinuationsAsynchronously );
+        var released = new TaskCompletionSource<bool>( TaskCreationOptions.RunContinuationsAsynchronously );
 
-        await this.WithTimeout( RunOnDedicatedThreadAsync( () => @lock.TryAcquire( TimeSpan.Zero, out releaser ) ) );
+        // The owning thread stays alive until the release is done. Were it allowed to return, the continuation of
+        // the test could resume on it, and its managed thread id could be reused, so that the release would come
+        // from the owning thread after all.
+        var owner = RunOnDedicatedThreadAsync(
+            () =>
+            {
+                @lock.TryAcquire( TimeSpan.Zero, out var releaser );
+                acquired.TrySetResult( releaser );
+                released.Task.GetAwaiter().GetResult();
+            } );
+
+        await this.WithTimeout( acquired.Task );
+        var releaser = await acquired.Task;
 
         Assert.NotNull( releaser );
 
-        // A named lock has thread affinity, so releasing it here, on the xunit thread, is what the operating
-        // system implementation would reject with an ApplicationException.
-        releaser!.Dispose();
+        try
+        {
+            // A named lock has thread affinity, so releasing it from any thread but the blocked owner is what the
+            // operating system implementation would reject with an ApplicationException.
+            releaser!.Dispose();
+        }
+        finally
+        {
+            released.TrySetResult( true );
+        }
+
+        await this.WithTimeout( owner );
 
         Assert.Contains( this._locks.Violations, v => v.Contains( "thread affinity", StringComparison.Ordinal ) );
     }
