@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Maintenance;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.Commands.Tests.Commands.Maintenance;
 

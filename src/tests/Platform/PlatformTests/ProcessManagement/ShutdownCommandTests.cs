@@ -10,7 +10,6 @@ using Spectre.Console.Cli;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace SharpCrafters.Backstage.PlatformTests.ProcessManagement;
 
