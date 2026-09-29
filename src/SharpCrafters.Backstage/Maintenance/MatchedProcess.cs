@@ -15,11 +15,12 @@ namespace SharpCrafters.Backstage.Maintenance;
 /// </remarks>
 internal sealed class MatchedProcess
 {
-    public MatchedProcess( Process process, ProcessSpec spec, string? mainModule )
+    public MatchedProcess( Process process, ProcessSpec spec, string? mainModule, string? inaccessibleReason = null )
     {
         this.Process = process;
         this.Spec = spec;
         this.MainModule = mainModule;
+        this.InaccessibleReason = inaccessibleReason;
     }
 
     public Process Process { get; }
@@ -31,4 +32,11 @@ internal sealed class MatchedProcess
     /// executable.
     /// </summary>
     public string? MainModule { get; }
+
+    /// <summary>
+    /// Gets why the process was matched by its name only, without its modules, or <c>null</c> when its modules were
+    /// read. Such a process is reported and left alone, because it is not known to belong to the product: typically it
+    /// runs as another user.
+    /// </summary>
+    public string? InaccessibleReason { get; }
 }

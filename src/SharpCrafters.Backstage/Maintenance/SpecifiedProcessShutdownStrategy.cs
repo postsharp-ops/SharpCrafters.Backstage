@@ -7,6 +7,7 @@ using SharpCrafters.Backstage.Extensibility;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace SharpCrafters.Backstage.Maintenance;
 
@@ -38,8 +39,9 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
     /// Stops the processes that this strategy found.
     /// </summary>
     /// <param name="processes">
-    /// The processes that match <see cref="ProcessSpecs"/>, except the current process and its parents. The list is empty
-    /// when none is running. The base class disposes the processes.
+    /// The processes that match <see cref="ProcessSpecs"/>, except the current process and its parents, and except the
+    /// processes whose modules cannot be read, which the base class reports itself. The list is empty when none is
+    /// running. The base class disposes the processes.
     /// </param>
     /// <returns>One result per process.</returns>
     protected abstract IReadOnlyList<ProcessShutdownResult> ShutDown( IReadOnlyList<MatchedProcess> processes, ProcessShutdownOptions options );
@@ -52,7 +54,13 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
 
         try
         {
-            return this.ShutDown( processes, options );
+            var accessible = processes.Where( p => p.InaccessibleReason == null ).ToList();
+
+            var inaccessible = processes
+                .Where( p => p.InaccessibleReason != null )
+                .Select( p => new ProcessShutdownResult( p.Process.ProcessName, p.Process.Id, ProcessShutdownOutcome.NotActedOn, p.InaccessibleReason ) );
+
+            return this.ShutDown( accessible, options ).Concat( inaccessible ).ToList();
         }
         finally
         {
@@ -64,20 +72,39 @@ internal abstract class SpecifiedProcessShutdownStrategy : IProcessShutdownStrat
     }
 
     /// <summary>
+    /// The shortest wait for a process that has been ended. Ending a process is asynchronous but completes almost at once, so
+    /// a timeout that has already expired must not make a process that was ended read as still running.
+    /// </summary>
+    private static readonly TimeSpan _minimalWaitAfterKill = TimeSpan.FromSeconds( 5 );
+
+    /// <summary>
     /// Ends a process and reports the result.
     /// </summary>
-    protected ProcessShutdownResult Kill( MatchedProcess match, string description )
+    /// <param name="timeout">How long to wait for the process to exit once it has been ended, at least five seconds.</param>
+    protected ProcessShutdownResult Kill( MatchedProcess match, string description, TimeSpan timeout )
     {
         var process = match.Process;
 
         try
         {
-            if ( !process.HasExited )
+            if ( process.HasExited )
             {
-                this.Logger.Trace?.Log( $"Ending the process '{process.ProcessName}' ({process.Id})." );
+                return new ProcessShutdownResult( description, process.Id, ProcessShutdownOutcome.Exited );
+            }
 
-                process.Kill();
-                process.WaitForExit();
+            this.Logger.Trace?.Log( $"Ending the process '{process.ProcessName}' ({process.Id})." );
+
+            process.Kill();
+
+            var wait = timeout > _minimalWaitAfterKill ? timeout : _minimalWaitAfterKill;
+
+            if ( !process.WaitForExit( (int) Math.Min( wait.TotalMilliseconds, int.MaxValue ) ) )
+            {
+                return new ProcessShutdownResult(
+                    description,
+                    process.Id,
+                    ProcessShutdownOutcome.StillRunning,
+                    "it was ended but has not exited in time" );
             }
 
             return new ProcessShutdownResult( description, process.Id, ProcessShutdownOutcome.Ended );

@@ -51,7 +51,7 @@ internal sealed class DevelopmentEnvironmentShutdownStrategy : SpecifiedProcessS
                     var description = process.Spec.DisplayName ?? process.Spec.Name;
 
                     return options.All
-                        ? this.Kill( process, description )
+                        ? this.Kill( process, description, options.Timeout )
                         : new ProcessShutdownResult(
                             description,
                             process.Process.Id,

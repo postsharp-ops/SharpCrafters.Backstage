@@ -41,7 +41,7 @@ internal sealed class BackstageToolsShutdownStrategy : SpecifiedProcessShutdownS
     protected override ImmutableArray<ProcessSpec> ProcessSpecs { get; }
 
     protected override IReadOnlyList<ProcessShutdownResult> ShutDown( IReadOnlyList<MatchedProcess> processes, ProcessShutdownOptions options )
-        => processes.Select( process => this.Kill( process, this.GetDescription( process ) ) ).ToList();
+        => processes.Select( process => this.Kill( process, this.GetDescription( process ), options.Timeout ) ).ToList();
 
     private string GetDescription( MatchedProcess process )
     {

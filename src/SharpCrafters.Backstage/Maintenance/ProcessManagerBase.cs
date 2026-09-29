@@ -244,7 +244,15 @@ internal abstract class ProcessManagerBase : IProcessManager
 
         if ( !this.TryGetModulePaths( process, out var modules ) )
         {
-            return null;
+            // The name matches, but whether the process belongs to the product cannot be verified. It is reported rather
+            // than dropped, so that the command does not say that nothing had to be stopped.
+            return process.HasExited
+                ? null
+                : new MatchedProcess(
+                    process,
+                    processSpec,
+                    null,
+                    "its modules cannot be read, so it cannot be verified to belong to the product; it may run as another user" );
         }
 
         if ( this.ReferencesProduct( process, modules ) == false )

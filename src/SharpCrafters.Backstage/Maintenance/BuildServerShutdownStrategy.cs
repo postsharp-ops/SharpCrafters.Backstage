@@ -92,7 +92,7 @@ internal sealed class BuildServerShutdownStrategy : SpecifiedProcessShutdownStra
         if ( options.Force )
         {
             // An MSBuild node has no shutdown request of its own, and ending it is what the option asks for.
-            return this.Kill( process, description );
+            return this.Kill( process, description, TimeSpan.FromMilliseconds( ProcessExecutor.GetRemainingMilliseconds( options.Timeout, stopwatch ) ) );
         }
 
         if ( process.Process.WaitForExit( ProcessExecutor.GetRemainingMilliseconds( options.Timeout, stopwatch ) ) )
