@@ -12,6 +12,7 @@
     <ItemGroup>
         <PackageVersion Include="Metalama.Backstage" Version="$(BackstageVersion)" />
         <PackageVersion Include="SharpCrafters.Backstage.Testing" Version="$(BackstageVersion)" />
+        <PackageVersion Include="SharpCrafters.Backstage.Commands" Version="$(BackstageVersion)" />
     </ItemGroup>
 
     <ItemGroup>

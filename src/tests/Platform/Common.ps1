@@ -53,6 +53,17 @@ function Invoke-PlatformTestSuite
         Command = "pwsh -NoProfile -File src/tests/Platform/RunSuite.ps1 -Suite $Suite -Run $Suite-$Platform"
     }
 
+    # On Linux the command is made compound, so that sh does not replace itself with pwsh and stays the first process of the
+    # container. A process whose parent exits is adopted by the first process, and the build servers that a test starts
+    # outlive the build that started them; sh reaps them when they exit, whereas pwsh would leave them as zombies, which a
+    # wait for their exit would take for running processes. A bare 'exit' returns the status of pwsh without a '$', which
+    # the hop of DockerBuild.ps1 into WSL on a Windows development machine would expand
+    # (postsharp-ops/PostSharp.Engineering#167). The Windows command goes through cmd, where ';' does not separate commands.
+    if ($containerOs -eq 'linux')
+    {
+        $arguments.Command += '; exit'
+    }
+
     # Nothing is returned. The output of the container arrives on the standard output of this call, and the caller reads
     # $LASTEXITCODE.
     & $dockerBuild @arguments
