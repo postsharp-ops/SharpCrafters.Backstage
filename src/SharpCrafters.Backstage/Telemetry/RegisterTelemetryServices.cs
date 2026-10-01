@@ -2,8 +2,11 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Configuration;
+using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Repositories;
+using System.Runtime.InteropServices;
 
 namespace SharpCrafters.Backstage.Telemetry;
 
@@ -35,4 +38,34 @@ public static class RegisterTelemetryServices
             .AddSingleton<ITelemetryService>( serviceProvider => new TelemetryService( serviceProvider ) )
             .AddSingleton<TelemetryReportUploader>( serviceProvider => new TelemetryReportUploader( serviceProvider ) )
             .AddSingleton<MatomoUploader>( serviceProvider => new MatomoUploader( serviceProvider ) );
+
+    /// <summary>
+    /// Registers a <see cref="FileUsageSessionStore"/>, which keeps the record of each project in a file of its own.
+    /// </summary>
+    public static ServiceProviderBuilder AddFileUsageSessionStore( this ServiceProviderBuilder serviceProviderBuilder )
+        => serviceProviderBuilder.AddSingleton<IUsageSessionStore>( serviceProvider => new FileUsageSessionStore( serviceProvider ) );
+
+    /// <summary>
+    /// Registers a <see cref="RegistryUsageSessionStore"/>, which keeps the record of each project in a value of a
+    /// registry key. Away from Windows, it registers a <see cref="FileUsageSessionStore"/> instead.
+    /// </summary>
+    /// <param name="serviceProviderBuilder">The builder.</param>
+    /// <param name="hive">The hive of the key.</param>
+    /// <param name="keyPath">The path of the key, which must hold nothing but these records.</param>
+    /// <remarks>
+    /// The registry store requires the <see cref="IRegistryService"/> that
+    /// <see cref="RegisterConfigurationServices.AddRegistryConfigurationServices"/> registers on Windows.
+    /// </remarks>
+    public static ServiceProviderBuilder AddRegistryUsageSessionStore(
+        this ServiceProviderBuilder serviceProviderBuilder,
+        RegistryHiveKind hive,
+        string keyPath )
+    {
+        if ( !RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+        {
+            return serviceProviderBuilder.AddFileUsageSessionStore();
+        }
+
+        return serviceProviderBuilder.AddSingleton<IUsageSessionStore>( serviceProvider => new RegistryUsageSessionStore( serviceProvider, hive, keyPath ) );
+    }
 }

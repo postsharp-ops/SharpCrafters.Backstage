@@ -133,6 +133,11 @@ public static class PostSharpProduct
             // which is the other half of sharing that record: keyed by anything else, the two versions would write
             // into one key and neither would read what the other wrote.
             services.AddService( typeof(ILicenseAuditKeyProvider), _ => PostSharpLicenseAuditKeyProvider.Instance );
+
+            // The record of when each project was last reported stays in the key where this version has always kept it,
+            // one value per project, but each value is now read and written alone rather than with the whole telemetry
+            // configuration.
+            services.AddRegistryUsageSessionStore( RegistryHiveKind.CurrentUser, PostSharpRegistry.TelemetrySessionsKeyPath );
         }
     };
 }
