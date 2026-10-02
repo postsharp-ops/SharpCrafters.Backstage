@@ -170,7 +170,7 @@ Writing `LastUploadTime` is how the once-a-day upload is claimed against other p
 | `metalama.json` | repository, committed | `telemetry.enabled` |
 | `postsharp.config` (PostSharp) | repository, committed | the `TelemetryEnabled` property |
 
-All of these are editable with `metalama config edit <alias>`, so **assume any property may be missing or null**.
+The user files are editable with `metalama config edit <alias>`, so **assume any property may be missing or null**. The repository files are not registered with that command and are edited directly; a malformed or unreadable one is ignored and reported through `ITelemetryContext.Warnings`.
 
 > **Rule.** A property absent from the JSON deserializes to `null`, *not* to its property initializer. Every collection property on a `ConfigurationFile` must therefore normalize `null` in its `init` accessor (`with` expressions go through it too). Relying on the initializer alone produces a `NullReferenceException` on the first read after the property is introduced, on every existing installation.
 

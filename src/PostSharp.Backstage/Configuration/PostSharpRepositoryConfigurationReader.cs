@@ -105,7 +105,7 @@ internal sealed class PostSharpRepositoryConfigurationReader : IRepositoryConfig
             return Error( true, $"the '{TelemetryEnabledPropertyName}' property has no 'Value' attribute." );
         }
 
-        if ( value.IndexOf( '{' ) >= 0 )
+        if ( value.IndexOf( "{", StringComparison.Ordinal ) >= 0 )
         {
             return Error(
                 true,
