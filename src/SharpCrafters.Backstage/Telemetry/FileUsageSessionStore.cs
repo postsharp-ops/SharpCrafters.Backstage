@@ -33,6 +33,13 @@ namespace SharpCrafters.Backstage.Telemetry;
 /// the maintenance pass deletes the files older than the telemetry retention period. A project that is still built
 /// rewrites its file once per period, so its file is never old enough to be deleted.
 /// </para>
+/// <para>
+/// The maintenance pass does not take the lock of a record. If it decides to delete a file that is older than the
+/// retention period and a claim renews that file before the deletion, the renewed file is deleted, and the project can
+/// be reported a second time in the same period. This requires a project that has not been built for the whole
+/// retention period (30 days by default) to be built at the moment of the sweep, and it costs one duplicate usage
+/// report. Excluding it would require the maintenance pass to know about these records and their locks.
+/// </para>
 /// </remarks>
 [PublicAPI]
 public sealed class FileUsageSessionStore : UsageSessionStore

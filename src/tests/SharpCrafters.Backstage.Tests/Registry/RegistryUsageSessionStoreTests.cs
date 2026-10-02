@@ -90,6 +90,45 @@ public sealed class RegistryUsageSessionStoreTests : TestsBase
         Assert.Equal( ["Project", "Recent"], key.GetValueNames().OrderBy( n => n, StringComparer.Ordinal ) );
     }
 
+    /// <summary>
+    /// A project whose lock is held is being claimed by another process, which may be renewing its expired value, so
+    /// the clean-up leaves that value alone.
+    /// </summary>
+    [Fact]
+    public void AnExpiredValueOfAProjectBeingClaimedIsNotDeleted()
+    {
+        var key = this.SessionsKey();
+        key.SetDateTime( "Expired", _now - _period - TimeSpan.FromMinutes( 1 ) );
+
+        using ( this.Locks.Pin( this.GetLockName( "Expired" ) ) )
+        {
+            Assert.True( this.CreateStore().TryClaim( "Project", _now, _period ) );
+        }
+
+        Assert.Equal( ["Expired", "Project"], key.GetValueNames().OrderBy( n => n, StringComparer.Ordinal ) );
+    }
+
+    /// <summary>
+    /// The record of the claimed project is written before the clean-up, so a clean-up that fails does not make the
+    /// claim fail: that would suppress the report and every later one of the period.
+    /// </summary>
+    [Fact]
+    public void AFailedCleanUpDoesNotFailTheClaim()
+    {
+        var key = this.SessionsKey();
+        key.SetDateTime( "Expired", _now - _period - TimeSpan.FromMinutes( 1 ) );
+        this.Locks.ArmException( this.GetLockName( "Expired" ), () => new UnauthorizedAccessException() );
+
+        var store = this.CreateStore();
+
+        Assert.True( store.TryClaim( "Project", _now, _period ) );
+        Assert.False( store.TryClaim( "Project", _now, _period ) );
+    }
+
+    private string GetLockName( string projectKey )
+        => this.Locks.GetGlobalLockName(
+            this._registry.GetDisplayPath( RegistryHiveKind.CurrentUser, PostSharpRegistry.TelemetrySessionsKeyPath ) + "!" + projectKey.ToUpperInvariant() );
+
     [Fact]
     public void AClaimTouchesNothingOutsideTheSessionsKey()
     {
@@ -106,9 +145,8 @@ public sealed class RegistryUsageSessionStoreTests : TestsBase
     public void AProjectThatAnotherProcessIsClaimingIsNotClaimed()
     {
         var store = this.CreateStore();
-        var lockName = this.Locks.GetGlobalLockName( this._registry.GetDisplayPath( RegistryHiveKind.CurrentUser, PostSharpRegistry.TelemetrySessionsKeyPath ) + "!PROJECT" );
 
-        using ( this.Locks.Pin( lockName ) )
+        using ( this.Locks.Pin( this.GetLockName( "Project" ) ) )
         {
             Assert.False( store.TryClaim( "Project", _now, _period ) );
         }

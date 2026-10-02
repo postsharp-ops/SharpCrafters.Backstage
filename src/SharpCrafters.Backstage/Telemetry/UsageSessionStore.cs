@@ -67,9 +67,6 @@ public abstract class UsageSessionStore : IUsageSessionStore
             }
 
             this.WriteLastReportTime( projectKey, now );
-            this.OnClaimed( now, period );
-
-            return true;
         }
         catch ( Exception e )
         {
@@ -77,6 +74,36 @@ public abstract class UsageSessionStore : IUsageSessionStore
 
             return false;
         }
+
+        // The record is written, so the claim succeeded whatever happens to the clean-up of the other records.
+        try
+        {
+            this.OnClaimed( projectKey, now, period );
+        }
+        catch ( Exception e )
+        {
+            this.Logger.LogException( e, "Cannot delete the expired session records" );
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Runs an action while holding the lock of the record of a project, without waiting for it.
+    /// </summary>
+    /// <returns><see langword="true"/> if the lock was acquired and the action ran.</returns>
+    protected bool TryWithRecordLock( string projectKey, Action action )
+    {
+        using var releaser = this._lockService.TryWithGlobalLock( this.GetLockResourceName( projectKey ), TimeSpan.Zero );
+
+        if ( releaser == null )
+        {
+            return false;
+        }
+
+        action();
+
+        return true;
     }
 
     private bool IsRecent( string projectKey, DateTime now, TimeSpan period )
@@ -109,8 +136,9 @@ public abstract class UsageSessionStore : IUsageSessionStore
     protected abstract void WriteLastReportTime( string projectKey, DateTime time );
 
     /// <summary>
-    /// Called after a successful claim, while the lock of the record is still held, so that a store that is not cleaned
-    /// up by another mechanism can remove the records that have expired.
+    /// Called after a successful claim, so that a store that is not cleaned up by another mechanism can remove the
+    /// records that have expired. The lock of <paramref name="claimedProjectKey"/> is no longer held. An exception
+    /// thrown here is logged and does not change the result of the claim.
     /// </summary>
-    protected virtual void OnClaimed( DateTime now, TimeSpan period ) { }
+    protected virtual void OnClaimed( string claimedProjectKey, DateTime now, TimeSpan period ) { }
 }

@@ -19,10 +19,9 @@ namespace SharpCrafters.Backstage.Telemetry;
 /// nor the parent key, which also holds the telemetry configuration.
 /// </para>
 /// <para>
-/// No maintenance pass cleans the registry, so a successful claim deletes the values that have expired. That clean-up
-/// runs without the locks of the other projects. If it runs while another process renews an expired value, it can delete
-/// the renewed value, and that project is then reported a second time in the same period. A duplicate report is
-/// harmless, and excluding it would require a lock shared by every project, which this store exists to avoid.
+/// No maintenance pass cleans the registry, so a successful claim deletes the values that have expired. Each value is
+/// deleted under the lock of its own project, after reading it again, so a value that another process renews in the
+/// meantime is kept.
 /// </para>
 /// </remarks>
 [PublicAPI]
@@ -71,7 +70,7 @@ public sealed class RegistryUsageSessionStore : UsageSessionStore
     }
 
     /// <inheritdoc />
-    protected override void OnClaimed( DateTime now, TimeSpan period )
+    protected override void OnClaimed( string claimedProjectKey, DateTime now, TimeSpan period )
     {
         using var key = this._registryService.OpenKey( this._hive, this._keyPath, writable: true );
 
@@ -82,11 +81,27 @@ public sealed class RegistryUsageSessionStore : UsageSessionStore
 
         foreach ( var name in key.GetValueNames() )
         {
-            // A value that cannot be read as a date is deleted as well: this key holds nothing else.
-            if ( key.GetDateTime( name ) is not { } lastReported || lastReported.Add( period ) <= now )
+            if ( !IsExpired( key, name, now, period ) )
             {
-                key.DeleteValue( name );
+                continue;
             }
+
+            // The value is deleted under the lock of its project, and only if it is still expired, so that a value that
+            // another process has just renewed is not deleted. A project whose lock is held is being claimed, so it is
+            // left alone.
+            this.TryWithRecordLock(
+                name,
+                () =>
+                {
+                    if ( IsExpired( key, name, now, period ) )
+                    {
+                        key.DeleteValue( name );
+                    }
+                } );
         }
     }
+
+    // A value that cannot be read as a date is expired as well: this key holds nothing else.
+    private static bool IsExpired( IRegistryKey key, string name, DateTime now, TimeSpan period )
+        => key.GetDateTime( name ) is not { } lastReported || lastReported.Add( period ) <= now;
 }

@@ -36,7 +36,8 @@ public interface IUsageSessionStore : IBackstageService
     /// <param name="period">The minimal interval between two reports of the same project.</param>
     /// <returns>
     /// <see langword="true"/> if the caller must report the usage of the project. Of several concurrent callers asking
-    /// about the same project, at most one obtains <see langword="true"/> for a given period.
+    /// about the same project, at most one obtains <see langword="true"/> for a given period, unless the record is deleted
+    /// by something other than the store during that period. See the remarks of the implementations.
     /// </returns>
     /// <remarks>
     /// This method never throws. A record that cannot be read or written yields <see langword="false"/>, because missing
