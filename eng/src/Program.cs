@@ -7,6 +7,7 @@ using PostSharp.Engineering.BuildTools.Build;
 using PostSharp.Engineering.BuildTools.Build.Model;
 using PostSharp.Engineering.BuildTools.Build.Solutions;
 using PostSharp.Engineering.BuildTools.ContinuousIntegration.Model;
+using PostSharp.Engineering.BuildTools.ContinuousIntegration.TeamCity.Arguments;
 using PostSharp.Engineering.BuildTools.Docker;
 using BackstageDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.BackstageDependencies.V2027_0;
 
@@ -29,6 +30,13 @@ const string dotNet11SdkVersion = "11.0.100-rc.1.26425.128";
 // `dotNet11SdkVersion` once a .NET 11 SDK that compiles those pages is available.
 var dotNet10SdkVersion = BackstageDependencies.Family.PreferredVersions.DotNetSdk.V_10_0;
 
+// The TeamCity sub-project of the build configurations of the platform tests.
+const string platformTestsFolder = "Platform Tests";
+
+// The environment variable that declares the kind of host to the platform tests. Keep it equal to
+// PlatformConditions.HostVariableName in SharpCrafters.Backstage.Testing.
+const string platformTestHostVariable = "BACKSTAGE_PLATFORM_TEST_HOST";
+
 var product = new Product( BackstageDependencies.Backstage )
 {
     OverriddenBuildAgentRequirements = new ContainerRequirements( ContainerHostKind.Windows )
@@ -49,7 +57,20 @@ var product = new Product( BackstageDependencies.Backstage )
     GenerateTeamCityBuildTypesInSeparateFiles = true,
     DotNetSdkVersion = new DotNetSdkVersion( dotNet10SdkVersion ),
 
-    Solutions = [new DotNetSolution( "SharpCrafters.Backstage.sln" ) { SupportsTestCoverage = true, CanFormatCode = true }],
+    // The test projects are xunit.v3 applications of Microsoft.Testing.Platform. Build.ps1 test runs them with
+    // `dotnet test` in the mode of that platform, and Build.ps1 build packs them into test archives, which the
+    // TestAgents below run. See doc/testing-platform.md in PostSharp.Engineering.
+    TestRunner = TestRunner.MicrosoftTestingPlatform,
+
+    // PackRequiresExplicitBuild builds the whole solution before `dotnet pack`, which skips the projects that are not
+    // packable, among them the test projects. Their build is what writes the test archives.
+    Solutions =
+    [
+        new DotNetSolution( "SharpCrafters.Backstage.sln" )
+        {
+            SupportsTestCoverage = true, CanFormatCode = true, ContainsTestApplications = true, PackRequiresExplicitBuild = true
+        }
+    ],
 
     // TODO: Should be reviewed before publishing first release.
     
@@ -70,34 +91,95 @@ var product = new Product( BackstageDependencies.Backstage )
         "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.
         "PostSharp.Backstage.Tools.$(PackageVersion).nupkg" ),      // Required by PostSharp and PostSharp.Vsx.
 
-    // The platform tests in src/tests/Platform run the platform-specific code of the packages on the platform itself.
-    // They consume the packages of the Debug build. Linux and Windows run in a container, one per suite. macOS runs on
-    // the agent, because no container engine provides a macOS container.
-    AdditionalCiBuildConfigurations =
+    // The Linux images of the platform tests. The product builds on Windows only, so these images run the test archives
+    // and build nothing. They carry PowerShell, which RunTests.ps1 needs, and the .NET SDK rather than the runtime only,
+    // because the product looks for a dotnet executable that has an SDK, and the platform tests check which one it finds.
+    AdditionalDockerfiles =
     [
-        ..DockerTestsAdditionalCiBuildConfiguration.WithCompositeConfiguration(
-            CreateDockerTestConfiguration( DockerTestPlatform.WindowsX64, "Windows x64" ),
-            CreateDockerTestConfiguration( DockerTestPlatform.LinuxX64, "Linux x64" ),
-            CreateDockerTestConfiguration( DockerTestPlatform.LinuxArm64, "Linux ARM64" ) ),
-        new PowershellAdditionalCiBuildConfiguration(
-            "PlatformTestsMacOSArm64",
-            "Platform Tests (macOS ARM64)",
-            "src/tests/Platform/RunMacOSTests.ps1",
-            "" )
+        CreateLinuxTestDockerfile( ContainerArchitecture.X64, dotNet10SdkVersion ),
+        CreateLinuxTestDockerfile( ContainerArchitecture.Arm64, dotNet10SdkVersion )
+    ],
+
+    // Forwards the kind of host that the build configurations of the TestAgents declare into the test container. See
+    // PlatformConditions.HostVariableName.
+    AdditionalDockerEnvironmentVariables = [platformTestHostVariable],
+
+    // The platform tests, SharpCrafters.Backstage.PlatformTests, run the platform-specific code of the product on the
+    // platform itself. The agents run the test archives of the Debug build. Linux and Windows run them in a container.
+    // macOS runs them on the agent, because no container engine provides a macOS container. The unit tests run in the
+    // build, and their archives are skipped (see src/tests/Directory.Build.targets).
+    Configurations = Product.DefaultConfigurations.WithValue( BuildConfiguration.Debug, c => c with { RunsTestArchives = true } ),
+    TestAgents =
+    [
+        new TestAgent( "win-x64", "PlatformTestsWinX64", "Platform Tests Windows x64", new ContainerHostRequirements( ContainerHostKind.Windows ) )
         {
-            BuildSnapshotDependency = BuildConfiguration.Debug,
-            ProjectFolder = DockerTestsAdditionalCiBuildConfiguration.DefaultProjectFolder,
-            BuildAgentRequirements = new BuildAgentRequirements(
+            Dockerfile = "eng/docker/build.Dockerfile", ProjectFolder = platformTestsFolder, Parameters = [CreateHostParameter( "container" )]
+        },
+        new TestAgent(
+            "linux-x64",
+            "PlatformTestsLinuxX64",
+            "Platform Tests Linux x64",
+            CreateLinuxContainerHostRequirements( ContainerArchitecture.X64 ) )
+        {
+            Dockerfile = "eng/docker/linux-x64-build.Dockerfile", ProjectFolder = platformTestsFolder, Parameters = [CreateHostParameter( "container" )]
+        },
+        new TestAgent(
+            "linux-arm64",
+            "PlatformTestsLinuxArm64",
+            "Platform Tests Linux ARM64",
+            CreateLinuxContainerHostRequirements( ContainerArchitecture.Arm64 ) )
+        {
+            Dockerfile = "eng/docker/linux-arm64-build.Dockerfile", ProjectFolder = platformTestsFolder, Parameters = [CreateHostParameter( "container" )]
+        },
+
+        // Plain BuildAgentRequirements, not ContainerHostRequirements, so that the tests run on the macOS host.
+        new TestAgent(
+            "osx-arm64",
+            "PlatformTestsMacOSArm64",
+            "Platform Tests macOS ARM64",
+            new BuildAgentRequirements(
                 new BuildAgentRequirement( "teamcity.agent.jvm.os.name", "Mac OS X" ),
-                new BuildAgentRequirement( "teamcity.agent.jvm.os.arch", "aarch64" ) )
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.arch", "aarch64" ) ) )
+        {
+            ProjectFolder = platformTestsFolder, Parameters = [CreateHostParameter( "host" )]
         }
     ]
 };
 
 return new EngineeringApp( product ).Run( args );
 
-static DockerTestsAdditionalCiBuildConfiguration CreateDockerTestConfiguration( DockerTestPlatform platform, string title )
-    => new( $"DockerTests{platform}", $"Docker Tests ({title})", platform, "src/tests/Platform/Docker" )
+// Declares the kind of host to the platform tests, which compare it with what the product detects.
+static BuildConfigurationParameter CreateHostParameter( string host ) => new( $"env.{platformTestHostVariable}", host );
+
+static AdditionalDockerfile CreateLinuxTestDockerfile( ContainerArchitecture architecture, string dotNetSdkVersion )
+    => new( architecture == ContainerArchitecture.Arm64 ? "linux-arm64" : "linux-x64", [] )
     {
-        BuildSnapshotDependency = BuildConfiguration.Debug
+        Requirements = new ContainerRequirements( ContainerHostKind.Linux )
+        {
+            OperatingSystem = ContainerOperatingSystem.Linux,
+            Components =
+            [
+                new GitComponent(),
+                new PowershellComponent( architecture ),
+                new DotNetComponent( dotNetSdkVersion, DotNetComponentKind.Sdk )
+            ]
+        }
+    };
+
+// The operating system and the architecture that the agents report, as the Linux build configurations of PostSharp
+// require them. An ARM64 Linux container runs on an ARM64 Linux agent or on the engine of the macOS agent.
+static ContainerHostRequirements CreateLinuxContainerHostRequirements( ContainerArchitecture architecture )
+    => new ContainerHostRequirements( ContainerHostKind.Linux ) with
+    {
+        Items = architecture == ContainerArchitecture.Arm64
+            ?
+            [
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.name", "Linux|Mac OS X", RequirementComparisonType.Matches ),
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.arch", "aarch64" )
+            ]
+            :
+            [
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.name", "Linux" ),
+                new BuildAgentRequirement( "teamcity.agent.jvm.os.arch", "amd64" )
+            ]
     };
