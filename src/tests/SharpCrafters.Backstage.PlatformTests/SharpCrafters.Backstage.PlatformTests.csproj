@@ -28,6 +28,9 @@
     <ItemGroup>
         <ProjectReference Include="..\..\Metalama.Backstage\Metalama.Backstage.csproj" />
 
+        <!-- The commands, which the process management suite runs as a user runs them. -->
+        <ProjectReference Include="..\..\SharpCrafters.Backstage.Commands\SharpCrafters.Backstage.Commands.csproj" />
+
         <!-- For TestLicenseKeyProvider, which signs license keys with the test authority, and for PlatformFact. -->
         <ProjectReference Include="..\SharpCrafters.Backstage.Testing\SharpCrafters.Backstage.Testing.csproj" />
 

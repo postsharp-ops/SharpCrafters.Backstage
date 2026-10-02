@@ -1,7 +1,7 @@
 <Project>
-
-    <!-- The version of the last published build. The bump and publish commands write it. -->
-    <PropertyGroup>
-    </PropertyGroup>
-
+  <!-- On a release branch, the version of the last published build; on a develop branch, the version of the next one. The bump and publish commands write it. -->
+  <PropertyGroup>
+    <BackstageReleaseVersion>2027.0.1-preview</BackstageReleaseVersion>
+    <BackstageReleaseMainVersion>2027.0.1</BackstageReleaseMainVersion>
+  </PropertyGroup>
 </Project>

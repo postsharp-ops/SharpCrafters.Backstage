@@ -69,5 +69,6 @@ $env:BACKSTAGE_PLATFORM_TEST_HOST = 'container'   # or 'host'
 pwsh ./eng/RunTests.ps1 -Name SharpCrafters.Backstage.PlatformTests.net10.0
 ```
 
-The process management suite ends every process that the product recognizes on the machine, including the compiler
-server and MSBuild nodes. Run it in a container, or on an agent that runs one build at a time.
+The process management suite runs the `shutdown` command, which stops every process that the product recognizes on the
+machine, including the compiler server and MSBuild nodes. Run it in a container, or on an agent that runs one build at a
+time. Its test of the build servers runs in a container only.

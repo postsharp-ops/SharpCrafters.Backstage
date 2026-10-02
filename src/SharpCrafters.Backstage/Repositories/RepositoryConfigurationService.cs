@@ -30,6 +30,9 @@ internal sealed class RepositoryConfigurationService : IRepositoryConfigurationS
 
     private readonly IFileSystem _fileSystem;
     private readonly IJsonSerializationService _jsonSerializationService;
+
+    // The reader of the product, or null when the file is the JSON file of metalama.json.
+    private readonly IRepositoryConfigurationReader? _reader;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger _logger;
 
@@ -40,6 +43,7 @@ internal sealed class RepositoryConfigurationService : IRepositoryConfigurationS
     {
         this._fileSystem = serviceProvider.GetRequiredBackstageService<IFileSystem>();
         this._jsonSerializationService = serviceProvider.GetRequiredBackstageService<IJsonSerializationService>();
+        this._reader = serviceProvider.GetBackstageService<IRepositoryConfigurationReader>();
         this._dateTimeProvider = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( "RepositoryConfiguration" );
         this._fileName = serviceProvider.GetRequiredBackstageService<ProductProfile>().RepositoryConfigurationFileName;
@@ -121,7 +125,26 @@ internal sealed class RepositoryConfigurationService : IRepositoryConfigurationS
             {
                 var misplacedFile = Path.Combine( directory, this._fileName );
 
-                if ( this._fileSystem.FileExists( misplacedFile ) )
+                if ( !this._fileSystem.FileExists( misplacedFile ) )
+                {
+                    continue;
+                }
+
+                if ( this._reader is { IsFileUsedBelowRoot: true } )
+                {
+                    // The product uses this file below the root for other purposes, so it is misplaced only when it
+                    // declares a repository setting. A file that cannot be read here is not ours to report.
+                    if ( this.TryReadText( misplacedFile, out var misplacedText, out _ )
+                         && this._reader.Read( misplacedFile, misplacedText ).DeclaresSettings )
+                    {
+                        warnings.Add(
+                            new RepositoryConfigurationWarning(
+                                RepositoryConfigurationWarningKind.MisplacedFile,
+                                misplacedFile,
+                                $"The repository settings of the file '{misplacedFile}' are ignored because they are read only from the '{this._fileName}' file at the repository root ('{repositoryRoot}')." ) );
+                    }
+                }
+                else
                 {
                     warnings.Add(
                         new RepositoryConfigurationWarning(
@@ -149,31 +172,40 @@ internal sealed class RepositoryConfigurationService : IRepositoryConfigurationS
 
     private RepositoryConfiguration ReadFile( string path, ImmutableArray<RepositoryConfigurationWarning>.Builder warnings )
     {
-        string text;
-
-        try
-        {
-            text = this._fileSystem.ReadAllText( path );
-        }
-        catch ( IOException e )
+        if ( !this.TryReadText( path, out var text, out var readError ) )
         {
             warnings.Add(
                 new RepositoryConfigurationWarning(
                     RepositoryConfigurationWarningKind.MalformedFile,
                     path,
-                    $"The file '{path}' is ignored because it could not be read: {e.Message}" ) );
+                    $"The file '{path}' is ignored because it could not be read: {readError}" ) );
 
             return new RepositoryConfiguration();
         }
-        catch ( UnauthorizedAccessException e )
-        {
-            warnings.Add(
-                new RepositoryConfigurationWarning(
-                    RepositoryConfigurationWarningKind.MalformedFile,
-                    path,
-                    $"The file '{path}' is ignored because it could not be read: {e.Message}" ) );
 
-            return new RepositoryConfiguration();
+        if ( this._reader != null )
+        {
+            var result = this._reader.Read( path, text );
+
+            if ( !result.Errors.IsEmpty )
+            {
+                // The file is ignored as a whole: a file that half applies would leave the user unsure of what holds.
+                foreach ( var error in result.Errors )
+                {
+                    warnings.Add(
+                        new RepositoryConfigurationWarning(
+                            RepositoryConfigurationWarningKind.MalformedFile,
+                            path,
+                            $"The file '{path}' is ignored because {error}" ) );
+                }
+
+                return new RepositoryConfiguration();
+            }
+
+            return new RepositoryConfiguration
+            {
+                Telemetry = result.TelemetryEnabled == null ? null : new RepositoryTelemetryConfiguration { Enabled = result.TelemetryEnabled }
+            };
         }
 
         // A malformed or schema-incompatible file is ignored (the global default applies), but we warn so the user
@@ -190,6 +222,24 @@ internal sealed class RepositoryConfigurationService : IRepositoryConfigurationS
                 $"The file '{path}' is ignored because it is not valid JSON or does not match the expected schema." ) );
 
         return new RepositoryConfiguration();
+    }
+
+    private bool TryReadText( string path, out string text, out string? error )
+    {
+        try
+        {
+            text = this._fileSystem.ReadAllText( path );
+            error = null;
+
+            return true;
+        }
+        catch ( Exception e ) when ( e is IOException or UnauthorizedAccessException )
+        {
+            text = "";
+            error = e.Message;
+
+            return false;
+        }
     }
 
     private static bool PathsEqual( string a, string b ) => string.Equals( a, b, StringComparison.OrdinalIgnoreCase );
