@@ -54,7 +54,6 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
                                       "LastSaltChangeTime": "2025-01-01T00:00:00Z",
                                       "Issues": {},
                                       "IssuePrompts": {},
-                                      "Sessions": {},
                                       "LastMatomoPostTime": "2025-01-10T12:00:00Z",
                                       "RetentionPeriodInDays": null,
                                       "version": 5
@@ -94,20 +93,18 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
 
         Assert.Empty( empty.Issues );
         Assert.Empty( empty.IssuePrompts );
-        Assert.Empty( empty.Sessions );
 
         // Explicit nulls must be normalized too.
         var nulls = JsonSerializer.Deserialize<TelemetryConfiguration>(
-            """{ "Issues": null, "IssuePrompts": null, "Sessions": null }""",
+            """{ "Issues": null, "IssuePrompts": null }""",
             this.JsonOptions )!;
 
         Assert.Empty( nulls.Issues );
         Assert.Empty( nulls.IssuePrompts );
-        Assert.Empty( nulls.Sessions );
     }
 
     [Fact]
-    public void TelemetryConfiguration_WithIssuesAndSessions_Serialization()
+    public void TelemetryConfiguration_WithIssues_Serialization()
     {
         // Note: Dictionary ordering is not guaranteed, so we test round-trip consistency
         // rather than exact JSON matching for dictionaries
@@ -117,9 +114,7 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
             Issues = ImmutableDictionary<string, ReportingStatus>.Empty
                 .Add( "ISSUE001", ReportingStatus.Reported ),
             IssuePrompts = ImmutableDictionary<string, DateTime>.Empty
-                .Add( "ISSUE002", new DateTime( 2025, 1, 15, 9, 0, 0, DateTimeKind.Utc ) ),
-            Sessions = ImmutableDictionary<string, DateTime>.Empty
-                .Add( "session1", new DateTime( 2025, 1, 15, 10, 0, 0, DateTimeKind.Utc ) )
+                .Add( "ISSUE002", new DateTime( 2025, 1, 15, 9, 0, 0, DateTimeKind.Utc ) )
         };
 
         const string expectedJson = """
@@ -139,9 +134,6 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
                                       },
                                       "IssuePrompts": {
                                         "ISSUE002": "2025-01-15T09:00:00Z"
-                                      },
-                                      "Sessions": {
-                                        "session1": "2025-01-15T10:00:00Z"
                                       },
                                       "LastMatomoPostTime": null,
                                       "RetentionPeriodInDays": null,
@@ -525,28 +517,33 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
     }
 
     [Fact]
-    public void TelemetryConfiguration_CaseInsensitive_Sessions()
+    public void TelemetryConfiguration_LegacySessions_ArePreserved()
     {
-        // Test that TelemetryConfiguration.Sessions uses case-insensitive keys
-        var input = new TelemetryConfiguration
-        {
-            Sessions = ImmutableDictionary<string, DateTime>.Empty
-                .WithComparers( StringComparer.OrdinalIgnoreCase )
-                .Add( "Session1", new DateTime( 2025, 1, 15, 10, 0, 0, DateTimeKind.Utc ) )
-        };
+        // Earlier versions of Metalama keep the time of the last usage report of each project in a 'Sessions' member of
+        // telemetry.json, which they share with this version. This version no longer declares the member, so it must
+        // carry it through a deserialization and a serialization unchanged. See IUsageSessionStore.
+        const string json = """
+                            {
+                              "UsageReportingAction": 1,
+                              "Sessions": {
+                                "Project1": "2025-01-15T10:00:00Z",
+                                "Project2": "2020-01-01T00:00:00Z"
+                              }
+                            }
+                            """;
 
-        // Serialize
-        var json = JsonSerializer.Serialize( input, this.JsonOptions );
-        this.Output.WriteLine( "Serialized JSON:" );
-        this.Output.WriteLine( json );
+        var deserialized = JsonSerializer.Deserialize<TelemetryConfiguration>( json, this.JsonOptions )!;
+        var updated = deserialized with { UsageConsent = TelemetryConsent.No };
+        var reserialized = this.JsonService.Serialize( updated, typeof(TelemetryConfiguration) );
 
-        // Deserialize
-        var deserialized = JsonSerializer.Deserialize<TelemetryConfiguration>( json, this.JsonOptions );
-        Assert.NotNull( deserialized );
+        this.Output.WriteLine( reserialized );
 
-        // Verify case-insensitive lookup works
-        Assert.True( deserialized.Sessions.ContainsKey( "session1" ) ); // lowercase
-        Assert.True( deserialized.Sessions.ContainsKey( "SESSION1" ) ); // uppercase
+        using var original = JsonDocument.Parse( json );
+        using var roundTripped = JsonDocument.Parse( reserialized );
+
+        Assert.Equal(
+            JsonSerializer.Serialize( original.RootElement.GetProperty( "Sessions" ) ),
+            JsonSerializer.Serialize( roundTripped.RootElement.GetProperty( "Sessions" ) ) );
     }
 
     [Fact]

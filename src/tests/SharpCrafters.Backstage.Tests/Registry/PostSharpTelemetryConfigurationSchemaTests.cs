@@ -197,25 +197,46 @@ public sealed class PostSharpTelemetryConfigurationSchemaTests : TestsBase
     [Fact]
     public void AnEntryThatIsPrunedIsRemoved()
     {
-        var sessions = ImmutableDictionary<string, DateTime>.Empty
-            .Add( "old-session", new DateTime( 2026, 1, 1, 0, 0, 0, DateTimeKind.Utc ) )
-            .Add( "new-session", new DateTime( 2026, 9, 1, 0, 0, 0, DateTimeKind.Utc ) );
+        var prompts = ImmutableDictionary<string, DateTime>.Empty
+            .Add( "old-prompt", new DateTime( 2026, 1, 1, 0, 0, 0, DateTimeKind.Utc ) )
+            .Add( "new-prompt", new DateTime( 2026, 9, 1, 0, 0, 0, DateTimeKind.Utc ) );
 
-        this.Update( c => c with { Sessions = sessions } );
+        this.Update( c => c with { IssuePrompts = prompts } );
+
+        using ( var promptsKey = this.FeedbackKey().OpenSubKey( "IssuePrompts" ) )
+        {
+            Assert.Equal( 2, promptsKey!.GetValueNames().Count );
+        }
+
+        this.Update( c => c with { IssuePrompts = prompts.Remove( "old-prompt" ) } );
+
+        using ( var promptsKey = this.FeedbackKey().OpenSubKey( "IssuePrompts" ) )
+        {
+            Assert.Equal( ["new-prompt"], promptsKey!.GetValueNames() );
+        }
+
+        Assert.False( this.Read().IssuePrompts.ContainsKey( "old-prompt" ) );
+    }
+
+    /// <summary>
+    /// The <c>Sessions</c> sub-key belongs to <see cref="RegistryUsageSessionStore"/>, which writes one value at a time.
+    /// A write of the telemetry configuration must leave it alone, otherwise it would delete the values that the store
+    /// wrote since the configuration was read.
+    /// </summary>
+    [Fact]
+    public void AnUpdateDoesNotTouchTheSessions()
+    {
+        using ( var sessionsKey = this.FeedbackKey().CreateSubKey( "Sessions" )! )
+        {
+            sessionsKey.SetDateTime( "a-project", new DateTime( 2026, 9, 1, 0, 0, 0, DateTimeKind.Utc ) );
+        }
+
+        this.Update( c => c with { UsageConsent = TelemetryConsent.No, MatomoSalt = 1 } );
 
         using ( var sessionsKey = this.FeedbackKey().OpenSubKey( "Sessions" ) )
         {
-            Assert.Equal( 2, sessionsKey!.GetValueNames().Count );
+            Assert.Equal( ["a-project"], sessionsKey!.GetValueNames() );
         }
-
-        this.Update( c => c with { Sessions = sessions.Remove( "old-session" ) } );
-
-        using ( var sessionsKey = this.FeedbackKey().OpenSubKey( "Sessions" ) )
-        {
-            Assert.Equal( ["new-session"], sessionsKey!.GetValueNames() );
-        }
-
-        Assert.False( this.Read().Sessions.ContainsKey( "old-session" ) );
     }
 
     /// <summary>

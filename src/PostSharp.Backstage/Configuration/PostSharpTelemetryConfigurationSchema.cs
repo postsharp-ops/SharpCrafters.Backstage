@@ -30,8 +30,10 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
     /// </remarks>
     private const string _issuesKeyName = "Issues";
 
+    // The 'Sessions' sub-key of the same key is not mapped here. It belongs to RegistryUsageSessionStore, which reads
+    // and writes one value at a time. Writing it as a dictionary here would also delete the values written by that store
+    // since this object was read.
     private const string _issuePromptsKeyName = "IssuePrompts";
-    private const string _sessionsKeyName = "Sessions";
 
     public override string KeyPath => PostSharpRegistry.FeedbackKeyPath;
 
@@ -54,7 +56,6 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
             RetentionPeriodInDays = key.GetInt32( "RetentionPeriodInDays" ),
             Issues = ReadDictionary( key, _issuesKeyName, value => (ReportingStatus) (value as int? ?? 0) ),
             IssuePrompts = ReadDictionaryOfValues( key, _issuePromptsKeyName, RegistryValueConverters.QWordToDateTime ),
-            Sessions = ReadDictionaryOfValues( key, _sessionsKeyName, RegistryValueConverters.QWordToDateTime ),
             Version = key.GetInt32( PostSharpRegistry.ConfigurationVersionValueName )
         };
 
@@ -75,7 +76,6 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
 
         WriteDictionary( key, _issuesKeyName, configuration.Issues, ( subKey, name, status ) => subKey.SetInt32( name, (int) status ) );
         WriteDictionary( key, _issuePromptsKeyName, configuration.IssuePrompts, ( subKey, name, date ) => subKey.SetDateTime( name, date ) );
-        WriteDictionary( key, _sessionsKeyName, configuration.Sessions, ( subKey, name, date ) => subKey.SetDateTime( name, date ) );
 
         if ( configuration.Version != null )
         {

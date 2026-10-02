@@ -141,6 +141,11 @@ public static class PostSharpProduct
             // into one key and neither would read what the other wrote.
             services.AddService( typeof(ILicenseAuditKeyProvider), _ => PostSharpLicenseAuditKeyProvider.Instance );
 
+            // The record of when each project was last reported stays in the key where this version has always kept it,
+            // one value per project, but each value is now read and written alone rather than with the whole telemetry
+            // configuration.
+            services.AddRegistryUsageSessionStore( RegistryHiveKind.CurrentUser, PostSharpRegistry.TelemetrySessionsKeyPath );
+
             // The repository settings are in the postsharp.config file at the root of the repository, which is XML.
             services.AddService( typeof(IRepositoryConfigurationReader), _ => PostSharpRepositoryConfigurationReader.Instance );
         }
