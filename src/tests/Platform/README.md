@@ -59,5 +59,6 @@ pwsh ./eng/RunDockerTests.ps1 -Platform linux-x64 -Test NamedLocks
 pwsh ./src/tests/Platform/RunMacOSTests.ps1
 ```
 
-The process management suite ends every process that the product recognizes on the machine, including the compiler
-server and MSBuild nodes. Run it in a container, or on an agent that runs one build at a time.
+The process management suite runs the `shutdown` command, which stops every process that the product recognizes on the
+machine, including the compiler server and MSBuild nodes. Run it in a container, or on an agent that runs one build at a
+time. Its test of the build servers runs in a container only.

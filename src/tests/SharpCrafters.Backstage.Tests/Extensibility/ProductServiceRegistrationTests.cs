@@ -10,6 +10,7 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Audit;
+using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Testing;
 using System;
 using System.Runtime.InteropServices;
@@ -120,4 +121,38 @@ public sealed class ProductServiceRegistrationTests
     public void AProductCanReplaceTheDefaultAuditKeyProvider()
         => Assert.IsType<PostSharpLicenseAuditKeyProvider>(
             BuildServices( PostSharpProduct.Instance ).GetRequiredBackstageService<ILicenseAuditKeyProvider>() );
+
+    /// <summary>
+    /// PostSharp reads its repository settings from <c>postsharp.config</c>, which is XML, and Metalama from
+    /// <c>metalama.json</c>, with the reader of the services.
+    /// </summary>
+    [Fact]
+    public void OnlyPostSharpRegistersARepositoryConfigurationReader()
+    {
+        Assert.IsType<PostSharp.Backstage.Configuration.PostSharpRepositoryConfigurationReader>(
+            BuildServices( PostSharpProduct.Instance ).GetBackstageService<SharpCrafters.Backstage.Repositories.IRepositoryConfigurationReader>() );
+
+        Assert.Null( BuildServices( MetalamaProduct.Instance ).GetBackstageService<SharpCrafters.Backstage.Repositories.IRepositoryConfigurationReader>() );
+    }
+
+    /// <summary>
+    /// Metalama records the usage session of each project in a file, and PostSharp in a value of the registry key where
+    /// this version has always kept it. Off Windows, PostSharp uses files too.
+    /// </summary>
+    [Fact]
+    public void EachProductRegistersItsUsageSessionStore()
+    {
+        Assert.IsType<FileUsageSessionStore>( BuildServices( MetalamaProduct.Instance ).GetRequiredBackstageService<IUsageSessionStore>() );
+
+        var postSharp = BuildServices( PostSharpProduct.Instance ).GetRequiredBackstageService<IUsageSessionStore>();
+
+        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+        {
+            Assert.IsType<RegistryUsageSessionStore>( postSharp );
+        }
+        else
+        {
+            Assert.IsType<FileUsageSessionStore>( postSharp );
+        }
+    }
 }

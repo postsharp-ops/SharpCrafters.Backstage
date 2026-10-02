@@ -198,7 +198,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
     /// <summary>
     /// Gets the part of the timeout that has not elapsed yet, in milliseconds, or zero when the timeout has expired.
     /// </summary>
-    private static int GetRemainingMilliseconds( TimeSpan timeout, Stopwatch stopwatch )
+    internal static int GetRemainingMilliseconds( TimeSpan timeout, Stopwatch stopwatch )
     {
         var remaining = timeout - stopwatch.Elapsed;
 

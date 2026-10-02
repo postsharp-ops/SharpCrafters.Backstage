@@ -13,6 +13,7 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Audit;
+using SharpCrafters.Backstage.Repositories;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
@@ -62,6 +63,11 @@ public static class PostSharpProduct
     /// the two versions share live in the registry, and nothing is gained by sharing a directory of derived files
     /// whose layout differs anyway.
     /// </para>
+    /// <para>
+    /// <see cref="ProductProfile.RepositoryConfigurationFileName"/> is <c>postsharp.config</c>, the configuration file
+    /// that the compiler already reads, so that a repository has one PostSharp file and not two. It is read by
+    /// <see cref="PostSharpRepositoryConfigurationReader"/>.
+    /// </para>
     /// </remarks>
     public static ProductProfile Profile { get; } = new(
         Name: "PostSharp",
@@ -74,7 +80,8 @@ public static class PostSharpProduct
     {
         LongName = "PostSharp",
         ToolAssemblyNamePrefix = "PostSharp.Backstage",
-        LogoName = "postsharp"
+        LogoName = "postsharp",
+        RepositoryConfigurationFileName = "postsharp.config"
     };
 
     /// <summary>
@@ -138,6 +145,9 @@ public static class PostSharpProduct
             // one value per project, but each value is now read and written alone rather than with the whole telemetry
             // configuration.
             services.AddRegistryUsageSessionStore( RegistryHiveKind.CurrentUser, PostSharpRegistry.TelemetrySessionsKeyPath );
+
+            // The repository settings are in the postsharp.config file at the root of the repository, which is XML.
+            services.AddService( typeof(IRepositoryConfigurationReader), _ => PostSharpRepositoryConfigurationReader.Instance );
         }
     };
 }

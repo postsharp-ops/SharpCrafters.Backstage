@@ -16,9 +16,14 @@ namespace SharpCrafters.Backstage.PlatformTests;
 /// </summary>
 public static class PlatformTestServices
 {
+    /// <summary>
+    /// Gets the description of the platform tests as an application, for the services and for the commands.
+    /// </summary>
+    public static IApplicationInfo ApplicationInfo { get; } = new PlatformTestApplicationInfo();
+
     public static IServiceProvider CreateServiceProvider( bool addLicensing = false, bool addUserInterface = false )
         => BackstageServiceFactory.CreateServiceProvider(
-            new BackstageInitializationOptions( new PlatformTestApplicationInfo(), MetalamaProduct.Instance )
+            new BackstageInitializationOptions( ApplicationInfo, MetalamaProduct.Instance )
             {
                 AddLicensing = addLicensing,
                 AddUserInterface = addUserInterface,
