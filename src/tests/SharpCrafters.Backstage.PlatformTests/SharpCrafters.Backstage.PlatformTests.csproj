@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- An xunit.v3 test project is an executable. -->
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>SharpCrafters.Backstage.PlatformTests</RootNamespace>
+
+        <!--
+          The tests run on the test agents, from the test archive, because they need the platform and the kind of host
+          that the agent declares. 'Build.ps1 test' runs them on the build host too, where the tests of the other platforms
+          and the tests that need a declared kind of host are skipped.
+        -->
+        <RunsOnTestAgents>true</RunsOnTestAgents>
+
+        <!-- The tests of the other platforms are skipped by PlatformFact, so one archive serves every agent. -->
+        <TestApplicationPlatforms>win-x64;linux-x64;linux-arm64;osx-arm64</TestApplicationPlatforms>
+
+        <!-- The tests change the environment of the process and end processes of the machine. -->
+        <TestApplicationRunAlone>true</TestApplicationRunAlone>
+
+        <TestApplicationPrepareScript>TestPrepare.ps1</TestApplicationPrepareScript>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Metalama.Backstage\Metalama.Backstage.csproj" />
+
+        <!-- For TestLicenseKeyProvider, which signs license keys with the test authority, and for PlatformFact. -->
+        <ProjectReference Include="..\SharpCrafters.Backstage.Testing\SharpCrafters.Backstage.Testing.csproj" />
+
+        <!-- The second process of the cross-process tests. Its files are copied to the output directory of the tests. -->
+        <ProjectReference Include="..\SharpCrafters.Backstage.PlatformTestHelper\SharpCrafters.Backstage.PlatformTestHelper.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" />
+        <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    </ItemGroup>
+
+    <!--
+      The application hosts of the helper for the Unix platforms. The tests run the helper under its own name, which only an
+      application host gives, and the application host of the build is for the operating system of the build. The helper is
+      therefore built once more for each Unix runtime, and its application host is copied to apphosts/<runtime>/.
+      TestPrepare.ps1 copies the one of the agent beside the helper assembly.
+    -->
+    <ItemGroup>
+        <PlatformTestHelperRuntime Include="linux-x64;linux-arm64;osx-arm64" />
+    </ItemGroup>
+
+    <Target Name="CopyPlatformTestHelperAppHosts" AfterTargets="CopyFilesToOutputDirectory">
+        <MSBuild Projects="..\SharpCrafters.Backstage.PlatformTestHelper\SharpCrafters.Backstage.PlatformTestHelper.csproj"
+                 Targets="GetPlatformTestHelperAppHost"
+                 Properties="RuntimeIdentifier=%(PlatformTestHelperRuntime.Identity);SelfContained=false"
+                 RemoveProperties="TargetFramework;NoBuild;PublishDir">
+            <Output TaskParameter="TargetOutputs" ItemName="_PlatformTestHelperAppHost" />
+        </MSBuild>
+
+        <Copy SourceFiles="@(_PlatformTestHelperAppHost)"
+              DestinationFiles="@(_PlatformTestHelperAppHost->'$(OutDir)apphosts\%(RuntimeIdentifier)\%(Filename)%(Extension)')"
+              SkipUnchangedFiles="true" />
+    </Target>
+
+    <!-- The publication of the test archive does not build, and publishes the application hosts that the build copied. -->
+    <Target Name="PublishPlatformTestHelperAppHosts" AfterTargets="ComputeResolvedFilesToPublishList">
+        <ItemGroup>
+            <_PlatformTestHelperAppHostFile Include="$(OutDir)apphosts\**" />
+            <ResolvedFileToPublish Include="@(_PlatformTestHelperAppHostFile)"
+                                   RelativePath="apphosts\%(_PlatformTestHelperAppHostFile.RecursiveDir)%(_PlatformTestHelperAppHostFile.Filename)%(_PlatformTestHelperAppHostFile.Extension)"
+                                   CopyToPublishDirectory="PreserveNewest" />
+        </ItemGroup>
+    </Target>
+
+</Project>

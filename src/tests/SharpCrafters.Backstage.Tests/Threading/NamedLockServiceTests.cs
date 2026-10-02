@@ -1366,7 +1366,7 @@ public sealed class NamedLockServiceTests : IDisposable
     /// nothing is armed must also be process-local, and must not even be attempted. The absence of a
     /// <see cref="LockEventKind.Created"/> event for it is what proves the latch, and is the assertion that a
     /// regression removing <see cref="IOException"/> from the classifier would fail. Until now that branch was
-    /// covered only by the docker test.
+    /// covered only by the platform tests.
     /// </para>
     /// </remarks>
     [Fact]

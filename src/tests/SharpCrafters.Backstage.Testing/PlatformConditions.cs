@@ -20,7 +20,8 @@ public static class PlatformConditions
 {
     /// <summary>
     /// The name of the environment variable that declares the kind of host: <c>container</c> or <c>host</c>. The
-    /// launchers of the platform tests set it, because detecting it is part of the code under test.
+    /// build configurations of the test agents that run the platform tests set it, because detecting it is part of the
+    /// code under test.
     /// </summary>
     public const string HostVariableName = "BACKSTAGE_PLATFORM_TEST_HOST";
 

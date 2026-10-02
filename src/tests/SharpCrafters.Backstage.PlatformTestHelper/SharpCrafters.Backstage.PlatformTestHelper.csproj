@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      The second process of the cross-process platform tests. Its assembly name is longer than the 15 characters that Linux
+      keeps of a process name, and it has an apphost, so that a test can run it under that name.
+    -->
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>SharpCrafters.Backstage.PlatformTests</RootNamespace>
+        <UseAppHost>true</UseAppHost>
+
+        <!-- The runtimes that SharpCrafters.Backstage.PlatformTests builds an application host for. Listing them here makes
+             the restore download their application host packs. -->
+        <RuntimeIdentifiers>linux-x64;linux-arm64;osx-arm64</RuntimeIdentifiers>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\Metalama.Backstage\Metalama.Backstage.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The version of the application of the tests, which the user interface services require, as an application has one. -->
+        <AssemblyMetadata Include="PackageVersion" Value="1.0.0" />
+    </ItemGroup>
+
+    <!-- Builds the helper and returns its application host, for the runtime of the build. See SharpCrafters.Backstage.PlatformTests.csproj. -->
+    <Target Name="GetPlatformTestHelperAppHost" DependsOnTargets="Build" Returns="@(_PlatformTestHelperAppHost)">
+        <ItemGroup>
+            <_PlatformTestHelperAppHost Include="$(TargetDir)$(AssemblyName)$(_NativeExecutableExtension)" RuntimeIdentifier="$(RuntimeIdentifier)" />
+        </ItemGroup>
+    </Target>
+
+</Project>
