@@ -343,6 +343,8 @@ public sealed class ConfigurationManagerStressTests : IDisposable
 
         public string TelemetryUploadPackagesDirectory => Path.Combine( this.TelemetryDirectory, "UploadPackages" );
 
+        public string TelemetrySessionsDirectory => Path.Combine( this.TelemetryDirectory, "Sessions" );
+
         public string CrashReportsDirectory => Path.Combine( this.TelemetryDirectory, "CrashReports" );
     }
 }

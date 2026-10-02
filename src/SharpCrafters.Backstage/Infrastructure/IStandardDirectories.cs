@@ -56,6 +56,12 @@ namespace SharpCrafters.Backstage.Infrastructure
         /// </summary>
         string TelemetryUploadPackagesDirectory { get; }
 
+        /// <summary>
+        /// Gets the directory that holds one file per project, recording when the usage of that project was last
+        /// reported. See <see cref="Telemetry.FileUsageSessionStore"/>.
+        /// </summary>
+        string TelemetrySessionsDirectory { get; }
+
         string CrashReportsDirectory { get; }
     }
 }

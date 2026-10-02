@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Serialization;
 using System;
 using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace SharpCrafters.Backstage.Telemetry;
@@ -119,12 +118,10 @@ public sealed record TelemetryConfiguration : ConfigurationFile
         init => this._issuePrompts = value ?? _emptyDates;
     }
 
-    [JsonConverter( typeof(CaseInsensitiveImmutableDictionaryConverterFactory<DateTime>) )]
-    public ImmutableDictionary<string, DateTime> Sessions
-    {
-        get => this._sessions;
-        init => this._sessions = value ?? _emptyDates;
-    }
+    // The time of the last usage report of each project is no longer held here: see IUsageSessionStore. Earlier versions
+    // of Metalama share this file and still keep that record in a 'Sessions' member, so this version must preserve it.
+    // It does so without declaring the member: an undeclared member is read into UnknownMembers and written back
+    // unchanged by every update. Declaring it again would make this version the owner of its content.
 
     // A property that is absent from the JSON file deserializes to null rather than to its initializer, so every
     // dictionary normalizes null in its 'init' accessor (which 'with' expressions also go through). Without this, a
@@ -138,7 +135,6 @@ public sealed record TelemetryConfiguration : ConfigurationFile
 
     private readonly ImmutableDictionary<string, ReportingStatus> _issues = _emptyIssues;
     private readonly ImmutableDictionary<string, DateTime> _issuePrompts = _emptyDates;
-    private readonly ImmutableDictionary<string, DateTime> _sessions = _emptyDates;
 
     public DateTime? LastMatomoPostTime { get; init; }
 
@@ -154,12 +150,4 @@ public sealed record TelemetryConfiguration : ConfigurationFile
     /// <see cref="DefaultRetentionPeriodInDays"/> (30 days), applied at cleanup time.
     /// </summary>
     public int? RetentionPeriodInDays { get; init; }
-
-    public TelemetryConfiguration CleanUp( DateTime threshold )
-    {
-        return this with
-        {
-            Sessions = this.Sessions.Where( s => s.Value.Date >= threshold ).ToImmutableDictionary( k => k.Key, k => k.Value, this.Sessions.KeyComparer )
-        };
-    }
 }
