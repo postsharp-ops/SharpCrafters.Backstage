@@ -33,7 +33,7 @@ Only `Usage` is ever promoted automatically (`TelemetryContext.EnableTelemetryIf
 Three gates apply, in this order. `ITelemetryPolicy` composes them, and `ITelemetryContext` is the only public way to report.
 
 1. **Process-level** (`TelemetryConfigurationService.ComputeGlobalTelemetryDisabledReason`): the application declares `IsTelemetryEnabled`, the process is unattended (CI, build server, `Environment.UserInteractive == false`), or `METALAMA_TELEMETRY_OPT_OUT` is set. Any of these disables every scenario. This is why CI never reports and why no prompt loop can run there.
-2. **Repository** (`TelemetryService.GetPolicy`): `metalama.json` at the repository root may set `telemetry.enabled = false`. A directory that is not inside a git repository has no repository to consult and yields `NullTelemetryPolicy.NoContext`, which disables everything.
+2. **Repository** (`TelemetryService.GetPolicy`): `metalama.json` at the repository root may set `telemetry.enabled = false`. PostSharp reads the same setting from the `postsharp.config` at the repository root, as `<Property Name="TelemetryEnabled" Value="False" />`, through the `IRepositoryConfigurationReader` it registers (`PostSharpRepositoryConfigurationReader`). That reader accepts only the literals `True` and `False` and refuses expressions, conditions and a second definition, which the compiler would evaluate and it does not. A directory that is not inside a git repository has no repository to consult and yields `NullTelemetryPolicy.NoContext`, which disables everything.
 3. **Per-scenario consent**, as above.
 
 `GetConsentAndReason` returns the `TelemetryDisabledReason` alongside the consent so that `metalama telemetry status` can explain *why* a category is off. Keep that reason accurate: it is the only diagnostic a user has.
@@ -168,8 +168,9 @@ Writing `LastUploadTime` is how the once-a-day upload is claimed against other p
 | `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, `Sessions`, retention |
 | `toastNotifications.json` | user | per-kind snooze / mute, last notification time |
 | `metalama.json` | repository, committed | `telemetry.enabled` |
+| `postsharp.config` (PostSharp) | repository, committed | the `TelemetryEnabled` property |
 
-All of these are editable with `metalama config edit <alias>`, so **assume any property may be missing or null**.
+The user files are editable with `metalama config edit <alias>`, so **assume any property may be missing or null**. The repository files are not registered with that command and are edited directly; a malformed or unreadable one is ignored and reported through `ITelemetryContext.Warnings`.
 
 > **Rule.** A property absent from the JSON deserializes to `null`, *not* to its property initializer. Every collection property on a `ConfigurationFile` must therefore normalize `null` in its `init` accessor (`with` expressions go through it too). Relying on the initializer alone produces a `NullReferenceException` on the first read after the property is introduced, on every existing installation.
 

@@ -120,4 +120,17 @@ public sealed class ProductServiceRegistrationTests
     public void AProductCanReplaceTheDefaultAuditKeyProvider()
         => Assert.IsType<PostSharpLicenseAuditKeyProvider>(
             BuildServices( PostSharpProduct.Instance ).GetRequiredBackstageService<ILicenseAuditKeyProvider>() );
+
+    /// <summary>
+    /// PostSharp reads its repository settings from <c>postsharp.config</c>, which is XML, and Metalama from
+    /// <c>metalama.json</c>, with the reader of the services.
+    /// </summary>
+    [Fact]
+    public void OnlyPostSharpRegistersARepositoryConfigurationReader()
+    {
+        Assert.IsType<PostSharp.Backstage.Configuration.PostSharpRepositoryConfigurationReader>(
+            BuildServices( PostSharpProduct.Instance ).GetBackstageService<SharpCrafters.Backstage.Repositories.IRepositoryConfigurationReader>() );
+
+        Assert.Null( BuildServices( MetalamaProduct.Instance ).GetBackstageService<SharpCrafters.Backstage.Repositories.IRepositoryConfigurationReader>() );
+    }
 }
