@@ -121,12 +121,52 @@ internal sealed class RegistryChangeWatcher : IDisposable
             return;
         }
 
+        this.OnChangedCore();
+    }
+
+    /// <summary>
+    /// Asks for the next notification and calls the handler.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Dispose"/> can run on another thread at any point of this method, including after the check of
+    /// <see cref="OnChanged"/>. <see cref="RegisteredWaitHandle.Unregister"/> does not wait for a callback that has
+    /// already started, so the event and the key can be closed while this method uses them. Every use of them must
+    /// therefore accept a closed handle. An exception that escapes would end the process, because this method runs on
+    /// a thread-pool thread and nothing catches it there.
+    /// </para>
+    /// <para>
+    /// <see cref="Dispose"/> does not wait for this method instead. The handler raises events of the configuration
+    /// manager, and a subscriber to these events may dispose the manager, and with it this watcher, on this thread.
+    /// A subscriber may also need a lock that the disposing thread holds. Waiting would deadlock in both cases.
+    /// </para>
+    /// <para>
+    /// This method is internal so that a test can run it after <see cref="Dispose"/>, which is the state that the
+    /// race produces.
+    /// </para>
+    /// </remarks>
+    internal void OnChangedCore()
+    {
         // Reset and ask again before the callback runs, so that a change made while it runs is not lost. The
         // notification is one-shot, so a change arriving between the reset and the request would otherwise fall
         // between the two.
-        this._changed.Reset();
+        try
+        {
+            this._changed.Reset();
+        }
+        catch ( ObjectDisposedException )
+        {
+            return;
+        }
 
         if ( !this.Arm() )
+        {
+            return;
+        }
+
+        // Checked again, so that the handler is not called when the watcher was disposed while the notification was
+        // requested. This does not exclude a call that starts just before the disposal, and the handler accepts it.
+        if ( this._isDisposed != 0 )
         {
             return;
         }
@@ -149,7 +189,8 @@ internal sealed class RegistryChangeWatcher : IDisposable
             return;
         }
 
-        // Unregistered first, so that no callback can run against the handles that are about to be closed.
+        // Unregistered first, so that no callback starts after the handles are closed. A callback that has already
+        // started is not waited for, and OnChangedCore accepts the closed handles.
         this._registration?.Unregister( null );
         this._key.Dispose();
         this._changed.Dispose();
