@@ -7,7 +7,7 @@ import jetbrains.buildServer.configs.kotlin.failureConditions.*
 import jetbrains.buildServer.configs.kotlin.triggers.*
 import jetbrains.buildServer.configs.kotlin.projectFeatures.*
 import buildTypes.*
-import buildTypes.DockerTests.*
+import buildTypes.PlatformTests.*
 
 version = "2025.11"
 
@@ -17,25 +17,25 @@ project {
     buildType(ReleaseBuild)
     buildType(PublicBuild)
     buildType(PublicDeployment)
+    buildType(RunAllTestArchives)
 
-    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment)
+    buildTypesOrder = arrayListOf(DebugBuild,ReleaseBuild,PublicBuild,PublicDeployment,RunAllTestArchives)
 
-    subProject(DockerTests)
+    subProject(PlatformTests)
 
-    subProjectsOrder = arrayListOf(DockerTests)
+    subProjectsOrder = arrayListOf(PlatformTests)
 
 }
 
-object DockerTests : Project({
+object PlatformTests : Project({
 
-    name = "Docker Tests"
+    name = "Platform Tests"
 
-    buildType(DockerTestsWindowsX64)
-    buildType(DockerTestsLinuxX64)
-    buildType(DockerTestsLinuxArm64)
-    buildType(RunAllDockerTests)
-    buildType(PlatformTestsMacOSArm64)
+    buildType(PlatformTestsWinX64Net100)
+    buildType(PlatformTestsLinuxX64Net100)
+    buildType(PlatformTestsLinuxArm64Net100)
+    buildType(PlatformTestsMacOSArm64Net100)
 
-    buildTypesOrder = arrayListOf(DockerTestsWindowsX64,DockerTestsLinuxX64,DockerTestsLinuxArm64,RunAllDockerTests,PlatformTestsMacOSArm64)
+    buildTypesOrder = arrayListOf(PlatformTestsWinX64Net100,PlatformTestsLinuxX64Net100,PlatformTestsLinuxArm64Net100,PlatformTestsMacOSArm64Net100)
 
 })

@@ -10,4 +10,16 @@
         <Content Include="$(MSBuildThisFileDirectory)..\..\eng\xunit.runner.json" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
+    <!--
+      The test applications of the solution are packed into test archives, which the test agents run (see
+      doc/testing-platform.md in PostSharp.Engineering). Only the platform tests run there. The other applications are
+      unit tests, which 'Build.ps1 test' runs, so their archives are skipped. A project that runs on the test agents sets
+      RunsOnTestAgents.
+    -->
+    <PropertyGroup Condition="'$(RunsOnTestAgents)' != 'true'">
+        <TestApplicationSkip>The unit tests run in the build, with 'Build.ps1 test'.</TestApplicationSkip>
+    </PropertyGroup>
+
+    <Import Sdk="PostSharp.Engineering.Sdk" Project="TestArchive.targets" />
+
 </Project>

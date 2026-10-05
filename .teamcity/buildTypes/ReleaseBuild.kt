@@ -8,7 +8,7 @@ import jetbrains.buildServer.configs.kotlin.buildSteps.*
 import jetbrains.buildServer.configs.kotlin.failureConditions.*
 import jetbrains.buildServer.configs.kotlin.triggers.*
 import jetbrains.buildServer.configs.kotlin.projectFeatures.*
-import buildTypes.DockerTests.*
+import buildTypes.PlatformTests.*
 
 object ReleaseBuild : BuildType({
 

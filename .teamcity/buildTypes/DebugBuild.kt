@@ -8,7 +8,7 @@ import jetbrains.buildServer.configs.kotlin.buildSteps.*
 import jetbrains.buildServer.configs.kotlin.failureConditions.*
 import jetbrains.buildServer.configs.kotlin.triggers.*
 import jetbrains.buildServer.configs.kotlin.projectFeatures.*
-import buildTypes.DockerTests.*
+import buildTypes.PlatformTests.*
 
 object DebugBuild : BuildType({
 
@@ -19,6 +19,7 @@ object DebugBuild : BuildType({
 +:artifacts/testResults/**/*=>artifacts/testResults
 +:artifacts/logs/**/*=>logs
 +:artifacts/dumps/**/*=>dumps
++:artifacts/tests/*.zip=>artifacts/tests
 """
 
     params {

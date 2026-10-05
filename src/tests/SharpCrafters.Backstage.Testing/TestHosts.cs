@@ -7,7 +7,7 @@ using System;
 namespace SharpCrafters.Backstage.Testing;
 
 /// <summary>
-/// The kinds of host on which a platform test runs. The kind is declared by the launcher of the tests through
+/// The kinds of host on which a platform test runs. The kind is declared by the test agent through
 /// <see cref="PlatformConditions.HostVariableName"/>, because detecting it is part of the code under test.
 /// </summary>
 [Flags]

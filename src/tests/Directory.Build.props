@@ -6,10 +6,12 @@
     <PropertyGroup>
         <NoWarn>$(NoWarn);NU1903</NoWarn>
 
-        <!-- The tests are written with xunit.v3 and run by VSTest (xunit.runner.visualstudio), because the build runs
-             'dotnet test' in its VSTest mode. xunit.v3 declares a test project a Microsoft.Testing.Platform application,
-             which that mode refuses with the .NET 10 SDK and later. -->
-        <IsTestingPlatformApplication>false</IsTestingPlatformApplication>
+        <!-- The tests are xunit.v3 applications of Microsoft.Testing.Platform, which 'Build.ps1 test' runs with
+             'dotnet test' in the mode of that platform. xunit.v3 sets IsTestingPlatformApplication only when its package
+             is restored. PostSharp.Engineering discovers the test applications without a restore, so it reads this
+             property instead. It is set on the test projects only, whose name ends with 'Tests': the test tools and
+             SharpCrafters.Backstage.Testing are not test applications. -->
+        <UseMicrosoftTestingPlatformRunner Condition="$(MSBuildProjectName.EndsWith('Tests'))">true</UseMicrosoftTestingPlatformRunner>
 
         <!-- Rules that xunit.v3 introduced. xUnit1051 asks every call that accepts a cancellation token to pass
              TestContext.Current.CancellationToken, and xUnit1069 asks the same of a test with a Timeout. They are
