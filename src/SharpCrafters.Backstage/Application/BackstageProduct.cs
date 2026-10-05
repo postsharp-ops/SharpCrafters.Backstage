@@ -40,13 +40,17 @@ public sealed record BackstageProduct(
     /// wanted something else would be relying on the order of two registrations to overrule it.
     /// </para>
     /// <para>
-    /// A product owes two of them. It registers an <see cref="Configuration.IConfigurationManager"/>, by calling
+    /// A product owes three of them. It registers an <see cref="Configuration.IConfigurationManager"/>, by calling
     /// either <see cref="Configuration.RegisterConfigurationServices.AddConfigurationServices"/>, which keeps the
     /// configurations in files, or
     /// <see cref="Configuration.RegisterConfigurationServices.AddRegistryConfigurationServices"/>, which keeps in the
     /// Windows registry the ones an <see cref="Configuration.Registry.IRegistryConfigurationSchemaProvider"/> names,
-    /// so as to share them with the earlier versions of the product. And it registers an
-    /// <see cref="Licensing.Audit.ILicenseAuditKeyProvider"/>, which says what makes two audits the same audit.
+    /// so as to share them with the earlier versions of the product. It registers an
+    /// <see cref="Licensing.Audit.ILicenseAuditKeyProvider"/>, which says what makes two audits the same audit. And it
+    /// registers an <see cref="Telemetry.IUsageSessionStore"/>, by calling either
+    /// <see cref="Telemetry.RegisterTelemetryServices.AddFileUsageSessionStore"/> or
+    /// <see cref="Telemetry.RegisterTelemetryServices.AddRegistryUsageSessionStore"/>, which says where the time of the
+    /// last usage report of each project is kept.
     /// </para>
     /// <para>
     /// Declaring them here rather than at each entry point means every host of the product gets the same answers: a

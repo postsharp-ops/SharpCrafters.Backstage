@@ -34,6 +34,12 @@ public static class PostSharpRegistry
     public const string FeedbackKeyPath = RootKeyPath + @"\Feedback";
 
     /// <summary>
+    /// The key that holds, for each project, the time at which its usage was last reported, one value per project. It
+    /// is a sub-key of <see cref="FeedbackKeyPath"/>, and PostSharp 2026.0 does not use it.
+    /// </summary>
+    public const string TelemetrySessionsKeyPath = FeedbackKeyPath + @"\Sessions";
+
+    /// <summary>
     /// The value that holds the one license key that PostSharp 3.0 could read. PostSharp 2026.0 still reads it and
     /// only ever deletes it.
     /// </summary>

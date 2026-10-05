@@ -58,6 +58,7 @@ Work happens on `topic/2027.0/XXXX-description` branches that are merged into `d
 
 The code of this repository was extracted from the `Metalama.Backstage` folder of the
 [Metalama](https://github.com/metalama/Metalama) repository with its full history, using `git filter-repo`.
-The branch `mirror/metalama-2026.1` is a read-only mirror of the same folder on the `develop/2026.1` branch of
-Metalama, refreshed by running the same filter again. Changes made to Metalama 2026.1 reach `develop/2027.0` of this
-repository by merging that mirror branch.
+The branch `mirror/metalama-2026.1` is the result of that extraction from the `develop/2026.1` branch of Metalama.
+The branch `develop/2026.1` continues it: changes made to the same folder in Metalama 2026.1 are applied to it as a
+diff, and reach `develop/2027.0` of this repository by merging `develop/2026.1`. See
+[docs/upstream-merge.md](docs/upstream-merge.md).

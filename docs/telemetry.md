@@ -165,7 +165,8 @@ Writing `LastUploadTime` is how the once-a-day upload is claimed against other p
 
 | File | Scope | Contents |
 |---|---|---|
-| `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, `Sessions`, retention |
+| `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, retention |
+| `Telemetry\Sessions\*.session` (Metalama) | user | time of the last usage report of one project, one file per project |
 | `toastNotifications.json` | user | per-kind snooze / mute, last notification time |
 | `metalama.json` | repository, committed | `telemetry.enabled` |
 | `postsharp.config` (PostSharp) | repository, committed | the `TelemetryEnabled` property |
@@ -175,6 +176,8 @@ The user files are editable with `metalama config edit <alias>`, so **assume any
 > **Rule.** A property absent from the JSON deserializes to `null`, *not* to its property initializer. Every collection property on a `ConfigurationFile` must therefore normalize `null` in its `init` accessor (`with` expressions go through it too). Relying on the initializer alone produces a `NullReferenceException` on the first read after the property is introduced, on every existing installation.
 
 Data under `Telemetry` is deleted after `RetentionPeriodInDays` (30 by default) by `TempFileManager`, including reports still awaiting review.
+
+The time of the last usage report of each project is kept by `IUsageSessionStore`, one record per project, so that the processes of a parallel build do not wait for each other. Metalama keeps one file per project in `Telemetry\Sessions`. PostSharp on Windows keeps one value per project in the registry key `Feedback\Sessions`. Earlier versions of Metalama keep these times in a `Sessions` member of `telemetry.json`. This version does not declare that member, so it is preserved unchanged through `UnknownMembers`. See metalama/Metalama#2092.
 
 ## Testing it
 
