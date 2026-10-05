@@ -99,7 +99,7 @@ internal sealed class RegistryChangeWatcher : IDisposable
     /// <returns><see langword="false"/> if the notification could not be requested, in which case the watch stops.</returns>
     private bool Arm()
     {
-        if ( this._isDisposed != 0 )
+        if ( Volatile.Read( ref this._isDisposed ) != 0 )
         {
             return false;
         }
@@ -116,7 +116,7 @@ internal sealed class RegistryChangeWatcher : IDisposable
 
     private void OnChanged()
     {
-        if ( this._isDisposed != 0 )
+        if ( Volatile.Read( ref this._isDisposed ) != 0 )
         {
             return;
         }
@@ -166,7 +166,7 @@ internal sealed class RegistryChangeWatcher : IDisposable
 
         // Checked again, so that the handler is not called when the watcher was disposed while the notification was
         // requested. This does not exclude a call that starts just before the disposal, and the handler accepts it.
-        if ( this._isDisposed != 0 )
+        if ( Volatile.Read( ref this._isDisposed ) != 0 )
         {
             return;
         }
