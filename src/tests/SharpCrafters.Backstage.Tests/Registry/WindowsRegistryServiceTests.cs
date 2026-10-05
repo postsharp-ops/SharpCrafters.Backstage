@@ -322,5 +322,30 @@ public sealed class WindowsRegistryServiceTests : IDisposable
         // A short wait: the point is that nothing arrives, and a long one would only make the suite slower.
         Assert.False( changed.Wait( TimeSpan.FromSeconds( 1 ) ), "A change was notified after the watch was given up." );
     }
+
+    /// <summary>
+    /// A change callback that runs while the watch is given up on another thread does not throw.
+    /// </summary>
+    /// <remarks>
+    /// Giving up the watch does not wait for a callback that has already started, so the callback can find the
+    /// handles of the watch closed. It runs on a thread of the pool, where an exception ends the process. The test
+    /// produces that state without a race: it gives up the watch, then runs what the callback runs after its first
+    /// check.
+    /// </remarks>
+    [PlatformFact( TestPlatforms.Windows )]
+    public void ACallbackRunningWhileTheWatchIsGivenUpDoesNotThrow()
+    {
+        using var baseKey = RegistryKey.OpenBaseKey( RegistryHive.CurrentUser, RegistryView.Registry32 );
+        var key = baseKey.CreateSubKey( this._keyPath, false );
+
+        var calls = 0;
+        var watcher = RegistryChangeWatcher.Create( key, () => Interlocked.Increment( ref calls ) );
+        Assert.NotNull( watcher );
+
+        watcher.Dispose();
+        watcher.OnChangedCore();
+
+        Assert.Equal( 0, calls );
+    }
 }
 #pragma warning restore CA1416
