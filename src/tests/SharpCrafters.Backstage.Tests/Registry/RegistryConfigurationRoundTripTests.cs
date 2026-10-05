@@ -139,9 +139,7 @@ public sealed class RegistryConfigurationRoundTripTests : TestsBase
                 RetentionPeriodInDays = 30,
                 Issues = ImmutableDictionary<string, ReportingStatus>.Empty.Add( "an-issue-hash", ReportingStatus.Reported ),
                 IssuePrompts = ImmutableDictionary<string, DateTime>.Empty
-                    .Add( "another-issue-hash", new DateTime( 2026, 9, 3, 13, 0, 0, DateTimeKind.Utc ) ),
-                Sessions = ImmutableDictionary<string, DateTime>.Empty
-                    .Add( "a-session", new DateTime( 2026, 9, 4, 14, 0, 0, DateTimeKind.Utc ) )
+                    .Add( "another-issue-hash", new DateTime( 2026, 9, 3, 13, 0, 0, DateTimeKind.Utc ) )
             } );
 
     /// <summary>

@@ -204,6 +204,9 @@ namespace SharpCrafters.Backstage.Infrastructure
         /// <inheritdoc />
         public string TelemetryUploadPackagesDirectory => Path.Combine( this.TelemetryDirectory, "Packages" );
 
+        /// <inheritdoc />
+        public string TelemetrySessionsDirectory => Path.Combine( this.TelemetryDirectory, "Sessions" );
+
         public string CrashReportsDirectory
             => this._serviceProvider.GetRequiredBackstageService<ITempFileManager>()
                 .GetTempDirectory( "CrashReports", CleanUpStrategy.FileOneMonthAfterCreation, versionScope: TempFileVersionScope.None );

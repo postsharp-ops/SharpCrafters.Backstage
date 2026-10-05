@@ -369,6 +369,7 @@ namespace SharpCrafters.Backstage.Testing
                 .AddSingleton<ITelemetryService>( serviceProvider => new TelemetryService( serviceProvider ) )
                 .AddSingleton<IRepositoryConfigurationService>( serviceProvider => new RepositoryConfigurationService( serviceProvider ) )
                 .AddSingleton<IUsageSessionFactory>( serviceProvider => new UsageSessionFactory( serviceProvider ) )
+                .AddSingleton<IUsageSessionStore>( serviceProvider => new FileUsageSessionStore( serviceProvider ) )
                 .AddSingleton<IExceptionCapturer>( _ => new TestExceptionCapturer() )
                 .AddSingleton( serviceProvider => new ExceptionSensitiveDataHelper( serviceProvider ) )
                 .AddSingleton<TelemetryReportUploader>( serviceProvider => new TelemetryReportUploader( serviceProvider ) )

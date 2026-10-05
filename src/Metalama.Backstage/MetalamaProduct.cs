@@ -112,6 +112,10 @@ public static class MetalamaProduct
             // An audit is throttled by the content of its report, so that a report is sent again whenever anything in
             // it changes. Nothing else reads this record, so there is no other version to agree with.
             services.AddService( typeof(ILicenseAuditKeyProvider), _ => ReportContentLicenseAuditKeyProvider.Instance );
+
+            // The record of when each project was last reported is a file per project, so that the processes of a
+            // parallel build do not wait for each other.
+            services.AddFileUsageSessionStore();
         }
     };
 }

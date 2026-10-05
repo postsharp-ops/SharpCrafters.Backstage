@@ -9,7 +9,9 @@ namespace SharpCrafters.Backstage.Repositories;
 /// <summary>
 /// Resolves the repository-scoped <c>metalama.json</c> configuration for a directory by walking up the directory tree
 /// to the repository root (the directory containing <c>.git</c>). Only the <c>metalama.json</c> at the repository root
-/// is read; a misplaced or malformed file is ignored and reported as a warning on the returned result.
+/// is read; a misplaced or malformed file is ignored and reported as a warning on the returned result. A product whose
+/// file has another format, such as the <c>postsharp.config</c> of PostSharp, registers an
+/// <see cref="IRepositoryConfigurationReader"/>, which reads the file instead.
 /// </summary>
 internal interface IRepositoryConfigurationService : IBackstageService
 {

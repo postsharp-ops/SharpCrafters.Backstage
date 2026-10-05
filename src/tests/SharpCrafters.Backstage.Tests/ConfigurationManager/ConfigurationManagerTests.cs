@@ -5,7 +5,9 @@
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Serialization;
+using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Testing;
+using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using Xunit;
@@ -83,5 +85,45 @@ public sealed class ConfigurationManagerTests : TestsBase
         var newValueFromManager = configurationManager.Get<TestConfigurationFile>();
 
         Assert.True( newValueFromManager.IsModified );
+    }
+
+    /// <summary>
+    /// Earlier versions of Metalama keep the time of the last usage report of each project in a <c>Sessions</c> member
+    /// of <c>telemetry.json</c>. This version no longer declares that member, and it must keep it through a read, an
+    /// update and a second read, entries older than one day included: pruning them is the business of the version that
+    /// owns them. See issue 2092.
+    /// </summary>
+    [Fact]
+    public void TheSessionsOfAnEarlierVersionSurviveAnUpdateOfTheTelemetryConfiguration()
+    {
+        const string sessions = """
+                                {
+                                  "Project1": "2026-01-15T10:00:00Z",
+                                  "Project2": "2020-01-01T00:00:00Z"
+                                }
+                                """;
+
+        using var configurationManager = new Configuration.ConfigurationManager( this.ServiceProvider );
+        var path = configurationManager.GetFilePath<TelemetryConfiguration>();
+
+        this.FileSystem.WriteAllText( path, $$"""{ "UsageReportingAction": 1, "Sessions": {{sessions}} }""" );
+
+        Assert.Equal( TelemetryConsent.Yes, configurationManager.Get<TelemetryConfiguration>().UsageConsent );
+
+        configurationManager.Update<TelemetryConfiguration>( c => c with { UsageConsent = TelemetryConsent.No } );
+
+        using var expected = JsonDocument.Parse( sessions );
+        using var written = JsonDocument.Parse( this.FileSystem.ReadAllText( path ) );
+
+        Assert.Equal( TelemetryConsent.No, (TelemetryConsent) written.RootElement.GetProperty( "UsageReportingAction" ).GetInt32() );
+        Assert.Equal( JsonSerializer.Serialize( expected.RootElement ), JsonSerializer.Serialize( written.RootElement.GetProperty( "Sessions" ) ) );
+
+        // A second read and update, from a manager that has not cached anything, keeps it as well.
+        using var otherConfigurationManager = new Configuration.ConfigurationManager( this.ServiceProvider );
+        otherConfigurationManager.Update<TelemetryConfiguration>( c => c with { MatomoSalt = 1 } );
+
+        using var rewritten = JsonDocument.Parse( this.FileSystem.ReadAllText( path ) );
+
+        Assert.Equal( JsonSerializer.Serialize( expected.RootElement ), JsonSerializer.Serialize( rewritten.RootElement.GetProperty( "Sessions" ) ) );
     }
 }

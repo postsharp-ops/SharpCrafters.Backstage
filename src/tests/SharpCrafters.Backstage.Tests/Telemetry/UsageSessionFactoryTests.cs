@@ -6,6 +6,7 @@ using Metalama.Backstage;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Telemetry.Metrics;
@@ -42,11 +43,6 @@ public sealed class UsageSessionFactoryTests : TestsBase
     /// <para>
     /// The clock must be pinned before the services are created, because the device age reported to Matomo is measured
     /// from the time at which <see cref="TestFileSystem"/> was constructed.
-    /// </para>
-    /// <para>
-    /// The time of the day must not be midnight, because <see cref="TelemetryConfiguration.CleanUp"/> compares the date
-    /// of a session with a threshold that has a time of the day, so a session started at midnight is retained for a
-    /// full extra day. See <see cref="SessionShouldBeCleanedUpAfterOneDay"/>.
     /// </para>
     /// </remarks>
     private static readonly DateTime _testTime = new( 2026, 1, 15, 10, 30, 0, DateTimeKind.Utc );
@@ -88,9 +84,14 @@ public sealed class UsageSessionFactoryTests : TestsBase
         session.Dispose();
 
         Assert.True( session.Metrics.IsReadOnly );
-        Assert.Single( this.FileSystem.Mock.AllFiles, f => Path.GetFileName( f ).StartsWith( "Usage-", StringComparison.Ordinal ) );
-        Assert.Single( this.FileSystem.Mock.AllFiles, f => Path.GetFileName( f ).StartsWith( "Telemetry-", StringComparison.Ordinal ) );
-        Assert.Equal( 2, this.FileSystem.Mock.AllFiles.Count() );
+
+        // The record of the session is the only other file.
+        var reportFiles = this.FileSystem.Mock.AllFiles.Where( f => !f.StartsWith( this.SessionsDirectory, StringComparison.OrdinalIgnoreCase ) ).ToList();
+
+        Assert.Single( reportFiles, f => Path.GetFileName( f ).StartsWith( "Usage-", StringComparison.Ordinal ) );
+        Assert.Single( reportFiles, f => Path.GetFileName( f ).StartsWith( "Telemetry-", StringComparison.Ordinal ) );
+        Assert.Equal( 2, reportFiles.Count );
+        Assert.Single( this.SessionFiles );
     }
 
     private void AssertReportingDisabled()
@@ -103,6 +104,11 @@ public sealed class UsageSessionFactoryTests : TestsBase
         Assert.Empty( this.FileSystem.Mock.AllFiles );
         Assert.Empty( this.HttpClientFactory.ProcessedRequests );
     }
+
+    private string SessionsDirectory => this.ServiceProvider.GetRequiredBackstageService<IStandardDirectories>().TelemetrySessionsDirectory;
+
+    private string[] SessionFiles
+        => this.FileSystem.DirectoryExists( this.SessionsDirectory ) ? this.FileSystem.GetFiles( this.SessionsDirectory ) : [];
 
     private IUsageSession CreateUsageSession( string kind = "TestSession" )
     {
@@ -228,18 +234,19 @@ public sealed class UsageSessionFactoryTests : TestsBase
     }
 
     [Fact]
-    public void SessionShouldBeCleanedUpAfterOneDay()
+    public void EachProjectIsRecordedInAFileOfItsOwn()
     {
-        void AssertSessionsCount( int count ) => Assert.Equal( count, this.ConfigurationManager!.Get<TelemetryConfiguration>().Sessions.Count );
-
-        AssertSessionsCount( 0 );
+        Assert.Empty( this.SessionFiles );
         this.AssertSessionShouldBeReported( "Project1" );
-        AssertSessionsCount( 1 );
+        Assert.Single( this.SessionFiles );
         this.AssertSessionShouldBeReported( "Project2" );
-        AssertSessionsCount( 2 );
+        Assert.Equal( 2, this.SessionFiles.Length );
         this.Time.AddTime( TimeSpan.FromDays( 1 ) );
-        this.AssertSessionShouldBeReported();
-        AssertSessionsCount( 1 );
+        this.AssertSessionShouldBeReported( "Project1" );
+        Assert.Equal( 2, this.SessionFiles.Length );
+
+        // The record of a project is not kept in the telemetry configuration any more.
+        Assert.False( this.ConfigurationManager!.Get<TelemetryConfiguration>().UnknownMembers?.ContainsKey( "Sessions" ) ?? false );
     }
 
     [Fact]

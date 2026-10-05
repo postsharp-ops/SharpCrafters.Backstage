@@ -2,7 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
@@ -21,7 +20,12 @@ internal sealed class TelemetryContext : ITelemetryContext
     private readonly IEventDispatcher _eventDispatcher;
     private readonly ITelemetryConfigurationService _telemetryConfigurationService;
     private readonly IDateTimeProvider _time;
-    private readonly IConfigurationManager _configurationManager;
+    private readonly IUsageSessionStore _usageSessionStore;
+
+    /// <summary>
+    /// The minimal interval between two usage reports of the same project.
+    /// </summary>
+    private static readonly TimeSpan _sessionPeriod = TimeSpan.FromDays( 1 );
 
     public TelemetryContext(
         IServiceProvider serviceProvider,
@@ -35,7 +39,7 @@ internal sealed class TelemetryContext : ITelemetryContext
         this._eventDispatcher = serviceProvider.GetRequiredBackstageService<IEventDispatcher>();
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
         this._time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
-        this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
+        this._usageSessionStore = serviceProvider.GetRequiredBackstageService<IUsageSessionStore>();
     }
 
     public ITelemetryPolicy Policy { get; }
@@ -74,48 +78,24 @@ internal sealed class TelemetryContext : ITelemetryContext
     /// <param name="projectName">The name of the project, or the kind of the session when the project is unknown.</param>
     /// <returns><see langword="true"/> if this caller is the one that must report the session.</returns>
     /// <remarks>
-    /// The decision and the record of it are a single transaction of the configuration manager, so exactly one of
-    /// several concurrent callers obtains <see langword="true"/> for a given project and day. The in-process
-    /// monitor that used to surround this method is gone with the optimistic loop it existed to relieve: the
-    /// callers of that loop each read, transformed and compared before discovering that another one had written in
-    /// the meantime, and this method, being a per-process singleton called once per project, was the largest
-    /// source of that self-contention (issue 1696).
+    /// The decision and the record of it are made by <see cref="IUsageSessionStore"/>, which keeps one record per
+    /// project. At most one of several concurrent callers obtains <see langword="true"/> for a given project and day,
+    /// and callers asking about different projects do not wait for each other. The records used to be a dictionary of
+    /// <see cref="TelemetryConfiguration"/>, and every project then took the lock of the whole configuration
+    /// (issues 1696 and 2092).
     /// </remarks>
     private bool ShouldCollectMetrics( string projectName )
     {
-        var now = this._time.UtcNow;
-
-        var configuration = this._configurationManager.Get<TelemetryConfiguration>();
-
-        if ( configuration.Sessions.TryGetValue( projectName, out var lastReported ) && lastReported.AddDays( 1 ) > now )
+        if ( this._usageSessionStore.TryClaim( projectName, this._time.UtcNow, _sessionPeriod ) )
         {
-            this._logger.Trace?.Log( $"Session of project '{projectName}' should not be reported because it has been reported on {lastReported}." );
+            this._logger.Trace?.Log( $"Session of project '{projectName}' should be reported." );
 
-            return false;
+            return true;
         }
 
-        return this._configurationManager.UpdateIf<TelemetryConfiguration>(
-            c =>
-            {
-                if ( c.Sessions.TryGetValue( projectName, out var raceReported ) && raceReported.AddDays( 1 ) > now )
-                {
-                    this._logger.Trace?.Log(
-                        $"Session of project '{projectName}' should not be reported because it is being reported by a concurrent process." );
+        this._logger.Trace?.Log( $"Session of project '{projectName}' should not be reported." );
 
-                    return false;
-                }
-
-                return true;
-            },
-            c =>
-            {
-                this._logger.Trace?.Log( $"Session of project '{projectName}' should be reported." );
-
-                c = c.CleanUp( now.AddDays( -1 ) );
-                c = c with { Sessions = c.Sessions.SetItem( projectName, now ) };
-
-                return c;
-            } );
+        return false;
     }
 
     private void EnableTelemetryIfDefault()
