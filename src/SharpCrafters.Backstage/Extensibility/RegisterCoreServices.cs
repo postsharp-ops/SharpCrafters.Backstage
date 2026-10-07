@@ -109,6 +109,9 @@ public static class RegisterCoreServices
             serviceProviderBuilder.AddService( typeof(ILockingProcessDetector), _ => new LockingProcessDetector() );
         }
 
+        // Let the user change how long a locked file is waited for.
+        serviceProviderBuilder.AddSingleton<IFileLockRetrySettings>( serviceProvider => new FileLockRetrySettings( serviceProvider ) );
+
         if ( options.AddDumper || options.AddDiagnostics )
         {
             serviceProviderBuilder.AddService( typeof(IMiniDumper), serviceProvider => new MiniDumper( serviceProvider ) );

@@ -56,6 +56,11 @@ public sealed class RetryBudget
     public TimeSpan? Duration { get; }
 
     /// <summary>
+    /// Returns a budget with the same number of attempts and another total time.
+    /// </summary>
+    internal RetryBudget WithDuration( TimeSpan duration ) => new( this.MaxAttempts, duration );
+
+    /// <summary>
     /// Determines whether another attempt is allowed.
     /// </summary>
     /// <param name="attemptsMade">The number of attempts of the current operation that have failed so far.</param>
