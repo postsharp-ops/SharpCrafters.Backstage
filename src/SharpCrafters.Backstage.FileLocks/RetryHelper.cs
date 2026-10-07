@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Diagnostics;
+using SharpCrafters.Backstage.Extensibility;
 
 namespace SharpCrafters.Backstage.FileLocks
 {
@@ -83,8 +84,16 @@ namespace SharpCrafters.Backstage.FileLocks
         /// the call and not to each file.
         /// </param>
         /// <remarks>
+        /// <para>
         /// The number of attempts of the budget applies to this operation. The time of the budget, and the number of
         /// failed attempts and the time given to <paramref name="onFailedAttempt"/>, are counted for the whole call.
+        /// </para>
+        /// <para>
+        /// The <c>Trace</c> writer of <paramref name="logger"/> receives the first failed attempt, each failed attempt
+        /// whose error differs from the previous one, and how the retries end: the attempt that succeeds, the attempt
+        /// after which the budget is spent, or an error that is not retried. A failed attempt with the same error as
+        /// the previous one is not written, so that a long wait does not write one line for each attempt.
+        /// </para>
         /// </remarks>
         private static T RetryCore<T>(
             Func<T> action,
@@ -98,12 +107,15 @@ namespace SharpCrafters.Backstage.FileLocks
             var delay = 10.0;
             budget ??= RetryBudget.Default;
             retryPredicate ??= e => e is UnauthorizedAccessException or IOException || (uint) e.HResult == 0x80070020;
+            var previousHResult = 0;
 
             for ( var i = 0; /* nothing */; i++ )
             {
+                T result;
+
                 try
                 {
-                    return action();
+                    result = action();
                 }
                 catch ( Exception e ) when ( retryPredicate( e ) )
                 {
@@ -115,12 +127,22 @@ namespace SharpCrafters.Backstage.FileLocks
                         onException?.Invoke( e );
                     }
 
+                    if ( i == 0 || e.HResult != previousHResult )
+                    {
+                        logger?.Trace?.Log(
+                            $"Attempt {i + 1} failed after {elapsed.TotalMilliseconds:F0} ms: {e.GetType().FullName} (0x{e.HResult:X8}): {e.Message}" );
+                    }
+
+                    previousHResult = e.HResult;
+
                     // Called before the budget is checked, so that a warning whose threshold is reached by the last
                     // attempt is still reported.
                     onFailedAttempt?.Invoke( progress.FailedAttempts, elapsed, e );
 
                     if ( !budget.AllowsAnotherAttempt( i + 1, elapsed ) )
                     {
+                        logger?.Trace?.Log( $"Giving up after {i + 1} attempt(s) and {elapsed.TotalMilliseconds:F0} ms." );
+
                         throw;
                     }
 
@@ -134,7 +156,23 @@ namespace SharpCrafters.Backstage.FileLocks
                     }
 
                     delay *= 1.2;
+
+                    continue;
                 }
+                catch ( Exception e )
+                {
+                    logger?.Trace?.Log(
+                        $"Attempt {i + 1} failed with an error that is not retried: {e.GetType().FullName} (0x{e.HResult:X8}): {e.Message}" );
+
+                    throw;
+                }
+
+                if ( i > 0 )
+                {
+                    logger?.Trace?.Log( $"Attempt {i + 1} succeeded after {progress.Elapsed.TotalMilliseconds:F0} ms." );
+                }
+
+                return result;
             }
         }
 
@@ -189,6 +227,8 @@ namespace SharpCrafters.Backstage.FileLocks
             RetryBudget? budget,
             IRetryClock clock )
         {
+            ApplySettings( serviceProvider, ref warning, ref budget );
+
             var context = new DeadlockDetectionContext( serviceProvider, logger, files, warning );
             var progress = new RetryProgress( clock );
 
@@ -264,6 +304,10 @@ namespace SharpCrafters.Backstage.FileLocks
         /// <exception cref="LockedFileException">
         /// The operation still failed when the budget was spent, and processes holding the files were found.
         /// </exception>
+        /// <remarks>
+        /// An <see cref="IFileLockRetrySettings"/> service of <paramref name="serviceProvider"/> can replace the time
+        /// limit of <paramref name="budget"/> and the threshold of <paramref name="warning"/>.
+        /// </remarks>
         public static T RetryWithLockDetection<T>(
             IReadOnlyList<string> files,
             Func<T> action,
@@ -272,7 +316,24 @@ namespace SharpCrafters.Backstage.FileLocks
             ILogger? logger = null,
             RetryWarning? warning = null,
             RetryBudget? budget = null )
+            => RetryWithLockDetection( files, action, serviceProvider, retryPredicate, logger, warning, budget, new StopwatchRetryClock() );
+
+        /// <summary>
+        /// Executes a function that affects several files while retrying, measuring the time and waiting with the given
+        /// clock. A test passes a clock that advances without waiting.
+        /// </summary>
+        internal static T RetryWithLockDetection<T>(
+            IReadOnlyList<string> files,
+            Func<T> action,
+            IServiceProvider? serviceProvider,
+            Predicate<Exception>? retryPredicate,
+            ILogger? logger,
+            RetryWarning? warning,
+            RetryBudget? budget,
+            IRetryClock clock )
         {
+            ApplySettings( serviceProvider, ref warning, ref budget );
+
             var context = new DeadlockDetectionContext( serviceProvider, logger, files, warning );
 
             return ExecuteWithLockDetection(
@@ -283,8 +344,35 @@ namespace SharpCrafters.Backstage.FileLocks
                     context.OnRecoverableException,
                     context.OnFailedAttempt,
                     budget,
-                    new RetryProgress( new StopwatchRetryClock() ) ),
+                    new RetryProgress( clock ) ),
                 context );
+        }
+
+        /// <summary>
+        /// Replaces the time limit of a budget and the threshold of a warning with the values of the
+        /// <see cref="IFileLockRetrySettings"/> service, when the service provider has one.
+        /// </summary>
+        private static void ApplySettings( IServiceProvider? serviceProvider, ref RetryWarning? warning, ref RetryBudget? budget )
+        {
+            var settings = serviceProvider?.GetBackstageService<IFileLockRetrySettings>();
+
+            if ( settings == null )
+            {
+                return;
+            }
+
+            if ( settings.Timeout != null && budget?.Duration != null )
+            {
+                budget = budget.WithDuration( settings.Timeout.Value );
+            }
+
+            if ( settings.WarningThreshold != null && warning != null )
+            {
+                var threshold = settings.WarningThreshold.Value;
+                var limit = budget?.Duration;
+
+                warning = limit != null && threshold >= limit.Value ? null : warning.WithDuration( threshold );
+            }
         }
 
         private static T ExecuteWithLockDetection<T>(
