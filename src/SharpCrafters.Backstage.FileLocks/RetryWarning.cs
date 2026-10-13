@@ -51,6 +51,12 @@ public sealed class RetryWarning
     public static RetryWarning AfterDuration( TimeSpan duration, Action<RetryWarningContext> report ) => new( null, duration, report );
 
     /// <summary>
+    /// Returns a warning with the same delegate, reported when the operation has been failing for a given time instead
+    /// of at the threshold of this warning.
+    /// </summary>
+    internal RetryWarning WithDuration( TimeSpan duration ) => new( null, duration, this._report );
+
+    /// <summary>
     /// Creates the delegate that one call of a <see cref="RetryHelper"/> method invokes after each failed attempt. The
     /// delegate reports the warning the first time the threshold is reached, and does nothing on later calls.
     /// </summary>
