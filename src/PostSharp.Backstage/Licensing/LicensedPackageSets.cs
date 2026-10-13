@@ -48,10 +48,15 @@ public static class LicensedPackageSets
     public const LicensedPackages Ultimate = LicensedPackages.All;
 
     /// <summary>
-    /// What an unattended build is entitled to. It is everything but <see cref="LicensedPackages.Diagnostics"/>,
-    /// which PostSharp Logging is licensed per production server rather than per build.
+    /// What an unattended build is entitled to, which is everything.
     /// </summary>
-    public const LicensedPackages Unattended = LicensedPackages.All & ~LicensedPackages.Diagnostics;
+    /// <remarks>
+    /// PostSharp 2026.0 and earlier excluded <see cref="LicensedPackages.Diagnostics"/>, so that a build server needed
+    /// a license for PostSharp Logging in production mode. PostSharp 2027.0 grants it: Logging is no longer sold on its
+    /// own, and an unattended process never takes a seat from a license server, which left a team licensed through
+    /// a license server unable to build Logging on its build servers.
+    /// </remarks>
+    public const LicensedPackages Unattended = LicensedPackages.All;
 
     /// <summary>
     /// Determines whether a set of granted packages satisfies a requirement, which it does when it contains every

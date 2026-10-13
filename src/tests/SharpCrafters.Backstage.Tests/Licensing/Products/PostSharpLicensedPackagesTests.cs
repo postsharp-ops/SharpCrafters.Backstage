@@ -62,8 +62,14 @@ public sealed class PostSharpLicensedPackagesTests
         LicensedPackageSets.Framework,
         LicensedPackages.Essentials | LicensedPackages.Common | LicensedPackages.Framework | LicensedPackages.Diagnostics )]
     [InlineData( LicensedPackageSets.Ultimate, LicensedPackages.All )]
-    [InlineData( LicensedPackageSets.Unattended, LicensedPackages.All & ~LicensedPackages.Diagnostics )]
     public void ASetContainsThePackagesOfPostSharp2026( LicensedPackages set, LicensedPackages expected ) => Assert.Equal( expected, set );
+
+    /// <summary>
+    /// The one set that differs from PostSharp 2026.0: an unattended build is entitled to everything, where PostSharp
+    /// 2026.0 excluded <see cref="LicensedPackages.Diagnostics"/>.
+    /// </summary>
+    [Fact]
+    public void TheUnattendedSetContainsEverything() => Assert.Equal( LicensedPackages.All, LicensedPackageSets.Unattended );
 
     /// <summary>
     /// Every package is in <see cref="LicensedPackages.All"/>, so a set that grants everything grants each of them.
@@ -122,8 +128,8 @@ public sealed class PostSharpLicensedPackagesTests
     // An unmodified build, which the version control system vouches for, is entitled to everything.
     [InlineData( LicenseProduct.PostSharpFramework, LicenseType.Unmodified, LicensedPackageSets.Ultimate )]
 
-    // An unattended build is entitled to everything but logging, which is licensed per production server rather than
-    // per build. The license type decides this, whatever product the key names.
+    // An unattended build is entitled to the unattended set. The license type decides this, whatever product the key
+    // names.
     [InlineData( LicenseProduct.PostSharpUltimate, LicenseType.Unattended, LicensedPackageSets.Unattended )]
     [InlineData( LicenseProduct.PostSharpFramework, LicenseType.Unattended, LicensedPackageSets.Unattended )]
     [InlineData( LicenseProduct.PostSharpCachingLibrary, LicenseType.Unattended, LicensedPackageSets.Unattended )]
@@ -131,15 +137,15 @@ public sealed class PostSharpLicensedPackagesTests
         => Assert.Equal( expected, PostSharpLicenseExtensions.GetLicensedPackages( product, licenseType ) );
 
     /// <summary>
-    /// An unattended build gets everything but logging, said as what it may and may not do rather than as the name of
-    /// the set it is given.
+    /// An unattended build gets everything, logging included, said as what it may do rather than as the name of the
+    /// set it is given.
     /// </summary>
     [Fact]
-    public void AnUnattendedBuildIsEntitledToEverythingButLogging()
+    public void AnUnattendedBuildIsEntitledToEverythingIncludingLogging()
     {
         var granted = PostSharpLicenseExtensions.GetLicensedPackages( LicenseProduct.PostSharpUltimate, LicenseType.Unattended );
 
-        Assert.False( granted.Includes( LicensedPackages.Diagnostics ) );
+        Assert.True( granted.Includes( LicensedPackages.Diagnostics ) );
         Assert.True( granted.Includes( LicensedPackages.Framework ) );
         Assert.True( granted.Includes( LicensedPackages.Caching ) );
         Assert.True( granted.Includes( LicensedPackages.Threading ) );

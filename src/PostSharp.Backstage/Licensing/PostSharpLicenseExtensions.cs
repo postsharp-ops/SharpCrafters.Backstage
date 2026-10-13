@@ -27,8 +27,7 @@ public static class PostSharpLicenseExtensions
     /// <para>
     /// The license type matters in three cases only, and in each of them it decides rather than refines. PostSharp
     /// Ultimate with the Community type is the free edition and grants what the free edition grants, not what
-    /// Ultimate grants. An unattended build is entitled to everything but Logging, which is licensed per production
-    /// server and not per build. A build of unmodified sources is entitled to everything. Everywhere else the
+    /// Ultimate grants. An unattended build is entitled to everything, and so is a build of unmodified sources. Everywhere else the
     /// product alone decides, so a Site, Academic or Evaluation key of one product grants exactly what a
     /// per-developer key of that product grants.
     /// </para>
