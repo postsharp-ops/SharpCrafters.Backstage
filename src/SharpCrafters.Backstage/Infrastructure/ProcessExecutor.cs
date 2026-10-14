@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +23,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
     public bool TryExecute( ProcessStartInfo startInfo, TimeSpan timeout, [NotNullWhen( true )] out string? standardOutput )
     {
         startInfo.UseShellExecute = false;
+        startInfo.RedirectStandardInput = true;
         startInfo.RedirectStandardOutput = true;
         startInfo.RedirectStandardError = true;
         startInfo.CreateNoWindow = true;
@@ -38,6 +40,8 @@ internal sealed class ProcessExecutor : IProcessExecutor
         {
             return false;
         }
+
+        CloseStandardInput( process );
 
         // The output stream is read asynchronously. A blocking read returns only when the process closes the stream,
         // so it would make this method wait for the completion of the process for an unbounded time and the timeout
@@ -76,6 +80,7 @@ internal sealed class ProcessExecutor : IProcessExecutor
     public async Task<string?> TryExecuteAsync( ProcessStartInfo startInfo, TimeSpan timeout, CancellationToken cancellationToken )
     {
         startInfo.UseShellExecute = false;
+        startInfo.RedirectStandardInput = true;
         startInfo.RedirectStandardOutput = true;
         startInfo.RedirectStandardError = true;
         startInfo.CreateNoWindow = true;
@@ -92,6 +97,8 @@ internal sealed class ProcessExecutor : IProcessExecutor
         {
             return null;
         }
+
+        CloseStandardInput( process );
 
         // The output stream is read asynchronously, for the reason given in TryExecute: a blocking read
         // would wait for the completion of the process for an unbounded time.
@@ -148,6 +155,36 @@ internal sealed class ProcessExecutor : IProcessExecutor
         }
 
         return await outputTask;
+    }
+
+    /// <summary>
+    /// Closes the standard input of a process whose standard input is redirected, so that the process reads an empty
+    /// stream.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The standard input is redirected rather than inherited, because the process that hosts these services can be
+    /// reading its own standard input. The PostSharp compiler, for instance, reads it to learn that the build is
+    /// cancelled. On Windows, the operations on a handle opened for synchronous I/O are serialized, so a child process
+    /// that inherits that handle blocks at its first operation on it until the read of the parent completes. git blocks
+    /// that way during its initialization, and the command then fails at its timeout.
+    /// </para>
+    /// <para>
+    /// The stream is closed rather than left open, so that a process that reads its standard input reads its end
+    /// instead of waiting for input that nothing writes.
+    /// </para>
+    /// </remarks>
+    private static void CloseStandardInput( Process process )
+    {
+        try
+        {
+            process.StandardInput.Close();
+        }
+        catch ( IOException )
+        {
+            // The process can exit before its standard input is closed. The pipe is then broken, and there is nothing
+            // left to close.
+        }
     }
 
     /// <summary>
