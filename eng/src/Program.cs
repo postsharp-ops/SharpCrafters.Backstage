@@ -11,23 +11,19 @@ using PostSharp.Engineering.BuildTools.ContinuousIntegration.TeamCity.Arguments;
 using PostSharp.Engineering.BuildTools.Docker;
 using BackstageDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.BackstageDependencies.V2027_0;
 
-// The .NET 11 SDK, which the build container installs beside the .NET 10 one so that the product can be built
-// against it on demand. The version is a literal instead of a member of the product family, because the .NET 11 SDK
-// is a prerelease and PostSharp.Engineering names only released feature bands. Keep it equal to the constant of the
-// same name in the Metalama repository, which consumes the packages of this repository, and move both to
-// BackstageDependencies.V2027_0.Family.PreferredVersions.DotNetSdk once the .NET 11 SDK is released.
-const string dotNet11SdkVersion = "11.0.100-rc.1.26425.128";
-
-// The .NET 10 SDK, which global.json names as the main SDK of the product. The version comes from the product
-// family, so that every product of the family requests the same feature band and the container layers are shared.
+// The .NET 11 SDK, which global.json names as the main SDK of the product. The version is a literal instead of a
+// member of the product family, because the .NET 11 SDK is a prerelease and PostSharp.Engineering names only released
+// feature bands. Keep it equal to the constant of the same name in the Metalama repository, which consumes the
+// packages of this repository, and move both to BackstageDependencies.V2027_0.Family.PreferredVersions.DotNetSdk once
+// the .NET 11 SDK is released.
 //
-// It is this SDK and not the .NET 11 one, although the latter is the newer, because the Razor source generator of
-// 11.0.100-rc.1.26425.128 miscompiles the pages of SharpCrafters.Backstage.Worker: it emits the assignment of a tag
-// helper attribute with a source span that is off by two columns, so that
-// `<div asp-validation-summary="ModelOnly">` generates `ValidationSummary.` followed by `="ModelOn`, which does not
-// compile. Three pages are affected and the build of the whole solution fails from a clean output directory. No
-// project of this repository targets net11.0, so nothing is lost by building with the released SDK. Move back to
-// `dotNet11SdkVersion` once a .NET 11 SDK that compiles those pages is available.
+// The Razor source generator of 11.0.100-rc.1.26425.128 miscompiled three pages of SharpCrafters.Backstage.Worker, so
+// global.json named the .NET 10 SDK while that version was current. 11.0.100-rc.2.26504.105 compiles those pages.
+const string dotNet11SdkVersion = "11.0.100-rc.2.26504.105";
+
+// The .NET 10 SDK, which the build container installs beside the .NET 11 one, and which the Linux images of the
+// platform tests install. The version comes from the product family, so that every product of the family requests
+// the same feature band and the container layers are shared.
 var dotNet10SdkVersion = BackstageDependencies.Family.PreferredVersions.DotNetSdk.V_10_0;
 
 // The TeamCity sub-project of the build configurations of the platform tests.
@@ -55,7 +51,7 @@ var product = new Product( BackstageDependencies.Backstage )
 
     // Writes each TeamCity build configuration to its own file under .teamcity/buildTypes instead of into settings.kts.
     GenerateTeamCityBuildTypesInSeparateFiles = true,
-    DotNetSdkVersion = new DotNetSdkVersion( dotNet10SdkVersion ),
+    DotNetSdkVersion = new DotNetSdkVersion( dotNet11SdkVersion ) { AllowPrerelease = true },
 
     // The test projects are xunit.v3 applications of Microsoft.Testing.Platform. Build.ps1 test runs them with
     // `dotnet test` in the mode of that platform, and Build.ps1 build packs them into test archives, which the
