@@ -12,13 +12,13 @@ using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Utilities;
 #if !NETFRAMEWORK
 using Microsoft.Diagnostics.NETCore.Client;
+using System.Runtime.InteropServices;
 #endif
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +29,11 @@ internal sealed class MiniDumper : IMiniDumper
 {
     private static int _isAppDomainInitialized;
     private static volatile WeakReference<MiniDumper>? _latestDumper;
+
+    // The number of dumps being written in the process, by any instance. While it is not zero, the first-chance handler
+    // does nothing: an exception thrown while a dump is written, on the writing thread or on a thread of the diagnostics
+    // client, would otherwise start another dump, recursively on the same thread, and under the MiniDump lock.
+    private static int _writesInProgress;
 
     private readonly ILogger _logger;
     private readonly CrashDumpConfiguration _configuration;
@@ -65,6 +70,11 @@ internal sealed class MiniDumper : IMiniDumper
 
     private static void OnFirstChanceException( object? sender, FirstChanceExceptionEventArgs e )
     {
+        if ( Volatile.Read( ref _writesInProgress ) != 0 )
+        {
+            return;
+        }
+
         var dumperRef = _latestDumper;
 
         if ( dumperRef == null || !dumperRef.TryGetTarget( out var dumper ) )
@@ -120,7 +130,20 @@ internal sealed class MiniDumper : IMiniDumper
 
     public string? Write( MiniDumpOptions? options = null )
     {
-        options ??= MiniDumpOptions.Default;
+        Interlocked.Increment( ref _writesInProgress );
+
+        try
+        {
+            return this.WriteCore( options ?? MiniDumpOptions.Default );
+        }
+        finally
+        {
+            Interlocked.Decrement( ref _writesInProgress );
+        }
+    }
+
+    private string? WriteCore( MiniDumpOptions options )
+    {
 
         string directory;
 
