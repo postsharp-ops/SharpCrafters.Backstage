@@ -10,6 +10,10 @@ using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Utilities;
+#if !NETFRAMEWORK
+using Microsoft.Diagnostics.NETCore.Client;
+using System.Runtime.InteropServices;
+#endif
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -25,6 +29,11 @@ internal sealed class MiniDumper : IMiniDumper
 {
     private static int _isAppDomainInitialized;
     private static volatile WeakReference<MiniDumper>? _latestDumper;
+
+    // The number of dumps being written in the process, by any instance. While it is not zero, the first-chance handler
+    // does nothing: an exception thrown while a dump is written, on the writing thread or on a thread of the diagnostics
+    // client, would otherwise start another dump, recursively on the same thread, and under the MiniDump lock.
+    private static int _writesInProgress;
 
     private readonly ILogger _logger;
     private readonly CrashDumpConfiguration _configuration;
@@ -61,6 +70,11 @@ internal sealed class MiniDumper : IMiniDumper
 
     private static void OnFirstChanceException( object? sender, FirstChanceExceptionEventArgs e )
     {
+        if ( Volatile.Read( ref _writesInProgress ) != 0 )
+        {
+            return;
+        }
+
         var dumperRef = _latestDumper;
 
         if ( dumperRef == null || !dumperRef.TryGetTarget( out var dumper ) )
@@ -81,28 +95,80 @@ internal sealed class MiniDumper : IMiniDumper
                 && !this.MustWrite( aggregateException.InnerException! ))
            && (this._configuration.ExceptionTypes.Contains( exception.GetType().Name ) || this._configuration.ExceptionTypes.Contains( "*" ));
 
+    /// <summary>
+    /// Writes a full dump of the current process.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// On the .NET runtime, the dump is requested from the runtime through its diagnostics channel
+    /// (<c>DiagnosticsClient.WriteDump</c>), which is what <c>dotnet-dump collect</c> does, without the tool: the runtime starts
+    /// <c>createdump</c> as its own child and lets it read its memory. No global tool has to be installed, and no capability
+    /// is needed in a Linux container, where a <c>createdump</c> started by the process itself could not trace its parent. It
+    /// needs the diagnostics of the runtime, which <c>DOTNET_EnableDiagnostics=0</c> turns off.
+    /// </para>
+    /// <para>
+    /// A .NET Framework process has no diagnostics channel, and <c>dotnet dump collect</c> is still invoked there.
+    /// </para>
+    /// </remarks>
+    private bool WriteDump( string fileName )
+    {
+#if !NETFRAMEWORK
+        if ( !RuntimeInformation.FrameworkDescription.StartsWith( ".NET Framework", StringComparison.Ordinal ) )
+        {
+            new DiagnosticsClient( Process.GetCurrentProcess().Id ).WriteDump( DumpType.Full, fileName, logDumpGeneration: false );
+
+            return File.Exists( fileName );
+        }
+#endif
+
+        return ToolInvocationHelper.InvokeTool(
+            this._logger,
+            this._platformInfo.DotNetExePath,
+            $"dump collect -p {Process.GetCurrentProcess().Id} -o \"{fileName}\"",
+            null );
+    }
+
     public string? Write( MiniDumpOptions? options = null )
     {
-        options ??= MiniDumpOptions.Default;
+        Interlocked.Increment( ref _writesInProgress );
 
-        // This lock nests the one that ITempFileManager.GetTempDirectory takes below. The order is always this
-        // one and never the reverse, so it is safe, but it is the reason the lock service rejects only a
-        // reentrant acquisition and not a nested one.
+        try
+        {
+            return this.WriteCore( options ?? MiniDumpOptions.Default );
+        }
+        finally
+        {
+            Interlocked.Decrement( ref _writesInProgress );
+        }
+    }
+
+    private string? WriteCore( MiniDumpOptions options )
+    {
+
+        string directory;
+
+        try
+        {
+            // Before the lock below: ITempFileManager.GetTempDirectory takes a named lock of its own, and the lock
+            // service rejects a named lock acquired while another one is held.
+            directory = this._tempFileManager.GetTempDirectory( "CrashReports", CleanUpStrategy.Always );
+        }
+        catch ( Exception e )
+        {
+            this._logger.LogException( e );
+
+            return null;
+        }
+
         using ( this._lockService.WithGlobalLock( "MiniDump" ) )
         {
             try
             {
-                var directory = this._tempFileManager.GetTempDirectory( "CrashReports", CleanUpStrategy.Always );
-
                 var fileName = Path.Combine( directory, $"{this._processKind.ToString().ToLowerInvariant()}-{Guid.NewGuid()}.dmp" );
 
                 this._logger.Info?.Log( $"Saving a dump to '{fileName}.'" );
 
-                if ( !ToolInvocationHelper.InvokeTool(
-                        this._logger,
-                        this._platformInfo.DotNetExePath,
-                        $"dump collect -p {Process.GetCurrentProcess().Id} -o \"{fileName}\"",
-                        null ) )
+                if ( !this.WriteDump( fileName ) )
                 {
                     return null;
                 }

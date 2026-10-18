@@ -36,6 +36,8 @@
         <PackageReference Include="System.IO.Packaging" />
         <PackageReference Include="System.DirectoryServices" />
         <PackageReference Include="Microsoft.Win32.Registry" Condition="'$(TargetFramework)'=='netstandard2.0'" />
+    <!-- MiniDumper asks the .NET runtime for a dump through its diagnostics channel. A .NET Framework process has none. -->
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Condition="'$(TargetFramework)'!='netframework4.7.2'" />
         <PackageReference Include="System.Threading.AccessControl" />
         <PackageReference Include="System.Threading.Tasks.Extensions" />
     </ItemGroup>
