@@ -17,15 +17,16 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 /// <remarks>
 /// A project is evaluated once to read its target frameworks, then once per target framework with the global properties
 /// <c>TargetFramework</c> and <c>Configuration</c>. The evaluations share one <see cref="ProjectCollection"/>, so the
-/// resolution of the SDK and the imported files are cached across projects.
+/// resolution of the SDK and the imported files are cached across the projects of a command.
 /// </remarks>
 internal sealed class MSBuildProjectEvaluator : IDisposable
 {
     private readonly ProjectCollection _collection = new();
 
-    public IntrospectionProject Evaluate( string projectPath, IntrospectionProvider provider, string? configuration, string? targetFramework )
+    public ProjectEvaluation Evaluate( string projectPath, IntrospectionProvider provider, string? configuration, string? targetFramework )
     {
-        var project = new IntrospectionProject( projectPath, true );
+        var evaluation = new ProjectEvaluation { ProjectPath = Path.GetFullPath( projectPath ) };
+        var inputs = new HashSet<string>( StringComparer.OrdinalIgnoreCase ) { evaluation.ProjectPath };
         var globalProperties = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
 
         if ( configuration != null )
@@ -33,8 +34,9 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
             globalProperties["Configuration"] = configuration;
         }
 
-        var outer = this.Load( project.Path, globalProperties );
+        var outer = this.Load( evaluation.ProjectPath, globalProperties );
         var frameworks = GetTargetFrameworks( outer );
+        AddImports( outer, inputs );
         this._collection.UnloadProject( outer );
 
         foreach ( var framework in frameworks )
@@ -44,10 +46,12 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
                 continue;
             }
 
-            var inner = this.Load( project.Path, new Dictionary<string, string>( globalProperties ) { ["TargetFramework"] = framework } );
+            var inner = this.Load( evaluation.ProjectPath, new Dictionary<string, string>( globalProperties ) { ["TargetFramework"] = framework } );
 
             try
             {
+                AddImports( inner, inputs );
+
                 var file = GetPath( inner, provider.FileProperty );
 
                 // A project without the property is not of the product, or was never restored.
@@ -56,20 +60,19 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
                     continue;
                 }
 
-                var additionalFiles = provider.AdditionalFileProperties
-                    .Select( p => (Property: p, Path: GetPath( inner, p )) )
-                    .Where( p => p.Path != null )
-                    .ToDictionary( p => p.Property, p => p.Path!, StringComparer.OrdinalIgnoreCase );
-
-                project.TargetsList.Add(
-                    new IntrospectionTarget(
-                        project,
-                        framework,
-                        inner.GetPropertyValue( "Configuration" ),
-                        inner.GetPropertyValue( "AssemblyName" ),
-                        file,
-                        additionalFiles,
-                        GetNewestSourceWriteTime( inner ) ) );
+                evaluation.Targets.Add(
+                    new EvaluatedTarget
+                    {
+                        TargetFramework = framework,
+                        Configuration = inner.GetPropertyValue( "Configuration" ),
+                        AssemblyName = inner.GetPropertyValue( "AssemblyName" ),
+                        FilePath = file,
+                        AdditionalFiles = provider.AdditionalFileProperties
+                            .Select( p => (Property: p, Path: GetPath( inner, p )) )
+                            .Where( p => p.Path != null )
+                            .ToDictionary( p => p.Property, p => p.Path!, StringComparer.OrdinalIgnoreCase ),
+                        SourceFiles = GetSourceFiles( inner )
+                    } );
             }
             finally
             {
@@ -77,7 +80,9 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
             }
         }
 
-        return project;
+        evaluation.Inputs = inputs.ToList();
+
+        return evaluation;
     }
 
     private Project Load( string path, Dictionary<string, string> globalProperties )
@@ -89,6 +94,14 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         catch ( Microsoft.Build.Exceptions.InvalidProjectFileException e )
         {
             throw new IntrospectionCommandException( $"The project '{path}' cannot be evaluated: {e.Message}", IntrospectionExitCodes.Error );
+        }
+    }
+
+    private static void AddImports( Project project, HashSet<string> inputs )
+    {
+        foreach ( var import in project.Imports )
+        {
+            inputs.Add( import.ImportedProject.FullPath );
         }
     }
 
@@ -112,30 +125,17 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         return string.IsNullOrWhiteSpace( value ) ? null : Path.GetFullPath( Path.Combine( project.DirectoryPath, value.Trim() ) );
     }
 
-    // The newest of the project file and the compiled source files: a file older than it may not describe the current source.
-    private static DateTime GetNewestSourceWriteTime( Project project )
+    // The compiled source files. The generated sources under obj are rewritten by every build, sometimes after the file, and are
+    // not source.
+    private static List<string> GetSourceFiles( Project project )
     {
-        var newest = File.GetLastWriteTimeUtc( project.FullPath );
+        var obj = Path.Combine( project.DirectoryPath, "obj" ) + Path.DirectorySeparatorChar;
 
-        foreach ( var item in project.GetItems( "Compile" ) )
-        {
-            var path = Path.GetFullPath( Path.Combine( project.DirectoryPath, item.EvaluatedInclude ) );
-
-            // Generated sources under obj are rewritten by every build, after the file sometimes, and are not source.
-            if ( path.StartsWith( Path.Combine( project.DirectoryPath, "obj" ) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase ) )
-            {
-                continue;
-            }
-
-            var time = File.GetLastWriteTimeUtc( path );
-
-            if ( time > newest && File.Exists( path ) )
-            {
-                newest = time;
-            }
-        }
-
-        return newest;
+        return project.GetItems( "Compile" )
+            .Select( i => Path.GetFullPath( Path.Combine( project.DirectoryPath, i.EvaluatedInclude ) ) )
+            .Where( p => !p.StartsWith( obj, StringComparison.OrdinalIgnoreCase ) )
+            .Distinct( StringComparer.OrdinalIgnoreCase )
+            .ToList();
     }
 
     public void Dispose() => this._collection.Dispose();

@@ -6,41 +6,80 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 
 /// <summary>
-/// Finds the targets of a project and the paths of their files: by evaluating the project with the MSBuild of a .NET SDK, or,
-/// when no SDK is compatible with the runtime, by searching the build outputs (Documentation/future/Introspection-Cli.md of
-/// PostSharp, section 5.7).
+/// Finds the targets of the projects of a command and the paths of their files: by evaluating the projects with the MSBuild of
+/// a .NET SDK, through <see cref="EvaluationCache"/>, or, when no SDK is compatible with the runtime, by searching the build
+/// outputs (Documentation/future/Introspection-Cli.md of PostSharp, section 5.7).
 /// </summary>
-internal static class ProjectLocator
+internal sealed class ProjectLocator : IDisposable
 {
-    public static IntrospectionProject Locate(
-        string projectPath,
+    private readonly IntrospectionProvider _provider;
+    private readonly string? _configuration;
+    private readonly string? _targetFramework;
+    private readonly EvaluationCache _cache;
+    private readonly string? _solutionPath;
+    private readonly Action<string> _warn;
+    private bool _hasWarnedAboutSdk;
+
+    // An MSBuildProjectEvaluator, held as IDisposable so that no type of Microsoft.Build is loaded with this class.
+    private IDisposable? _evaluator;
+
+    public ProjectLocator(
         IntrospectionProvider provider,
         string? configuration,
         string? targetFramework,
+        EvaluationCache cache,
+        string? solutionPath,
         Action<string> warn )
     {
-        if ( DotNetSdkLocator.EnsureRegistered() != null )
-        {
-            return Evaluate( projectPath, provider, configuration, targetFramework );
-        }
-
-        warn( $"No .NET SDK is compatible with the runtime of this process, so '{Path.GetFileName( projectPath )}' was not evaluated: its "
-              + $"files were searched under 'bin' and 'artifacts/bin' instead." );
-
-        return Search( projectPath, provider, configuration, targetFramework );
+        this._provider = provider;
+        this._configuration = configuration;
+        this._targetFramework = targetFramework;
+        this._cache = cache;
+        this._solutionPath = solutionPath;
+        this._warn = warn;
     }
 
-    // In a method of its own, never inlined, so that no type of Microsoft.Build is loaded before the SDK is registered.
-    [System.Runtime.CompilerServices.MethodImpl( System.Runtime.CompilerServices.MethodImplOptions.NoInlining )]
-    private static IntrospectionProject Evaluate( string projectPath, IntrospectionProvider provider, string? configuration, string? targetFramework )
+    public IntrospectionProject Locate( string projectPath )
     {
-        using var evaluator = new MSBuildProjectEvaluator();
+        var sdk = DotNetSdkLocator.EnsureRegistered();
 
-        return evaluator.Evaluate( projectPath, provider, configuration, targetFramework );
+        if ( sdk != null )
+        {
+            return this._cache.Evaluate(
+                    projectPath,
+                    this._provider,
+                    this._configuration,
+                    this._targetFramework,
+                    sdk.Version,
+                    this._solutionPath,
+                    () => this.Evaluate( projectPath ) )
+                .ToProject( true );
+        }
+
+        if ( !this._hasWarnedAboutSdk )
+        {
+            this._hasWarnedAboutSdk = true;
+
+            this._warn(
+                "warning: no .NET SDK is compatible with the runtime of this process, so the projects were not evaluated: their files were searched under "
+                + "'bin' and 'artifacts/bin' instead." );
+        }
+
+        return Search( projectPath, this._provider, this._configuration, this._targetFramework );
+    }
+
+    // Never inlined, so that no type of Microsoft.Build is loaded before the SDK is registered.
+    [MethodImpl( MethodImplOptions.NoInlining )]
+    private ProjectEvaluation Evaluate( string projectPath )
+    {
+        this._evaluator ??= new MSBuildProjectEvaluator();
+
+        return ((MSBuildProjectEvaluator) this._evaluator).Evaluate( projectPath, this._provider, this._configuration, this._targetFramework );
     }
 
     /// <summary>
@@ -78,4 +117,6 @@ internal static class ProjectLocator
 
         return project;
     }
+
+    public void Dispose() => this._evaluator?.Dispose();
 }

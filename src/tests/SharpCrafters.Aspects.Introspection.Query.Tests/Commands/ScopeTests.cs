@@ -67,18 +67,16 @@ public sealed class ScopeTests
     }
 
     [Fact]
-    public void SeveralTargetFrameworksAreChosenWithTheFrameworkOption()
+    public void TheFrameworkOptionRestrictsTheTargetFrameworks()
     {
         using var project = new TestProject( targetFrameworks: "<TargetFrameworks>net10.0;net48</TargetFrameworks>" );
         project.WriteSymbols( "net48", TestProject.DefaultSymbols );
 
-        var (exitCode, _, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes"] );
-        Assert.Equal( IntrospectionExitCodes.Error, exitCode );
-        Assert.Contains( "several target frameworks (net10.0, net48): choose one with -f", error, StringComparison.Ordinal );
+        var (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48", "--format", "json"] );
 
-        (exitCode, var output, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48", "--format", "json"] );
         Assert.True( exitCode == 0, error );
         Assert.Contains( "\"targetFramework\": \"net48\"", output, StringComparison.Ordinal );
+        Assert.DoesNotContain( "\"targetFramework\": \"net10.0\"", output, StringComparison.Ordinal );
     }
 
     [Fact]

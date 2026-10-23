@@ -87,9 +87,16 @@ internal sealed class TestProject : IDisposable
                                           </Symbols>
                                           """;
 
-    public TestProject( string? symbols = DefaultSymbols, string projectName = "App", string targetFrameworks = "<TargetFramework>net10.0</TargetFramework>", bool setProperty = true )
+    public TestProject(
+        string? symbols = DefaultSymbols,
+        string projectName = "App",
+        string targetFrameworks = "<TargetFramework>net10.0</TargetFramework>",
+        bool setProperty = true,
+        string? directory = null,
+        string assemblyName = "App" )
     {
-        this.Directory = Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
+        this.AssemblyName = assemblyName;
+        this.Directory = directory ?? Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
         System.IO.Directory.CreateDirectory( this.Directory );
 
         var property = setProperty ? "<TestSymbolFile>bin/$(Configuration)/$(TargetFramework)/$(AssemblyName).pssym</TestSymbolFile>" : "";
@@ -101,7 +108,7 @@ internal sealed class TestProject : IDisposable
              <Project Sdk="Microsoft.NET.Sdk">
                <PropertyGroup>
                  {targetFrameworks}
-                 <AssemblyName>App</AssemblyName>
+                 <AssemblyName>{assemblyName}</AssemblyName>
                  {property}
                </PropertyGroup>
              </Project>
@@ -122,11 +129,13 @@ internal sealed class TestProject : IDisposable
 
     public string Directory { get; }
 
+    public string AssemblyName { get; }
+
     public string SourceFile { get; }
 
     public string WriteSymbols( string targetFramework, string symbols )
     {
-        var path = Path.Combine( this.Directory, "bin", "Debug", targetFramework, "App.pssym" );
+        var path = Path.Combine( this.Directory, "bin", "Debug", targetFramework, this.AssemblyName + ".pssym" );
         System.IO.Directory.CreateDirectory( Path.GetDirectoryName( path )! );
         File.WriteAllText( path, symbols );
 
@@ -156,7 +165,8 @@ internal static class CommandRunner
         IntrospectionProvider provider,
         string[] arguments,
         bool isTerminal = false,
-        string? noColor = null )
+        string? noColor = null,
+        string cacheDirectory = "" )
     {
         var output = new StringWriter();
         var error = new StringWriter();
@@ -169,7 +179,7 @@ internal static class CommandRunner
 
                 IntrospectionCommandFactory.AddIntrospectBranch(
                     c,
-                    new IntrospectionCommandOptions( provider, output, error, workingDirectory, isTerminal, n => n == "NO_COLOR" ? noColor : null ) );
+                    new IntrospectionCommandOptions( provider, output, error, workingDirectory, isTerminal, n => n == "NO_COLOR" ? noColor : null, cacheDirectory ) );
             } );
 
         var exitCode = app.Run( new[] { "introspect" }.Concat( arguments ) );
