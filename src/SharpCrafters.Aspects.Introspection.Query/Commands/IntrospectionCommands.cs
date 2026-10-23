@@ -48,6 +48,12 @@ public static class IntrospectionCommandFactory
                     .WithData( options )
                     .WithDescription( "Describes the collections and their fields, which --where, --select and --order-by use." );
 
+                branch.AddCommand<BatchCommand>( "batch" )
+                    .WithData( options )
+                    .WithDescription(
+                        "Runs several queries, one per line of the standard input or of --file, over one load of the files. Each line is a command without 'introspect', such as 'show declaration src/Customer.cs:18'." )
+                    .WithExample( "introspect", "batch", "--file", "queries.txt" );
+
                 options.Provider.AddCommands( branch, options );
             } );
 }
@@ -89,7 +95,15 @@ public abstract class IntrospectionCommand<T> : Command<T>
     /// </summary>
     /// <exception cref="IntrospectionCommandException">No file exists, or the scope is invalid.</exception>
     protected static IReadOnlyList<IntrospectionTarget> GetTargets( IntrospectionCommandOptions options, IntrospectionCommandSettings settings )
-        => IntrospectionSession.LocateTargets( options, settings );
+        => IntrospectionSession.GetTargets( options, settings );
+
+    /// <summary>
+    /// Gets the model of one target of <see cref="GetTargets"/>, before the merge with the other targets, from the index of its file.
+    /// In a batch, it is the model that the other queries read.
+    /// </summary>
+    /// <exception cref="IntrospectionCommandException">The file is malformed.</exception>
+    protected static IntrospectionModel GetModel( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, IntrospectionTarget target )
+        => IntrospectionSession.GetModel( options, settings, target );
 
     /// <summary>
     /// Writes a JSON document, colored with the JSON widget of Spectre.Console when the output is a terminal, unless
@@ -152,22 +166,32 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
             settings.Select == null ? null : QueryParser.ParsePaths( settings.Select, "--select", type, provider ),
             settings.OrderBy == null ? [] : QueryParser.ParseOrderings( settings.OrderBy, type, provider ),
             Math.Max( 0, settings.Skip ),
-            settings.Limit );
+            settings.GetEffectiveLimit() );
 
         var session = IntrospectionSession.Open( options, settings );
         var context = session.Context;
-        var items = query.Run( context );
+        var (items, matching) = query.Run( context );
+
+        // The default limit keeps the output readable by an agent; the output says when it cut the result.
+        var truncated = query.Skip + items.Count < matching.Count;
 
         switch ( settings.Format )
         {
             case "text" when settings.Count:
-                options.StandardOutput.WriteLine( items.Count );
+                options.StandardOutput.WriteLine( matching.Count );
 
                 break;
 
             case "text":
                 var columns = query.Selection ?? QueryParser.ParsePaths( string.Join( ",", type.DefaultColumns ), "--select", type, provider );
                 options.StandardOutput.Write( TextOutput.Table( context, items, columns ) );
+
+                if ( truncated )
+                {
+                    options.StandardOutput.WriteLine(
+                        $"Showing {items.Count} of {matching.Count} {type.CollectionName}, from {query.Skip + 1}. Use --skip and --limit for another page, --all for all of them, or --count for their number." );
+                }
+
                 options.StandardOutput.WriteLine( TextOutput.Files( context, session.Targets ) );
 
                 break;
@@ -189,10 +213,13 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                         {
                             w.WriteStartObject();
                             JsonOutput.WriteFiles( w, context, session.Targets );
-                            w.WriteNumber( "count", items.Count );
+
+                            // The number of objects that satisfy the conditions, whatever the page.
+                            w.WriteNumber( "count", matching.Count );
 
                             if ( !settings.Count )
                             {
+                                w.WriteBoolean( "truncated", truncated );
                                 w.WriteStartArray( "items" );
 
                                 foreach ( var item in items )
@@ -201,6 +228,11 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                                 }
 
                                 w.WriteEndArray();
+
+                                if ( truncated )
+                                {
+                                    JsonOutput.WriteByNamespace( w, matching );
+                                }
                             }
 
                             w.WriteEndObject();

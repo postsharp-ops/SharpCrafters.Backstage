@@ -45,17 +45,17 @@ public sealed class ShowCommandTests : IDisposable
 
         Assert.Equal( "P:App.Customer.FullName", result.GetProperty( "declaration" ).GetProperty( "id" ).GetString() );
         Assert.Equal( "Customer.cs:18:19", result.GetProperty( "declaration" ).GetProperty( "location" ).GetString() );
-        Assert.Equal( "M:App.Customer.get_FullName", result.GetProperty( "relatedDeclarations" )[0].GetProperty( "id" ).GetString() );
+        Assert.Equal( "M:App.Customer.get_FullName", result.GetProperty( "relatedDeclarations" ).GetProperty( "items" )[0].GetProperty( "id" ).GetString() );
 
-        var instances = result.GetProperty( "aspectInstances" ).EnumerateArray().ToList();
+        var instances = result.GetProperty( "aspectInstances" ).GetProperty( "items" ).EnumerateArray().ToList();
         Assert.Equal( ["Log", "NotifyPropertyChanged"], instances.Select( i => i.GetProperty( "aspectClass" ).GetProperty( "shortName" ).GetString() ).Order() );
 
         // Show expands the predecessors and the transformations of the aspect instances.
         var notify = instances.Single( i => i.GetProperty( "aspectClass" ).GetProperty( "shortName" ).GetString() == "NotifyPropertyChanged" );
-        Assert.Equal( "Attribute", notify.GetProperty( "predecessors" )[0].GetProperty( "kind" ).GetString() );
-        Assert.Equal( "Getter", notify.GetProperty( "transformations" )[0].GetProperty( "semantic" ).GetString() );
+        Assert.Equal( "Attribute", notify.GetProperty( "predecessors" ).GetProperty( "items" )[0].GetProperty( "kind" ).GetString() );
+        Assert.Equal( "Getter", notify.GetProperty( "transformations" ).GetProperty( "items" )[0].GetProperty( "semantic" ).GetString() );
 
-        Assert.Equal( "The FullName property depends on FirstName.", result.GetProperty( "annotations" )[0].GetProperty( "description" ).GetString() );
+        Assert.Equal( "The FullName property depends on FirstName.", result.GetProperty( "annotations" ).GetProperty( "items" )[0].GetProperty( "description" ).GetString() );
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public sealed class ShowCommandTests : IDisposable
 
         Assert.Equal( id, result.GetProperty( "aspectInstance" ).GetProperty( "id" ).GetString() );
         Assert.Equal( "premium", result.GetProperty( "aspectInstance" ).GetProperty( "tags" )[0].GetString() );
-        Assert.Single( result.GetProperty( "aspectInstance" ).GetProperty( "transformations" ).EnumerateArray() );
+        Assert.Single( result.GetProperty( "aspectInstance" ).GetProperty( "transformations" ).GetProperty( "items" ).EnumerateArray() );
     }
 
     [Fact]
@@ -149,7 +149,10 @@ public sealed class ShowCommandTests : IDisposable
         var result = this.RunJson( "show", "aspect-class", "Log" );
 
         Assert.Equal( "App.LogAttribute", result.GetProperty( "aspectClass" ).GetProperty( "name" ).GetString() );
-        Assert.Equal( 3, result.GetProperty( "aspectClass" ).GetProperty( "aspectInstances" ).GetArrayLength() );
+        var instances = result.GetProperty( "aspectClass" ).GetProperty( "aspectInstances" );
+        Assert.Equal( 3, instances.GetProperty( "count" ).GetInt32() );
+        Assert.False( instances.GetProperty( "truncated" ).GetBoolean() );
+        Assert.Equal( 3, instances.GetProperty( "items" ).GetArrayLength() );
     }
 
     [Theory]
@@ -192,6 +195,8 @@ public sealed class ShowCommandTests : IDisposable
 
         var (exitCode, output, _) = this.Run( "schema", "predecessors" );
         Assert.Equal( 0, exitCode );
-        Assert.Contains( "kind (enum): How the predecessor created its aspect instances. Values: Attribute, Multicast, Inherited, Xml,", output, StringComparison.Ordinal );
+        Assert.Contains( "kind (enum): How the predecessor created its aspect instances: Attribute, a custom attribute", output, StringComparison.Ordinal );
+        Assert.Contains( "ChildAspect, an aspect provider (IAspectProvider)", output, StringComparison.Ordinal );
+        Assert.Contains( "Values: Attribute, Multicast, Inherited, Xml,", output, StringComparison.Ordinal );
     }
 }

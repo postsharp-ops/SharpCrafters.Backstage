@@ -58,7 +58,14 @@ internal static class TextOutput
     /// <summary>
     /// Describes a declaration: what applies to it, to its accessors and to its backing field, in order.
     /// </summary>
-    public static string Declaration( QueryContext context, IntrospectionDeclaration declaration, IReadOnlyList<IntrospectionDeclaration> related )
+    /// <param name="limit">The maximal number of objects of each list, or <c>null</c>.</param>
+    /// <param name="next">The command that lists the objects of a truncated list.</param>
+    public static string Declaration(
+        QueryContext context,
+        IntrospectionDeclaration declaration,
+        IReadOnlyList<IntrospectionDeclaration> related,
+        int? limit = null,
+        string? next = null )
     {
         var builder = new StringBuilder();
         var location = context.GetLocation( declaration );
@@ -81,11 +88,13 @@ internal static class TextOutput
             builder.AppendLine( "No aspect applies to it." );
         }
 
-        foreach ( var instance in instances )
+        foreach ( var instance in Take( instances, limit ) )
         {
             builder.AppendLine();
-            builder.Append( AspectInstance( context, instance, transformations ) );
+            builder.Append( AspectInstance( context, instance, transformations, limit ) );
         }
+
+        AppendNote( builder, "aspect instances", instances, limit, next );
 
         var annotations = related.SelectMany( context.GetAnnotations ).Distinct().ToList();
 
@@ -94,10 +103,12 @@ internal static class TextOutput
             builder.AppendLine();
             builder.AppendLine( "Annotations:" );
 
-            foreach ( var annotation in annotations )
+            foreach ( var annotation in Take( annotations, limit ) )
             {
                 builder.AppendLine( CultureInfo.InvariantCulture, $"  - {annotation.Description ?? annotation.AnnotationClass?.Id} (on {Name( annotation.TargetDeclaration )})" );
             }
+
+            AppendNote( builder, "annotations", annotations, limit, next );
         }
 
         var mappings = related.SelectMany( context.GetDeclarationMappings ).Distinct().ToList();
@@ -107,10 +118,12 @@ internal static class TextOutput
             builder.AppendLine();
             builder.AppendLine( "Declaration mappings:" );
 
-            foreach ( var mapping in mappings )
+            foreach ( var mapping in Take( mappings, limit ) )
             {
                 builder.AppendLine( CultureInfo.InvariantCulture, $"  - {mapping.Source.Id} is {mapping.Kind?.ToString().ToLowerInvariant() ?? "mapped"} as {mapping.Target.Id}" );
             }
+
+            AppendNote( builder, "declaration mappings", mappings, limit, next );
         }
 
         return builder.ToString();
@@ -120,7 +133,11 @@ internal static class TextOutput
     /// Describes an aspect instance: its class, its target, its predecessors and its transformations in order. When
     /// <paramref name="transformations"/> is given, only these transformations are listed.
     /// </summary>
-    public static string AspectInstance( QueryContext context, IntrospectionAspectInstance instance, IReadOnlyList<IntrospectionTransformation>? transformations = null )
+    public static string AspectInstance(
+        QueryContext context,
+        IntrospectionAspectInstance instance,
+        IReadOnlyList<IntrospectionTransformation>? transformations = null,
+        int? limit = null )
     {
         var builder = new StringBuilder();
         builder.AppendLine( CultureInfo.InvariantCulture, $"Aspect {instance.AspectClass.ShortName} [{instance.Id}] on {instance.TargetDeclaration.Kind.ToString().ToLowerInvariant()} {Name( instance.TargetDeclaration )}." );
@@ -136,11 +153,15 @@ internal static class TextOutput
         {
             builder.AppendLine( "  Transformations, in order:" );
 
-            foreach ( var transformation in listed.OrderBy( t => t.Order ) )
+            var ordered = listed.OrderBy( t => t.Order ).ToList();
+
+            foreach ( var transformation in Take( ordered, limit ) )
             {
                 var semantic = transformation.Semantic != null ? $" ({transformation.Semantic})" : "";
                 builder.AppendLine( CultureInfo.InvariantCulture, $"    {transformation.Order}. {Name( transformation.TargetDeclaration )}{semantic}: {transformation.Description ?? "(no description)"}" );
             }
+
+            AppendNote( builder, "transformations", ordered, limit, RelatedLists.GetNext( "aspectInstance", "transformations", instance ), "    " );
         }
 
         if ( instance.Tags != null )
@@ -149,6 +170,40 @@ internal static class TextOutput
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Describes aspect instances, at most <paramref name="limit"/> of them, each without its transformations.
+    /// </summary>
+    public static string AspectInstances( QueryContext context, IReadOnlyList<IntrospectionAspectInstance> instances, int? limit, string? next )
+    {
+        var builder = new StringBuilder();
+
+        foreach ( var instance in Take( instances, limit ) )
+        {
+            builder.AppendLine();
+            builder.Append( AspectInstance( context, instance, [], limit ) );
+        }
+
+        AppendNote( builder, "aspect instances", instances, limit, next, leadingLine: true );
+
+        return builder.ToString();
+    }
+
+    private static IEnumerable<T> Take<T>( IReadOnlyList<T> items, int? limit ) => limit is { } l ? items.Take( l ) : items;
+
+    private static void AppendNote<T>( StringBuilder builder, string what, IReadOnlyList<T> items, int? limit, string? next, string indent = "", bool leadingLine = false )
+        where T : class
+    {
+        if ( limit is { } l && items.Count > l )
+        {
+            if ( leadingLine )
+            {
+                builder.AppendLine();
+            }
+
+            builder.AppendLine( indent + RelatedLists.GetNote( what, items, l, next ) );
+        }
     }
 
     /// <summary>
