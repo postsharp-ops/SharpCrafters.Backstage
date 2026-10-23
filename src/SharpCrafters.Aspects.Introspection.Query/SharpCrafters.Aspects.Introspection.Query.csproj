@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- The common model of the introspection of aspects and its loaders, for the tools of PostSharp and Metalama
+             (Documentation/future/Introspection-Cli.md of PostSharp, sections 6 and 7.1). -->
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <RootNamespace>SharpCrafters.Aspects.Introspection.Query</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Aspects.Introspection\SharpCrafters.Aspects.Introspection.csproj" />
+        <PackageReference Include="System.IO.Hashing" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="SharpCrafters.Aspects.Introspection.Query.Tests" />
+    </ItemGroup>
+
+</Project>
