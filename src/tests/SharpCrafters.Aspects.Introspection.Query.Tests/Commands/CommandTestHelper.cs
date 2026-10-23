@@ -40,6 +40,23 @@ internal sealed class TestProvider : IntrospectionProvider
 
     public override IIntrospectionSourceLocations? GetSourceLocations( IntrospectionTarget target ) => this.HasLocations ? new SourceLocations( this ) : null;
 
+    public override void AddCommands( IConfigurator<CommandSettings> branch, IntrospectionCommandOptions options )
+        => branch.AddCommand<FilesCommand>( "files" ).WithData( options );
+
+    /// <summary>
+    /// A command of the product, which reads the files of the scope itself.
+    /// </summary>
+    private sealed class FilesCommand : IntrospectionCommand<IntrospectionCommandSettings>
+    {
+        protected override int Execute( IntrospectionCommandOptions options, IntrospectionCommandSettings settings )
+        {
+            var targets = GetTargets( options, settings );
+            WriteJson( options, settings, "[" + string.Join( ",", targets.Select( t => $"\"{t.Project.Name} {t.TargetFramework}\"" ) ) + "]" );
+
+            return 0;
+        }
+    }
+
     private sealed class SourceLocations( TestProvider provider ) : IIntrospectionSourceLocations
     {
         public IntrospectionSourceLocation? GetLocation( IntrospectionDeclaration declaration ) => provider.Locations.GetValueOrDefault( declaration.Id );

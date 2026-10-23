@@ -40,6 +40,37 @@ internal sealed class IntrospectionSession
     public static IntrospectionSession Open( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, string? sourceFile = null )
     {
         var provider = options.Provider;
+        var existing = LocateTargets( options, settings, sourceFile );
+        var models = new List<(IntrospectionTarget, IntrospectionModel)>();
+
+        foreach ( var target in existing )
+        {
+            try
+            {
+                models.Add( (target, ModelIndex.Load( target, provider, options.CacheDirectory )) );
+            }
+            catch ( IntrospectionFormatException e )
+            {
+                throw new IntrospectionCommandException( $"The file '{target.FilePath}' is malformed: {e.Message}", IntrospectionExitCodes.Error );
+            }
+        }
+
+        var (model, provenance) = models.Count == 1 ? (models[0].Item2, ModelMerger.Single( existing[0] )) : ModelMerger.Merge( models );
+
+        return new IntrospectionSession( existing, new QueryContext( model, provenance, provider, options.WorkingDirectory ) );
+    }
+
+    /// <summary>
+    /// Gets the targets of the scope whose file exists, and warns about the targets whose file is missing or stale.
+    /// </summary>
+    /// <param name="options">The options of the tool.</param>
+    /// <param name="settings">The settings of the command.</param>
+    /// <param name="sourceFile">The full path of a source file, to restrict the scope to the project whose directory holds it, or
+    /// <c>null</c>.</param>
+    /// <exception cref="IntrospectionCommandException">No file exists, or the scope is invalid.</exception>
+    public static IReadOnlyList<IntrospectionTarget> LocateTargets( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, string? sourceFile = null )
+    {
+        var provider = options.Provider;
         var (projectPaths, solutionPath) = ResolveScope( options.WorkingDirectory, settings );
 
         if ( sourceFile != null && projectPaths.Count > 1 )
@@ -110,23 +141,7 @@ internal sealed class IntrospectionSession
                 $"warning: the file of '{target.Project.Name}' ({target.TargetFramework}) is older than a source file: it may not describe the current source. Build the project to refresh it." );
         }
 
-        var models = new List<(IntrospectionTarget, IntrospectionModel)>();
-
-        foreach ( var target in existing )
-        {
-            try
-            {
-                models.Add( (target, ModelIndex.Load( target, provider, options.CacheDirectory )) );
-            }
-            catch ( IntrospectionFormatException e )
-            {
-                throw new IntrospectionCommandException( $"The file '{target.FilePath}' is malformed: {e.Message}", IntrospectionExitCodes.Error );
-            }
-        }
-
-        var (model, provenance) = models.Count == 1 ? (models[0].Item2, ModelMerger.Single( existing[0] )) : ModelMerger.Merge( models );
-
-        return new IntrospectionSession( existing, new QueryContext( model, provenance, provider, options.WorkingDirectory ) );
+        return existing;
     }
 
     /// <summary>

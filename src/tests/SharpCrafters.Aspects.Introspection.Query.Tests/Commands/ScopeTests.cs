@@ -96,6 +96,23 @@ public sealed class ScopeTests
     }
 
     [Fact]
+    public void ACommandOfTheProviderReadsTheTargetsOfTheScope()
+    {
+        using var project = new TestProject( targetFrameworks: "<TargetFrameworks>net10.0;net48</TargetFrameworks>" );
+
+        var (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, ["files"] );
+
+        // The file of net48 is missing: it is left out with a warning, as list and show leave it out.
+        Assert.True( exitCode == 0, error );
+        Assert.Equal( "[\"App net10.0\"]", output.Trim() );
+        Assert.Contains( "warning: the file of 'App' (Debug, net48) does not exist", error, StringComparison.Ordinal );
+
+        // Without any file, the command fails as list and show do.
+        using var empty = new TestProject( symbols: null );
+        Assert.Equal( IntrospectionExitCodes.NoFile, CommandRunner.Run( empty.Directory, this._provider, ["files"] ).ExitCode );
+    }
+
+    [Fact]
     public void TheSdkIsTheHighestThatTheRuntimeCanLoad()
     {
         var root = Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
