@@ -53,7 +53,7 @@ public sealed class MiniDumpTests : TestsBase, IDisposable
         }
 
         var serviceProvider = this.ServiceProvider;
-        var dumper = new MiniDumper( serviceProvider );
+        using var dumper = new MiniDumper( serviceProvider );
 
         try
         {
@@ -72,10 +72,16 @@ public sealed class MiniDumpTests : TestsBase, IDisposable
     }
 
     /// <summary>
-    /// When every exception type makes a dump, an exception thrown while a dump is written does not make the first-chance
-    /// handler start another one: the handler would otherwise call <see cref="MiniDumper.Write"/> again, recursively, on the
-    /// same thread.
+    /// When the type of an exception thrown while a dump is written is one that makes a dump, the exception does not make
+    /// the first-chance handler start another dump: the handler would otherwise call <see cref="MiniDumper.Write"/> again,
+    /// recursively, on the same thread.
     /// </summary>
+    /// <remarks>
+    /// The dumper of this test makes a dump of <see cref="DumpWhileWritingException"/> only, and not of every exception
+    /// type. The first-chance handler asks every live dumper of the process, so a dumper of every exception type would
+    /// also try to write a dump for each exception of the tests that run at the same time, from inside the handler. On
+    /// .NET Framework, the runtime terminates the process when that attempt throws.
+    /// </remarks>
     [Fact]
     public void AnExceptionWhileWritingDoesNotStartAnotherDump()
     {
@@ -88,7 +94,7 @@ public sealed class MiniDumpTests : TestsBase, IDisposable
                 CrashDumps = new CrashDumpConfiguration
                 {
                     Processes = ImmutableDictionary<string, bool>.Empty.WithComparers( StringComparer.OrdinalIgnoreCase ).Add( processKind, true ),
-                    ExceptionTypes = ImmutableArray.Create( "*" )
+                    ExceptionTypes = ImmutableArray.Create( nameof(DumpWhileWritingException) )
                 }
             } );
 
@@ -116,7 +122,7 @@ public sealed class MiniDumpTests : TestsBase, IDisposable
                     throw new IOException();
                 }
 
-                throw new InvalidOperationException();
+                throw new DumpWhileWritingException();
             }
             finally
             {
@@ -135,11 +141,16 @@ public sealed class MiniDumpTests : TestsBase, IDisposable
         {
             this._tempFileManager.OnGetTempDirectory = null;
 
-            // The first-chance handler stays subscribed for the process, and uses the latest dumper: make it one that is disabled.
-            ((InMemoryConfigurationManager) serviceProvider.GetRequiredBackstageService<IConfigurationManager>()).Set( new DiagnosticsConfiguration() );
-            _ = new MiniDumper( serviceProvider );
+            // The first-chance handler stays subscribed for the process: remove the enabled dumper from the ones it considers.
+            dumper.Dispose();
         }
     }
+
+    /// <summary>
+    /// The exception that the first step of a dump throws, which is the only one that the dumper of the test writes a dump
+    /// of.
+    /// </summary>
+    private sealed class DumpWhileWritingException : Exception;
 
     /// <summary>
     /// A temporary directory on the disk, which the dump needs, because the runtime writes it.

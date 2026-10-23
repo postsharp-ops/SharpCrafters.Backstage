@@ -1,0 +1,99 @@
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
+// Refer to LICENSE.md in the repository root for complete details.
+
+using SharpCrafters.Backstage.Telemetry;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace SharpCrafters.Backstage.Application;
+
+/// <summary>
+/// The <see cref="ITelemetryConfigurationService"/> of a composite product. It reads the state of the primary product
+/// and writes a consent to every product, so that one switch in the user interface applies to all of them.
+/// </summary>
+/// <remarks>
+/// The device identifier and the salts are those of the primary product, because the outer service provider reports
+/// the telemetry of the primary product. A product that is not the primary product activates its own telemetry when its
+/// own services report.
+/// </remarks>
+internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigurationService
+{
+    private readonly CompositeProductServices _products;
+
+    public CompositeTelemetryConfigurationService( CompositeProductServices products )
+    {
+        this._products = products;
+    }
+
+    private ITelemetryConfigurationService Primary => this._products.Primary.TelemetryConfigurationService;
+
+    private IEnumerable<ITelemetryConfigurationService> Services => this._products.Products.Select( p => p.TelemetryConfigurationService );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Only the service of the primary product is initialized here, so that the inner service providers are not created
+    /// when the outer one is initialized. The service of another product is initialized when it is created.
+    /// </remarks>
+    public void Initialize() => this.Primary.Initialize();
+
+    public void EnsureActivated() => this.Primary.EnsureActivated();
+
+    public bool IsActivated => this.Primary.IsActivated;
+
+    [Obsolete( "Use SetConsent instead." )]
+    public void SetStatus( bool enabled ) => CompositeBackstageProduct.ForEach( this.Services, s => s.SetStatus( enabled ) );
+
+    [Obsolete( "Use SetConsent instead." )]
+    public void SetStatus( TelemetryScenario scenario, bool enabled ) => CompositeBackstageProduct.ForEach( this.Services, s => s.SetStatus( scenario, enabled ) );
+
+    public void SetConsent( TelemetryConsent action ) => CompositeBackstageProduct.ForEach( this.Services, s => s.SetConsent( action ) );
+
+    public void SetConsent( TelemetryScenario scenario, TelemetryConsent action )
+        => CompositeBackstageProduct.ForEach( this.Services, s => s.SetConsent( scenario, action ) );
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The comparison is made against the consent of the primary product. When it succeeds, the new consent is written
+    /// to the other products whatever their consent was, so that the products stay aligned.
+    /// </remarks>
+    public bool CompareExchangeConsent( TelemetryScenario scenario, TelemetryConsent newAction, TelemetryConsent oldAction )
+    {
+        if ( !this.Primary.CompareExchangeConsent( scenario, newAction, oldAction ) )
+        {
+            return false;
+        }
+
+        CompositeBackstageProduct.ForEach( this.Services.Skip( 1 ), s => s.SetConsent( scenario, newAction ) );
+
+        return true;
+    }
+
+    public Guid DeviceId => this.Primary.DeviceId;
+
+    public TelemetryConsent GetEffectiveConsent( TelemetryScenario scenario ) => this.Primary.GetEffectiveConsent( scenario );
+
+    public (TelemetryConsent Consent, TelemetryDisabledReason Reason) GetEffectiveConsentAndReason( TelemetryScenario scenario )
+        => this.Primary.GetEffectiveConsentAndReason( scenario );
+
+    public bool IsGloballyEnabled => this.Primary.IsGloballyEnabled;
+
+    public void ResetDeviceId() => CompositeBackstageProduct.ForEach( this.Services, s => s.ResetDeviceId() );
+
+    public void ResetReportedIssues() => CompositeBackstageProduct.ForEach( this.Services, s => s.ResetReportedIssues() );
+
+    public long GetSalt( TelemetrySaltKind kind ) => this.Primary.GetSalt( kind );
+
+    [Obsolete( "Use GetSalt(TelemetrySaltKind.Matomo) instead." )]
+    public long MatomoSalt => this.Primary.MatomoSalt;
+
+    [Obsolete( "Use GetSalt(TelemetrySaltKind.UsageTracking) instead." )]
+    public long UsageTrackingSalt => this.Primary.UsageTrackingSalt;
+
+    [Obsolete( "Use GetSalt(TelemetrySaltKind.ExceptionReport) instead." )]
+    public long ExceptionReportingSalt => this.Primary.ExceptionReportingSalt;
+
+    [Obsolete( "Use GetSalt(TelemetrySaltKind.LicenseAudit) instead." )]
+    public long LicenseAuditSalt => this.Primary.LicenseAuditSalt;
+}
