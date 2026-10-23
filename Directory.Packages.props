@@ -36,8 +36,22 @@
     <PackageVersion Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3912.50" />
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
+
+    <!-- The MSBuild API that SharpCrafters.Aspects.Introspection.Query evaluates projects with. Its assemblies are not
+         copied: Microsoft.Build.Locator loads those of the .NET SDK that the process selects, which must be this version
+         or later, so the version is low: the 17.11 line (.NET SDK 8.0.400), at its patch that fixes GHSA-w3q9-fxm7-j8fq,
+         which NuGet reports although no assembly of the package ships. Microsoft.Build.Framework and
+         Microsoft.NET.StringTools are referenced only to exclude their run-time assets, at the version that Microsoft.Build
+         requires exactly. -->
+    <PackageVersion Include="Microsoft.Build" Version="17.11.48" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="17.11.48" />
+    <PackageVersion Include="Microsoft.NET.StringTools" Version="17.11.48" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.7.8" />
+
     <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
+    <!-- The JSON widget of the introspect commands, at the version of the Spectre.Console that Spectre.Console.Cli brings. -->
+    <PackageVersion Include="Spectre.Console.Json" Version="0.55.0" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.DirectoryServices" Version="10.0.8" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.1.1" />
