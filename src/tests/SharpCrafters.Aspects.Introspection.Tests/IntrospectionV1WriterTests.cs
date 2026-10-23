@@ -35,8 +35,8 @@ public sealed class IntrospectionV1WriterTests
         var xml = V1TestHelper.Write(
             writer =>
             {
-                var a = writer.DefineDeclaration( "a", "M:A" );
-                var b = writer.DefineDeclaration( "b", "M:B" );
+                var a = writer.Declare( "M:A" );
+                var b = writer.Declare( "M:B" );
 
                 // A declaration and a string of the same text share a name.
                 writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = b } );
@@ -63,18 +63,36 @@ public sealed class IntrospectionV1WriterTests
         V1TestHelper.Write(
             writer =>
             {
-                var first = writer.DefineDeclaration( "first", "M:A" );
-                var second = writer.DefineDeclaration( "second", "M:A" );
+                var first = writer.Declare( "M:A" );
+                var second = writer.Declare( "M:A" );
 
                 Assert.NotEqual( first, second );
-                Assert.Equal( "M:A", writer.GetIdentifier( second ) );
-                Assert.True( writer.TryGetDeclaration( "second", out var found ) );
-                Assert.Equal( second, found );
+            } );
+    }
 
-                writer.AddDeclarationKey( "third", first );
-                Assert.True( writer.TryGetDeclaration( "third", out found ) );
-                Assert.Equal( first, found );
-                Assert.False( writer.TryGetDeclaration( "fourth", out _ ) );
+    [Fact]
+    public void TheHandleOfAKeyIsCachedAndItsIdentifierFormattedOnce()
+    {
+        V1TestHelper.Write(
+            writer =>
+            {
+                var key = new object();
+                var formatted = 0;
+
+                string Format( object _ )
+                {
+                    formatted++;
+
+                    return "M:A";
+                }
+
+                var first = writer.GetDeclarationHandle( key, Format );
+                var second = writer.GetDeclarationHandle( key, Format );
+
+                Assert.Equal( first, second );
+                Assert.Equal( 1, formatted );
+                Assert.True( writer.GetDeclarationHandle<object>( null, Format ).IsNil );
+                Assert.Equal( 1, formatted );
             } );
     }
 
@@ -84,9 +102,9 @@ public sealed class IntrospectionV1WriterTests
         var xml = V1TestHelper.Write(
             writer =>
             {
-                var aspect = writer.DefineDeclaration( "aspect", "T:Aspect" );
-                var type = writer.DefineDeclaration( "type", "T:C" );
-                var method = writer.DefineDeclaration( "method", "M:C::M()" );
+                var aspect = writer.Declare( "T:Aspect" );
+                var type = writer.Declare( "T:C" );
+                var method = writer.Declare( "M:C::M()" );
 
                 writer.WriteStartAspectClass( new AspectClassData { AspectClass = aspect } );
                 writer.WriteStartPredecessor( new PredecessorData { Declaration = type, Id = "1" } );
@@ -134,9 +152,9 @@ public sealed class IntrospectionV1WriterTests
         var xml = V1TestHelper.Write(
             writer =>
             {
-                var aspect = writer.DefineDeclaration( "aspect", "T:Aspect" );
-                var translatedAspect = writer.DefineDeclaration( "translated aspect", writer.GetIdentifier( aspect ) );
-                var type = writer.DefineDeclaration( "type", "T:C" );
+                var aspect = writer.Declare( "T:Aspect" );
+                var translatedAspect = writer.Declare( "T:Aspect" );
+                var type = writer.Declare( "T:C" );
 
                 writer.WriteStartAspectClass( new AspectClassData { AspectClass = aspect } );
                 writer.WriteStartPredecessor( new PredecessorData { Declaration = type } );
@@ -156,7 +174,7 @@ public sealed class IntrospectionV1WriterTests
         var xml = V1TestHelper.Write(
             writer =>
             {
-                writer.WriteStartAspectClass( new AspectClassData { AspectClass = writer.DefineDeclaration( "aspect", "T:Aspect" ) } );
+                writer.WriteStartAspectClass( new AspectClassData { AspectClass = writer.Declare( "T:Aspect" ) } );
                 writer.WriteStartPredecessor( new PredecessorData { Line = 1, Column = 2 } );
                 writer.WriteEndPredecessor();
                 writer.WriteStartPredecessor( new PredecessorData { File = "a.config", Column = 2 } );
@@ -177,7 +195,7 @@ public sealed class IntrospectionV1WriterTests
         V1TestHelper.Write(
             writer =>
             {
-                var a = writer.DefineDeclaration( "a", "M:A" );
+                var a = writer.Declare( "M:A" );
                 writer.WriteAnnotation( new AnnotationData { TargetDeclaration = a } );
 
                 Assert.Throws<InvalidOperationException>( () => writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = a } ) );
@@ -191,7 +209,7 @@ public sealed class IntrospectionV1WriterTests
         V1TestHelper.Write(
             writer =>
             {
-                var a = writer.DefineDeclaration( "a", "M:A" );
+                var a = writer.Declare( "M:A" );
 
                 Assert.Throws<InvalidOperationException>( () => writer.WriteStartPredecessor( default ) );
                 Assert.Throws<InvalidOperationException>( () => writer.WriteEndAspectClass() );
@@ -212,13 +230,12 @@ public sealed class IntrospectionV1WriterTests
         V1TestHelper.Write(
             writer =>
             {
-                var a = writer.DefineDeclaration( "a", "M:A" );
+                var a = writer.Declare( "M:A" );
 
                 Assert.Throws<ArgumentException>( () => writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = default } ) );
                 Assert.Throws<ArgumentException>( () => writer.WriteDeclarationMapping( default ) );
                 Assert.Throws<ArgumentException>( () => writer.WriteStartAspectClass( default ) );
-                Assert.Throws<ArgumentException>( () => writer.DefineDeclaration( "b", " " ) );
-                Assert.Throws<ArgumentException>( () => writer.DefineDeclaration( "a", "M:B" ) );
+                Assert.Throws<ArgumentException>( () => writer.Declare( " " ) );
 
                 // A handle of another writer.
                 Assert.Throws<ArgumentException>( () => writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = new DeclarationHandle( 99 ) } ) );

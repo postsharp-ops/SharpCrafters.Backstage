@@ -29,6 +29,17 @@ internal static class V1TestHelper
         return Normalize( Encoding.UTF8.GetString( stream.ToArray() ) );
     }
 
+    // A declaration of the tests: each call creates a key of its own, and so a handle of its own.
+    public static DeclarationHandle Declare( this IntrospectionV1Writer writer, string identifier )
+        => writer.GetDeclarationHandle( new TestDeclaration( identifier ), _formatTestDeclaration );
+
+    private static readonly Func<TestDeclaration, string> _formatTestDeclaration = d => d.Identifier;
+
+    private sealed class TestDeclaration( string identifier )
+    {
+        public string Identifier { get; } = identifier;
+    }
+
     public static IntrospectionV1Reader CreateReader( string xml ) => IntrospectionV1Reader.Create( new MemoryStream( Encoding.UTF8.GetBytes( xml ) ) );
 
     // The line endings, which depend on the checkout and on the writer, are compared as LF.
@@ -98,7 +109,7 @@ internal static class V1TestHelper
 
                     if ( !handles.TryGetValue( handle, out var mapped ) )
                     {
-                        mapped = writer.DefineDeclaration( handle, reader.GetIdentifier( handle ) );
+                        mapped = writer.Declare( reader.GetIdentifier( handle ) );
                         handles.Add( handle, mapped );
                     }
 

@@ -69,9 +69,9 @@ public sealed class IntrospectionV1RoundTripTests
         var xml = V1TestHelper.Write(
             writer =>
             {
-                aspectClass = writer.DefineDeclaration( "class", "T:[A]Aspect" );
-                method = writer.DefineDeclaration( "method", "M:[A]C::M()" );
-                other = writer.DefineDeclaration( "other", "M:[A]C::N()" );
+                aspectClass = writer.Declare( "T:[A]Aspect" );
+                method = writer.Declare( "M:[A]C::M()" );
+                other = writer.Declare( "M:[A]C::N()" );
 
                 writer.WriteDeclarationMapping( new DeclarationMappingData { Source = method, Target = other, Kind = DeclarationMappingKind.Wrapped } );
                 writer.WriteStartAspectClass( new AspectClassData { AspectClass = aspectClass, HasLimitedLicense = true } );

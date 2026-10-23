@@ -21,8 +21,8 @@ namespace SharpCrafters.Aspects.Introspection;
 /// transformations. A call that breaks this order throws an <see cref="InvalidOperationException"/>.
 /// </para>
 /// <para>
-/// A declaration is written through a <see cref="DeclarationHandle"/>, which <see cref="DefineDeclaration"/> returns for a key
-/// of the caller, so that its identifier is formatted once. The identifiers are opaque: the caller encodes them.
+/// A declaration is written through a <see cref="DeclarationHandle"/>, which <see cref="GetDeclarationHandle{TKey}"/> returns for
+/// a key of the caller and caches, so that its identifier is formatted once. The identifiers are opaque: the caller encodes them.
 /// </para>
 /// <para>
 /// The writer omits an attribute whose value is the one the format implies, and an optional attribute that has no value.
@@ -82,67 +82,46 @@ public sealed class IntrospectionV1Writer : IDisposable
     }
 
     /// <summary>
-    /// Gets the handle of a declaration that <see cref="DefineDeclaration"/> or <see cref="AddDeclarationKey"/> registered under a
-    /// key.
+    /// Gets the handle of a declaration, identified by an object of the caller. The first call for a key formats its identifier
+    /// with <paramref name="formatIdentifier"/> and caches the handle; the next calls return the cached handle without formatting.
     /// </summary>
-    /// <param name="key">An object of the caller that identifies the declaration, compared with its <see cref="object.Equals(object)"/>.</param>
-    /// <param name="handle">The handle, or a nil handle when the key is not registered.</param>
-    /// <returns><c>true</c> when the key is registered.</returns>
-    public bool TryGetDeclaration( object key, out DeclarationHandle handle ) => this._declarations.TryGetValue( key, out handle );
-
-    /// <summary>
-    /// Registers a declaration under a key and returns its handle. The identifier is written the first time the handle is.
-    /// </summary>
-    /// <param name="key">An object of the caller that identifies the declaration, compared with its <see cref="object.Equals(object)"/>.</param>
-    /// <param name="identifier">The identifier of the declaration, as the caller encodes it.</param>
-    /// <returns>A new handle. Two keys with the same identifier get different handles, which share a name of the name table.</returns>
-    public DeclarationHandle DefineDeclaration( object key, string identifier )
+    /// <param name="key">An object of the caller that identifies the declaration, such as an object of a code model, compared with
+    /// its <see cref="object.Equals(object)"/>. A <c>null</c> key gives a nil handle.</param>
+    /// <param name="formatIdentifier">Formats the identifier of the declaration, as the caller encodes it. Pass a delegate that is
+    /// created once, such as a static lambda, so that a call allocates nothing.</param>
+    /// <returns>The handle of the declaration. Two keys get different handles even when their identifiers are equal, and these
+    /// share a name of the name table. Implied values are omitted when the handles are equal, so by key, not by identifier.</returns>
+    public DeclarationHandle GetDeclarationHandle<TKey>( TKey? key, Func<TKey, string> formatIdentifier )
+        where TKey : class
     {
         if ( key == null )
         {
-            throw new ArgumentNullException( nameof(key) );
+            return default;
         }
+
+        if ( this._declarations.TryGetValue( key, out var handle ) )
+        {
+            return handle;
+        }
+
+        if ( formatIdentifier == null )
+        {
+            throw new ArgumentNullException( nameof(formatIdentifier) );
+        }
+
+        var identifier = formatIdentifier( key );
 
         if ( string.IsNullOrWhiteSpace( identifier ) )
         {
-            throw new ArgumentException( "The identifier of a declaration cannot be empty.", nameof(identifier) );
+            throw new ArgumentException( "The identifier of a declaration cannot be empty.", nameof(formatIdentifier) );
         }
 
-        var handle = new DeclarationHandle( this._identifiers.Count );
+        handle = new DeclarationHandle( this._identifiers.Count );
         this._declarations.Add( key, handle );
         this._identifiers.Add( identifier );
         this._references.Add( null );
 
         return handle;
-    }
-
-    /// <summary>
-    /// Gets the identifier of a declaration that <see cref="DefineDeclaration"/> registered, for example to define another key
-    /// with the same identifier without formatting it again.
-    /// </summary>
-    public string GetIdentifier( DeclarationHandle handle )
-    {
-        this.CheckHandle( handle, nameof(handle) );
-
-        return this._identifiers[handle.Index];
-    }
-
-    /// <summary>
-    /// Registers a handle under one more key, so that <see cref="TryGetDeclaration"/> returns it for that key too. The writer compares
-    /// handles to omit the implied values, so a declaration registered under two keys with one handle is implied where two
-    /// handles with the same identifier are not.
-    /// </summary>
-    /// <param name="key">The other key.</param>
-    /// <param name="handle">A handle that <see cref="DefineDeclaration"/> returned.</param>
-    public void AddDeclarationKey( object key, DeclarationHandle handle )
-    {
-        if ( key == null )
-        {
-            throw new ArgumentNullException( nameof(key) );
-        }
-
-        this.CheckHandle( handle, nameof(handle) );
-        this._declarations.Add( key, handle );
     }
 
     /// <summary>

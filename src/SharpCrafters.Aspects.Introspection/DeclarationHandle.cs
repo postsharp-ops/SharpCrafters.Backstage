@@ -7,7 +7,7 @@ using System;
 namespace SharpCrafters.Aspects.Introspection;
 
 /// <summary>
-/// Identifies a declaration in a weaving symbol file. A writer returns it from <see cref="IntrospectionV1Writer.DefineDeclaration"/>,
+/// Identifies a declaration in a weaving symbol file. A writer returns it from <see cref="IntrospectionV1Writer.GetDeclarationHandle{TKey}"/>,
 /// and a reader returns it in the data structures, where <see cref="IntrospectionV1Reader.GetIdentifier"/> gives its identifier.
 /// The default value, <see cref="IsNil"/>, stands for no declaration.
 /// </summary>
