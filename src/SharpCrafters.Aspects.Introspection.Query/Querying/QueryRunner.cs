@@ -42,10 +42,10 @@ internal sealed class ListQuery
     public int? Limit { get; }
 
     /// <summary>
-    /// Gets the objects that satisfy every condition, in the requested order, after <see cref="Skip"/> and <see cref="Limit"/>.
-    /// Without an ordering, the order is that of the file.
+    /// Gets the objects that satisfy every condition, in the requested order, after <see cref="Skip"/> and <see cref="Limit"/>,
+    /// and all the objects that satisfy every condition, before them. Without an ordering, the order is that of the file.
     /// </summary>
-    public IReadOnlyList<object> Run( QueryContext context )
+    public (IReadOnlyList<object> Items, IReadOnlyList<object> Matching) Run( QueryContext context )
     {
         var items = this.Type.GetItems( context ).Where( item => this.Conditions.All( c => c.IsTrue( context, item ) ) );
 
@@ -66,14 +66,15 @@ internal sealed class ListQuery
             items = ordered!;
         }
 
-        items = items.Skip( this.Skip );
+        var all = items.ToList();
+        IEnumerable<object> page = all.Skip( this.Skip );
 
         if ( this.Limit != null )
         {
-            items = items.Take( this.Limit.Value );
+            page = page.Take( this.Limit.Value );
         }
 
-        return items.ToList();
+        return (page.ToList(), all);
     }
 
     private static readonly IReadOnlyDictionary<string, object?> _empty = new Dictionary<string, object?>();

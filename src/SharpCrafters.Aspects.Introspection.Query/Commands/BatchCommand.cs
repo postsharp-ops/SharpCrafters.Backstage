@@ -82,6 +82,9 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
                 break;
 
             case "jsonl":
+                // The files that the queries read, once, on the first line.
+                options.StandardOutput.WriteLine( JsonOutput.Write( w => WriteFiles( w, results ), indented: false ) );
+
                 foreach ( var result in results )
                 {
                     options.StandardOutput.WriteLine( JsonOutput.Write( w => WriteResult( w, result ), indented: false ) );
@@ -97,6 +100,9 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
                         w =>
                         {
                             w.WriteStartObject();
+
+                            // The queries share one session, so they read the same files: they are written once, not in each result.
+                            WriteFiles( w, results, inObject: true );
                             w.WriteStartArray( "results" );
 
                             foreach ( var result in results )
@@ -241,11 +247,30 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
         }
         else if ( TryParse( result.Output ) is { } document )
         {
-            // Written again rather than copied, so that the result follows the indentation of the batch.
+            // Written again rather than copied, so that the result follows the indentation of the batch, and without its files, which the
+            // batch writes once.
             using ( document )
             {
                 writer.WritePropertyName( "result" );
-                document.RootElement.WriteTo( writer );
+
+                if ( document.RootElement.ValueKind == JsonValueKind.Object )
+                {
+                    writer.WriteStartObject();
+
+                    foreach ( var property in document.RootElement.EnumerateObject() )
+                    {
+                        if ( property.Name != "files" )
+                        {
+                            property.WriteTo( writer );
+                        }
+                    }
+
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    document.RootElement.WriteTo( writer );
+                }
             }
         }
         else
@@ -255,6 +280,50 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
         }
 
         writer.WriteEndObject();
+    }
+
+    // The union of the files of the results, in the order in which the queries read them.
+    private static void WriteFiles( Utf8JsonWriter writer, IEnumerable<QueryResult> results, bool inObject = false )
+    {
+        var files = new List<string>();
+
+        foreach ( var result in results.Where( r => r.ExitCode == IntrospectionExitCodes.Success ) )
+        {
+            using var document = TryParse( result.Output );
+
+            if ( document is { RootElement.ValueKind: JsonValueKind.Object } && document.RootElement.TryGetProperty( "files", out var list ) )
+            {
+                foreach ( var file in list.EnumerateArray() )
+                {
+                    var text = file.GetRawText();
+
+                    if ( !files.Contains( text ) )
+                    {
+                        files.Add( text );
+                    }
+                }
+            }
+        }
+
+        if ( !inObject )
+        {
+            writer.WriteStartObject();
+        }
+
+        writer.WriteStartArray( "files" );
+
+        foreach ( var file in files )
+        {
+            using var document = JsonDocument.Parse( file );
+            document.RootElement.WriteTo( writer );
+        }
+
+        writer.WriteEndArray();
+
+        if ( !inObject )
+        {
+            writer.WriteEndObject();
+        }
     }
 
     private static JsonDocument? TryParse( string json )

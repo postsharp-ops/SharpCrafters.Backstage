@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Aspects.Introspection.Query.Output;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
@@ -121,11 +122,18 @@ public sealed class ListCommandSettings : IntrospectionCommandSettings
     public int Skip { get; init; }
 
     /// <summary>
-    /// Gets the maximal number of objects.
+    /// Gets the maximal number of objects, or <c>null</c> for the default limit.
     /// </summary>
-    [Description( "Writes at most this number of objects." )]
+    [Description( "Writes at most this number of objects. By default 100, except with --format jsonl. The output says when the result is truncated." )]
     [CommandOption( "--limit <N>" )]
     public int? Limit { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether every object is written, without the default limit.
+    /// </summary>
+    [Description( "Writes every object, without the default limit." )]
+    [CommandOption( "--all" )]
+    public bool All { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether only the number of objects is written.
@@ -133,6 +141,24 @@ public sealed class ListCommandSettings : IntrospectionCommandSettings
     [Description( "Writes only the number of objects that satisfy the conditions." )]
     [CommandOption( "--count" )]
     public bool Count { get; init; }
+
+    /// <summary>
+    /// The number of objects that list writes by default.
+    /// </summary>
+    public const int DefaultLimit = 100;
+
+    /// <inheritdoc />
+    public override Spectre.Console.ValidationResult Validate()
+        => this.All && this.Limit != null
+            ? Spectre.Console.ValidationResult.Error( "--all and --limit cannot both be given." )
+            : this.Limit < 0
+                ? Spectre.Console.ValidationResult.Error( "--limit cannot be negative." )
+                : base.Validate();
+
+    /// <summary>
+    /// Gets the limit of the query: the one given, none with --all, --count or the format jsonl, or the default one.
+    /// </summary>
+    internal int? GetEffectiveLimit() => this.All || this.Count || (this.Limit == null && this.Format == "jsonl") ? this.Limit : this.Limit ?? DefaultLimit;
 }
 
 /// <summary>
@@ -162,6 +188,33 @@ public sealed class ShowCommandSettings : IntrospectionCommandSettings
     [Description( "Includes the members of a type." )]
     [CommandOption( "--members" )]
     public bool Members { get; init; }
+
+    /// <summary>
+    /// Gets the maximal number of objects of each list of related objects, or <c>null</c> for the default limit.
+    /// </summary>
+    [Description( "Writes at most this number of objects in each list of related objects, by default 20. A truncated list says how many objects it has, in which namespaces, and which command lists them all." )]
+    [CommandOption( "--limit <N>" )]
+    public int? Limit { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether every related object is written.
+    /// </summary>
+    [Description( "Writes every related object, without the default limit." )]
+    [CommandOption( "--all" )]
+    public bool All { get; init; }
+
+    /// <inheritdoc />
+    public override Spectre.Console.ValidationResult Validate()
+        => this.All && this.Limit != null
+            ? Spectre.Console.ValidationResult.Error( "--all and --limit cannot both be given." )
+            : this.Limit < 0
+                ? Spectre.Console.ValidationResult.Error( "--limit cannot be negative." )
+                : base.Validate();
+
+    /// <summary>
+    /// Gets how the lists of related objects are written.
+    /// </summary>
+    internal RelatedListOptions GetListOptions() => new( this.All ? null : this.Limit ?? RelatedListOptions.DefaultLimit );
 }
 
 /// <summary>
