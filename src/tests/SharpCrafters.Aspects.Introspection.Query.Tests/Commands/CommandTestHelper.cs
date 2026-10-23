@@ -29,8 +29,15 @@ internal sealed class TestProvider : IntrospectionProvider
 
     public override string FileExtension => ".pssym";
 
+    /// <summary>
+    /// Gets the number of files that the provider loaded.
+    /// </summary>
+    public int LoadCount { get; private set; }
+
     public override IntrospectionModel Load( IntrospectionTarget target )
     {
+        this.LoadCount++;
+
         using var stream = File.OpenRead( target.FilePath );
 
         return IntrospectionV1Loader.Load( stream, target.AssemblyName, target.Project.Directory );
@@ -183,7 +190,8 @@ internal static class CommandRunner
         string[] arguments,
         bool isTerminal = false,
         string? noColor = null,
-        string cacheDirectory = "" )
+        string cacheDirectory = "",
+        string? input = null )
     {
         var output = new StringWriter();
         var error = new StringWriter();
@@ -196,7 +204,16 @@ internal static class CommandRunner
 
                 IntrospectionCommandFactory.AddIntrospectBranch(
                     c,
-                    new IntrospectionCommandOptions( provider, output, error, workingDirectory, isTerminal, n => n == "NO_COLOR" ? noColor : null, cacheDirectory ) );
+                    new IntrospectionCommandOptions(
+                        provider,
+                        output,
+                        error,
+                        workingDirectory,
+                        isTerminal,
+                        n => n == "NO_COLOR" ? noColor : null,
+                        cacheDirectory,
+                        input == null ? TextReader.Null : new StringReader( input ),
+                        input == null ) );
             } );
 
         var exitCode = app.Run( new[] { "introspect" }.Concat( arguments ) );
