@@ -36,8 +36,16 @@
         <PackageReference Include="System.IO.Packaging" />
         <PackageReference Include="System.DirectoryServices" />
         <PackageReference Include="Microsoft.Win32.Registry" Condition="'$(TargetFramework)'=='netstandard2.0'" />
-    <!-- MiniDumper asks the .NET runtime for a dump through its diagnostics channel. A .NET Framework process has none. -->
-    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Condition="'$(TargetFramework)'!='netframework4.7.2'" />
+        <!-- MiniDumper asks the .NET runtime for a dump through its diagnostics channel. A .NET Framework process has none. -->
+        <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Condition="'$(TargetFramework)'!='netframework4.7.2'" />
+        <!-- Microsoft.Diagnostics.NETCore.Client depends on Microsoft.Extensions.Logging.Abstractions 8.0.3. A consumer
+             that does not reference the package itself resolves that version, and its application directory then
+             contains the assembly 8.0.0.0. MSBuildWorkspace requests 10.0.0.0, which Microsoft.Build.Locator resolves
+             from the .NET SDK, and the default load context rejects that copy because it already lists 8.0.0.0. This
+             reference raises the version to the one of the .NET 10.0 line. It is limited to net10.0, because on
+             netstandard2.0 version 10.0.8 also raises System.Memory and System.Diagnostics.DiagnosticSource, and
+             Metalama.Framework.Workspaces, which loads MSBuildWorkspace, targets net10.0 only. See metalama/Metalama#2297. -->
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Condition="'$(TargetFramework)'=='net10.0'" />
         <PackageReference Include="System.Threading.AccessControl" />
         <PackageReference Include="System.Threading.Tasks.Extensions" />
     </ItemGroup>
