@@ -12,6 +12,7 @@ namespace SharpCrafters.Backstage.Infrastructure;
 /// Creates instances of <see cref="HttpClient"/> class.
 /// </summary>
 [PublicAPI]
+[ProductNeutralService]
 public interface IHttpClientFactory : IBackstageService
 {
     /// <summary>

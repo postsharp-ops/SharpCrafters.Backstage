@@ -291,6 +291,32 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
+    /// Tests that the effective consent is the maximal one over all products. A user who allowed PostSharp to report
+    /// has allowed the extension that hosts it to report, even when Metalama is not allowed to.
+    /// </summary>
+    [Fact]
+    public void TheEffectiveConsentIsTheMaximalOneOverAllProducts()
+    {
+        var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
+        var products = GetProducts( serviceProvider );
+        var telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
+
+        products.Products[0].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.No );
+        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Yes );
+
+        Assert.Equal( TelemetryConsent.No, products.Products[0].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+        Assert.Equal( TelemetryConsent.Yes, products.Products[1].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+        Assert.Equal( TelemetryConsent.Yes, telemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+
+        // Default, which asks the user, is more permissive than No.
+        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Default );
+        Assert.Equal( TelemetryConsent.Default, telemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+
+        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.No );
+        Assert.Equal( TelemetryConsent.No, telemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+    }
+
+    /// <summary>
     /// Tests that the composite product runs one pipeline of notifications, welcome page and RSS client, which is that
     /// of the primary product. Two pipelines would show every notification twice and open two welcome pages.
     /// </summary>

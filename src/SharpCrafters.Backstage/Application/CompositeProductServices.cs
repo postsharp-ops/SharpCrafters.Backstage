@@ -2,19 +2,11 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
-using SharpCrafters.Backstage.FileLocks;
-using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
-using SharpCrafters.Backstage.Maintenance;
-using SharpCrafters.Backstage.ProcessClassification;
-using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Tools;
-using SharpCrafters.Backstage.UserInterface;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -27,41 +19,6 @@ namespace SharpCrafters.Backstage.Application;
 /// </summary>
 internal sealed class CompositeProductServices : IBackstageService, IDisposable
 {
-    /// <summary>
-    /// The services that do not depend on the product. An inner provider uses the instance of the outer provider, when
-    /// the outer provider has one, instead of creating its own.
-    /// </summary>
-    /// <remarks>
-    /// The named lock service, the temporary file manager, the configuration manager and the standard directories are
-    /// not in this list, because they depend on the profile of the product: a product names its locks and its
-    /// directories after itself.
-    /// </remarks>
-    private static readonly Type[] _sharedServiceTypes =
-    [
-        typeof(EarlyLoggerFactory),
-        typeof(ILoggerFactory),
-        typeof(IDateTimeProvider),
-        typeof(IHttpClientFactory),
-        typeof(IJsonSerializationService),
-        typeof(BackstageBackgroundTasksService),
-        typeof(IEventDispatcher),
-        typeof(IEventDispatcherObserver),
-        typeof(IMachineIdProvider),
-        typeof(IRegistryService),
-        typeof(IFileSystem),
-        typeof(IEnvironmentVariableProvider),
-        typeof(IRuntimeInformation),
-        typeof(IUserIdentityProvider),
-        typeof(IUserDeviceDetectionService),
-        typeof(IProcessExecutor),
-        typeof(IRecoverableExceptionService),
-        typeof(IParentProcessSearch),
-        typeof(IContainerDetector),
-        typeof(IUnattendedProcessDetector),
-        typeof(ILockingProcessDetector),
-        typeof(IProcessManager)
-    ];
-
     /// <summary>
     /// The services that an inner provider never registers, in addition to those that its options disable.
     /// </summary>
@@ -114,35 +71,35 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
             }
 
             var innerBuilder = new SimpleServiceProviderBuilder();
-            var excludedTypes = new HashSet<Type>( _suppressedServiceTypes );
 
-            // The instances of the outer provider are registered first, as instances that the inner provider does not
-            // own, and the registrations of AddBackstageServices for these types are then ignored.
-            foreach ( var type in _sharedServiceTypes )
-            {
-                var instance = this._serviceProvider.GetService( type );
-
-                if ( instance != null )
-                {
-                    innerBuilder.AddService( type, instance );
-                    excludedTypes.Add( type );
-                }
-            }
-
+            // A service type marked as product-neutral is registered as the instance of the outer provider, which the
+            // inner provider does not own and does not dispose. When the outer provider has no instance of the type,
+            // the registration of the inner provider is kept.
             var filteringBuilder = new ServiceProviderBuilder(
                 ( type, factory ) =>
                 {
-                    if ( !excludedTypes.Contains( type ) )
+                    if ( _suppressedServiceTypes.Contains( type ) )
+                    {
+                        return;
+                    }
+
+                    if ( this.GetSharedInstance( type ) is { } sharedInstance )
+                    {
+                        innerBuilder.AddService( type, sharedInstance );
+                    }
+                    else
                     {
                         innerBuilder.AddService( type, factory );
                     }
                 },
                 ( type, instance ) =>
                 {
-                    if ( !excludedTypes.Contains( type ) )
+                    if ( _suppressedServiceTypes.Contains( type ) )
                     {
-                        innerBuilder.AddService( type, instance );
+                        return;
                     }
+
+                    innerBuilder.AddService( type, this.GetSharedInstance( type ) ?? instance );
                 } );
 
             // The inner provider is not initialized with InitializeBackstageServices: the outer provider already runs the
@@ -168,6 +125,14 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
             return innerBuilder.ServiceProvider;
         }
     }
+
+    /// <summary>
+    /// Gets the instance of the outer provider for a service type marked with
+    /// <see cref="ProductNeutralServiceAttribute"/>, or <see langword="null"/> when the type is not marked or the outer
+    /// provider has no instance of it.
+    /// </summary>
+    private object? GetSharedInstance( Type serviceType )
+        => serviceType.IsDefined( typeof(ProductNeutralServiceAttribute), false ) ? this._serviceProvider.GetService( serviceType ) : null;
 
     /// <summary>
     /// Disposes the inner service providers that have been created.

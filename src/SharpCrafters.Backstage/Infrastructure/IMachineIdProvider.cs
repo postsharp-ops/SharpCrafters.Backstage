@@ -11,6 +11,7 @@ namespace SharpCrafters.Backstage.Infrastructure;
 /// Provides the identifier of the machine on which the current process runs.
 /// </summary>
 [PublicAPI]
+[ProductNeutralService]
 public interface IMachineIdProvider : IBackstageService
 {
     /// <summary>

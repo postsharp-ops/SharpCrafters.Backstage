@@ -10,6 +10,7 @@ namespace SharpCrafters.Backstage.ProcessClassification;
 /// <summary>
 /// Determines whether the current process runs without a user, for instance on a build server or in a container.
 /// </summary>
+[ProductNeutralService]
 public interface IUnattendedProcessDetector : IBackstageService
 {
     /// <summary>

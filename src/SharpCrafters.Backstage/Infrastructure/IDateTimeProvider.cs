@@ -7,6 +7,7 @@ using System;
 
 namespace SharpCrafters.Backstage.Infrastructure
 {
+    [ProductNeutralService]
     public interface IDateTimeProvider : IBackstageService, IDisposable
     {
         DateTime UtcNow { get; }

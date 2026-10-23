@@ -12,6 +12,7 @@ namespace SharpCrafters.Backstage.Infrastructure;
 /// <remarks>
 /// This is to allow recoverable failures not to disturb users, but being hit by PostSharp engineers at the same time.
 /// </remarks>
+[ProductNeutralService]
 public interface IRecoverableExceptionService : IBackstageService
 {
     /// <summary>

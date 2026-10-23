@@ -16,6 +16,7 @@ namespace SharpCrafters.Backstage.Infrastructure;
 // tests would cause issues.
 #pragma warning disable CA1001
 
+[ProductNeutralService]
 public sealed class BackstageBackgroundTasksService : IBackstageService
 {
     private readonly object _lock = new();

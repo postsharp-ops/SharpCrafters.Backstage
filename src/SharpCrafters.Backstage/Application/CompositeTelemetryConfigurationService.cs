@@ -10,8 +10,9 @@ using System.Linq;
 namespace SharpCrafters.Backstage.Application;
 
 /// <summary>
-/// The <see cref="ITelemetryConfigurationService"/> of a composite product. It reads the state of the primary product
-/// and writes a consent to every product, so that one switch in the user interface applies to all of them.
+/// The <see cref="ITelemetryConfigurationService"/> of a composite product. It writes a consent to every product, so
+/// that one switch in the user interface applies to all of them, and reports the maximal effective consent over all
+/// products.
 /// </summary>
 /// <remarks>
 /// The device identifier and the salts are those of the primary product, because the outer service provider reports
@@ -72,10 +73,49 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
 
     public Guid DeviceId => this.Primary.DeviceId;
 
-    public TelemetryConsent GetEffectiveConsent( TelemetryScenario scenario ) => this.Primary.GetEffectiveConsent( scenario );
+    /// <inheritdoc />
+    /// <remarks>
+    /// The result is the maximal effective consent over all products, in the order <see cref="TelemetryConsent.No"/>,
+    /// <see cref="TelemetryConsent.Default"/>, <see cref="TelemetryConsent.Yes"/>. Reading it creates the inner service
+    /// providers.
+    /// </remarks>
+    public TelemetryConsent GetEffectiveConsent( TelemetryScenario scenario ) => this.GetEffectiveConsentAndReason( scenario ).Consent;
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// The result is that of the product with the maximal effective consent (see <see cref="GetEffectiveConsent"/>). When
+    /// several products have it, the first of them, starting with the primary product, gives the reason.
+    /// </remarks>
     public (TelemetryConsent Consent, TelemetryDisabledReason Reason) GetEffectiveConsentAndReason( TelemetryScenario scenario )
-        => this.Primary.GetEffectiveConsentAndReason( scenario );
+    {
+        var result = this.Primary.GetEffectiveConsentAndReason( scenario );
+
+        foreach ( var service in this.Services.Skip( 1 ) )
+        {
+            var candidate = service.GetEffectiveConsentAndReason( scenario );
+
+            if ( GetRank( candidate.Consent ) > GetRank( result.Consent ) )
+            {
+                result = candidate;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the rank of a consent, from the most restrictive to the most permissive. The declaration order of
+    /// <see cref="TelemetryConsent"/> is not this order: <see cref="TelemetryConsent.Default"/> is declared first, and it
+    /// is between the two others.
+    /// </summary>
+    private static int GetRank( TelemetryConsent consent )
+        => consent switch
+        {
+            TelemetryConsent.No => 0,
+            TelemetryConsent.Default => 1,
+            TelemetryConsent.Yes => 2,
+            _ => throw new ArgumentOutOfRangeException( nameof(consent), consent, null )
+        };
 
     public bool IsGloballyEnabled => this.Primary.IsGloballyEnabled;
 
