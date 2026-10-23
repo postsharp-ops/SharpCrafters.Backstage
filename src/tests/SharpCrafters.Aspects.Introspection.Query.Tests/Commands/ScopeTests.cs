@@ -67,18 +67,16 @@ public sealed class ScopeTests
     }
 
     [Fact]
-    public void SeveralTargetFrameworksAreChosenWithTheFrameworkOption()
+    public void TheFrameworkOptionRestrictsTheTargetFrameworks()
     {
         using var project = new TestProject( targetFrameworks: "<TargetFrameworks>net10.0;net48</TargetFrameworks>" );
         project.WriteSymbols( "net48", TestProject.DefaultSymbols );
 
-        var (exitCode, _, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes"] );
-        Assert.Equal( IntrospectionExitCodes.Error, exitCode );
-        Assert.Contains( "several target frameworks (net10.0, net48): choose one with -f", error, StringComparison.Ordinal );
+        var (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48", "--format", "json"] );
 
-        (exitCode, var output, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48", "--format", "json"] );
         Assert.True( exitCode == 0, error );
         Assert.Contains( "\"targetFramework\": \"net48\"", output, StringComparison.Ordinal );
+        Assert.DoesNotContain( "\"targetFramework\": \"net10.0\"", output, StringComparison.Ordinal );
     }
 
     [Fact]
@@ -95,6 +93,23 @@ public sealed class ScopeTests
         Assert.All( found.Targets, t => Assert.True( t.Exists ) );
 
         Assert.Equal( ["net48"], ProjectLocator.Search( Path.Combine( project.Directory, "App.csproj" ), this._provider, null, "net48" ).Targets.Select( t => t.TargetFramework ) );
+    }
+
+    [Fact]
+    public void ACommandOfTheProviderReadsTheTargetsOfTheScope()
+    {
+        using var project = new TestProject( targetFrameworks: "<TargetFrameworks>net10.0;net48</TargetFrameworks>" );
+
+        var (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, ["files"] );
+
+        // The file of net48 is missing: it is left out with a warning, as list and show leave it out.
+        Assert.True( exitCode == 0, error );
+        Assert.Equal( "[\"App net10.0\"]", output.Trim() );
+        Assert.Contains( "warning: the file of 'App' (Debug, net48) does not exist", error, StringComparison.Ordinal );
+
+        // Without any file, the command fails as list and show do.
+        using var empty = new TestProject( symbols: null );
+        Assert.Equal( IntrospectionExitCodes.NoFile, CommandRunner.Run( empty.Directory, this._provider, ["files"] ).ExitCode );
     }
 
     [Fact]
