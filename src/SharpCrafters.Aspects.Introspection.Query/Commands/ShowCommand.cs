@@ -21,7 +21,8 @@ namespace SharpCrafters.Aspects.Introspection.Query.Commands;
 public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
 {
     // A documentation comment identifier: one letter and a colon, possibly qualified with its assembly.
-    private static readonly Regex _documentationIdRegex = new( @"^(\[[^\]]+\])?[A-Z]:", RegexOptions.CultureInvariant );
+    // The colon of an absolute Windows path, such as C:\src\Customer.cs:18, is followed by a separator; that of an identifier never is.
+    private static readonly Regex _documentationIdRegex = new( @"^(\[[^\]]+\])?[A-Z]:(?![\\/])", RegexOptions.CultureInvariant );
 
     // A source position: a path, a line, and optionally a column.
     private static readonly Regex _positionRegex = new( @"^(?<path>.+?):(?<line>\d+)(:\d+)?$", RegexOptions.CultureInvariant );
