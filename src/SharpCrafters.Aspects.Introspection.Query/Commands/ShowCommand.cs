@@ -21,7 +21,8 @@ namespace SharpCrafters.Aspects.Introspection.Query.Commands;
 public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
 {
     // A documentation comment identifier: one letter and a colon, possibly qualified with its assembly.
-    private static readonly Regex _documentationIdRegex = new( @"^(\[[^\]]+\])?[A-Z]:", RegexOptions.CultureInvariant );
+    // The colon of an absolute Windows path, such as C:\src\Customer.cs:18, is followed by a separator; that of an identifier never is.
+    private static readonly Regex _documentationIdRegex = new( @"^(\[[^\]]+\])?[A-Z]:(?![\\/])", RegexOptions.CultureInvariant );
 
     // A source position: a path, a line, and optionally a column.
     private static readonly Regex _positionRegex = new( @"^(?<path>.+?):(?<line>\d+)(:\d+)?$", RegexOptions.CultureInvariant );
@@ -50,7 +51,12 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
 
         ListCommand.CheckProvided( options.Provider, type );
 
-        var session = IntrospectionSession.Open( options, settings );
+        // A declaration selected by its position is in the project whose directory holds the file: only its files are read.
+        var sourceFile = type.Name == "declaration" && TryGetPosition( settings.Selector, out var path, out _ )
+            ? Path.GetFullPath( Path.Combine( options.WorkingDirectory, path ) )
+            : null;
+
+        var session = IntrospectionSession.Open( options, settings, sourceFile );
         var context = session.Context;
 
         switch ( type.Name )
@@ -231,11 +237,9 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
             };
         }
 
-        var position = _positionRegex.Match( selector );
-
-        if ( position.Success && Path.HasExtension( position.Groups["path"].Value ) )
+        if ( TryGetPosition( selector, out var path, out var line ) )
         {
-            return SelectDeclarationAtPosition( options, context, position.Groups["path"].Value, int.Parse( position.Groups["line"].Value, CultureInfo.InvariantCulture ) );
+            return SelectDeclarationAtPosition( options, context, path, line );
         }
 
         // A C# name without parameters: the whole name, or its end at a period.
@@ -262,25 +266,36 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
 
     private static IntrospectionDeclaration? SelectDeclarationAtPosition( IntrospectionCommandOptions options, QueryContext context, string path, int line )
     {
-        if ( context.Locations == null )
+        var file = Path.GetFullPath( Path.Combine( options.WorkingDirectory, path ) );
+
+        // The targets of the project whose directory holds the file: the session read only the files of that project.
+        var targets = IntrospectionSession.GetTargetsOfSourceFile( context.Targets, file );
+
+        if ( targets.Count == 0 )
+        {
+            throw new IntrospectionCommandException( $"'{path}' is in no project of the scope.", IntrospectionExitCodes.InvalidQuery );
+        }
+
+        var located = targets.Select( t => (Target: t, Locations: context.GetSourceLocations( t )) ).Where( t => t.Locations != null ).ToList();
+
+        if ( located.Count == 0 )
         {
             throw new IntrospectionCommandException(
-                $"{context.Provider.ProductName} records no source location for this project, so a declaration cannot be selected by its position: give its name.",
+                $"{context.Provider.ProductName} records no source location for '{targets[0].Project.Name}', so a declaration cannot be selected by its position: give its name.",
                 IntrospectionExitCodes.InvalidQuery );
         }
 
-        var file = Path.GetFullPath( Path.Combine( options.WorkingDirectory, path ) );
-        var ids = context.Locations.FindDeclarations( file, line );
+        var ids = located.SelectMany( l => l.Locations!.FindDeclarations( file, line ) ).Distinct( StringComparer.Ordinal ).ToList();
 
         if ( ids.Count == 0 )
         {
-            throw new IntrospectionCommandException( $"No declaration of '{context.Project}' is at {path}:{line}.", IntrospectionExitCodes.InvalidQuery );
+            throw new IntrospectionCommandException( $"No declaration of '{targets[0].Project.Name}' is at {path}:{line}.", IntrospectionExitCodes.InvalidQuery );
         }
 
         // The innermost declaration that the file mentions: a member before its type.
         foreach ( var id in ids )
         {
-            var declaration = context.Model.Declarations.FirstOrDefault( d => d.Id == id && d.Assembly == context.Target.AssemblyName )
+            var declaration = context.Model.Declarations.FirstOrDefault( d => d.Id == id && targets.Any( t => t.AssemblyName == d.Assembly ) )
                               ?? context.Model.Declarations.FirstOrDefault( d => d.Id == id );
 
             if ( declaration != null )
@@ -344,6 +359,25 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
                                                                                      + string.Join( Environment.NewLine, matches.Select( m => "  " + m.FullName ) ),
                 IntrospectionExitCodes.Ambiguous )
         };
+    }
+
+    // A source position: a path with an extension, a line, and optionally a column; not a documentation comment identifier.
+    private static bool TryGetPosition( string selector, out string path, out int line )
+    {
+        var match = _positionRegex.Match( selector );
+
+        if ( !_documentationIdRegex.IsMatch( selector ) && match.Success && Path.HasExtension( match.Groups["path"].Value ) )
+        {
+            path = match.Groups["path"].Value;
+            line = int.Parse( match.Groups["line"].Value, CultureInfo.InvariantCulture );
+
+            return true;
+        }
+
+        path = "";
+        line = 0;
+
+        return false;
     }
 
     // The C# name of a declaration: its documentation comment identifier without the prefix, the arity and the parameters.
