@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Symbols xmlns="http://schemas.postsharp.org/2.0/symbols">
+  <Class Class="#1=T:[PostSharp.Patterns.Model]PostSharp.Patterns.Contracts.RequiredAttribute">
+    <Instance Declaration="#2=R:[ConsoleApplication1]When_ParameterWithAspect.Class::Method(System.String)@parameter1" Id="78acef307dfbed54">
+      <Target>
+        <JoinPoint Advised="#3=M:[ConsoleApplication1]When_ParameterWithAspect.Class::Method(System.String)" Advising="#1" Description="#4=Add validation to parameter 'parameter1'" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#5=R:[ConsoleApplication1]When_ParameterWithAspect.Class::get_Item(System.Int32, System.String)@parameter3" Id="78acef30c335d996">
+      <Target>
+        <JoinPoint Advised="#6=M:[ConsoleApplication1]When_ParameterWithAspect.Class::get_Item(System.Int32, System.String)" Advising="#1" Description="#7=Add validation to parameter 'parameter3'" Ordinal="4" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#8=R:[ConsoleApplication1]When_ParameterWithAspect.Class::set_Item(System.Int32, System.String, System.Int32)@parameter3" Id="78acef30a3b5fd3c">
+      <Target>
+        <JoinPoint Advised="#9=M:[ConsoleApplication1]When_ParameterWithAspect.Class::set_Item(System.Int32, System.String, System.Int32)" Advising="#1" Description="#7" Ordinal="4" />
+      </Target>
+    </Instance>
+  </Class>
+  <Class Class="#10=T:[PostSharp.Patterns.Model]PostSharp.Patterns.Contracts.PositiveAttribute">
+    <Instance Declaration="#11=R:[ConsoleApplication1]When_ParameterWithAspect.Class::get_Item(System.Int32, System.String)@parameter2" Id="78acef30a963b2b3">
+      <Target>
+        <JoinPoint Advised="#6" Advising="#10" Description="#12=Add validation to parameter 'parameter2'" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#13=R:[ConsoleApplication1]When_ParameterWithAspect.Class::set_Item(System.Int32, System.String, System.Int32)@parameter2" Id="78acef304124f0f4">
+      <Target>
+        <JoinPoint Advised="#9" Advising="#10" Description="#12" />
+      </Target>
+    </Instance>
+  </Class>
+</Symbols>

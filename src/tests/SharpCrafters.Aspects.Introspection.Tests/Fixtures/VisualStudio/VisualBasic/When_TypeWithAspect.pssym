@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Symbols xmlns="http://schemas.postsharp.org/2.0/symbols">
+  <Class Class="#1=T:[ConsoleApplication1]ConsoleApplication1.MyIntroduceInterface">
+    <Instance Declaration="#2=T:[ConsoleApplication1]ConsoleApplication1.When_TypeWithAspect.Class1" Id="78acef30153eb7ba">
+      <Target>
+        <JoinPoint Description="#3=Introduce interface(s) IDisposable" Ordinal="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#4=T:[ConsoleApplication1]ConsoleApplication1.When_TypeWithAspect.GenericClass1{T}" Id="78acef304e6171de">
+      <Target>
+        <JoinPoint Description="#3" Ordinal="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#5=T:[ConsoleApplication1]ConsoleApplication1.When_TypeWithAspect.Module1" Id="78acef305779b941">
+      <Target>
+        <JoinPoint Description="#3" Ordinal="0" />
+      </Target>
+    </Instance>
+  </Class>
+</Symbols>

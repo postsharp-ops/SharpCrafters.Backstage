@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- The readers and writers of the weaving symbol files. It depends on nothing else of Backstage, so that the compilers
+             and the Visual Studio extension reference it alone (Documentation/future/Introspection-Cli.md of PostSharp,
+             section 7.1). -->
+        <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <RootNamespace>SharpCrafters.Aspects.Introspection</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="SharpCrafters.Aspects.Introspection.Tests" />
+    </ItemGroup>
+
+</Project>
