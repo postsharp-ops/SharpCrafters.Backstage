@@ -20,6 +20,7 @@ customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 | `SharpCrafters.Backstage` | The services: dependency injection, logging, configuration, the file system, the detection of an unattended process and of a continuous integration server, telemetry, licensing and user interface |
 | `SharpCrafters.Backstage.Commands` | The command line over those services |
 | `SharpCrafters.Backstage.Profiling` | The optional profiling feature, which needs `JetBrains.Profiler.SelfApi`. No product references it |
+| `SharpCrafters.Aspects.Introspection` | The forward-only reader and writer of the weaving symbol file of PostSharp (`.pssym`, schema version 1), which the PostSharp compiler writes through. It has no dependency, and no other package depends on it. The design is `Documentation/future/Introspection-Cli.md` of PostSharp, section 7.2 |
 | `Metalama.Backstage`, `PostSharp.Backstage` | What each product family adds: its profile, its licence catalogue, its web links and its telemetry endpoints |
 
 A type belongs in one of the packages that depend only on the abstractions when a component that starts no service
