@@ -27,6 +27,41 @@ needs it, such as a build task loaded by MSBuild. Those packages must not gain a
 `SharpCrafters.Backstage`. A type that needs the logging implementation, the configuration or the standard directories
 belongs in `SharpCrafters.Backstage`.
 
+## Hosting several products in one process
+
+A process that serves both Metalama and PostSharp, such as the Visual Studio extension, creates one service provider
+from a composite product:
+
+```csharp
+var product = BackstageProduct.CreateComposite( MetalamaProduct.Instance, PostSharpProduct.Instance );
+var serviceProvider = BackstageServiceFactory.CreateServiceProvider( new BackstageInitializationOptions( applicationInfo, product ) { ... } );
+```
+
+The first argument is the primary product. The service provider is the service provider of the primary product: it
+has its profile, its web links, its telemetry endpoints and its configuration store, and it runs the only logger,
+telemetry pipeline, notifications, welcome page and RSS client of the process. Its license product catalog is the
+union of the catalogs of all products.
+
+Each other product gets an inner service provider, which is created when it is first needed and disposed with the
+outer one. An inner provider has no user interface, notifications, welcome page, RSS client, crash dump service or
+tools extractor. It uses the instances of the outer provider for the services that do not depend on the product, which
+are the service types marked with `ProductNeutralServiceAttribute`, such as the logger factory, the clock, the HTTP
+client factory, the event dispatcher, the file system and the registry. It keeps its own configuration store, so
+Metalama keeps its files and PostSharp keeps its registry keys, and the build of each product reads what the extension
+writes.
+
+The following services of the outer provider answer for all products:
+
+| Service | Behaviour |
+|---|---|
+| `ILicenseRegistrationService` | Lists the licenses and the editions of every product. A license key is stored by the product family to which its product is native (`ILicenseProductCatalog.IsNativeProduct`), so a PostSharp Framework or PostSharp Ultimate key, which Metalama also accepts, is stored by PostSharp. A license server is stored by the primary product. `RemoveLicenses` removes the licenses of every product |
+| `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. When none does, the primary product reports the message and the notification once |
+| `ITelemetryConfigurationService` | Reports the maximal effective consent over all products, and writes a consent to every product |
+| `IIdeExtensionStatusService` | Reads the status of the primary product, and writes it to every product |
+
+The composite services update the products one after the other. A configuration file must not be updated inside the
+transformation of another one, so a product is never updated from inside the update of another product.
+
 ## Documentation
 
 | Document | Subject |

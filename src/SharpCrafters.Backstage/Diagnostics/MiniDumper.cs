@@ -15,9 +15,11 @@ using Microsoft.Diagnostics.NETCore.Client;
 using System.Runtime.InteropServices;
 #endif
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -25,10 +27,15 @@ using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Diagnostics;
 
-internal sealed class MiniDumper : IMiniDumper
+internal sealed class MiniDumper : IMiniDumper, IDisposable
 {
+    private static readonly object _dumpersLock = new();
     private static int _isAppDomainInitialized;
-    private static volatile WeakReference<MiniDumper>? _latestDumper;
+
+    // The live dumpers of the process, in the order of their creation. Several service providers can coexist in one
+    // process, for instance the providers of the products of a composite product, and each one creates its own dumper.
+    // The array is replaced, never modified, so that the first-chance handler reads it without taking the lock.
+    private static volatile WeakReference<MiniDumper>[] _dumpers = [];
 
     // The number of dumps being written in the process, by any instance. While it is not zero, the first-chance handler
     // does nothing: an exception thrown while a dump is written, on the writing thread or on a thread of the diagnostics
@@ -65,8 +72,25 @@ internal sealed class MiniDumper : IMiniDumper
             }
         }
 
-        _latestDumper = new WeakReference<MiniDumper>( this );
+        lock ( _dumpersLock )
+        {
+            _dumpers = [.. GetLiveDumpers( _dumpers ), new WeakReference<MiniDumper>( this )];
+        }
     }
+
+    /// <summary>
+    /// Removes the dumper from the dumpers that the first-chance handler considers.
+    /// </summary>
+    public void Dispose()
+    {
+        lock ( _dumpersLock )
+        {
+            _dumpers = GetLiveDumpers( _dumpers ).Where( r => r.TryGetTarget( out var d ) && d != this ).ToArray();
+        }
+    }
+
+    private static IEnumerable<WeakReference<MiniDumper>> GetLiveDumpers( WeakReference<MiniDumper>[] dumpers )
+        => dumpers.Where( r => r.TryGetTarget( out _ ) );
 
     private static void OnFirstChanceException( object? sender, FirstChanceExceptionEventArgs e )
     {
@@ -75,16 +99,18 @@ internal sealed class MiniDumper : IMiniDumper
             return;
         }
 
-        var dumperRef = _latestDumper;
+        var dumpers = _dumpers;
 
-        if ( dumperRef == null || !dumperRef.TryGetTarget( out var dumper ) )
+        // The latest dumper is asked first, because it has read the latest configuration. One dump is enough for one
+        // exception, so the first dumper that accepts the exception writes it and the others are not asked.
+        for ( var i = dumpers.Length - 1; i >= 0; i-- )
         {
-            return;
-        }
+            if ( dumpers[i].TryGetTarget( out var dumper ) && dumper.MustWrite( e.Exception ) )
+            {
+                dumper.Write();
 
-        if ( dumper.MustWrite( e.Exception ) )
-        {
-            dumper.Write();
+                return;
+            }
         }
     }
 

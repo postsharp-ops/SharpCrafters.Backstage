@@ -18,6 +18,7 @@ namespace SharpCrafters.Backstage.Configuration.Registry;
 /// and values.
 /// </remarks>
 [PublicAPI]
+[ProductNeutralService]
 public interface IRegistryService : IBackstageService
 {
     /// <summary>

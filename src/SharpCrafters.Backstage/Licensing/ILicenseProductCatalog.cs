@@ -52,6 +52,19 @@ public interface ILicenseProductCatalog : IBackstageService
     bool IsProductOfFamily( LicenseProduct product );
 
     /// <summary>
+    /// Determines whether a product is native to the current product family. A license key of a native product is
+    /// registered in the store of the family when several families could consume it.
+    /// </summary>
+    /// <remarks>
+    /// A family can consume the keys of a product of another family: Metalama consumes PostSharp Framework and
+    /// PostSharp Ultimate keys. Such a product is of the family (see <see cref="IsProductOfFamily"/>) but is not
+    /// native to it. A host that registers the keys of several families, which is what a composite product does (see
+    /// <see cref="Application.BackstageProduct.CreateComposite"/>), stores a key in the store of the family to which
+    /// its product is native.
+    /// </remarks>
+    bool IsNativeProduct( LicenseProduct product );
+
+    /// <summary>
     /// Determines whether a license is a free edition, which has no subscription to renew.
     /// </summary>
     /// <remarks>

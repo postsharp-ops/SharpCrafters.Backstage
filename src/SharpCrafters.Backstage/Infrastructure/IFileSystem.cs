@@ -19,6 +19,7 @@ namespace SharpCrafters.Backstage.Infrastructure
     /// Provides access to file system.
     /// </summary>
     [PublicAPI]
+    [ProductNeutralService]
     public interface IFileSystem : IBackstageService
     {
         /// <summary>

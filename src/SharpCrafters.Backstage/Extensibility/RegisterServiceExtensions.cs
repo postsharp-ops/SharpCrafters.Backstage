@@ -93,5 +93,8 @@ public static class RegisterServiceExtensions
         }
 
         serviceProviderBuilder.AddSingleton( serviceProvider => new BackstageServicesInitializer( serviceProvider, options ) );
+
+        // Last, so that a composite product replaces the standard services that must answer for all of its products.
+        product.OverrideServices?.Invoke( serviceProviderBuilder, options );
     }
 }
