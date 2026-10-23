@@ -192,6 +192,8 @@ public sealed class ShowCommandTests : IDisposable
 
         var (exitCode, output, _) = this.Run( "schema", "predecessors" );
         Assert.Equal( 0, exitCode );
-        Assert.Contains( "kind (enum): How the predecessor created its aspect instances. Values: Attribute, Multicast, Inherited, Xml,", output, StringComparison.Ordinal );
+        Assert.Contains( "kind (enum): How the predecessor created its aspect instances: Attribute, a custom attribute", output, StringComparison.Ordinal );
+        Assert.Contains( "ChildAspect, an aspect provider (IAspectProvider)", output, StringComparison.Ordinal );
+        Assert.Contains( "Values: Attribute, Multicast, Inherited, Xml,", output, StringComparison.Ordinal );
     }
 }

@@ -166,7 +166,7 @@ internal static class IntrospectionSchema
                     Field( "key", ValueKind.String, "The structural key, from which the identifier is computed.", ( _, o ) => ((IntrospectionAspectInstance) o).StructuralKey, summary: true ),
                     Object( "aspectClass", "aspectClass", "The aspect class.", ( _, o ) => ((IntrospectionAspectInstance) o).AspectClass, summary: true ),
                     Object( "targetDeclaration", "declaration", "The declaration to which the aspect is applied.", ( _, o ) => ((IntrospectionAspectInstance) o).TargetDeclaration, summary: true ),
-                    Field( "project", ValueKind.String, "The project.", ( c, o ) => c.GetProject( o ) ),
+                    Field( "project", ValueKind.String, "The project. A project that compiles the source files of another project has aspect instances of its own on the same source declarations: compare targetDeclaration/id, not the aspect instances, to count source declarations.", ( c, o ) => c.GetProject( o ) ),
                     Field( "targetFrameworks", ValueKind.StringList, "The target frameworks in which the aspect instance appears.", ( c, o ) => c.GetTargetFrameworks( o ) ),
                     List( "predecessors", "predecessor", "What created the aspect instance.", ( _, o ) => ((IntrospectionAspectInstance) o).Predecessors ),
                     List( "transformations", "transformation", "The transformations, in order.", ( _, o ) => ((IntrospectionAspectInstance) o).Transformations ),
@@ -185,7 +185,7 @@ internal static class IntrospectionSchema
                 [
                     Field( "id", ValueKind.String, "The identifier: 12 hexadecimal characters, of which any unique prefix is accepted.", ( _, o ) => ((IntrospectionPredecessor) o).Id, summary: true ),
                     Field( "key", ValueKind.String, "The structural key, from which the identifier is computed.", ( _, o ) => ((IntrospectionPredecessor) o).StructuralKey, summary: true ),
-                    Field( "kind", ValueKind.Enum, "How the predecessor created its aspect instances.", ( _, o ) => ((IntrospectionPredecessor) o).Kind.ToString(), summary: true, values: predecessorKinds ),
+                    Field( "kind", ValueKind.Enum, "How the predecessor created its aspect instances: Attribute, a custom attribute on the target declaration; Multicast, a multicast attribute on an enclosing declaration or the assembly; Inherited, an attribute inherited from a base type or member; Xml, an element of a configuration file; ChildAspect, an aspect provider (IAspectProvider), which is the aspect instance of the predecessor; Fabric, RequiredAspect and Interactive, Metalama only.", ( _, o ) => ((IntrospectionPredecessor) o).Kind.ToString(), summary: true, values: predecessorKinds ),
                     Field( "isKindInferred", ValueKind.Boolean, "Whether the kind is inferred, because the file does not give it.", ( _, o ) => ((IntrospectionPredecessor) o).IsKindInferred ),
                     Object( "declaration", "declaration", "The declaration that carries the attribute, or the fabric type.", ( _, o ) => ((IntrospectionPredecessor) o).Declaration, summary: true ),
                     Object( "attributeClass", "aspectClass", "The class of the attribute.", ( _, o ) => ((IntrospectionPredecessor) o).AttributeClass ),
@@ -209,7 +209,7 @@ internal static class IntrospectionSchema
                     Object( "adviceDeclaration", "declaration", "The advice that makes the transformation.", ( _, o ) => ((IntrospectionTransformation) o).AdviceDeclaration ),
                     Field( "description", ValueKind.String, "A description of the transformation.", ( _, o ) => ((IntrospectionTransformation) o).Description, summary: true ),
                     Field( "semantic", ValueKind.String, "The accessor that the transformation changes, such as Getter.", ( _, o ) => ((IntrospectionTransformation) o).Semantic, summary: true ),
-                    Field( "order", ValueKind.Integer, "The order of the transformation.", ( _, o ) => ((IntrospectionTransformation) o).Order ),
+                    Field( "order", ValueKind.Integer, "The order in which the transformation was woven. For the transformations of one declaration, a lower order is outer: it runs first when the declaration is entered and last when it exits. Orders are comparable within one project and target framework only.", ( _, o ) => ((IntrospectionTransformation) o).Order ),
                     Field( "linesOfCodeAvoided", ValueKind.Integer, "The estimated number of lines of code that the transformation saves.", ( _, o ) => ((IntrospectionTransformation) o).LinesOfCodeAvoided )
                 ],
                 ["aspectInstance/aspectClass/shortName", "targetDeclaration/id", "semantic", "description"],
