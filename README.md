@@ -44,11 +44,11 @@ union of the catalogs of all products.
 
 Each other product gets an inner service provider, which is created when it is first needed and disposed with the
 outer one. An inner provider has no user interface, notifications, welcome page, RSS client, crash dump service or
-tools extractor. It uses the instances of the outer provider for the services that do not depend on the product, such
-as the logger factory, the clock, the HTTP client factory, the event dispatcher, the file system and the registry: the
-service types marked with `ProductNeutralServiceAttribute`. It
-keeps its own configuration store, so Metalama keeps its files and PostSharp keeps its registry keys, and the build of
-each product reads what the extension writes.
+tools extractor. It uses the instances of the outer provider for the services that do not depend on the product, which
+are the service types marked with `ProductNeutralServiceAttribute`, such as the logger factory, the clock, the HTTP
+client factory, the event dispatcher, the file system and the registry. It keeps its own configuration store, so
+Metalama keeps its files and PostSharp keeps its registry keys, and the build of each product reads what the extension
+writes.
 
 The following services of the outer provider answer for all products:
 
