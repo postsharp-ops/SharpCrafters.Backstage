@@ -240,6 +240,29 @@ public static class IntrospectionV1Loader
                     LinesOfCodeAvoided = data.LinesOfCodeAvoided
                 } );
 
+        // Whether a declaration contains another of the same assembly: the assembly contains all of them, a type its members and
+        // nested types, and a method its parameters. The documentation comment identifiers tell it: that of a member starts with
+        // the name of its type and a period, and that of a parameter with the identifier of its method and a semicolon.
+        internal static bool Contains( IntrospectionDeclaration container, IntrospectionDeclaration declaration )
+        {
+            if ( !string.Equals( container.Assembly, declaration.Assembly, StringComparison.Ordinal ) )
+            {
+                return false;
+            }
+
+            if ( container.Kind == IntrospectionDeclarationKind.Assembly )
+            {
+                return true;
+            }
+
+            var name = container.Id.Substring( 2 );
+            var other = declaration.Id.Substring( 2 );
+
+            return container.Kind == IntrospectionDeclarationKind.Type
+                ? other.StartsWith( name + ".", StringComparison.Ordinal )
+                : declaration.Id.StartsWith( container.Id + ";", StringComparison.Ordinal );
+        }
+
         private void CompletePredecessor( PendingPredecessor pending, IntrospectionAspectClass aspectClass )
         {
             var data = pending.Data;
@@ -271,9 +294,16 @@ public static class IntrospectionV1Loader
             {
                 kind = AspectPredecessorKind.Attribute;
             }
+            else if ( pending.AspectInstances.All( i => i.Instance.TargetDeclaration == declaration || Contains( declaration, i.Instance.TargetDeclaration ) ) )
+            {
+                // A multicast attribute applies to the declarations that its own declaration contains.
+                kind = AspectPredecessorKind.Multicast;
+            }
             else
             {
-                kind = AspectPredecessorKind.Multicast;
+                // A target that the declaration of the attribute does not contain, such as the override of a method in a derived
+                // type of the same assembly, has the aspect by inheritance.
+                kind = AspectPredecessorKind.Inherited;
             }
 
             var file = string.IsNullOrEmpty( data.File ) ? null : data.File;
