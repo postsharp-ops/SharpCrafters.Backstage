@@ -17,8 +17,9 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 /// is valid while none of its inputs changed: the write times of the project file and of every file that its evaluation
 /// imported, of the solution file and of the <c>global.json</c> that applies, the version of the selected .NET SDK, and the
 /// global properties of the evaluation (<c>Configuration</c>, <c>TargetFramework</c>) and the properties that the provider reads.
-/// The appearance of a file that the evaluation would import, such as a new <c>Directory.Build.props</c> or the
-/// <c>obj/*.nuget.g.props</c> of the first restore, also invalidates it, and so does a source file that is added, removed or
+/// The appearance of a file that the evaluation would import, such as a new <c>Directory.Build.props</c>, the
+/// <c>obj/*.nuget.g.props</c> of the first restore or the targets of a package that the packages folder did not have, also
+/// invalidates it, and so does a source file that is added, removed or
 /// renamed in the directory of the project, which the globs of <c>Compile</c> would include.
 /// </summary>
 /// <remarks>
@@ -28,7 +29,7 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 internal sealed class EvaluationCache
 {
     // Changed when the format of an entry or the content of an evaluation changes.
-    private const int _formatVersion = 3;
+    private const int _formatVersion = 4;
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = false };
 

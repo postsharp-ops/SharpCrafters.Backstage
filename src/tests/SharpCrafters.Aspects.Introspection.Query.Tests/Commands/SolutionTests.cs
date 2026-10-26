@@ -236,6 +236,31 @@ public sealed class SolutionTests : IDisposable
     }
 
     [Fact]
+    public void ThePackageThatARestoreBringsBackInvalidatesTheCachedEvaluation()
+    {
+        // The targets of a package set the property of the file, and are imported only when they exist, as obj/*.nuget.g.targets
+        // imports them; the package is not in the packages folder yet.
+        using var project = new TestProject(
+            setProperty: false,
+            extraProperties: "</PropertyGroup><Import Project=\"packages/pkg/build/Pkg.targets\" Condition=\"Exists('packages/pkg/build/Pkg.targets')\" /><PropertyGroup>" );
+
+        var cache = Path.Combine( project.Directory, ".cache" );
+
+        int Run() => CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "--count"], cacheDirectory: cache ).ExitCode;
+
+        Assert.Equal( IntrospectionExitCodes.NoFile, Run() );
+
+        // The package appears, and no file that the evaluation read changes.
+        var targets = Path.Combine( project.Directory, "packages", "pkg", "build", "Pkg.targets" );
+        Directory.CreateDirectory( Path.GetDirectoryName( targets )! );
+        File.WriteAllText(
+            targets,
+            "<Project><PropertyGroup><TestSymbolFile>bin/$(Configuration)/$(TargetFramework)/$(AssemblyName).pssym</TestSymbolFile></PropertyGroup></Project>" );
+
+        Assert.Equal( 0, Run() );
+    }
+
+    [Fact]
     public void AnAddedSourceFileInvalidatesTheCachedEvaluation()
     {
         var cache = Path.Combine( this._root, ".cache" );
