@@ -39,16 +39,20 @@ namespace SharpCrafters.Aspects.Introspection.Query.V1;
 /// <c>M:[App]App.C::op_Implicit([App]App.C)~System.Int32</c>.</item>
 /// </list>
 /// </remarks>
-internal sealed class V1ReflectionName
+internal sealed partial class V1ReflectionName
 {
-    // An assembly that qualifies a type in the parameters: a bracket followed by a name, unlike the brackets of an array.
-    private static readonly Regex _assemblyQualifierRegex = new( @"\[[A-Za-z_][^\[\],]*\]", RegexOptions.CultureInvariant );
+    // An assembly that qualifies a type in the parameters: brackets around a name, which may start with a digit or any letter,
+    // unlike the brackets of an array, which hold commas or nothing.
+    [GeneratedRegex( @"\[[^\[\],\s]+\]", RegexOptions.CultureInvariant )]
+    private static partial Regex AssemblyQualifierRegex();
 
-    // A name in a parameter type: a namespace, a type, or a generic parameter.
-    private static readonly Regex _nameRegex = new( @"[A-Za-z_][A-Za-z0-9_.`]*", RegexOptions.CultureInvariant );
+    // A name in a parameter type: a namespace, a type, or a generic parameter, with the characters of a C# identifier.
+    [GeneratedRegex( @"[\p{L}\p{Nl}_][\p{L}\p{Nl}\p{Mn}\p{Mc}\p{Nd}\p{Pc}\p{Cf}.`]*", RegexOptions.CultureInvariant )]
+    private static partial Regex NameRegex();
 
     // The ranks of an array of several dimensions.
-    private static readonly Regex _arrayRankRegex = new( @"\[,+\]", RegexOptions.CultureInvariant );
+    [GeneratedRegex( @"\[,+\]", RegexOptions.CultureInvariant )]
+    private static partial Regex ArrayRankRegex();
 
     private V1ReflectionName(
         string assembly,
@@ -259,7 +263,12 @@ internal sealed class V1ReflectionName
     {
         var at = rest.LastIndexOf( '@' );
 
-        if ( at < 0 || !rest.Substring( 0, at ).EndsWith( ")", StringComparison.Ordinal ) )
+        // The parameters end the signature of the method, before the return type of a conversion operator: op_Implicit(App.C)~System.Int32.
+        var signature = at < 0 ? "" : rest.Substring( 0, at );
+        var tilde = signature.LastIndexOf( ")~", StringComparison.Ordinal );
+        var parameters = tilde >= 0 ? signature.Substring( 0, tilde + 1 ) : signature;
+
+        if ( at < 0 || !parameters.EndsWith( ")", StringComparison.Ordinal ) )
         {
             throw new FormatException( $"'{reflectionName}' has no parameter name." );
         }
@@ -277,32 +286,34 @@ internal sealed class V1ReflectionName
     // a reference, and the bounds of the dimensions of an array.
     private static string ConvertParameterType( string type, IReadOnlyList<string> typeGenericParameters, IReadOnlyList<string> methodGenericParameters )
     {
-        type = _assemblyQualifierRegex.Replace( type, "" ).Replace( " ", "", StringComparison.Ordinal );
+        type = AssemblyQualifierRegex().Replace( type, "" ).Replace( " ", "", StringComparison.Ordinal );
 
-        type = _nameRegex.Replace(
+        type = NameRegex().Replace(
             type,
             m =>
             {
                 // A method generic parameter hides a type generic parameter of the same name.
-                var methodIndex = IndexOf( methodGenericParameters, m.Value );
+                var methodIndex = LastIndexOf( methodGenericParameters, m.Value );
 
                 if ( methodIndex >= 0 )
                 {
                     return "``" + methodIndex;
                 }
 
-                var typeIndex = IndexOf( typeGenericParameters, m.Value );
+                // The generic parameters of the levels of a type, outermost first: a nested type that reuses the name of a parameter
+                // of an outer type hides it, so the last one wins.
+                var typeIndex = LastIndexOf( typeGenericParameters, m.Value );
 
                 return typeIndex >= 0 ? "`" + typeIndex : m.Value;
             } );
 
-        type = _arrayRankRegex.Replace( type, m => "[" + string.Join( ",", new string[m.Length - 1].Select( _ => "0:" ) ) + "]" );
+        type = ArrayRankRegex().Replace( type, m => "[" + string.Join( ",", new string[m.Length - 1].Select( _ => "0:" ) ) + "]" );
 
         return type.Replace( '+', '.' ).Replace( '&', '@' );
 
-        static int IndexOf( IReadOnlyList<string> list, string value )
+        static int LastIndexOf( IReadOnlyList<string> list, string value )
         {
-            for ( var i = 0; i < list.Count; i++ )
+            for ( var i = list.Count - 1; i >= 0; i-- )
             {
                 if ( list[i] == value )
                 {

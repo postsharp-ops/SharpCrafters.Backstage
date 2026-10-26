@@ -39,6 +39,18 @@ public sealed class IntrospectionV1Reader : IDisposable
     private readonly Dictionary<string, DeclarationHandle> _handles = new( StringComparer.Ordinal );
     private readonly List<string> _identifiers = [null!];
 
+    // The attributes that the writer puts in the name table, by element. The other attributes of these elements are literal strings,
+    // such as Instance/@Description, even when they start with #.
+    private static readonly Dictionary<string, string[]> _namedAttributes = new( StringComparer.Ordinal )
+    {
+        [V1Names.Evolution] = [V1Names.Source, V1Names.Target],
+        [V1Names.Class] = [V1Names.Class],
+        [V1Names.Instance] = [V1Names.Declaration],
+        [V1Names.Target] = [V1Names.Target],
+        [V1Names.JoinPoint] = [V1Names.Advised, V1Names.Advising, V1Names.Description],
+        [V1Names.Annotation] = [V1Names.Target, V1Names.Class, V1Names.Arguments, V1Names.Description]
+    };
+
     // The elements that are open below the root, with the kind of the node that ends each one.
     private readonly Stack<IntrospectionNodeKind> _openElements = new();
 
@@ -54,6 +66,7 @@ public sealed class IntrospectionV1Reader : IDisposable
     private IntrospectionNodeKind _pendingEnd;
 
     private bool _isAtEnd;
+    private bool _isDocumentEndRead;
 
     private DeclarationMappingData _declarationMapping;
     private AspectClassData _aspectClassData;
@@ -158,7 +171,7 @@ public sealed class IntrospectionV1Reader : IDisposable
     /// </summary>
     public string GetIdentifier( DeclarationHandle handle )
     {
-        if ( handle.IsNil || handle.Index >= this._identifiers.Count )
+        if ( handle.IsNil || !ReferenceEquals( handle.Owner, this ) || handle.Index >= this._identifiers.Count )
         {
             throw new ArgumentException( $"The handle {handle} was not returned by this reader.", nameof(handle) );
         }
@@ -214,6 +227,22 @@ public sealed class IntrospectionV1Reader : IDisposable
         this._isAtEnd = this._reader.IsEmptyElement;
     }
 
+    // After the root element, the rest of a document that the reader created is read, so that a second root element or trailing
+    // garbage is an error rather than ignored. An XmlReader of the caller is left at the end of the root element.
+    private void ReadDocumentEnd()
+    {
+        if ( this._ownsReader )
+        {
+            while ( this._reader.Read() )
+            {
+                if ( this._reader.NodeType == XmlNodeType.Element )
+                {
+                    throw this.CreateException( $"The document has content after the '{V1Names.Symbols}' element." );
+                }
+            }
+        }
+    }
+
     private bool ReadCore()
     {
         if ( this._pendingEnd != IntrospectionNodeKind.None )
@@ -262,6 +291,12 @@ public sealed class IntrospectionV1Reader : IDisposable
             }
         }
 
+        if ( !this._isDocumentEndRead )
+        {
+            this._isDocumentEndRead = true;
+            this.ReadDocumentEnd();
+        }
+
         this._isAtEnd = true;
         this.NodeKind = IntrospectionNodeKind.None;
 
@@ -273,6 +308,10 @@ public sealed class IntrospectionV1Reader : IDisposable
     {
         var parent = this._openElements.Count == 0 ? IntrospectionNodeKind.None : this._openElements.Peek();
         var isKnown = this._reader.NamespaceURI == V1Names.Namespace;
+
+        // The definitions of the name table are registered before the properties are read, so that the order of the attributes does
+        // not matter: Target="#1=M:A" Source="#1" is valid.
+        this.RegisterNames( isKnown );
 
         switch ( isKnown ? this._reader.LocalName : null )
         {
@@ -397,13 +436,71 @@ public sealed class IntrospectionV1Reader : IDisposable
         return true;
     }
 
+    // Skips an element and its content, whose definitions of the name table are registered: a later element can refer to a name that
+    // an element the reader does not know defines.
     private void SkipElement()
     {
-        if ( !this._reader.IsEmptyElement )
+        if ( this._reader.IsEmptyElement )
         {
-            // Skip leaves the XmlReader on the node after the end of the element.
-            this._reader.Skip();
-            this._isOnNextNode = true;
+            return;
+        }
+
+        var depth = this._reader.Depth;
+
+        while ( this._reader.Read() && !(this._reader.NodeType == XmlNodeType.EndElement && this._reader.Depth == depth) )
+        {
+            if ( this._reader.NodeType == XmlNodeType.Element )
+            {
+                this.RegisterNames( false );
+            }
+        }
+
+        // Leaves the XmlReader on the node after the end of the element, as XmlReader.Skip does.
+        this._reader.Read();
+        this._isOnNextNode = true;
+    }
+
+    // Registers the definitions of the name table of the element on which the XmlReader is positioned: those of the attributes that
+    // the writer puts in the name table for a known element, and every value of the form #N=<string> for an unknown element, whose
+    // attributes the reader does not know.
+    private void RegisterNames( bool isKnown )
+    {
+        if ( isKnown && _namedAttributes.TryGetValue( this._reader.LocalName, out var names ) )
+        {
+            foreach ( var name in names )
+            {
+                this.RegisterName( this._reader.GetAttribute( name ) );
+            }
+
+            return;
+        }
+
+        if ( !this._reader.MoveToFirstAttribute() )
+        {
+            return;
+        }
+
+        do
+        {
+            this.RegisterName( this._reader.Value );
+        }
+        while ( this._reader.MoveToNextAttribute() );
+
+        this._reader.MoveToElement();
+    }
+
+    private void RegisterName( string? value )
+    {
+        if ( value == null || value.Length == 0 || value[0] != V1Names.NameTablePrefix )
+        {
+            return;
+        }
+
+        var separator = value.IndexOf( "=", StringComparison.Ordinal );
+
+        if ( separator > 1 && int.TryParse( value.Substring( 1, separator - 1 ), NumberStyles.None, CultureInfo.InvariantCulture, out var number ) )
+        {
+            this._names[number] = value.Substring( separator + 1 );
         }
     }
 
@@ -446,14 +543,15 @@ public sealed class IntrospectionV1Reader : IDisposable
     {
         var identifier = this.GetName( attributeName );
 
-        if ( identifier == null )
+        // A blank identifier stands for no declaration, as the writer rejects it.
+        if ( identifier == null || string.IsNullOrWhiteSpace( identifier ) )
         {
             return default;
         }
 
         if ( !this._handles.TryGetValue( identifier, out var handle ) )
         {
-            handle = new DeclarationHandle( this._identifiers.Count );
+            handle = new DeclarationHandle( this, this._identifiers.Count );
             this._identifiers.Add( identifier );
             this._handles.Add( identifier, handle );
         }
@@ -520,10 +618,11 @@ public sealed class IntrospectionV1Reader : IDisposable
             : throw this.CreateException( $"The value '{value}' of the '{attributeName}' attribute is not a valid Boolean." );
     }
 
-    // An enumerated value that the reader does not know is ignored, as an unknown attribute is.
+    // An enumerated value that the reader does not know is ignored, as an unknown attribute is. Enum.TryParse accepts any number, so a
+    // number that is not a member of the enumeration is ignored too.
     private T? GetEnum<T>( string attributeName )
         where T : struct, Enum
-        => Enum.TryParse<T>( this._reader.GetAttribute( attributeName ), false, out var result ) ? result : null;
+        => Enum.TryParse<T>( this._reader.GetAttribute( attributeName ), false, out var result ) && Enum.IsDefined( typeof(T), result ) ? result : null;
 
     private IntrospectionFormatException CreateException( string message )
         => this._reader is IXmlLineInfo lineInfo

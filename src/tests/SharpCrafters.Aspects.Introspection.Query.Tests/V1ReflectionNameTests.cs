@@ -46,6 +46,21 @@ public sealed class V1ReflectionNameTests
     [InlineData( "R:[App]App.C::M(System.String)@value", "M:App.C.M(System.String);Parameter=value", IntrospectionDeclarationKind.Parameter, "value" )]
     [InlineData( "R:[App]App.C::M(System.String)@return", "M:App.C.M(System.String);Return", IntrospectionDeclarationKind.ReturnParameter, "return" )]
     [InlineData( "A:App", "A:App", IntrospectionDeclarationKind.Assembly, "App" )]
+
+    // The parameters and the return value of a conversion operator, whose signature ends with its return type.
+    [InlineData( "R:[App]App.C::op_Implicit([App]App.C)~System.Int32@value", "M:App.C.op_Implicit(App.C)~System.Int32;Parameter=value", IntrospectionDeclarationKind.Parameter, "value" )]
+    [InlineData( "R:[App]App.C::op_Implicit([App]App.C)~System.Int32@return", "M:App.C.op_Implicit(App.C)~System.Int32;Return", IntrospectionDeclarationKind.ReturnParameter, "return" )]
+
+    // An assembly whose name starts with a digit or with a letter that is not ASCII.
+    [InlineData( "M:[App]App.C::M([123Lib]Lib.Value)", "M:App.C.M(Lib.Value)", IntrospectionDeclarationKind.Method, "M" )]
+    [InlineData( "M:[App]App.C::M([Ünicode.Lib]Lib.Value, System.Int32[,])", "M:App.C.M(Lib.Value,System.Int32[0:,0:])", IntrospectionDeclarationKind.Method, "M" )]
+
+    // Generic parameters whose names are not ASCII.
+    [InlineData( "M:[App]App.C::M{Δ}(Δ)", "M:App.C.M``1(``0)", IntrospectionDeclarationKind.Method, "M" )]
+    [InlineData( "M:[App]App.Box{Ω}::Get(Ω)", "M:App.Box`1.Get(`0)", IntrospectionDeclarationKind.Method, "Get" )]
+
+    // A nested type that reuses the name of a generic parameter of its declaring type hides it.
+    [InlineData( "M:[App]App.Outer{T}+Inner{T}::M(T)", "M:App.Outer`1.Inner`1.M(`1)", IntrospectionDeclarationKind.Method, "M" )]
     public void TheReflectionNameIsConvertedToTheDocumentationCommentIdentifier( string reflectionName, string id, IntrospectionDeclarationKind kind, string name )
     {
         var parsed = V1ReflectionName.Parse( reflectionName );
