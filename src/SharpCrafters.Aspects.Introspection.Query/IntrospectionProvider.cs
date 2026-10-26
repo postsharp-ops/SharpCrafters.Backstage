@@ -68,29 +68,3 @@ public abstract class IntrospectionProvider
     /// </summary>
     public virtual void AddCommands( IConfigurator<CommandSettings> branch, IntrospectionCommandOptions options ) { }
 }
-
-/// <summary>
-/// A position in a source file.
-/// </summary>
-/// <param name="File">The full path of the file.</param>
-/// <param name="Line">The line, from 1.</param>
-/// <param name="Column">The column, from 1.</param>
-public sealed record IntrospectionSourceLocation( string File, int Line, int Column );
-
-/// <summary>
-/// The source locations of the declarations of a target, which a product records apart from its file, such as the
-/// <c>.pspdb</c> of PostSharp.
-/// </summary>
-public interface IIntrospectionSourceLocations
-{
-    /// <summary>
-    /// Gets the location of a declaration, or <c>null</c>.
-    /// </summary>
-    IntrospectionSourceLocation? GetLocation( IntrospectionDeclaration declaration );
-
-    /// <summary>
-    /// Gets the documentation comment identifiers of the declarations whose source includes a line of a file, the innermost
-    /// first.
-    /// </summary>
-    IReadOnlyList<string> FindDeclarations( string file, int line );
-}

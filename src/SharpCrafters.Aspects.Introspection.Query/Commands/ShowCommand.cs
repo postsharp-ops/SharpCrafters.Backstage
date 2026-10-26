@@ -18,18 +18,22 @@ namespace SharpCrafters.Aspects.Introspection.Query.Commands;
 /// <c>introspect show &lt;collection&gt; &lt;selector&gt;</c> (Documentation/future/Introspection-Cli.md of PostSharp, sections
 /// 5.2 and 5.5).
 /// </summary>
-public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
+public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettings>
 {
     // A documentation comment identifier: one letter and a colon, possibly qualified with its assembly.
-    private static readonly Regex _documentationIdRegex = new( @"^(\[[^\]]+\])?[A-Z]:", RegexOptions.CultureInvariant );
+    [GeneratedRegex( @"^(\[[^\]]+\])?[A-Z]:", RegexOptions.CultureInvariant )]
+    private static partial Regex DocumentationIdRegex();
 
     // A source position: a path, a line, and optionally a column.
-    private static readonly Regex _positionRegex = new( @"^(?<path>.+?):(?<line>\d+)(:\d+)?$", RegexOptions.CultureInvariant );
+    [GeneratedRegex( @"^(?<path>.+?):(?<line>\d+)(:\d+)?$", RegexOptions.CultureInvariant )]
+    private static partial Regex PositionRegex();
 
-    private static readonly Regex _identifierPrefixRegex = new( "^[0-9a-f]{1,12}$", RegexOptions.CultureInvariant );
+    [GeneratedRegex( "^[0-9a-f]{1,12}$", RegexOptions.CultureInvariant )]
+    private static partial Regex IdentifierPrefixRegex();
 
     // The generic arity and the parameters of a documentation comment identifier, which a C# name omits.
-    private static readonly Regex _nameDecorationsRegex = new( @"``?\d+|\(.*$|~.*$|;.*$", RegexOptions.CultureInvariant );
+    [GeneratedRegex( @"``?\d+|\(.*$|~.*$|;.*$", RegexOptions.CultureInvariant )]
+    private static partial Regex NameDecorationsRegex();
 
     /// <inheritdoc />
     protected override int Execute( IntrospectionCommandOptions options, ShowCommandSettings settings )
@@ -217,7 +221,7 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
     {
         var declarations = context.Model.Declarations;
 
-        if ( _documentationIdRegex.IsMatch( selector ) )
+        if ( DocumentationIdRegex().IsMatch( selector ) )
         {
             var exact = declarations.Where( d => d.Id == selector || d.QualifiedId == selector ).ToList();
 
@@ -231,7 +235,7 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
             };
         }
 
-        var position = _positionRegex.Match( selector );
+        var position = PositionRegex().Match( selector );
 
         if ( position.Success && Path.HasExtension( position.Groups["path"].Value ) )
         {
@@ -304,7 +308,7 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
             return byKey[0];
         }
 
-        if ( !_identifierPrefixRegex.IsMatch( selector ) )
+        if ( !IdentifierPrefixRegex().IsMatch( selector ) )
         {
             throw new IntrospectionCommandException(
                 $"'{selector}' is neither the identifier of an {what} (12 hexadecimal characters, or a unique prefix of them) nor its structural key.",
@@ -347,7 +351,7 @@ public sealed class ShowCommand : IntrospectionCommand<ShowCommandSettings>
     }
 
     // The C# name of a declaration: its documentation comment identifier without the prefix, the arity and the parameters.
-    internal static string GetCSharpName( IntrospectionDeclaration declaration ) => _nameDecorationsRegex.Replace( declaration.Id.Substring( 2 ), "" );
+    internal static string GetCSharpName( IntrospectionDeclaration declaration ) => NameDecorationsRegex().Replace( declaration.Id.Substring( 2 ), "" );
 
     private static IntrospectionCommandException Ambiguous( string selector, IEnumerable<IntrospectionDeclaration> candidates )
         => new(

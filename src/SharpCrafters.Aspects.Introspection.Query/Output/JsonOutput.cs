@@ -17,21 +17,6 @@ using System.Text.Json;
 namespace SharpCrafters.Aspects.Introspection.Query.Output;
 
 /// <summary>
-/// How much of an object is written.
-/// </summary>
-internal enum JsonDetail
-{
-    // The fields marked as summary, for an object inside another one.
-    Summary,
-
-    // Every field but the lists of objects, which list writes.
-    Full,
-
-    // Every field, and the lists of objects with their own fields, which show writes.
-    Expanded
-}
-
-/// <summary>
 /// Writes the JSON output of the commands, whose shape the schema describes. Absent values are omitted rather than written as
 /// <c>null</c>. Objects inside other objects are written with their summary fields, so that the output has no cycle.
 /// </summary>
