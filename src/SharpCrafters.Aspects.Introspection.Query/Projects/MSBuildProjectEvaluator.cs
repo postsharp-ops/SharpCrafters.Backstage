@@ -144,6 +144,50 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         {
             inputs.Add( import.ImportedProject.FullPath );
         }
+
+        AddMissingImports( project, inputs );
+    }
+
+    // The imports that were skipped because their file does not exist, such as the targets of a NuGet package that is not in the
+    // packages folder (obj/*.nuget.g.targets imports them under Exists conditions). They are inputs that the cache records as
+    // absent: a restore that brings the package back rewrites no other input. The path of an import is expanded with the final
+    // properties of the project, which are those of the import in the common case of a path that does not change afterwards.
+    private static void AddMissingImports( Project project, HashSet<string> inputs )
+    {
+        var files = project.Imports.Select( i => i.ImportedProject ).Prepend( project.Xml );
+
+        foreach ( var file in files )
+        {
+            foreach ( var element in file.Imports )
+            {
+                // An import of an SDK is resolved by the SDK resolver, not by its path.
+                if ( !string.IsNullOrEmpty( element.Sdk ) )
+                {
+                    continue;
+                }
+
+                var path = project.ExpandString( element.Project ).Trim();
+
+                if ( path.Length == 0 || path.IndexOfAny( ['*', '?', ';'] ) >= 0 )
+                {
+                    continue;
+                }
+
+                try
+                {
+                    path = Path.GetFullPath( Path.Combine( file.DirectoryPath, path ) );
+                }
+                catch ( Exception e ) when ( e is ArgumentException or NotSupportedException or PathTooLongException )
+                {
+                    continue;
+                }
+
+                if ( !File.Exists( path ) )
+                {
+                    inputs.Add( path );
+                }
+            }
+        }
     }
 
     // The files that the SDK would import if they existed, which are inputs although they do not exist yet: the cache records
