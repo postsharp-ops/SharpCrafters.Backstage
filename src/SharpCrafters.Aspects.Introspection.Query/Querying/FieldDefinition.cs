@@ -42,6 +42,4 @@ internal sealed class FieldDefinition
     /// Gets a value indicating whether the field is written when an object of the type is written inside another one.
     /// </summary>
     public bool IsInSummary { get; init; }
-
-    public bool IsScalar => this.Kind is ValueKind.String or ValueKind.Integer or ValueKind.Boolean or ValueKind.Enum;
 }

@@ -35,6 +35,15 @@ internal sealed class IntrospectionSession
         var projectPath = ResolveProject( options.WorkingDirectory, settings );
         var project = ProjectLocator.Locate( projectPath, provider, settings.Configuration, settings.Framework, options.ErrorOutput.WriteLine );
 
+        // A framework that the project does not have is not a sign that the project does not use the product.
+        if ( project.Targets.Count == 0 && settings.Framework != null && project.TargetFrameworks.Count > 0
+             && !project.TargetFrameworks.Contains( settings.Framework, StringComparer.OrdinalIgnoreCase ) )
+        {
+            throw new IntrospectionCommandException(
+                $"The project '{project.Name}' does not target {settings.Framework}: its target frameworks are {string.Join( ", ", project.TargetFrameworks )}.",
+                IntrospectionExitCodes.Error );
+        }
+
         if ( project.Targets.Count == 0 )
         {
             var framework = settings.Framework != null ? $" for the target framework {settings.Framework}" : "";

@@ -97,11 +97,75 @@ internal static partial class QueryOptionParser
 
         foreach ( var item in text.Split( ',' ) )
         {
-            paths.Add( ParsePath( query, resolver, type, item, start ) );
+            var path = ParsePath( query, resolver, type, item, start );
+
+            // An object and one of its fields would be two writes of the same property: say so rather than drop one.
+            foreach ( var other in paths )
+            {
+                if ( other.Text == path.Text )
+                {
+                    throw query.Error( $"'{path.Text}' is selected twice.", start );
+                }
+
+                if ( path.Text.StartsWith( other.Text + "/", StringComparison.Ordinal ) || other.Text.StartsWith( path.Text + "/", StringComparison.Ordinal ) )
+                {
+                    var (shorter, longer) = path.Text.Length < other.Text.Length ? (path.Text, other.Text) : (other.Text, path.Text);
+
+                    throw query.Error( $"'{shorter}' and '{longer}' overlap: select the object or some of its fields, not both.", start );
+                }
+            }
+
+            paths.Add( path );
             start += item.Length + 1;
         }
 
         return paths;
+    }
+
+    /// <summary>
+    /// Gets the default columns of the text table of a type, without those of the fields that the provider does not record. They
+    /// are not checked as <c>--select</c> is: the user did not write them.
+    /// </summary>
+    public static IReadOnlyList<FieldPath> GetDefaultColumns( TypeDefinition type, IntrospectionProvider provider )
+    {
+        var columns = new List<FieldPath>();
+
+        foreach ( var text in type.DefaultColumns )
+        {
+            var fields = new List<FieldDefinition>();
+            var current = type;
+            var isCount = false;
+            var isProvided = true;
+
+            foreach ( var segment in text.Split( '/' ) )
+            {
+                if ( segment == "$count" )
+                {
+                    isCount = true;
+
+                    break;
+                }
+
+                var field = current?.GetField( segment ) ?? throw new InvalidOperationException( $"The default column '{text}' of {type.Name} is not a path of the schema." );
+
+                if ( !provider.Provides( current.Name, field.Name ) )
+                {
+                    isProvided = false;
+
+                    break;
+                }
+
+                fields.Add( field );
+                current = field.Kind == ValueKind.Object ? IntrospectionSchema.GetType( field.TypeName! ) : null;
+            }
+
+            if ( isProvided )
+            {
+                columns.Add( new FieldPath( fields, isCount, text ) );
+            }
+        }
+
+        return columns;
     }
 
     private static FieldPath ParsePath( QueryText query, IntrospectionUriResolver resolver, TypeDefinition type, string item, int start )

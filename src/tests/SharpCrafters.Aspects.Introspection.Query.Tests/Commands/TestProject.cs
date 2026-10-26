@@ -43,7 +43,12 @@ internal sealed class TestProject : IDisposable
                                           </Symbols>
                                           """;
 
-    public TestProject( string? symbols = DefaultSymbols, string projectName = "App", string targetFrameworks = "<TargetFramework>net10.0</TargetFramework>", bool setProperty = true )
+    public TestProject(
+        string? symbols = DefaultSymbols,
+        string projectName = "App",
+        string targetFrameworks = "<TargetFramework>net10.0</TargetFramework>",
+        bool setProperty = true,
+        string extraProperties = "" )
     {
         this.Directory = Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
         System.IO.Directory.CreateDirectory( this.Directory );
@@ -59,6 +64,7 @@ internal sealed class TestProject : IDisposable
                  {targetFrameworks}
                  <AssemblyName>App</AssemblyName>
                  {property}
+                 {extraProperties}
                </PropertyGroup>
              </Project>
              """ );

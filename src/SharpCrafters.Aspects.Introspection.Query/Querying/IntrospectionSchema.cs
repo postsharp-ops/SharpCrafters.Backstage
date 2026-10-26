@@ -195,8 +195,6 @@ internal static class IntrospectionSchema
 
     public static string CollectionNames => string.Join( ", ", Types.Select( t => t.CollectionName ) );
 
-    public static string ItemNames => string.Join( ", ", Types.Select( t => t.ItemName ) );
-
     private static FieldDefinition Field(
         string name,
         ValueKind kind,

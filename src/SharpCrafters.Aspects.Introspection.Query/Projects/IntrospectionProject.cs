@@ -36,7 +36,7 @@ public sealed class IntrospectionProject
 
     /// <summary>
     /// Gets a value indicating whether the project was evaluated with MSBuild. When no compatible .NET SDK exists, the files are
-    /// found by searching <c>bin</c> and <c>artifacts/bin</c> instead.
+    /// found by searching the <c>bin</c> directory of the project and the <c>artifacts/bin</c> directory of the repository instead.
     /// </summary>
     public bool IsEvaluated { get; }
 
@@ -46,6 +46,14 @@ public sealed class IntrospectionProject
     public IReadOnlyList<IntrospectionTarget> Targets => this.TargetsList;
 
     internal List<IntrospectionTarget> TargetsList { get; } = [];
+
+    /// <summary>
+    /// Gets the target frameworks of the project, including those that <c>-f</c> leaves out of the scope, or an empty list when the
+    /// project was not evaluated.
+    /// </summary>
+    public IReadOnlyList<string> TargetFrameworks => this.TargetFrameworksList;
+
+    internal List<string> TargetFrameworksList { get; } = [];
 
     /// <inheritdoc />
     public override string ToString() => this.Name;
