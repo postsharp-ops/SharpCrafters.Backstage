@@ -174,19 +174,21 @@ public sealed class OutputLimitTests : IDisposable
     }
 
     [Fact]
-    public void ABatchWritesTheFilesOnce()
+    public void ABatchListsTheFilesWhenItIsAsked()
     {
         var (exitCode, output, error) = CommandRunner.Run(
             this._project.Directory,
             this._provider,
             ["batch", "--format", "json"],
-            input: "list aspect-classes\nshow aspect-class Log\nschema aspect-classes" );
+            input: "list aspect-classes\nshow aspect-class Log\nschema aspect-classes\nlist files" );
 
         Assert.True( exitCode == 0, error );
 
+        // The files are a query of their own, which the other results do not repeat.
         var root = JsonDocument.Parse( output ).RootElement;
-        Assert.Equal( "App", Assert.Single( root.GetProperty( "files" ).EnumerateArray() ).GetProperty( "project" ).GetString() );
+        Assert.False( root.TryGetProperty( "files", out _ ) );
         Assert.All( root.GetProperty( "results" ).EnumerateArray(), r => Assert.False( r.GetProperty( "result" ).TryGetProperty( "files", out _ ) ) );
+        Assert.Equal( "App", Assert.Single( root.GetProperty( "results" )[3].GetProperty( "result" ).GetProperty( "items" ).EnumerateArray() ).GetProperty( "project" ).GetString() );
         Assert.Equal( 3, root.GetProperty( "results" )[0].GetProperty( "result" ).GetProperty( "count" ).GetInt32() );
     }
 }

@@ -28,7 +28,7 @@ namespace SharpCrafters.Aspects.Introspection.Query;
 internal static class ModelIndex
 {
     // Changed whenever the format or what the loader builds changes.
-    private const int _formatVersion = 2;
+    private const int _formatVersion = 3;
     private const int _magic = 0x58494353; // "SCIX"
 
     /// <summary>

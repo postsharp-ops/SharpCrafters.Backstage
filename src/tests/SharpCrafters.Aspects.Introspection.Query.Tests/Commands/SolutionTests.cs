@@ -83,7 +83,7 @@ public sealed class SolutionTests : IDisposable
         // The solution is the only file of the current directory, so it is the scope.
         var result = this.RunJson( "list", "aspect-instances", "--select", "project,targetDeclaration/id" );
 
-        Assert.Equal( ["App", "Lib"], result.GetProperty( "files" ).EnumerateArray().Select( f => f.GetProperty( "project" ).GetString() ) );
+        Assert.Equal( ["App", "Lib"], CommandRunner.Files( this._root, this._provider ).Select( f => f.GetProperty( "project" ).GetString() ) );
 
         var items = result.GetProperty( "items" ).EnumerateArray().Select( i => (i.GetProperty( "project" ).GetString(), i.GetProperty( "targetDeclaration" ).GetProperty( "id" ).GetString()) ).ToList();
         Assert.Equal( [("App", "M:App.Derived.Run"), ("App", "M:App.Program.Main"), ("Lib", "M:Lib.Helper.Run")], items );
@@ -120,7 +120,7 @@ public sealed class SolutionTests : IDisposable
         Assert.True( exitCode == 0, error );
 
         var result = JsonDocument.Parse( output ).RootElement;
-        Assert.Equal( 2, result.GetProperty( "files" ).GetArrayLength() );
+        Assert.Equal( 2, CommandRunner.Files( project.Directory, this._provider ).Count );
 
         var frameworks = result.GetProperty( "items" ).EnumerateArray()
             .GroupBy( i => i.GetProperty( "aspectClass" ).GetProperty( "shortName" ).GetString()! )
@@ -279,8 +279,8 @@ public sealed class SolutionTests : IDisposable
     {
         var cache = Path.Combine( this._root, ".cache" );
 
-        JsonElement FileOfApp() => JsonDocument.Parse( CommandRunner.Run( this._app.Directory, this._provider, ["list", "aspect-classes", "--format", "json"], cacheDirectory: cache ).Output )
-            .RootElement.GetProperty( "files" )[0];
+        JsonElement FileOfApp() => JsonDocument.Parse( CommandRunner.Run( this._app.Directory, this._provider, ["list", "files", "--format", "json"], cacheDirectory: cache ).Output )
+            .RootElement.GetProperty( "items" )[0];
 
         Assert.False( FileOfApp().GetProperty( "stale" ).GetBoolean() );
 

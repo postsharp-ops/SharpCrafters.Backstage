@@ -37,30 +37,6 @@ internal static class JsonOutput
         return Encoding.UTF8.GetString( stream.ToArray() );
     }
 
-    public static void WriteFiles( Utf8JsonWriter writer, QueryContext context, IEnumerable<IntrospectionTarget> targets )
-    {
-        writer.WriteStartArray( "files" );
-
-        foreach ( var target in targets )
-        {
-            writer.WriteStartObject();
-            writer.WriteString( "project", target.Project.Name );
-            writer.WriteString( "targetFramework", target.TargetFramework );
-            writer.WriteString( "configuration", target.Configuration );
-            writer.WriteString( "path", context.GetRelativePath( target.FilePath ) );
-
-            if ( target.WrittenAtUtc != null )
-            {
-                writer.WriteString( "writtenAt", target.WrittenAtUtc.Value.ToString( "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture ) );
-            }
-
-            writer.WriteBoolean( "stale", target.IsStale );
-            writer.WriteEndObject();
-        }
-
-        writer.WriteEndArray();
-    }
-
     /// <param name="lists">How show writes the lists of objects, or <c>null</c> to write them as arrays.</param>
     public static void WriteObject(
         Utf8JsonWriter writer,

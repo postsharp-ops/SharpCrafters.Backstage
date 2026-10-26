@@ -75,6 +75,7 @@ internal sealed class QueryContext
 
     public ModelProvenance Provenance { get; }
 
+    // The targets whose files the query read, which the collection files lists.
     public IReadOnlyList<IntrospectionTarget> Targets => this.Provenance.AllTargets;
 
     public IntrospectionProvider Provider { get; }

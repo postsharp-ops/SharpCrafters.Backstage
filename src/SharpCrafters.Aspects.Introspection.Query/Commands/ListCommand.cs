@@ -80,8 +80,6 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                         w =>
                         {
                             w.WriteStartObject();
-                            JsonOutput.WriteFiles( w, context, session.Targets );
-
                             // The number of objects that satisfy the conditions, whatever the page.
                             w.WriteNumber( "count", matching.Count );
 

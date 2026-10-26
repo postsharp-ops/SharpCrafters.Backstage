@@ -75,8 +75,8 @@ public sealed class ScopeTests
         var (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48", "--format", "json"] );
 
         Assert.True( exitCode == 0, error );
-        Assert.Contains( "\"targetFramework\": \"net48\"", output, StringComparison.Ordinal );
-        Assert.DoesNotContain( "\"targetFramework\": \"net10.0\"", output, StringComparison.Ordinal );
+        Assert.False( output.Contains( "\"files\"", System.StringComparison.Ordinal ) );
+        Assert.Equal( "net48", Assert.Single( CommandRunner.Files( project.Directory, this._provider, "-f", "net48" ) ).GetProperty( "targetFramework" ).GetString() );
     }
 
     [Fact]
