@@ -42,4 +42,10 @@ internal sealed class FieldDefinition
     /// Gets a value indicating whether the field is written when an object of the type is written inside another one.
     /// </summary>
     public bool IsInSummary { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the field is written by default. A field that is not, such as the structural key, which
+    /// the identifier summarizes, is written only when <c>--select</c> names it.
+    /// </summary>
+    public bool IsWrittenByDefault { get; init; } = true;
 }
