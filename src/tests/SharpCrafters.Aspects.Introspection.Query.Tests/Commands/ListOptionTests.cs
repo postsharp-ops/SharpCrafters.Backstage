@@ -29,6 +29,20 @@ public sealed class ListOptionTests : IDisposable
         return JsonDocument.Parse( output ).RootElement;
     }
 
+    // An agent reads JSON, so it is the default; a reader asks for text with --format text.
+    [Theory]
+    [InlineData( "list", "aspect-classes" )]
+    [InlineData( "list", "aspect-instances", "--count" )]
+    [InlineData( "show", "aspect-class", "Log" )]
+    [InlineData( "schema" )]
+    public void TheDefaultFormatIsJson( params string[] command )
+    {
+        var (exitCode, output, error) = this.Run( command );
+
+        Assert.True( exitCode == 0, error );
+        Assert.Equal( JsonValueKind.Object, JsonDocument.Parse( output ).RootElement.ValueKind );
+    }
+
     [Fact]
     public void SeveralOrderingsApplyInTurnAndANullComesFirst()
     {
@@ -135,7 +149,7 @@ public sealed class ListOptionTests : IDisposable
     [Fact]
     public void ADefaultColumnThatTheProductDoesNotRecordIsLeftOut()
     {
-        string Header() => this.Run( "list", "transformations" ).Output.Split( '\n' )[0];
+        string Header() => this.Run( "list", "transformations", "--format", "text" ).Output.Split( '\n' )[0];
 
         Assert.Contains( "semantic", Header(), StringComparison.Ordinal );
 
@@ -160,7 +174,7 @@ public sealed class ListOptionTests : IDisposable
     [Fact]
     public void TheTextTableHasTheSelectedColumns()
     {
-        var (exitCode, output, error) = this.Run( "list", "aspect-instances", "--select", "aspectClass/shortName,transformations/$count", "--order-by", "aspectClass/shortName" );
+        var (exitCode, output, error) = this.Run( "list", "aspect-instances", "--select", "aspectClass/shortName,transformations/$count", "--order-by", "aspectClass/shortName", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
 

@@ -35,7 +35,7 @@ public sealed class ShowSelectorTests : IDisposable
     [Fact]
     public void TheSchemaOffersShowOnlyForTheKindsThatShowTakes()
     {
-        var (exitCode, text, error) = this.Run( "schema" );
+        var (exitCode, text, error) = this.Run( "schema", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.Contains( "aspect-instances (show aspect-instance):", text, StringComparison.Ordinal );
@@ -125,7 +125,7 @@ public sealed class ShowSelectorTests : IDisposable
         this._provider.Locations["M:App.Customer.Unrelated"] = new IntrospectionSourceLocation( this._project.SourceFile, 9, 9 );
         this._provider.Locations["T:App.Customer"] = new IntrospectionSourceLocation( this._project.SourceFile, 9, 5 );
 
-        var (exitCode, output, error) = this.Run( "show", "declaration", "Customer.cs:9" );
+        var (exitCode, output, error) = this.Run( "show", "declaration", "Customer.cs:9", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.StartsWith( "Type App.Customer at Customer.cs:9:5 (App).", output, StringComparison.Ordinal );
@@ -152,7 +152,7 @@ public sealed class ShowSelectorTests : IDisposable
         this._provider.Locations["P:App.Customer.FullName"] = new IntrospectionSourceLocation( this._project.SourceFile, 18, 19 );
 
         // On Windows, the path starts with a drive letter and a colon, as a documentation comment identifier does.
-        var (exitCode, output, error) = this.Run( "show", "declaration", this._project.SourceFile + ":18" );
+        var (exitCode, output, error) = this.Run( "show", "declaration", this._project.SourceFile + ":18", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.StartsWith( "Property App.Customer.FullName at Customer.cs:18:19 (App).", output, StringComparison.Ordinal );
@@ -214,7 +214,7 @@ public sealed class ShowSelectorTests : IDisposable
         var mapping = Assert.Single( field.GetProperty( "declarationMappings" ).EnumerateArray() );
         Assert.Equal( "F:App.Customer.<FirstName>k__OriginalField", mapping.GetProperty( "target" ).GetProperty( "id" ).GetString() );
 
-        var (exitCode, text, error) = this.Run( "show", "declaration", "F:App.Customer.<FirstName>k__BackingField" );
+        var (exitCode, text, error) = this.Run( "show", "declaration", "F:App.Customer.<FirstName>k__BackingField", "--format", "text" );
         Assert.True( exitCode == 0, error );
         Assert.Contains( "Declaration mappings:", text, StringComparison.Ordinal );
         Assert.Contains( "<FirstName>k__OriginalField", text, StringComparison.Ordinal );
@@ -262,7 +262,7 @@ public sealed class ShowSelectorTests : IDisposable
         string Describe( string kind )
         {
             var id = predecessors.Single( p => p.GetProperty( "kind" ).GetString() == kind ).GetProperty( "id" ).GetString()!;
-            var (exitCode, output, error) = this.Run( "show", "predecessor", id );
+            var (exitCode, output, error) = this.Run( "show", "predecessor", id, "--format", "text" );
             Assert.True( exitCode == 0, error );
 
             return output;

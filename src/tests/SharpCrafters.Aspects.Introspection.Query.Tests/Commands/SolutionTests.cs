@@ -135,7 +135,7 @@ public sealed class SolutionTests : IDisposable
 
         // An aspect instance of both files is one object, and so are its transformations.
         Assert.Equal( 6, result.GetProperty( "count" ).GetInt32() );
-        (exitCode, output, _) = CommandRunner.Run( project.Directory, this._provider, ["list", "transformations", "--count"] );
+        (exitCode, output, _) = CommandRunner.Run( project.Directory, this._provider, ["list", "transformations", "--count", "--format", "text"] );
         Assert.Equal( "7", output.Trim() );
     }
 
@@ -168,7 +168,7 @@ public sealed class SolutionTests : IDisposable
     {
         File.Delete( Path.Combine( this._lib.Directory, "bin", "Debug", "net10.0", "Lib.pssym" ) );
 
-        var (exitCode, output, error) = this.Run( "list", "aspect-instances", "--count" );
+        var (exitCode, output, error) = this.Run( "list", "aspect-instances", "--count", "--format", "text" );
 
         Assert.Equal( 0, exitCode );
         Assert.Equal( "2", output.Trim() );
@@ -183,7 +183,7 @@ public sealed class SolutionTests : IDisposable
             Path.Combine( this._root, "All.slnx" ),
             """<Solution><Project Path="App/App.csproj" /><Project Path="Other/Other.csproj" /></Solution>""" );
 
-        var (exitCode, output, error) = this.Run( "list", "aspect-instances", "--count" );
+        var (exitCode, output, error) = this.Run( "list", "aspect-instances", "--count", "--format", "text" );
 
         Assert.Equal( 0, exitCode );
         Assert.Equal( "2", output.Trim() );
@@ -200,7 +200,7 @@ public sealed class SolutionTests : IDisposable
         File.WriteAllText( Path.Combine( this._lib.Directory, "bin", "Debug", "net10.0", "Lib.pssym" ), "not xml" );
         Assert.Equal( IntrospectionExitCodes.Error, CommandRunner.Run( this._root, provider, ["list", "aspect-instances"] ).ExitCode );
 
-        var (exitCode, output, error) = CommandRunner.Run( this._root, provider, ["show", "declaration", "App/Customer.cs:3"] );
+        var (exitCode, output, error) = CommandRunner.Run( this._root, provider, ["show", "declaration", "App/Customer.cs:3", "--format", "text"] );
 
         Assert.True( exitCode == 0, error );
         Assert.StartsWith( "Method App.Program.Main at App/Customer.cs:3:5 (App).", output, StringComparison.Ordinal );
@@ -296,7 +296,7 @@ public sealed class SolutionTests : IDisposable
         var provider = new TestProvider { HasLocations = true };
         provider.Locations["M:Lib.Helper.Run"] = new IntrospectionSourceLocation( inner.SourceFile, 3, 5 );
 
-        var (exitCode, output, error) = CommandRunner.Run( this._root, provider, ["show", "declaration", "Outer/L/Customer.cs:3", "--solution", "Nested.slnx"] );
+        var (exitCode, output, error) = CommandRunner.Run( this._root, provider, ["show", "declaration", "Outer/L/Customer.cs:3", "--solution", "Nested.slnx", "--format", "text"] );
 
         Assert.True( exitCode == 0, error );
         Assert.StartsWith( "Method Lib.Helper.Run at Outer/L/Customer.cs:3:5 ", output, StringComparison.Ordinal );

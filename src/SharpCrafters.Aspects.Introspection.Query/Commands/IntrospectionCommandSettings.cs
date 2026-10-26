@@ -41,12 +41,12 @@ public class IntrospectionCommandSettings : CommandSettings
     public string? Configuration { get; init; }
 
     /// <summary>
-    /// Gets the format of the output: <c>text</c>, <c>json</c> or <c>jsonl</c>.
+    /// Gets the format of the output: <c>json</c>, the default, which is colored on a terminal, <c>text</c> or <c>jsonl</c>.
     /// </summary>
-    [Description( "The format of the output: text (the default), json, or jsonl, one object per line." )]
+    [Description( "The format of the output: json (the default, colored on a terminal), text for a reader, or jsonl, one object per line." )]
     [CommandOption( "--format <FORMAT>" )]
-    [DefaultValue( "text" )]
-    public string Format { get; init; } = "text";
+    [DefaultValue( "json" )]
+    public string Format { get; init; } = "json";
 
     /// <summary>
     /// Gets when the JSON output is colored: <c>auto</c>, <c>always</c> or <c>never</c>.
