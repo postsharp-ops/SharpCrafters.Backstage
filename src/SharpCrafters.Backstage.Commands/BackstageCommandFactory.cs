@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Commands.Misc;
 using SharpCrafters.Backstage.Commands.Rss;
 using SharpCrafters.Backstage.Commands.Telemetry;
 using SharpCrafters.Backstage.Commands.UserInterface;
+using SharpCrafters.Backstage.Application;
 using Spectre.Console.Cli;
 using System.Linq;
 using System;
@@ -17,6 +18,10 @@ namespace SharpCrafters.Backstage.Commands;
 
 public static class BackstageCommandFactory
 {
+    // The version of the package of the application, such as 2027.0.6, or that of its assembly when it has no package version.
+    internal static string? GetVersion( IApplicationInfo? applicationInfo )
+        => applicationInfo?.PackageVersion ?? applicationInfo?.AssemblyVersion?.ToString();
+
     public static void ConfigureCommandApp(
         CommandApp app,
         BackstageCommandOptions options,
@@ -28,6 +33,13 @@ public static class BackstageCommandFactory
         app.Configure(
             appConfig =>
             {
+                // --version, which the dotnet tools answer with the version of their package: what a user or an agent asks first to
+                // know which tool it has.
+                if ( GetVersion( options.ApplicationInfo ) is { } version )
+                {
+                    appConfig.SetApplicationVersion( version );
+                }
+
                 appConfig.AddBranch(
                     "license",
                     license =>

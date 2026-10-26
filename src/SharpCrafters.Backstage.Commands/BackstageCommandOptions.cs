@@ -55,7 +55,8 @@ public sealed class BackstageCommandOptions
         product,
         standardOutput,
         errorOutput,
-        ansiSupport ) { }
+        ansiSupport,
+        applicationInfo ) { }
 
     /// <summary>
     /// Gets the product family that hosts the commands.
@@ -72,10 +73,12 @@ public sealed class BackstageCommandOptions
         BackstageProduct product,
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
-        AnsiSupport ansiSupport = AnsiSupport.Detect )
+        AnsiSupport ansiSupport = AnsiSupport.Detect,
+        IApplicationInfo? applicationInfo = null )
     {
         this._ansiSupport = ansiSupport;
         this.Product = product;
+        this.ApplicationInfo = applicationInfo;
         this.ServiceProvider = serviceProvider;
         this.StandardOutput = standardOutput ?? Console.Out;
         this.ErrorOutput = errorOutput ?? Console.Error;
@@ -101,6 +104,9 @@ public sealed class BackstageCommandOptions
     }
 
     internal ICommandServiceProviderProvider ServiceProvider { get; }
+
+    // The description of the host process, whose version --version writes, or null when the host gave none.
+    internal IApplicationInfo? ApplicationInfo { get; }
 
     internal TextWriter StandardOutput { get; }
 
