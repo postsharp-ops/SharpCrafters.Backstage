@@ -48,7 +48,7 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                 break;
 
             case "text":
-                var columns = query.Selection ?? QueryOptionParser.ParsePaths( string.Join( ",", type.DefaultColumns ), "--select", type, provider );
+                var columns = query.Selection ?? QueryOptionParser.GetDefaultColumns( type, provider );
                 options.StandardOutput.Write( TextOutput.Table( context, items, columns ) );
                 options.StandardOutput.WriteLine( TextOutput.Files( context, session.Targets ) );
 

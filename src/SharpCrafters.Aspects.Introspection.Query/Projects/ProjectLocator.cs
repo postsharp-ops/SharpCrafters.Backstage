@@ -67,7 +67,7 @@ internal sealed class ProjectLocator : IDisposable
 
             this._warn(
                 "warning: no .NET SDK is compatible with the runtime of this process, so the projects were not evaluated: their files were searched under "
-                + "'bin' and 'artifacts/bin' instead." );
+                + "their 'bin' directories and the 'artifacts/bin' directory of the repository instead." );
         }
 
         return Search( projectPath, this._provider, this._configuration, this._targetFramework );
@@ -83,21 +83,42 @@ internal sealed class ProjectLocator : IDisposable
     }
 
     /// <summary>
-    /// Searches the files of a project under <c>bin</c> and <c>artifacts/bin</c>, as <c>&lt;configuration&gt;/&lt;target
-    /// framework&gt;/&lt;assembly&gt;&lt;extension&gt;</c>.
+    /// Searches the files of a project in its build outputs: <c>bin/&lt;configuration&gt;/&lt;target framework&gt;[/&lt;runtime
+    /// identifier&gt;]</c> under the project, and <c>artifacts/bin/&lt;project&gt;/&lt;configuration&gt;[_&lt;target
+    /// framework&gt;[_&lt;runtime identifier&gt;]]</c> of the artifacts output layout, in the nearest directory above the project
+    /// that has one.
     /// </summary>
+    /// <remarks>
+    /// Without an evaluation, the compiled source files are unknown: a file older than the project file is reported as stale, and
+    /// a file older than a source file is not.
+    /// </remarks>
     internal static IntrospectionProject Search( string projectPath, IntrospectionProvider provider, string? configuration, string? targetFramework )
     {
         var project = new IntrospectionProject( projectPath, false );
-        var roots = new[] { Path.Combine( project.Directory, "bin" ), Path.Combine( project.Directory, "artifacts", "bin" ) };
+        var projectWriteTime = File.Exists( project.Path ) ? File.GetLastWriteTimeUtc( project.Path ) : (DateTime?) null;
+        var found = new List<(string File, string Configuration, string Framework)>();
 
-        foreach ( var file in roots.Where( Directory.Exists )
-                     .SelectMany( r => Directory.EnumerateFiles( r, "*" + provider.FileExtension, SearchOption.AllDirectories ) )
-                     .OrderBy( f => f, StringComparer.Ordinal ) )
+        // bin/<configuration>/<target framework>[/<runtime identifier>]/<file>.
+        var bin = Path.Combine( project.Directory, "bin" );
+
+        foreach ( var file in EnumerateFiles( bin, provider ) )
         {
-            var framework = Path.GetFileName( Path.GetDirectoryName( file ) ) ?? "";
-            var fileConfiguration = Path.GetFileName( Path.GetDirectoryName( Path.GetDirectoryName( file ) ) ) ?? "";
+            var parts = Path.GetRelativePath( bin, Path.GetDirectoryName( file )! ).Split( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar );
+            found.Add( (file, parts[0], parts.Length > 1 ? parts[1] : "") );
+        }
 
+        // artifacts/bin/<project>/<configuration>[_<target framework>[_<runtime identifier>]]/<file>, with a lower-case configuration.
+        if ( FindArtifactsBin( project ) is { } artifacts )
+        {
+            foreach ( var file in EnumerateFiles( artifacts, provider ) )
+            {
+                var pivot = Path.GetRelativePath( artifacts, Path.GetDirectoryName( file )! ).Split( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar )[0].Split( '_' );
+                found.Add( (file, pivot[0], pivot.Length > 1 ? pivot[1] : "") );
+            }
+        }
+
+        foreach ( var (file, fileConfiguration, framework) in found )
+        {
             if ( (targetFramework != null && !string.Equals( framework, targetFramework, StringComparison.OrdinalIgnoreCase ))
                  || (configuration != null && !string.Equals( fileConfiguration, configuration, StringComparison.OrdinalIgnoreCase )) )
             {
@@ -112,10 +133,32 @@ internal sealed class ProjectLocator : IDisposable
                     Path.GetFileNameWithoutExtension( file ),
                     file,
                     new Dictionary<string, string>(),
-                    null ) );
+                    projectWriteTime ) );
         }
 
         return project;
+    }
+
+    private static IEnumerable<string> EnumerateFiles( string root, IntrospectionProvider provider )
+        => Directory.Exists( root )
+            ? Directory.EnumerateFiles( root, "*" + provider.FileExtension, SearchOption.AllDirectories ).OrderBy( f => f, StringComparer.Ordinal )
+            : [];
+
+    // The directory of the project in the artifacts output layout: artifacts/bin/<project> in the project directory or above it,
+    // where the Directory.Build.props that sets UseArtifactsOutput is.
+    private static string? FindArtifactsBin( IntrospectionProject project )
+    {
+        for ( var directory = new DirectoryInfo( project.Directory ); directory != null; directory = directory.Parent )
+        {
+            var candidate = Path.Combine( directory.FullName, "artifacts", "bin", project.Name );
+
+            if ( Directory.Exists( candidate ) )
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     public void Dispose() => this._evaluator?.Dispose();

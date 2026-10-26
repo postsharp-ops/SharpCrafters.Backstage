@@ -38,7 +38,32 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         var frameworks = GetTargetFrameworks( outer );
         AddImports( outer, inputs );
         AddImportCandidates( outer, inputs );
+
+        // A project that is not SDK-style has one target framework, given by TargetFrameworkVersion, and is evaluated once: a
+        // TargetFramework global property would mean nothing to it.
+        if ( frameworks.Count == 0 && GetLegacyTargetFramework( outer ) is { } legacy )
+        {
+            evaluation.TargetFrameworks = [legacy];
+
+            try
+            {
+                if ( targetFramework == null || string.Equals( legacy, targetFramework, StringComparison.OrdinalIgnoreCase ) )
+                {
+                    AddTarget( evaluation, outer, legacy, provider );
+                }
+            }
+            finally
+            {
+                this._collection.UnloadProject( outer );
+            }
+
+            evaluation.Inputs = inputs.ToList();
+
+            return evaluation;
+        }
+
         this._collection.UnloadProject( outer );
+        evaluation.TargetFrameworks = frameworks.ToList();
 
         foreach ( var framework in frameworks )
         {
@@ -52,28 +77,7 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
             try
             {
                 AddImports( inner, inputs );
-
-                var file = GetPath( inner, provider.FileProperty );
-
-                // A project without the property is not of the product, or was never restored.
-                if ( file == null )
-                {
-                    continue;
-                }
-
-                evaluation.Targets.Add(
-                    new EvaluatedTarget
-                    {
-                        TargetFramework = framework,
-                        Configuration = inner.GetPropertyValue( "Configuration" ),
-                        AssemblyName = inner.GetPropertyValue( "AssemblyName" ),
-                        FilePath = file,
-                        AdditionalFiles = provider.AdditionalFileProperties
-                            .Select( p => (Property: p, Path: GetPath( inner, p )) )
-                            .Where( p => p.Path != null )
-                            .ToDictionary( p => p.Property, p => p.Path!, StringComparer.OrdinalIgnoreCase ),
-                        SourceFiles = GetSourceFiles( inner )
-                    } );
+                AddTarget( evaluation, inner, framework, provider );
             }
             finally
             {
@@ -84,6 +88,42 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         evaluation.Inputs = inputs.ToList();
 
         return evaluation;
+    }
+
+    private static void AddTarget( ProjectEvaluation evaluation, Project evaluated, string framework, IntrospectionProvider provider )
+    {
+        var file = GetPath( evaluated, provider.FileProperty );
+
+        // A project without the property is not of the product, or was never restored.
+        if ( file == null )
+        {
+            return;
+        }
+
+        evaluation.Targets.Add(
+            new EvaluatedTarget
+            {
+                TargetFramework = framework,
+                Configuration = evaluated.GetPropertyValue( "Configuration" ),
+                AssemblyName = evaluated.GetPropertyValue( "AssemblyName" ),
+                FilePath = file,
+                AdditionalFiles = provider.AdditionalFileProperties
+                    .Select( p => (Property: p, Path: GetPath( evaluated, p )) )
+                    .Where( p => p.Path != null )
+                    .ToDictionary( p => p.Property, p => p.Path!, StringComparer.OrdinalIgnoreCase ),
+                SourceFiles = GetSourceFiles( evaluated )
+            } );
+    }
+
+    // The short name of the target framework of a project that is not SDK-style, such as net472 for v4.7.2, or null.
+    internal static string? GetLegacyTargetFramework( Project project )
+        => ToShortFrameworkName( project.GetPropertyValue( "TargetFrameworkVersion" ) );
+
+    internal static string? ToShortFrameworkName( string targetFrameworkVersion )
+    {
+        var version = targetFrameworkVersion.Trim().TrimStart( 'v', 'V' );
+
+        return version.Length == 0 || !version.All( c => char.IsDigit( c ) || c == '.' ) ? null : "net" + version.Replace( ".", "", StringComparison.Ordinal );
     }
 
     private Project Load( string path, Dictionary<string, string> globalProperties )

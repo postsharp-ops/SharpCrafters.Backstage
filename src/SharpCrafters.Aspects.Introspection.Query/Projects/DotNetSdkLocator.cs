@@ -35,6 +35,8 @@ public static partial class DotNetSdkLocator
     [GeneratedRegex( @"^(?<version>[0-9]+(?:\.[0-9]+)*(?:-[A-Za-z0-9\.]+)?)\s+\[(?<directory>[^\]]+)\]$", RegexOptions.CultureInvariant )]
     private static partial Regex SdkLineRegex();
 
+    private static readonly TimeSpan _listTimeout = TimeSpan.FromSeconds( 30 );
+
     private static readonly object _sync = new();
     private static DotNetSdk? _registered;
 
@@ -82,8 +84,7 @@ public static partial class DotNetSdkLocator
     internal static DotNetSdk? Choose( IEnumerable<DotNetSdk> sdks, Version runtimeVersion, string runtimeIdentifier )
         => sdks.Select( s => (Sdk: s, Version: ParseVersion( s.Version )) )
             .Where( s => s.Version != null && s.Version.Major <= runtimeVersion.Major )
-            .OrderByDescending( s => s.Version )
-            .ThenBy( s => s.Sdk.Version, StringComparer.Ordinal )
+            .OrderByDescending( s => s.Sdk.Version, SdkVersionComparer.Instance )
             .Select( s => s.Sdk )
             .FirstOrDefault( s => HasRuntimeIdentifier( s.Directory, runtimeIdentifier ) );
 
@@ -112,10 +113,26 @@ public static partial class DotNetSdkLocator
                 return [];
             }
 
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+            // Both streams are read while the process runs: a child that fills the pipe of an unread stream blocks forever.
+            var output = process.StandardOutput.ReadToEndAsync();
+            _ = process.StandardError.ReadToEndAsync();
 
-            return process.ExitCode == 0 ? ParseSdkList( output ) : [];
+            // dotnet --list-sdks answers in well under a second; a muxer that hangs must not hang the command.
+            if ( !process.WaitForExit( _listTimeout ) )
+            {
+                try
+                {
+                    process.Kill( entireProcessTree: true );
+                }
+                catch ( InvalidOperationException )
+                {
+                    // It exited meanwhile.
+                }
+
+                return [];
+            }
+
+            return process.ExitCode == 0 ? ParseSdkList( output.GetAwaiter().GetResult() ) : [];
         }
         catch ( System.ComponentModel.Win32Exception )
         {

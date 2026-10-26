@@ -28,7 +28,7 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 internal sealed class EvaluationCache
 {
     // Changed when the format of an entry or the content of an evaluation changes.
-    private const int _formatVersion = 2;
+    private const int _formatVersion = 3;
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = false };
 

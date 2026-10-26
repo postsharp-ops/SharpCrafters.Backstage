@@ -105,6 +105,15 @@ internal sealed class IntrospectionSession
         {
             var project = projects.Count == 1 ? projects[0] : null;
 
+            // A framework that the project does not have is not a sign that the project does not use the product.
+            if ( project != null && settings.Framework != null && project.TargetFrameworks.Count > 0
+                 && !project.TargetFrameworks.Contains( settings.Framework, StringComparer.OrdinalIgnoreCase ) )
+            {
+                throw new IntrospectionCommandException(
+                    $"The project '{project.Name}' does not target {settings.Framework}: its target frameworks are {string.Join( ", ", project.TargetFrameworks )}.",
+                    IntrospectionExitCodes.Error );
+            }
+
             throw new IntrospectionCommandException(
                 project == null
                     ? $"No project of the solution sets {provider.FileProperty}{framework}: none uses {provider.ProductName}, or they were never restored."
