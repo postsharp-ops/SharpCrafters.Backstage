@@ -84,6 +84,29 @@ public sealed class IntrospectionV1LoaderTests
     }
 
     [Fact]
+    public void AnAspectInheritedInTheSameAssemblyIsInferredAsInherited()
+    {
+        // Files written before PostSharp 2027.0 have no Origin: the attribute of Base.Run, with MulticastInheritance.Strict,
+        // applies to its override Derived.Run, which Base.Run does not contain; that of the type T applies to its members and to the
+        // members of its nested type, which it does.
+        var model = Load(
+            """
+            <Class Class="T:[App]App.TraceAttribute">
+              <Instance Declaration="M:[App]App.Base::Run()"><Target Target="M:[App]App.Derived::Run()" /></Instance>
+              <Instance Declaration="T:[App]App.T"><Target Target="M:[App]App.T::Run()" /><Target Target="M:[App]App.T+Nested::Run()" /></Instance>
+              <Instance Declaration="T:[App]App.Box{T}"><Target Target="M:[App]App.Box{T}::Get()" /></Instance>
+            </Class>
+            """ );
+
+        Assert.Equal(
+            [AspectPredecessorKind.Inherited, AspectPredecessorKind.Multicast, AspectPredecessorKind.Multicast],
+            model.Predecessors.Select( p => p.Kind ) );
+
+        Assert.All( model.Predecessors, p => Assert.True( p.IsKindInferred ) );
+        Assert.StartsWith( "inherited:", model.Predecessors[0].StructuralKey, StringComparison.Ordinal );
+    }
+
+    [Fact]
     public void TheTransformationsOfAnAspectProviderBecomeChildAspectInstances()
     {
         // As AspectProvider.t.pssym of the PostSharp snapshot tests: the provided aspect instance that is not standalone is
