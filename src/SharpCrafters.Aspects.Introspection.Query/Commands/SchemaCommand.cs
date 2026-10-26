@@ -29,7 +29,8 @@ public sealed class SchemaCommand : IntrospectionCommand<SchemaCommandSettings>
             foreach ( var type in types )
             {
                 var provided = provider.Provides( type.Name, null ) ? "" : $" Not recorded by {provider.ProductName}.";
-                options.StandardOutput.WriteLine( $"{type.CollectionName} (show {type.ItemName}): {type.Description}{provided}" );
+                var show = type.HasIdentifier ? $" (show {type.ItemName})" : "";
+                options.StandardOutput.WriteLine( $"{type.CollectionName}{show}: {type.Description}{provided}" );
 
                 foreach ( var field in type.Fields )
                 {
@@ -59,6 +60,7 @@ public sealed class SchemaCommand : IntrospectionCommand<SchemaCommandSettings>
                         w.WriteStartObject();
                         w.WriteString( "name", type.CollectionName );
                         w.WriteString( "item", type.ItemName );
+                        w.WriteBoolean( "showable", type.HasIdentifier );
                         w.WriteString( "type", type.Name );
                         w.WriteString( "description", type.Description );
                         w.WriteBoolean( "provided", provider.Provides( type.Name, null ) );

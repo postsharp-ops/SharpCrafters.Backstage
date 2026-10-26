@@ -43,10 +43,10 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                    ?? (IntrospectionSchema.FindCollection( settings.Collection ) is { } plural
                        ? throw new IntrospectionCommandException( $"show takes one object: write '{plural.ItemName}', not '{plural.CollectionName}'.", IntrospectionExitCodes.InvalidQuery )
                        : throw new IntrospectionCommandException(
-                           $"'{settings.Collection}' is not a kind of object. show takes declaration, aspect-instance, predecessor or aspect-class.",
+                           $"'{settings.Collection}' is not a kind of object. show takes {string.Join( ", ", IntrospectionSchema.Types.Where( t => t.HasIdentifier ).Select( t => t.ItemName ) )}.",
                            IntrospectionExitCodes.InvalidQuery ));
 
-        if ( type.Name is not ("declaration" or "aspectInstance" or "predecessor" or "aspectClass") )
+        if ( !type.HasIdentifier )
         {
             throw new IntrospectionCommandException(
                 $"show is not available for {type.ItemName}, whose objects have no identifier: use 'list {type.CollectionName}' with --where.",

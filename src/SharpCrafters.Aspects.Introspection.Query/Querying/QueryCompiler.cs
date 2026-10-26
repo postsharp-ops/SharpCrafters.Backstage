@@ -143,7 +143,7 @@ internal sealed class QueryCompiler
             UnaryOperatorKind.Not => scope => operand( scope ) is not true,
             UnaryOperatorKind.Negate => scope => operand( scope ) switch
             {
-                long l => -l,
+                long l => this.Checked( "-", () => -l ),
                 double d => -d,
                 _ => null
             },
@@ -183,13 +183,13 @@ internal sealed class QueryCompiler
                 return Ordering( c => c <= 0 );
 
             case BinaryOperatorKind.Add:
-                return Arithmetic( ( a, b ) => a + b, ( a, b ) => a + b );
+                return Arithmetic( ( a, b ) => checked( a + b ), ( a, b ) => a + b );
 
             case BinaryOperatorKind.Subtract:
-                return Arithmetic( ( a, b ) => a - b, ( a, b ) => a - b );
+                return Arithmetic( ( a, b ) => checked( a - b ), ( a, b ) => a - b );
 
             case BinaryOperatorKind.Multiply:
-                return Arithmetic( ( a, b ) => a * b, ( a, b ) => a * b );
+                return Arithmetic( ( a, b ) => checked( a * b ), ( a, b ) => a * b );
 
             case BinaryOperatorKind.Divide:
                 return Arithmetic( ( a, b ) => b == 0 ? null : a / b, ( a, b ) => a / b );
@@ -214,7 +214,7 @@ internal sealed class QueryCompiler
         Func<QueryScope, object?> Arithmetic( Func<long, long, long?> integer, Func<double, double, double> real )
             => scope => (left( scope ), right( scope )) switch
             {
-                (long a, long b) => integer( a, b ),
+                (long a, long b) => this.Checked( node.OperatorKind.ToString(), () => integer( a, b ) ),
                 (long a, double b) => real( a, b ),
                 (double a, long b) => real( a, b ),
                 (double a, double b) => real( a, b ),
@@ -372,6 +372,19 @@ internal sealed class QueryCompiler
         catch ( RegexMatchTimeoutException )
         {
             throw this._query.Error( $"The regular expression '{pattern}' takes too long to match." );
+        }
+    }
+
+    // An integer operation that overflows is an error: its wrapped result would make the condition true or false at random.
+    private object? Checked( string operation, Func<long?> compute )
+    {
+        try
+        {
+            return compute();
+        }
+        catch ( OverflowException )
+        {
+            throw this._query.Error( $"The result of the operator '{operation}' is beyond the range of a 64-bit integer." );
         }
     }
 

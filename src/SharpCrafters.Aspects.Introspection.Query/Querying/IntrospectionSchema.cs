@@ -52,7 +52,7 @@ internal static class IntrospectionSchema
                     List( "aspectInstances", "aspectInstance", "The aspect instances of the class.", ( _, o ) => ((IntrospectionAspectClass) o).AspectInstances )
                 ],
                 ["shortName", "name", "aspectInstances/$count"],
-                c => c.Model.AspectClasses ),
+                c => c.Model.AspectClasses ) { HasIdentifier = true },
 
             new TypeDefinition(
                 "aspectInstance",
@@ -73,7 +73,7 @@ internal static class IntrospectionSchema
                     Field( "linesOfCodeAvoided", ValueKind.Integer, "The estimated number of lines of code that the aspect instance saves.", ( _, o ) => ((IntrospectionAspectInstance) o).LinesOfCodeAvoided )
                 ],
                 ["id", "aspectClass/shortName", "targetDeclaration/id", "transformations/$count"],
-                c => c.Model.AspectInstances ),
+                c => c.Model.AspectInstances ) { HasIdentifier = true },
 
             new TypeDefinition(
                 "predecessor",
@@ -93,7 +93,7 @@ internal static class IntrospectionSchema
                     Field( "project", ValueKind.String, "The project.", ( c, _ ) => c.Project )
                 ],
                 ["id", "kind", "declaration/id", "aspectInstances/$count"],
-                c => c.Model.Predecessors ),
+                c => c.Model.Predecessors ) { HasIdentifier = true },
 
             new TypeDefinition(
                 "transformation",
@@ -165,7 +165,7 @@ internal static class IntrospectionSchema
                     List( "declarationMappings", "declarationMapping", "The declaration mappings whose source or target is the declaration.", ( c, o ) => c.GetDeclarationMappings( (IntrospectionDeclaration) o ) )
                 ],
                 ["id", "kind", "aspectInstances/$count", "transformations/$count"],
-                c => c.Model.Declarations ),
+                c => c.Model.Declarations ) { HasIdentifier = true },
 
             new TypeDefinition(
                 "diagnostic",

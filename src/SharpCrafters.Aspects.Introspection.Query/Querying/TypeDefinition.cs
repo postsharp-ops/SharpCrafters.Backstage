@@ -43,6 +43,9 @@ internal sealed class TypeDefinition
     // The name of one object for show, such as aspect-instance.
     public string ItemName { get; }
 
+    // Whether show takes an object of the type, which has an identifier or a name.
+    public bool HasIdentifier { get; init; }
+
     public string Description { get; }
 
     public IReadOnlyList<FieldDefinition> Fields { get; }

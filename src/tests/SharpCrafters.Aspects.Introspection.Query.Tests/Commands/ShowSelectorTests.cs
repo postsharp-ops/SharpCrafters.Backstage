@@ -33,6 +33,28 @@ public sealed class ShowSelectorTests : IDisposable
     private void WriteSymbols( string symbols ) => this._project.WriteSymbols( "net10.0", symbols );
 
     [Fact]
+    public void TheSchemaOffersShowOnlyForTheKindsThatShowTakes()
+    {
+        var (exitCode, text, error) = this.Run( "schema" );
+
+        Assert.True( exitCode == 0, error );
+        Assert.Contains( "aspect-instances (show aspect-instance):", text, StringComparison.Ordinal );
+        Assert.Contains( "transformations:", text, StringComparison.Ordinal );
+        Assert.DoesNotContain( "(show transformation)", text, StringComparison.Ordinal );
+
+        var showable = this.RunJson( "schema" )
+            .GetProperty( "collections" )
+            .EnumerateArray()
+            .ToDictionary( c => c.GetProperty( "name" ).GetString()!, c => c.GetProperty( "showable" ).GetBoolean() );
+
+        Assert.Equal( ["aspect-classes", "aspect-instances", "declarations", "predecessors"], showable.Where( c => c.Value ).Select( c => c.Key ).Order( StringComparer.Ordinal ) );
+
+        (exitCode, _, error) = this.Run( "show", "transformation", "x" );
+        Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
+        Assert.Contains( "show is not available for transformation", error, StringComparison.Ordinal );
+    }
+
+    [Fact]
     public void AnAspectInstanceIsSelectedByItsStructuralKey()
     {
         const string key = "App.CacheAttribute@[App]M:App.Repository.Get(System.Int32)";

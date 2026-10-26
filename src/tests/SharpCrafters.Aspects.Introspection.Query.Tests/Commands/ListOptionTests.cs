@@ -41,13 +41,57 @@ public sealed class ListOptionTests : IDisposable
         Assert.Equal( [6, 5, 2, 1, 3, 4], items );
     }
 
+    [Theory]
+    [InlineData( "order sub 1 eq 2", 1 )]
+    [InlineData( "order mul 2 eq 8", 1 )]
+    [InlineData( "order div 2 eq 1", 2 )]
+    [InlineData( "order mod 2 eq 0", 3 )]
+    [InlineData( "order div 0 eq null", 6 )]
+    [InlineData( "order mod 0 eq null", 6 )]
+
+    // In parentheses: Spectre.Console reads an argument that starts with '-' as an option.
+    [InlineData( "(-order) lt 0", 6 )]
+    [InlineData( "(-order) eq -3", 1 )]
+    public void TheArithmeticOperatorsAreEvaluated( string condition, int count )
+        => Assert.Equal( count, this.RunJson( "list", "transformations", "--where", condition ).GetProperty( "count" ).GetInt32() );
+
+    [Theory]
+    [InlineData( "substring(aspectClass/shortName, 1) eq 'og'", 3 )]
+    [InlineData( "substring(aspectClass/shortName, 0, 2) eq 'Ca'", 1 )]
+    [InlineData( "'premium' in tags", 1 )]
+    public void TheFunctionsAndTheMembershipOfACollectionAreEvaluated( string condition, int count )
+        => Assert.Equal( count, this.RunJson( "list", "aspect-instances", "--where", condition ).GetProperty( "count" ).GetInt32() );
+
+    [Theory]
+    [InlineData( "order mul 9223372036854775807 gt 0", "Multiply" )]
+    [InlineData( "order add 9223372036854775807 gt 0", "Add" )]
+    [InlineData( "order sub 9223372036854775807 sub 9 lt 0", "Subtract" )]
+    public void AnIntegerOverflowIsAnError( string condition, string operation )
+    {
+        var (exitCode, _, error) = this.Run( "list", "transformations", "--where", condition );
+
+        Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
+        Assert.Contains( $"--where: The result of the operator '{operation}' is beyond the range of a 64-bit integer.", error, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void TheExpressionIsWrittenOnceInAnError()
+    {
+        const string condition = "id eq 'a";
+
+        var (_, _, error) = this.Run( "list", "aspect-instances", "--where", condition );
+
+        Assert.Contains( "There is an unterminated string literal at position 8.", error, StringComparison.Ordinal );
+        Assert.Single( error.Split( condition ).Skip( 1 ) );
+    }
+
     [Fact]
     public void AnOrderingByAnObjectIsAnError()
     {
         var (exitCode, _, error) = this.Run( "list", "aspect-instances", "--order-by", "aspectClass" );
 
         Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
-        Assert.Contains( "--order-by: ", error, StringComparison.Ordinal );
+        Assert.Contains( "--order-by: The $orderby expression must evaluate to a single value of primitive type", error, StringComparison.Ordinal );
     }
 
     [Theory]
