@@ -39,32 +39,3 @@ public sealed class IntrospectionAnnotation
     /// </summary>
     public int LinesOfCodeAvoided { get; internal set; }
 }
-
-/// <summary>
-/// The replacement of a declaration of the source code by a declaration of the woven assembly, such as a field encapsulated as
-/// a property (PostSharp).
-/// </summary>
-public sealed class IntrospectionDeclarationMapping
-{
-    internal IntrospectionDeclarationMapping( IntrospectionDeclaration source, IntrospectionDeclaration target, DeclarationMappingKind? kind )
-    {
-        this.Source = source;
-        this.Target = target;
-        this.Kind = kind;
-    }
-
-    /// <summary>
-    /// Gets the source declaration.
-    /// </summary>
-    public IntrospectionDeclaration Source { get; }
-
-    /// <summary>
-    /// Gets the target declaration.
-    /// </summary>
-    public IntrospectionDeclaration Target { get; }
-
-    /// <summary>
-    /// Gets the kind of the mapping, or <c>null</c> when the file does not give it.
-    /// </summary>
-    public DeclarationMappingKind? Kind { get; }
-}
