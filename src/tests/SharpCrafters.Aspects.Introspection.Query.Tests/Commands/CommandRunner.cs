@@ -6,7 +6,10 @@ using SharpCrafters.Aspects.Introspection.Query.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.IO;
+using System.Text.Json;
+using System.Collections.Generic;
 using System.Linq;
+using Xunit;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Tests.Commands;
 
@@ -44,5 +47,16 @@ internal static class CommandRunner
         var exitCode = app.Run( new[] { "introspect" }.Concat( arguments ) );
 
         return (exitCode, output.ToString(), error.ToString());
+    }
+
+    /// <summary>
+    /// Gets the files that a query of the scope reads, from <c>list files</c>.
+    /// </summary>
+    public static IReadOnlyList<JsonElement> Files( string workingDirectory, IntrospectionProvider provider, params string[] scope )
+    {
+        var (exitCode, output, error) = Run( workingDirectory, provider, ["list", "files", .. scope, "--format", "json"] );
+        Assert.True( exitCode == 0, error );
+
+        return JsonDocument.Parse( output ).RootElement.GetProperty( "items" ).EnumerateArray().ToList();
     }
 }

@@ -178,7 +178,7 @@ public sealed class ShowSelectorTests : IDisposable
 
         Assert.Equal( JsonValueKind.Null, result.GetProperty( "declaration" ).ValueKind );
         Assert.Contains( "No aspect applies to T:App.Unrelated", result.GetProperty( "message" ).GetString(), StringComparison.Ordinal );
-        Assert.Equal( 1, result.GetProperty( "files" ).GetArrayLength() );
+        Assert.False( result.TryGetProperty( "files", out _ ) );
 
         var (_, jsonl, _) = this.Run( "show", "declaration", "Customer.cs:30", "--format", "jsonl" );
         Assert.Equal( JsonValueKind.Null, JsonDocument.Parse( jsonl ).RootElement.GetProperty( "declaration" ).ValueKind );

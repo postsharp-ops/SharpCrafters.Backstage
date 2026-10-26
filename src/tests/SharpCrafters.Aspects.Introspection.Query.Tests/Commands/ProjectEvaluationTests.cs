@@ -110,7 +110,7 @@ public sealed class ProjectEvaluationTests
 
         Assert.True( exitCode == 0, error );
         var result = JsonDocument.Parse( output ).RootElement;
-        Assert.Equal( "Release", result.GetProperty( "files" )[0].GetProperty( "configuration" ).GetString() );
+        Assert.Equal( "Release", CommandRunner.Files( project.Directory, this._provider, "-c", "Release" )[0].GetProperty( "configuration" ).GetString() );
         Assert.Contains( result.GetProperty( "items" ).EnumerateArray(), c => c.GetProperty( "name" ).GetString() == "App.ReleaseCacheAttribute" );
     }
 
@@ -120,10 +120,7 @@ public sealed class ProjectEvaluationTests
         using var project = new TestProject();
         File.SetLastWriteTimeUtc( Path.Combine( project.Directory, "App.csproj" ), DateTime.UtcNow.AddMinutes( 10 ) );
 
-        var (exitCode, output, error) = this.Run( project.Directory, "list", "aspect-classes", "--format", "json" );
-
-        Assert.True( exitCode == 0, error );
-        Assert.True( JsonDocument.Parse( output ).RootElement.GetProperty( "files" )[0].GetProperty( "stale" ).GetBoolean() );
+        Assert.True( CommandRunner.Files( project.Directory, this._provider )[0].GetProperty( "stale" ).GetBoolean() );
     }
 
     [Fact]
@@ -137,10 +134,7 @@ public sealed class ProjectEvaluationTests
         File.SetLastWriteTimeUtc( generated, DateTime.UtcNow.AddMinutes( 10 ) );
         File.SetLastWriteTimeUtc( Path.Combine( project.Directory, "App.csproj" ), DateTime.UtcNow.AddMinutes( -10 ) );
 
-        var (exitCode, output, error) = this.Run( project.Directory, "list", "aspect-classes", "--format", "json" );
-
-        Assert.True( exitCode == 0, error );
-        Assert.False( JsonDocument.Parse( output ).RootElement.GetProperty( "files" )[0].GetProperty( "stale" ).GetBoolean() );
+        Assert.False( CommandRunner.Files( project.Directory, this._provider )[0].GetProperty( "stale" ).GetBoolean() );
     }
 
     [Fact]
@@ -182,7 +176,7 @@ public sealed class ProjectEvaluationTests
 
             Assert.True( exitCode == 0, error );
             var result = JsonDocument.Parse( output ).RootElement;
-            Assert.Equal( "net472", result.GetProperty( "files" )[0].GetProperty( "targetFramework" ).GetString() );
+            Assert.Equal( "net472", CommandRunner.Files( project.Directory, this._provider, options )[0].GetProperty( "targetFramework" ).GetString() );
             Assert.Equal( 3, result.GetProperty( "count" ).GetInt32() );
         }
     }

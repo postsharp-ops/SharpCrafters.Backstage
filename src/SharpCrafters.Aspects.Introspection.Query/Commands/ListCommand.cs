@@ -70,7 +70,6 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                         w =>
                         {
                             w.WriteStartObject();
-                            JsonOutput.WriteFiles( w, context, session.Targets );
                             w.WriteNumber( "count", items.Count );
 
                             if ( !settings.Count )

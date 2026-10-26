@@ -37,7 +37,9 @@ public sealed class ListCommandTests : IDisposable
 
         Assert.Equal( 5, result.GetProperty( "count" ).GetInt32() );
 
-        var file = Assert.Single( result.GetProperty( "files" ).EnumerateArray() );
+        // The files are a collection of their own, which the other results do not repeat.
+        Assert.False( result.TryGetProperty( "files", out _ ) );
+        var file = Assert.Single( CommandRunner.Files( this._project.Directory, this._provider ) );
         Assert.Equal( "App", file.GetProperty( "project" ).GetString() );
         Assert.Equal( "net10.0", file.GetProperty( "targetFramework" ).GetString() );
         Assert.Equal( "Debug", file.GetProperty( "configuration" ).GetString() );
@@ -261,11 +263,12 @@ public sealed class ListCommandTests : IDisposable
     {
         File.SetLastWriteTimeUtc( this._project.SourceFile, DateTime.UtcNow.AddMinutes( 10 ) );
 
-        var (exitCode, output, error) = this.Run( "list", "aspect-classes", "--format", "json" );
+        var (exitCode, _, error) = this.Run( "list", "aspect-classes", "--format", "json" );
 
         Assert.Equal( 0, exitCode );
-        Assert.True( JsonDocument.Parse( output ).RootElement.GetProperty( "files" )[0].GetProperty( "stale" ).GetBoolean() );
         Assert.Contains( "may not describe the current source", error, StringComparison.Ordinal );
+        Assert.True( CommandRunner.Files( this._project.Directory, this._provider )[0].GetProperty( "stale" ).GetBoolean() );
+        Assert.Equal( 1, this.RunJson( "list", "files", "--where", "stale" ).GetProperty( "count" ).GetInt32() );
     }
 
     [Fact]

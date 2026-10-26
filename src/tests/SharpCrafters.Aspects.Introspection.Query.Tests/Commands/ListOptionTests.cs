@@ -168,7 +168,7 @@ public sealed class ListOptionTests : IDisposable
 
         Assert.Equal( 5, result.GetProperty( "count" ).GetInt32() );
         Assert.False( result.TryGetProperty( "items", out _ ) );
-        Assert.Equal( 1, result.GetProperty( "files" ).GetArrayLength() );
+        Assert.False( result.TryGetProperty( "files", out _ ) );
     }
 
     [Fact]
