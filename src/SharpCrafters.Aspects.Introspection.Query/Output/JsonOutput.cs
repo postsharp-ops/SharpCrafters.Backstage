@@ -83,7 +83,7 @@ internal static class JsonOutput
     /// Writes the paths of <c>--select</c>, nested as their fields: <c>aspectClass/shortName</c> is written as
     /// <c>"aspectClass": { "shortName": ... }</c>, and a path that ends with <c>$count</c> as a field named after it.
     /// </summary>
-    public static void WriteSelection( Utf8JsonWriter writer, QueryContext context, object value, IReadOnlyList<PathExpression> selection )
+    public static void WriteSelection( Utf8JsonWriter writer, QueryContext context, object value, IReadOnlyList<FieldPath> selection )
     {
         var root = new Node();
 
@@ -116,7 +116,7 @@ internal static class JsonOutput
                 if ( child.Path != null )
                 {
                     var path = child.Path;
-                    var fieldValue = path.Evaluate( context, value, new Dictionary<string, object?>() );
+                    var fieldValue = path.Evaluate( context, value );
 
                     if ( path.IsCount )
                     {
@@ -211,6 +211,6 @@ internal static class JsonOutput
     {
         public Dictionary<string, Node> Children { get; } = new( StringComparer.Ordinal );
 
-        public PathExpression? Path { get; init; }
+        public FieldPath? Path { get; init; }
     }
 }
