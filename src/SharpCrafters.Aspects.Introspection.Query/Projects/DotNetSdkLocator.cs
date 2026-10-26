@@ -15,20 +15,6 @@ using System.Text.RegularExpressions;
 namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 
 /// <summary>
-/// A .NET SDK whose MSBuild the process loads.
-/// </summary>
-/// <param name="Version">The version of the SDK, as <c>dotnet --list-sdks</c> gives it, or an empty string when it is unknown.</param>
-/// <param name="Directory">The directory of the SDK, which holds its MSBuild, or an empty string when it is unknown.</param>
-public sealed record DotNetSdk( string Version, string Directory );
-
-/// <summary>
-/// The result of <see cref="DotNetSdkLocator.EnsureRegistered"/>: the SDK whose MSBuild the process uses, or why there is none.
-/// </summary>
-/// <param name="Sdk">The SDK, or <c>null</c> when none could be registered.</param>
-/// <param name="Failure">Why no SDK could be registered, or <c>null</c>.</param>
-public sealed record DotNetSdkRegistration( DotNetSdk? Sdk, string? Failure );
-
-/// <summary>
 /// Chooses the .NET SDK whose MSBuild evaluates the projects, and registers it with <see cref="MSBuildLocator"/>
 /// (Documentation/future/Introspection-Cli.md of PostSharp, section 5.7). Moved from <c>MSBuildInitializer</c> of
 /// <c>Metalama.Framework.Workspaces</c>.
@@ -45,11 +31,10 @@ public sealed record DotNetSdkRegistration( DotNetSdk? Sdk, string? Failure );
 /// No type of <c>Microsoft.Build</c> may be loaded before the registration, so the code that uses them is in other classes.
 /// </para>
 /// </remarks>
-public static class DotNetSdkLocator
+public static partial class DotNetSdkLocator
 {
-    private static readonly Regex _sdkLineRegex = new(
-        @"^(?<version>[0-9]+(?:\.[0-9]+)*(?:-[A-Za-z0-9\.]+)?)\s+\[(?<directory>[^\]]+)\]$",
-        RegexOptions.CultureInvariant );
+    [GeneratedRegex( @"^(?<version>[0-9]+(?:\.[0-9]+)*(?:-[A-Za-z0-9\.]+)?)\s+\[(?<directory>[^\]]+)\]$", RegexOptions.CultureInvariant )]
+    private static partial Regex SdkLineRegex();
 
     // dotnet --list-sdks answers in well under a second; a muxer that hangs must not hang the command.
     private static readonly TimeSpan _listTimeout = TimeSpan.FromSeconds( 30 );
@@ -229,7 +214,7 @@ public static class DotNetSdkLocator
     /// </summary>
     internal static IReadOnlyList<DotNetSdk> ParseSdkList( string output )
         => output.Split( '\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries )
-            .Select( l => _sdkLineRegex.Match( l ) )
+            .Select( l => SdkLineRegex().Match( l ) )
             .Where( m => m.Success )
             .Select( m => new DotNetSdk( m.Groups["version"].Value, Path.Combine( m.Groups["directory"].Value, m.Groups["version"].Value ) ) )
             .ToList();

@@ -125,6 +125,9 @@ public sealed class IntrospectionV1LoaderTests
         Assert.Equal( 2, model.Predecessors.Count );
         Assert.Equal( new[] { "App.ProviderAttribute", "App.BoundaryAspect" }, model.AspectClasses.Select( c => c.FullName ) );
         Assert.Equal( 4, model.Transformations.Count );
+
+        // The transformations of the model keep the order of the file, although they belong to three aspect instances.
+        Assert.Equal( new[] { 0, 2, 3, 4 }, model.Transformations.Select( t => t.Order ) );
     }
 
     [Fact]
@@ -189,6 +192,47 @@ public sealed class IntrospectionV1LoaderTests
         Assert.Equal(
             new[] { "[App]F:App.C.Field -> [App]F:App.C.<Field>k__OriginalField", "[App]F:App.C.<Field>k__OriginalField -> [App]P:App.C.Field" },
             model.DeclarationMappings.Select( m => $"{m.Source.QualifiedId} -> {m.Target.QualifiedId}" ) );
+    }
+
+    [Fact]
+    public void ExplicitImplementationsAndVisualBasicBackingFieldsAreLinked()
+    {
+        var model = Load(
+            """
+            <Class Class="T:[App]App.LogAttribute">
+              <Instance Declaration="T:[App]App.C">
+                <Target>
+                  <JoinPoint Advised="P:[App]App.C::App#IValue#Value()" />
+                  <JoinPoint Advised="M:[App]App.C::App#IValue#get_Value()" />
+                  <JoinPoint Advised="E:[App]App.C::App#INotify#Changed" />
+                  <JoinPoint Advised="M:[App]App.C::App#INotify#add_Changed(System.EventHandler)" />
+                  <JoinPoint Advised="P:[App]App.C::Count()" />
+                  <JoinPoint Advised="F:[App]App.C::_Count" />
+                </Target>
+              </Instance>
+            </Class>
+            """ );
+
+        var value = model.GetDeclaration( "[App]P:App.C.App#IValue#Value" )!;
+        var getter = Assert.Single( value.Accessors );
+        Assert.Equal( "App#IValue#get_Value", getter.Name );
+        Assert.Same( value, getter.ContainingDeclaration );
+        Assert.Equal( "App#INotify#add_Changed", Assert.Single( model.GetDeclaration( "[App]E:App.C.App#INotify#Changed" )!.Accessors ).Name );
+
+        // The backing field of a Visual Basic automatic property is named after it, with an underscore.
+        var count = model.GetDeclaration( "[App]P:App.C.Count" )!;
+        Assert.Equal( "_Count", count.BackingField!.Name );
+        Assert.Same( count, count.BackingField.ContainingDeclaration );
+    }
+
+    [Fact]
+    public void TheBackingFieldOfAVisualBasicFixtureIsLinked()
+    {
+        using var stream = File.OpenRead( Path.Combine( AppContext.BaseDirectory, "Fixtures", "VisualStudio", "VisualBasic", "When_PropertyWithAspect.pssym" ) );
+        var model = IntrospectionV1Loader.Load( stream );
+
+        var property = model.Declarations.Single( d => d.Kind == IntrospectionDeclarationKind.Property && d.Name == "AutoProperty1" );
+        Assert.Equal( "_AutoProperty1", property.BackingField?.Name );
     }
 
     [Fact]
@@ -280,7 +324,7 @@ public sealed class IntrospectionV1LoaderTests
             </Class>
             """ );
 
-        Assert.Equal( "xml:postsharp.config(5,6)", Assert.Single( model.Predecessors ).StructuralKey );
+        Assert.Equal( "xml:[App]postsharp.config(5,6)", Assert.Single( model.Predecessors ).StructuralKey );
     }
 
     [Fact]
@@ -297,7 +341,7 @@ public sealed class IntrospectionV1LoaderTests
                     """;
 
         var predecessor = Assert.Single( Load( body, projectDirectory: root ).Predecessors );
-        Assert.Equal( "xml:Config/postsharp.config(5,6)", predecessor.StructuralKey );
+        Assert.Equal( "xml:[App]Config/postsharp.config(5,6)", predecessor.StructuralKey );
         Assert.Equal( file, predecessor.File );
 
         // Another machine, another directory: the same identifier.
@@ -307,7 +351,7 @@ public sealed class IntrospectionV1LoaderTests
 
         // A file outside of the project keeps its path.
         Assert.Equal(
-            "xml:" + file.Replace( '\\', '/' ) + "(5,6)",
+            "xml:[App]" + file.Replace( '\\', '/' ) + "(5,6)",
             Assert.Single( Load( body, projectDirectory: Path.Combine( root, "Other" ) ).Predecessors ).StructuralKey );
     }
 

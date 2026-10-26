@@ -17,6 +17,9 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 /// is valid while none of its inputs changed: the write times of the project file and of every file that its evaluation
 /// imported, of the solution file and of the <c>global.json</c> that applies, the version of the selected .NET SDK, and the
 /// global properties of the evaluation (<c>Configuration</c>, <c>TargetFramework</c>) and the properties that the provider reads.
+/// The appearance of a file that the evaluation would import, such as a new <c>Directory.Build.props</c> or the
+/// <c>obj/*.nuget.g.props</c> of the first restore, also invalidates it, and so does a source file that is added, removed or
+/// renamed in the directory of the project, which the globs of <c>Compile</c> would include.
 /// </summary>
 /// <remarks>
 /// An entry is a JSON file named after the hash of its key, written to a temporary file and moved, so that two commands that run
@@ -25,7 +28,7 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 internal sealed class EvaluationCache
 {
     // Changed when the format of an entry or the content of an evaluation changes.
-    private const int _formatVersion = 1;
+    private const int _formatVersion = 2;
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = false };
 
@@ -80,7 +83,7 @@ internal sealed class EvaluationCache
 
         if ( path != null )
         {
-            Write( path, key, evaluation, evaluation.Inputs.Concat( extraInputs ) );
+            Write( path, key, evaluation, evaluation.Inputs.Concat( extraInputs ), GetSourceTreeStamp( evaluation ) );
         }
 
         return evaluation;
@@ -113,6 +116,12 @@ internal sealed class EvaluationCache
                 }
             }
 
+            // A source file that the globs would include or no longer include.
+            if ( entry.SourceTree != GetSourceTreeStamp( entry.Evaluation ) )
+            {
+                return null;
+            }
+
             return entry.Evaluation;
         }
         catch ( Exception e ) when ( e is IOException or JsonException or UnauthorizedAccessException )
@@ -121,7 +130,7 @@ internal sealed class EvaluationCache
         }
     }
 
-    private static void Write( string path, string key, ProjectEvaluation evaluation, IEnumerable<string> inputs )
+    private static void Write( string path, string key, ProjectEvaluation evaluation, IEnumerable<string> inputs, string sourceTree )
     {
         try
         {
@@ -129,6 +138,7 @@ internal sealed class EvaluationCache
             {
                 Key = key,
                 Evaluation = evaluation,
+                SourceTree = sourceTree,
                 Inputs = inputs.Distinct( StringComparer.OrdinalIgnoreCase )
                     .Select( i => new Input { Path = i, WriteTimeTicks = File.Exists( i ) ? File.GetLastWriteTimeUtc( i ).Ticks : 0 } )
                     .ToList()
@@ -142,6 +152,56 @@ internal sealed class EvaluationCache
         catch ( Exception e ) when ( e is IOException or UnauthorizedAccessException )
         {
             // The cache is an optimization: a command that cannot write it still runs.
+        }
+    }
+
+    // The hash of the paths of the source files under the directory of the project, outside of the directories that the default
+    // items of the .NET SDK exclude (bin, obj and those whose name starts with a period). The write time of a file is not part of
+    // it: a change of content leaves the evaluation valid, and the staleness is computed from the write times at every command.
+    private static string GetSourceTreeStamp( ProjectEvaluation evaluation )
+    {
+        var directory = Path.GetDirectoryName( evaluation.ProjectPath )!;
+
+        var extensions = evaluation.Targets.SelectMany( t => t.SourceFiles )
+            .Select( Path.GetExtension )
+            .Append( ".cs" )
+            .Append( ".vb" )
+            .Where( e => !string.IsNullOrEmpty( e ) )
+            .ToHashSet( StringComparer.OrdinalIgnoreCase );
+
+        var files = new List<string>();
+        AddSourceFiles( directory, true );
+        files.Sort( StringComparer.Ordinal );
+
+        return Hash( string.Join( "|", files ) );
+
+        void AddSourceFiles( string current, bool isProjectDirectory )
+        {
+            if ( !Directory.Exists( current ) )
+            {
+                return;
+            }
+
+            foreach ( var file in Directory.EnumerateFiles( current ) )
+            {
+                if ( extensions.Contains( Path.GetExtension( file ) ) )
+                {
+                    files.Add( Path.GetRelativePath( directory, file ) );
+                }
+            }
+
+            foreach ( var child in Directory.EnumerateDirectories( current ) )
+            {
+                var name = Path.GetFileName( child );
+
+                if ( name.StartsWith( '.' )
+                     || (isProjectDirectory && (name.Equals( "bin", StringComparison.OrdinalIgnoreCase ) || name.Equals( "obj", StringComparison.OrdinalIgnoreCase ))) )
+                {
+                    continue;
+                }
+
+                AddSourceFiles( child, false );
+            }
         }
     }
 
@@ -168,6 +228,8 @@ internal sealed class EvaluationCache
         public string Key { get; set; } = "";
 
         public List<Input> Inputs { get; set; } = [];
+
+        public string SourceTree { get; set; } = "";
 
         public ProjectEvaluation? Evaluation { get; set; }
     }

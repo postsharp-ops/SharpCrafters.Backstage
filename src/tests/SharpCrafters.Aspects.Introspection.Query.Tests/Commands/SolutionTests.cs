@@ -227,11 +227,70 @@ public sealed class SolutionTests : IDisposable
         File.SetLastWriteTimeUtc( projectFile, writeTime.AddSeconds( 1 ) );
         Assert.Equal( IntrospectionExitCodes.NoFile, Run().Item1 );
 
-        // So does a change of an imported file.
-        File.WriteAllText( projectFile, File.ReadAllText( projectFile ).Replace( "Missing.pssym", "$(AssemblyName).pssym", StringComparison.Ordinal ) );
-        File.SetLastWriteTimeUtc( projectFile, writeTime );
-        File.WriteAllText( Path.Combine( this._app.Directory, "Directory.Build.props" ), "<Project />" );
+        // So does the appearance of a file that the SDK imports, while the project file keeps its write time.
+        File.WriteAllText(
+            Path.Combine( this._app.Directory, "Directory.Build.targets" ),
+            "<Project><PropertyGroup><TestSymbolFile>bin/$(Configuration)/$(TargetFramework)/$(AssemblyName).pssym</TestSymbolFile></PropertyGroup></Project>" );
+
         Assert.Equal( 0, Run().Item1 );
+    }
+
+    [Fact]
+    public void AnAddedSourceFileInvalidatesTheCachedEvaluation()
+    {
+        var cache = Path.Combine( this._root, ".cache" );
+
+        JsonElement FileOfApp() => JsonDocument.Parse( CommandRunner.Run( this._app.Directory, this._provider, ["list", "aspect-classes", "--format", "json"], cacheDirectory: cache ).Output )
+            .RootElement.GetProperty( "files" )[0];
+
+        Assert.False( FileOfApp().GetProperty( "stale" ).GetBoolean() );
+
+        // A new source file, which the globs include, is newer than the file: the project file is unchanged.
+        var added = Path.Combine( this._app.Directory, "Added.cs" );
+        File.WriteAllText( added, "namespace App { class Added { } }" );
+        File.SetLastWriteTimeUtc( added, DateTime.UtcNow.AddMinutes( 10 ) );
+        Assert.True( FileOfApp().GetProperty( "stale" ).GetBoolean() );
+    }
+
+    [Fact]
+    public void ADeclarationAtAPositionReadsTheProjectOfTheDeepestDirectory()
+    {
+        // A project with a long name in the root, and one with a short name in a subdirectory, which holds the source file.
+        using var outer = new TestProject( _appSymbols, projectName: "AVeryLongNameOfTheOuterProject", directory: Path.Combine( this._root, "Outer" ) );
+        using var inner = new TestProject( _libSymbols, projectName: "L", directory: Path.Combine( outer.Directory, "L" ), assemblyName: "Lib" );
+
+        File.WriteAllText(
+            Path.Combine( this._root, "Nested.slnx" ),
+            """
+            <Solution>
+              <Project Path="Outer/AVeryLongNameOfTheOuterProject.csproj" />
+              <Project Path="Outer/L/L.csproj" />
+            </Solution>
+            """ );
+
+        var provider = new TestProvider { HasLocations = true };
+        provider.Locations["M:Lib.Helper.Run"] = new IntrospectionSourceLocation( inner.SourceFile, 3, 5 );
+
+        var (exitCode, output, error) = CommandRunner.Run( this._root, provider, ["show", "declaration", "Outer/L/Customer.cs:3", "--solution", "Nested.slnx"] );
+
+        Assert.True( exitCode == 0, error );
+        Assert.StartsWith( "Method Lib.Helper.Run at Outer/L/Customer.cs:3:5 ", output, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void TheLocationOfADeclarationIsTakenFromTheTargetFrameworkThatGivesIt()
+    {
+        using var project = new TestProject( targetFrameworks: "<TargetFrameworks>net10.0;net48</TargetFrameworks>" );
+        project.WriteSymbols( "net48", TestProject.DefaultSymbols );
+
+        // Only the file of net48, the second target framework, gives locations.
+        var provider = new TestProvider { HasLocations = true, LocationFramework = "net48" };
+        provider.Locations["P:App.Customer.FullName"] = new IntrospectionSourceLocation( project.SourceFile, 18, 19 );
+
+        var (exitCode, output, error) = CommandRunner.Run( project.Directory, provider, ["show", "declaration", "Customer.FullName", "--format", "json"] );
+
+        Assert.True( exitCode == 0, error );
+        Assert.Equal( "Customer.cs:18:19", JsonDocument.Parse( output ).RootElement.GetProperty( "declaration" ).GetProperty( "location" ).GetString() );
     }
 
     [Fact]

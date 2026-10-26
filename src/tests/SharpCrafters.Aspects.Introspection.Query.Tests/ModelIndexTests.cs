@@ -35,6 +35,33 @@ public sealed class ModelIndexTests
         Assert.Equal( Describe( model ), Describe( read ) );
     }
 
+    [Fact]
+    public void ADamagedIndexThrowsAnExceptionThatTheCacheHandles()
+    {
+        var file = Directory.GetFiles( Path.Combine( AppContext.BaseDirectory, "Fixtures" ), "*.pssym", SearchOption.AllDirectories ).OrderBy( f => new FileInfo( f ).Length ).First();
+        using var stream = File.OpenRead( file );
+        var written = Write( IntrospectionV1Loader.Load( stream ) );
+
+        // Every byte replaced in turn by values that make negative, huge or out-of-range counts and references.
+        foreach ( var value in new byte[] { 0xFF, 0x7F, 0x40 } )
+        {
+            for ( var i = 0; i < written.Length; i++ )
+            {
+                var damaged = (byte[]) written.Clone();
+                damaged[i] = value;
+
+                try
+                {
+                    ModelIndex.Read( new BinaryReader( new MemoryStream( damaged ), Encoding.UTF8 ) );
+                }
+                catch ( Exception e ) when ( e is InvalidDataException or EndOfStreamException )
+                {
+                    // The exceptions that ModelIndex.Load treats as a cache miss.
+                }
+            }
+        }
+    }
+
     private static byte[] Write( IntrospectionModel model )
     {
         using var stream = new MemoryStream();

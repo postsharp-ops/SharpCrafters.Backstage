@@ -9,10 +9,11 @@ namespace SharpCrafters.Aspects.Introspection.Tests;
 
 public sealed class IntrospectionV1WriterTests
 {
-    private const string _header = """
-                                   <?xml version="1.0" encoding="utf-8"?>
-                                   <Symbols LinesOfCode="0" PostSharpLinesOfCode="0" EnhancedTypesCount="0" SchemaVersion="1" xmlns="http://schemas.postsharp.org/2.0/symbols">
-                                   """;
+    // Compared as LF, as the output: the line endings of the source file depend on the checkout.
+    private static readonly string _header = """
+                                             <?xml version="1.0" encoding="utf-8"?>
+                                             <Symbols LinesOfCode="0" PostSharpLinesOfCode="0" EnhancedTypesCount="0" SchemaVersion="1" xmlns="http://schemas.postsharp.org/2.0/symbols">
+                                             """.ToLf();
 
     [Fact]
     public void TheRootElementHasItsAttributesInTheOrderOfPostSharp()
@@ -227,6 +228,10 @@ public sealed class IntrospectionV1WriterTests
     [Fact]
     public void ARequiredDeclarationIsValidated()
     {
+        // A handle of another writer, with the same index as the first handle of the writer below.
+        DeclarationHandle foreign = default;
+        V1TestHelper.Write( other => foreign = other.Declare( "M:B" ) );
+
         V1TestHelper.Write(
             writer =>
             {
@@ -237,8 +242,13 @@ public sealed class IntrospectionV1WriterTests
                 Assert.Throws<ArgumentException>( () => writer.WriteStartAspectClass( default ) );
                 Assert.Throws<ArgumentException>( () => writer.Declare( " " ) );
 
-                // A handle of another writer.
-                Assert.Throws<ArgumentException>( () => writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = new DeclarationHandle( 99 ) } ) );
+                // The handles of two writers differ even when their indexes are the same, and a writer rejects the handles of another.
+                Assert.NotEqual( a, foreign );
+                Assert.Throws<ArgumentException>( () => writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = foreign } ) );
+                Assert.Throws<ArgumentException>( () => writer.WriteDeclarationMapping( new DeclarationMappingData { Source = a, Target = new DeclarationHandle( writer, 99 ) } ) );
             } );
+
+        Assert.Equal( default, new DeclarationHandle() );
+        Assert.True( new DeclarationHandle().IsNil );
     }
 }

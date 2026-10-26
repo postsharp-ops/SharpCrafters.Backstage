@@ -200,6 +200,124 @@ public sealed class IntrospectionV1ReaderTests
         Assert.False( reader.Read() );
     }
 
+    [Fact]
+    public void AReaderRejectsTheHandlesOfAnotherReader()
+    {
+        var xml = $"""<Symbols xmlns="{_namespace}"><Evolution Source="#1=M:A" Target="#2=M:B" /></Symbols>""";
+        using var first = V1TestHelper.CreateReader( xml );
+        using var second = V1TestHelper.CreateReader( xml );
+        Assert.True( first.Read() );
+        Assert.True( second.Read() );
+
+        // The same index in both readers.
+        var handle = first.DeclarationMapping.Source;
+        Assert.NotEqual( handle, second.DeclarationMapping.Source );
+        Assert.Equal( "M:A", first.GetIdentifier( handle ) );
+        Assert.Throws<ArgumentException>( () => second.GetIdentifier( handle ) );
+    }
+
+    [Theory]
+    [InlineData( "<Symbols xmlns=\"{0}\" /><Extra />" )]
+    [InlineData( "<Symbols xmlns=\"{0}\"><Evolution Source=\"M:A\" Target=\"M:B\" /></Symbols><Extra />" )]
+    [InlineData( "<Symbols xmlns=\"{0}\"><Evolution Source=\"M:A\" Target=\"M:B\" /></Symbols>garbage" )]
+    public void ContentAfterTheRootIsAnError( string format )
+    {
+        using var reader = V1TestHelper.CreateReader( string.Format( format, _namespace ) );
+
+        Assert.Throws<IntrospectionFormatException>( () => ReadAll( reader ) );
+    }
+
+    [Fact]
+    public void AnXmlReaderOfTheCallerIsLeftAtTheEndOfTheRoot()
+    {
+        // A fragment, whose second element the caller reads after the reader.
+        var settings = new System.Xml.XmlReaderSettings { ConformanceLevel = System.Xml.ConformanceLevel.Fragment };
+        using var xmlReader = System.Xml.XmlReader.Create( new StringReader( $"""<Symbols xmlns="{_namespace}" /><Next />""" ), settings );
+        using var reader = IntrospectionV1Reader.Create( xmlReader );
+
+        Assert.Empty( ReadAll( reader ) );
+        Assert.True( xmlReader.Read() );
+        Assert.Equal( "Next", xmlReader.LocalName );
+    }
+
+    [Theory]
+    [InlineData( "Source=\"\" Target=\"M:B\"" )]
+    [InlineData( "Source=\" \" Target=\"M:B\"" )]
+    [InlineData( "Source=\"#1=\" Target=\"M:B\"" )]
+    [InlineData( "Source=\"#1= \" Target=\"M:B\"" )]
+    public void ABlankRequiredDeclarationIsAnError( string attributes )
+    {
+        using var reader = V1TestHelper.CreateReader( $"""<Symbols xmlns="{_namespace}"><Evolution {attributes} /></Symbols>""" );
+
+        Assert.Throws<IntrospectionFormatException>( () => reader.Read() );
+    }
+
+    [Fact]
+    public void TheOrderOfTheAttributesDoesNotMatter()
+    {
+        using var reader = V1TestHelper.CreateReader(
+            $"""<Symbols xmlns="{_namespace}"><Evolution Target="#1=M:A" Source="#1" /><Annotation Description="#3" Target="#2=T:C" Arguments="#3=x" /></Symbols>""" );
+
+        Assert.True( reader.Read() );
+        Assert.Equal( "M:A", reader.GetIdentifier( reader.DeclarationMapping.Source ) );
+        Assert.Equal( reader.DeclarationMapping.Source, reader.DeclarationMapping.Target );
+        Assert.True( reader.Read() );
+        Assert.Equal( "x", reader.Annotation.Description );
+    }
+
+    [Fact]
+    public void TheNamesOfSkippedContentAreKept()
+    {
+        using var reader = V1TestHelper.CreateReader(
+            $"""<Symbols xmlns="{_namespace}"><Future><Class Class="#1=T:A" /></Future><Other xmlns="urn:other" Name="#2=T:B" /><Annotation Target="#1" Class="#2" /></Symbols>""" );
+
+        Assert.True( reader.Read() );
+        Assert.Equal( "T:A", reader.GetIdentifier( reader.Annotation.TargetDeclaration ) );
+        Assert.Equal( "T:B", reader.GetIdentifier( reader.Annotation.AnnotationClass ) );
+    }
+
+    [Fact]
+    public void ALiteralAttributeIsNotANameOfTheTable()
+    {
+        // Instance/@Description is written literally: #1=x neither defines nor refers to a name.
+        using var reader = V1TestHelper.CreateReader(
+            $"""<Symbols xmlns="{_namespace}"><Class Class="#1=T:A"><Instance Declaration="T:C" Description="#1=x" /></Class><Annotation Target="#1" /></Symbols>""" );
+
+        Assert.True( reader.Read() );
+        Assert.True( reader.Read() );
+        Assert.Equal( "#1=x", reader.Predecessor.Description );
+
+        // The ends of the predecessor and of the aspect class, then the annotation.
+        Assert.Equal( [IntrospectionNodeKind.EndPredecessor, IntrospectionNodeKind.EndAspectClass, IntrospectionNodeKind.Annotation], ReadKinds( reader, 3 ) );
+        Assert.Equal( "T:A", reader.GetIdentifier( reader.Annotation.TargetDeclaration ) );
+    }
+
+    [Fact]
+    public void AnUndefinedNumericValueOfAnEnumerationIsIgnored()
+    {
+        using var reader = V1TestHelper.CreateReader(
+            $"""<Symbols xmlns="{_namespace}"><Evolution Source="M:A" Target="M:B" Kind="999" /><Class Class="T:A"><Instance Declaration="T:C" Origin="999" /></Class></Symbols>""" );
+
+        Assert.True( reader.Read() );
+        Assert.Null( reader.DeclarationMapping.Kind );
+        Assert.True( reader.Read() );
+        Assert.True( reader.Read() );
+        Assert.Null( reader.Predecessor.Kind );
+    }
+
+    private static IntrospectionNodeKind[] ReadKinds( IntrospectionV1Reader reader, int count )
+    {
+        var kinds = new IntrospectionNodeKind[count];
+
+        for ( var i = 0; i < count; i++ )
+        {
+            Assert.True( reader.Read() );
+            kinds[i] = reader.NodeKind;
+        }
+
+        return kinds;
+    }
+
     private static IntrospectionNodeKind[] ReadAll( IntrospectionV1Reader reader )
     {
         var kinds = new System.Collections.Generic.List<IntrospectionNodeKind>();
