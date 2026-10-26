@@ -215,15 +215,19 @@ public static class IntrospectionV1Loader
                 instance = child;
             }
 
-            instance.TransformationsList.Add(
-                new IntrospectionTransformation( instance, target )
-                {
-                    AdviceDeclaration = advice,
-                    Description = data.Description,
-                    Semantic = data.Semantic,
-                    Order = data.Order,
-                    LinesOfCodeAvoided = data.LinesOfCodeAvoided
-                } );
+            var transformation = new IntrospectionTransformation( instance, target )
+            {
+                AdviceDeclaration = advice,
+                Description = data.Description,
+                Semantic = data.Semantic,
+                Order = data.Order,
+                LinesOfCodeAvoided = data.LinesOfCodeAvoided
+            };
+
+            instance.TransformationsList.Add( transformation );
+
+            // The transformations of the model keep the order of the file, whichever aspect instance they belong to.
+            this._model.TransformationsList.Add( transformation );
         }
 
         private void ReadAnnotation( AnnotationData data )
@@ -329,7 +333,6 @@ public static class IntrospectionV1Loader
             predecessor.AspectInstancesList.Add( instance );
             instance.AspectClass.AspectInstancesList.Add( instance );
             this._model.AspectInstancesList.Add( instance );
-            this._model.TransformationsList.AddRange( instance.TransformationsList );
         }
 
         private void ResolveProvidedPredecessors()
@@ -363,33 +366,52 @@ public static class IntrospectionV1Loader
                 }
 
                 IntrospectionDeclaration? owner = null;
-                var name = declaration.Name;
+
+                // An explicit implementation is qualified with its interface, as App#IValue#get_Value: the prefix of the accessor is
+                // after the qualifier, which the name of the property or event keeps.
+                var qualifierLength = declaration.Name.LastIndexOf( '#' ) + 1;
+                var qualifier = declaration.Name.Substring( 0, qualifierLength );
+                var name = declaration.Name.Substring( qualifierLength );
 
                 if ( declaration.Kind == IntrospectionDeclarationKind.Method )
                 {
                     if ( name.StartsWith( "get_", StringComparison.Ordinal ) || name.StartsWith( "set_", StringComparison.Ordinal ) )
                     {
-                        owner = FindProperty( declaringType, name.Substring( 4 ), declaration, name[0] == 's' );
+                        owner = FindProperty( declaringType, qualifier + name.Substring( 4 ), declaration, name[0] == 's' );
                     }
                     else if ( name.StartsWith( "add_", StringComparison.Ordinal ) )
                     {
-                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Event, name.Substring( 4 ) );
+                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Event, qualifier + name.Substring( 4 ) );
                     }
                     else if ( name.StartsWith( "remove_", StringComparison.Ordinal ) )
                     {
-                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Event, name.Substring( 7 ) );
+                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Event, qualifier + name.Substring( 7 ) );
                     }
                     else if ( name.StartsWith( "raise_", StringComparison.Ordinal ) )
                     {
-                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Event, name.Substring( 6 ) );
+                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Event, qualifier + name.Substring( 6 ) );
                     }
 
                     owner?.AccessorsList.Add( declaration );
                 }
-                else if ( declaration.Kind == IntrospectionDeclarationKind.Field && name.StartsWith( "<", StringComparison.Ordinal )
-                                                                                  && name.EndsWith( ">k__BackingField", StringComparison.Ordinal ) )
+                else if ( declaration.Kind == IntrospectionDeclarationKind.Field )
                 {
-                    owner = FindMember( declaringType, IntrospectionDeclarationKind.Property, name.Substring( 1, name.Length - 17 ) );
+                    if ( name.StartsWith( "<", StringComparison.Ordinal ) && name.EndsWith( ">k__BackingField", StringComparison.Ordinal ) )
+                    {
+                        // The backing field of a C# automatic property.
+                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Property, name.Substring( 1, name.Length - 17 ) );
+                    }
+                    else if ( name.Length > 1 && name[0] == '_' )
+                    {
+                        // The backing field of a Visual Basic automatic property, _Name. The file does not say whether the field is
+                        // compiler-generated, so a field of this name that the code declares is linked to the property too.
+                        owner = FindMember( declaringType, IntrospectionDeclarationKind.Property, name.Substring( 1 ) );
+
+                        if ( owner?.BackingField != null )
+                        {
+                            owner = null;
+                        }
+                    }
 
                     owner?.BackingField = declaration;
                 }

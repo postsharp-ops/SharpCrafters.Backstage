@@ -7,57 +7,6 @@ using System.Collections.Generic;
 namespace SharpCrafters.Aspects.Introspection.Query;
 
 /// <summary>
-/// The kind of a declaration (<see cref="IntrospectionDeclaration.Kind"/>).
-/// </summary>
-public enum IntrospectionDeclarationKind
-{
-    /// <summary>
-    /// An assembly.
-    /// </summary>
-    Assembly,
-
-    /// <summary>
-    /// A type.
-    /// </summary>
-    Type,
-
-    /// <summary>
-    /// A method that is not a constructor, including an accessor and an operator.
-    /// </summary>
-    Method,
-
-    /// <summary>
-    /// An instance or static constructor.
-    /// </summary>
-    Constructor,
-
-    /// <summary>
-    /// A property, including an indexer.
-    /// </summary>
-    Property,
-
-    /// <summary>
-    /// A field.
-    /// </summary>
-    Field,
-
-    /// <summary>
-    /// An event.
-    /// </summary>
-    Event,
-
-    /// <summary>
-    /// A parameter of a method.
-    /// </summary>
-    Parameter,
-
-    /// <summary>
-    /// The return parameter of a method.
-    /// </summary>
-    ReturnParameter
-}
-
-/// <summary>
 /// A declaration that a file of the introspection of aspects mentions: the target of an aspect instance or of a transformation,
 /// an aspect class, an advice, the declaration of a predecessor, or a declaration that one of them is a member of.
 /// </summary>
