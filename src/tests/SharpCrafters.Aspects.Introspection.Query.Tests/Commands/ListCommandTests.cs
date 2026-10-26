@@ -110,7 +110,7 @@ public sealed class ListCommandTests : IDisposable
     [Fact]
     public void TheCountAloneIsWritten()
     {
-        var (exitCode, output, _) = this.Run( "list", "aspect-instances", "--count" );
+        var (exitCode, output, _) = this.Run( "list", "aspect-instances", "--count", "--format", "text" );
 
         Assert.Equal( 0, exitCode );
         Assert.Equal( "5", output.Trim() );
@@ -131,7 +131,7 @@ public sealed class ListCommandTests : IDisposable
     [Fact]
     public void TheTextOutputIsATableOfTheDefaultColumns()
     {
-        var (exitCode, output, _) = this.Run( "list", "aspect-classes" );
+        var (exitCode, output, _) = this.Run( "list", "aspect-classes", "--format", "text" );
 
         Assert.Equal( 0, exitCode );
 

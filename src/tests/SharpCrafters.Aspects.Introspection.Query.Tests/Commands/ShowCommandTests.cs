@@ -61,7 +61,7 @@ public sealed class ShowCommandTests : IDisposable
     [Fact]
     public void ADeclarationIsSelectedByItsPosition()
     {
-        var (exitCode, output, error) = this.Run( "show", "declaration", "Customer.cs:18" );
+        var (exitCode, output, error) = this.Run( "show", "declaration", "Customer.cs:18", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.StartsWith( "Property App.Customer.FullName at Customer.cs:18:19 (App).", output, StringComparison.Ordinal );
@@ -125,7 +125,7 @@ public sealed class ShowCommandTests : IDisposable
     {
         var id = this.RunJson( "list", "predecessors", "--where", "kind eq 'Multicast'", "--select", "id" ).GetProperty( "items" )[0].GetProperty( "id" ).GetString()!;
 
-        var (exitCode, output, error) = this.Run( "show", "predecessor", id );
+        var (exitCode, output, error) = this.Run( "show", "predecessor", id, "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.StartsWith( $"Created by the multicast attribute [{id}] on App (kind inferred).", output, StringComparison.Ordinal );
@@ -180,7 +180,7 @@ public sealed class ShowCommandTests : IDisposable
         Assert.Equal( "transformation[]", fields["transformations"].GetProperty( "type" ).GetString() );
         Assert.False( fields["isSkipped"].GetProperty( "provided" ).GetBoolean() );
 
-        var (exitCode, output, _) = this.Run( "schema", "predecessors" );
+        var (exitCode, output, _) = this.Run( "schema", "predecessors", "--format", "text" );
         Assert.Equal( 0, exitCode );
         Assert.Contains( "kind (enum): How the predecessor created its aspect instances. Values: Attribute, Multicast, Inherited, Xml,", output, StringComparison.Ordinal );
     }
