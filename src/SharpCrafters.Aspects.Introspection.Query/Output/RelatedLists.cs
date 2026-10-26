@@ -10,23 +10,6 @@ using System.Linq;
 namespace SharpCrafters.Aspects.Introspection.Query.Output;
 
 /// <summary>
-/// How <c>show</c> writes the lists of the objects related to the object it shows: at most <see cref="Limit"/> objects per list, or
-/// all of them when it is <c>null</c>.
-/// </summary>
-/// <remarks>
-/// A list is written as <c>{ "count", "truncated", "items" }</c>, with <c>byNamespace</c> and <c>next</c> when it is truncated, so
-/// that its shape does not depend on its length. An aspect class can have thousands of aspect instances, and an aspect instance of a
-/// type-level aspect thousands of transformations: written in full, they make an output too large for an agent to read.
-/// </remarks>
-internal sealed record RelatedListOptions( int? Limit )
-{
-    /// <summary>
-    /// The number of objects of a list that <c>show</c> writes by default.
-    /// </summary>
-    public const int DefaultLimit = 20;
-}
-
-/// <summary>
 /// What the output says about a truncated list: how its objects are distributed by namespace, and which command lists all of them.
 /// </summary>
 internal static class RelatedLists
@@ -86,14 +69,30 @@ internal static class RelatedLists
         var namespaces = ByNamespace( all );
         var largest = string.Join( ", ", namespaces.Take( 3 ).Select( n => $"{(n.Namespace.Length == 0 ? "(no namespace)" : n.Namespace)} ({n.Count})" ) );
         var more = namespaces.Count > 3 ? ", ..." : "";
-        var how = next != null ? $"run 'introspect {next}', or add --all" : "add --all";
+
+        // The command ends the sentence, without a period that a copy would take with it.
+        var how = next != null ? $"add --all, or run: introspect {next}" : "add --all.";
 
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"... {all.Count - shown} more {what}, {all.Count} in all, in {namespaces.Count} namespace(s): {largest}{more}. To see them, {how}." );
+            $"... {all.Count - shown} more {what}, {all.Count} in all, in {namespaces.Count} namespace(s): {largest}{more}. To see them, {how}" );
     }
 
-    private static string List( string collection, string condition ) => $"list {collection} --where \"{condition}\"";
+    // The command lists every object: list has a default limit too.
+    private static string List( string collection, string condition ) => $"list {collection} --where {Quote( condition )} --all";
+
+    /// <summary>
+    /// Quotes a word of a command, so that bash and a batch both read it literally. A generic declaration has backticks, which
+    /// bash substitutes inside double quotes, and a condition has single quotes: a word without single quotes is single-quoted,
+    /// and another is double-quoted with <c>\</c>, <c>"</c>, <c>$</c> and <c>`</c> escaped.
+    /// </summary>
+    public static string Quote( string word )
+        => !word.Contains( '\'' )
+            ? "'" + word + "'"
+            : "\"" + word.Replace( "\\", "\\\\", StringComparison.Ordinal )
+                  .Replace( "\"", "\\\"", StringComparison.Ordinal )
+                  .Replace( "$", "\\$", StringComparison.Ordinal )
+                  .Replace( "`", "\\`", StringComparison.Ordinal ) + "\"";
 
     // A string literal of the conditions, whose quotes are doubled.
     private static string Literal( string value ) => "'" + value.Replace( "'", "''", StringComparison.Ordinal ) + "'";

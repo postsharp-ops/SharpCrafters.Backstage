@@ -3,8 +3,8 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Aspects.Introspection.Query.Commands;
+using SharpCrafters.Aspects.Introspection.Query.Output;
 using System;
-using System.Linq;
 using System.Text.Json;
 using Xunit;
 
@@ -45,7 +45,7 @@ public sealed class OutputLimitTests : IDisposable
 
         // The command of next lists every object of the list.
         var next = instances.GetProperty( "next" ).GetString()!;
-        Assert.Equal( "list aspect-instances --where \"aspectClass/name eq 'App.LogAttribute'\"", next );
+        Assert.Equal( "list aspect-instances --where \"aspectClass/name eq 'App.LogAttribute'\" --all", next );
         Assert.Equal( 3, this.RunJson( QueryLineSplitter.Split( next ) ).GetProperty( "count" ).GetInt32() );
     }
 
@@ -90,9 +90,58 @@ public sealed class OutputLimitTests : IDisposable
 
         Assert.True( exitCode == 0, error );
         Assert.Contains(
-            "... 2 more aspect instances, 3 in all, in 1 namespace(s): App (3). To see them, run 'introspect list aspect-instances --where \"aspectClass/name eq 'App.LogAttribute'\"', or add --all.",
+            "... 2 more aspect instances, 3 in all, in 1 namespace(s): App (3). To see them, add --all, or run: introspect list aspect-instances --where \"aspectClass/name eq 'App.LogAttribute'\" --all",
             output,
             StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void TheLimitAppliesToThePredecessorsInText()
+    {
+        var id = this.RunJson( "list", "aspect-instances", "--where", "aspectClass/shortName eq 'Log'", "--limit", "1" ).GetProperty( "items" )[0].GetProperty( "id" ).GetString()!;
+
+        var (exitCode, output, error) = this.Run( "show", "aspect-instance", id, "--limit", "0" );
+
+        Assert.True( exitCode == 0, error );
+        Assert.Contains( "... 1 more predecessors, 1 in all", output, StringComparison.Ordinal );
+        Assert.Contains( "--where \"aspectInstances/any(a: a/id eq '" + id + "')\" --all", output, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void TheCommandOfAGenericDeclarationIsQuotedForBashAndBatch()
+    {
+        // Two aspect instances on a method of a generic type, whose identifier has a backtick.
+        using var project = new TestProject(
+            $$"""
+             <Symbols xmlns="{{TestProject.SymbolsNamespace}}">
+               <Class Class="T:[App]App.LogAttribute"><Instance Declaration="M:[App]App.Box{T}::Get()"><Target><JoinPoint /></Target></Instance></Class>
+               <Class Class="T:[App]App.CacheAttribute"><Instance Declaration="M:[App]App.Box{T}::Get()"><Target><JoinPoint /></Target></Instance></Class>
+             </Symbols>
+             """ );
+
+        var (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, ["show", "declaration", "Box.Get", "--limit", "1", "--format", "json"] );
+        Assert.True( exitCode == 0, error );
+
+        // Single quotes: bash substitutes a backtick inside double quotes.
+        var next = JsonDocument.Parse( output ).RootElement.GetProperty( "aspectInstances" ).GetProperty( "next" ).GetString()!;
+        Assert.Equal( "show declaration '[App]M:App.Box`1.Get' --all", next );
+
+        (exitCode, output, error) = CommandRunner.Run( project.Directory, this._provider, [.. QueryLineSplitter.Split( next ), "--format", "json"] );
+        Assert.True( exitCode == 0, error );
+        Assert.Equal( 2, JsonDocument.Parse( output ).RootElement.GetProperty( "aspectInstances" ).GetProperty( "items" ).GetArrayLength() );
+
+        (exitCode, _, error) = CommandRunner.Run( project.Directory, this._provider, ["batch"], input: next );
+        Assert.True( exitCode == 0, error );
+    }
+
+    [Theory]
+    [InlineData( "[App]M:App.Box`1.Get", "'[App]M:App.Box`1.Get'" )]
+    [InlineData( "qualifiedId eq '[App]M:App.Box`1.Get'", "\"qualifiedId eq '[App]M:App.Box\\`1.Get'\"" )]
+    [InlineData( "name eq 'a\"$b\\'", "\"name eq 'a\\\"\\$b\\\\'\"" )]
+    public void AWordIsQuotedSoThatItIsReadLiterally( string word, string quoted )
+    {
+        Assert.Equal( quoted, RelatedLists.Quote( word ) );
+        Assert.Equal( [word], QueryLineSplitter.Split( quoted ) );
     }
 
     [Fact]

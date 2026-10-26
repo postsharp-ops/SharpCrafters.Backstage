@@ -142,10 +142,12 @@ internal static class TextOutput
         var builder = new StringBuilder();
         builder.AppendLine( CultureInfo.InvariantCulture, $"Aspect {instance.AspectClass.ShortName} [{instance.Id}] on {instance.TargetDeclaration.Kind.ToString().ToLowerInvariant()} {Name( instance.TargetDeclaration )}." );
 
-        foreach ( var predecessor in instance.Predecessors )
+        foreach ( var predecessor in Take( instance.Predecessors, limit ) )
         {
             builder.AppendLine( "  " + Predecessor( context, predecessor ) );
         }
+
+        AppendNote( builder, "predecessors", instance.Predecessors, limit, RelatedLists.GetNext( "aspectInstance", "predecessors", instance ), "  " );
 
         var listed = instance.Transformations.Where( t => transformations == null || transformations.Contains( t ) ).ToList();
 

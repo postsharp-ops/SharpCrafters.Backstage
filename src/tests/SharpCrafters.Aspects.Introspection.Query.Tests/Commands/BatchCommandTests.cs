@@ -168,5 +168,28 @@ public sealed class BatchCommandTests : IDisposable
     [InlineData( "a\"b c\"'d e'f", new[] { "ab cd ef" } )]
     [InlineData( "\"a \\\" b \\\\ c \\d\"", new[] { "a \" b \\ c \\d" } )]
     [InlineData( "show declaration 'C:\\src\\Customer.cs:18'", new[] { "show", "declaration", "C:\\src\\Customer.cs:18" } )]
+
+    // Outside quotes, a backslash escapes a whitespace, a quote or a backslash, and is literal before another character.
+    [InlineData( "show declaration src/My\\ File.cs:18", new[] { "show", "declaration", "src/My File.cs:18" } )]
+    [InlineData( "a\\'b \\\"c \\\\d", new[] { "a'b", "\"c", "\\d" } )]
+    [InlineData( "show declaration src\\Customer.cs:18", new[] { "show", "declaration", "src\\Customer.cs:18" } )]
+
+    // Inside double quotes, $ and ` are escapes too, as in POSIX shells.
+    [InlineData( "\"\\$x \\`1\"", new[] { "$x `1" } )]
     public void ALineIsSplitAsAShellSplitsIt( string line, string[] expected ) => Assert.Equal( expected, QueryLineSplitter.Split( line ) );
+
+    [Theory]
+    [InlineData( "list 'a" )]
+    [InlineData( "list \"a" )]
+    [InlineData( "list a\\" )]
+    public void AnUnclosedQuoteOrADanglingEscapeIsRejected( string line ) => Assert.Throws<FormatException>( () => QueryLineSplitter.Split( line ) );
+
+    [Fact]
+    public void TheHelpOfACommandIsTheResultOfItsQuery()
+    {
+        var (exitCode, output, error) = this.Run( "list --help" );
+
+        Assert.True( exitCode == 0, error );
+        Assert.Contains( "--where", output, StringComparison.Ordinal );
+    }
 }

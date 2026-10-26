@@ -7,26 +7,11 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Commands;
-
-/// <summary>
-/// The settings of <c>introspect batch</c>.
-/// </summary>
-public sealed class BatchCommandSettings : IntrospectionCommandSettings
-{
-    /// <summary>
-    /// Gets the file that holds the queries, or <c>null</c> or <c>-</c> to read them from the standard input.
-    /// </summary>
-    [Description( "The file that holds the queries, one per line. By default, or with -, the standard input." )]
-    [CommandOption( "--file <PATH>" )]
-    public string? File { get; init; }
-}
 
 /// <summary>
 /// <c>introspect batch</c>: runs several queries, one per line of the standard input or of a file, over one evaluation of the projects
@@ -199,8 +184,9 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
         app.Configure(
             c =>
             {
-                // The messages of Spectre, such as a parse error or the help of a command, go to the error of the query.
-                c.ConfigureConsole( AnsiConsole.Create( new AnsiConsoleSettings { Out = new AnsiConsoleOutput( error ), Ansi = AnsiSupport.No } ) );
+                // The help of a command, which Spectre writes to its console, is the output of the query. A parse error is an exception,
+                // because of PropagateExceptions, and the commands write their errors to the error writer of the query.
+                c.ConfigureConsole( AnsiConsole.Create( new AnsiConsoleSettings { Out = new AnsiConsoleOutput( output ), Ansi = AnsiSupport.No } ) );
                 c.PropagateExceptions();
                 IntrospectionCommandFactory.AddIntrospectBranch( c, options.ForQuery( output, error, sessions ) );
             } );
@@ -339,91 +325,4 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
     }
 
     private sealed record QueryResult( string Query, int ExitCode, string Output, string Error );
-}
-
-/// <summary>
-/// Splits a line of a batch into words, as a POSIX shell does: words are separated by whitespace, <c>'…'</c> is literal, and inside
-/// <c>"…"</c>, <c>\"</c> and <c>\\</c> are escapes. A quoted part can be joined to other text in the same word.
-/// </summary>
-internal static class QueryLineSplitter
-{
-    /// <exception cref="FormatException">A quote is not closed.</exception>
-    public static string[] Split( string line )
-    {
-        var words = new List<string>();
-        var word = new StringBuilder();
-        var inWord = false;
-
-        for ( var i = 0; i < line.Length; i++ )
-        {
-            var c = line[i];
-
-            if ( char.IsWhiteSpace( c ) )
-            {
-                if ( inWord )
-                {
-                    words.Add( word.ToString() );
-                    word.Clear();
-                    inWord = false;
-                }
-
-                continue;
-            }
-
-            inWord = true;
-
-            switch ( c )
-            {
-                case '\'':
-                    var end = line.IndexOf( '\'', i + 1 );
-
-                    if ( end < 0 )
-                    {
-                        throw new FormatException( $"The quote at column {i + 1} is not closed." );
-                    }
-
-                    word.Append( line, i + 1, end - i - 1 );
-                    i = end;
-
-                    break;
-
-                case '"':
-                    var start = i;
-
-                    for ( i++; ; i++ )
-                    {
-                        if ( i >= line.Length )
-                        {
-                            throw new FormatException( $"The quote at column {start + 1} is not closed." );
-                        }
-
-                        if ( line[i] == '"' )
-                        {
-                            break;
-                        }
-
-                        if ( line[i] == '\\' && i + 1 < line.Length && line[i + 1] is '"' or '\\' )
-                        {
-                            i++;
-                        }
-
-                        word.Append( line[i] );
-                    }
-
-                    break;
-
-                default:
-                    word.Append( c );
-
-                    break;
-            }
-        }
-
-        if ( inWord )
-        {
-            words.Add( word.ToString() );
-        }
-
-        return words.ToArray();
-    }
 }

@@ -184,7 +184,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
         var lists = settings.GetListOptions();
 
         // A truncated list of the declaration is listed in full by the same command with --all.
-        var next = $"show declaration \"{declaration.QualifiedId}\"{(settings.Members ? " --members" : "")} --all";
+        var next = $"show declaration {RelatedLists.Quote( declaration.QualifiedId )}{(settings.Members ? " --members" : "")} --all";
 
         if ( settings.Format == "text" )
         {
