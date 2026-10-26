@@ -324,7 +324,7 @@ public sealed class IntrospectionV1LoaderTests
             </Class>
             """ );
 
-        Assert.Equal( "xml:postsharp.config(5,6)", Assert.Single( model.Predecessors ).StructuralKey );
+        Assert.Equal( "xml:[App]postsharp.config(5,6)", Assert.Single( model.Predecessors ).StructuralKey );
     }
 
     [Fact]
@@ -341,7 +341,7 @@ public sealed class IntrospectionV1LoaderTests
                     """;
 
         var predecessor = Assert.Single( Load( body, projectDirectory: root ).Predecessors );
-        Assert.Equal( "xml:Config/postsharp.config(5,6)", predecessor.StructuralKey );
+        Assert.Equal( "xml:[App]Config/postsharp.config(5,6)", predecessor.StructuralKey );
         Assert.Equal( file, predecessor.File );
 
         // Another machine, another directory: the same identifier.
@@ -351,7 +351,7 @@ public sealed class IntrospectionV1LoaderTests
 
         // A file outside of the project keeps its path.
         Assert.Equal(
-            "xml:" + file.Replace( '\\', '/' ) + "(5,6)",
+            "xml:[App]" + file.Replace( '\\', '/' ) + "(5,6)",
             Assert.Single( Load( body, projectDirectory: Path.Combine( root, "Other" ) ).Predecessors ).StructuralKey );
     }
 

@@ -165,12 +165,13 @@ public static class IntrospectionV1Loader
 
             this.ResolveProvidedPredecessors();
             this.LinkMembers();
-            StructuralKeys.Assign( this._model );
-
             if ( assembly == null )
             {
                 this._model.Assembly = InferAssembly( this._model );
             }
+
+            // The key of an XML predecessor holds the assembly.
+            StructuralKeys.Assign( this._model );
 
             return this._model;
         }

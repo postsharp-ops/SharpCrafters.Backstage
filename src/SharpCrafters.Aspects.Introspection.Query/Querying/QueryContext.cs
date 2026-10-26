@@ -140,10 +140,16 @@ internal sealed class QueryContext
     /// </summary>
     public string? GetLocation( IntrospectionDeclaration declaration )
     {
-        var target = this.GetTarget( declaration );
-        var location = target == null ? null : this.GetSourceLocations( target )?.GetLocation( declaration );
+        // Each target framework of the assembly in turn: a declaration under a preprocessor symbol is compiled into some of them only.
+        foreach ( var target in this.Targets.Where( t => string.Equals( t.AssemblyName, declaration.Assembly, System.StringComparison.Ordinal ) ) )
+        {
+            if ( this.GetSourceLocations( target )?.GetLocation( declaration ) is { } location )
+            {
+                return this.FormatLocation( location.File, location.Line, location.Column );
+            }
+        }
 
-        return location == null ? null : this.FormatLocation( location.File, location.Line, location.Column );
+        return null;
     }
 
     /// <summary>

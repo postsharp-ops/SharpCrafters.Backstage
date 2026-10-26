@@ -2,7 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,20 +44,4 @@ internal sealed class ProjectEvaluation
 
         return project;
     }
-}
-
-internal sealed class EvaluatedTarget
-{
-    public string TargetFramework { get; set; } = "";
-
-    public string Configuration { get; set; } = "";
-
-    public string AssemblyName { get; set; } = "";
-
-    public string FilePath { get; set; } = "";
-
-    public Dictionary<string, string> AdditionalFiles { get; set; } = new( StringComparer.OrdinalIgnoreCase );
-
-    // The compiled source files, outside of obj, whose write times tell whether the file is stale.
-    public List<string> SourceFiles { get; set; } = [];
 }

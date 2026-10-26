@@ -28,7 +28,7 @@ namespace SharpCrafters.Aspects.Introspection.Query;
 internal static class ModelIndex
 {
     // Changed whenever the format or what the loader builds changes.
-    private const int _formatVersion = 1;
+    private const int _formatVersion = 2;
     private const int _magic = 0x58494353; // "SCIX"
 
     /// <summary>
@@ -253,9 +253,40 @@ internal static class ModelIndex
         }
     }
 
+    /// <summary>
+    /// Reads a model from an index.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The index is damaged: a count or a reference is out of range.</exception>
+    /// <exception cref="EndOfStreamException">The index is truncated.</exception>
     internal static IntrospectionModel Read( BinaryReader reader )
     {
-        var table = new string[reader.ReadInt32()];
+        try
+        {
+            return ReadModel( reader );
+        }
+        catch ( Exception e ) when ( e is IndexOutOfRangeException or ArgumentException or NullReferenceException )
+        {
+            throw new InvalidDataException( "The index is damaged.", e );
+        }
+    }
+
+    private static IntrospectionModel ReadModel( BinaryReader reader )
+    {
+        // Each element takes at least one byte, so a count larger than what remains is damaged; checking it before allocating
+        // keeps a damaged count from allocating an array of gigabytes.
+        int Count()
+        {
+            var count = reader.ReadInt32();
+
+            if ( count < 0 || count > reader.BaseStream.Length - reader.BaseStream.Position )
+            {
+                throw new InvalidDataException( "A count of the index is out of range." );
+            }
+
+            return count;
+        }
+
+        var table = new string[Count()];
 
         for ( var i = 0; i < table.Length; i++ )
         {
@@ -268,7 +299,7 @@ internal static class ModelIndex
 
         var model = new IntrospectionModel( R() ) { SchemaVersion = reader.ReadInt32(), ProductVersion = S(), LinesOfCode = reader.ReadInt32(), EnhancedTypesCount = reader.ReadInt32() };
 
-        var declarations = new IntrospectionDeclaration[reader.ReadInt32()];
+        var declarations = new IntrospectionDeclaration[Count()];
 
         for ( var i = 0; i < declarations.Length; i++ )
         {
@@ -293,7 +324,7 @@ internal static class ModelIndex
             ReadList( d.AccessorsList, () => D()! );
         }
 
-        var classes = new IntrospectionAspectClass[reader.ReadInt32()];
+        var classes = new IntrospectionAspectClass[Count()];
 
         for ( var i = 0; i < classes.Length; i++ )
         {
@@ -301,7 +332,7 @@ internal static class ModelIndex
             model.AspectClassesList.Add( classes[i] );
         }
 
-        var instances = new IntrospectionAspectInstance[reader.ReadInt32()];
+        var instances = new IntrospectionAspectInstance[Count()];
 
         for ( var i = 0; i < instances.Length; i++ )
         {
@@ -317,7 +348,7 @@ internal static class ModelIndex
                 FileId = S()
             };
 
-            var count = reader.ReadInt32();
+            var count = Count();
 
             for ( var t = 0; t < count; t++ )
             {
@@ -335,7 +366,7 @@ internal static class ModelIndex
             model.AspectInstancesList.Add( instance );
         }
 
-        var predecessorCount = reader.ReadInt32();
+        var predecessorCount = Count();
 
         for ( var i = 0; i < predecessorCount; i++ )
         {
@@ -362,7 +393,7 @@ internal static class ModelIndex
             model.PredecessorsList.Add( predecessor );
         }
 
-        var annotationCount = reader.ReadInt32();
+        var annotationCount = Count();
 
         for ( var i = 0; i < annotationCount; i++ )
         {
@@ -370,7 +401,7 @@ internal static class ModelIndex
                 new IntrospectionAnnotation( D()! ) { AnnotationClass = D(), Arguments = S(), Description = S(), LinesOfCodeAvoided = reader.ReadInt32() } );
         }
 
-        var mappingCount = reader.ReadInt32();
+        var mappingCount = Count();
 
         for ( var i = 0; i < mappingCount; i++ )
         {
@@ -384,7 +415,7 @@ internal static class ModelIndex
 
         void ReadList<T>( List<T> list, Func<T> read )
         {
-            var count = reader.ReadInt32();
+            var count = Count();
 
             for ( var i = 0; i < count; i++ )
             {

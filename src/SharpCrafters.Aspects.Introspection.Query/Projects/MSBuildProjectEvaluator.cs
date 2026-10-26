@@ -37,6 +37,7 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         var outer = this.Load( evaluation.ProjectPath, globalProperties );
         var frameworks = GetTargetFrameworks( outer );
         AddImports( outer, inputs );
+        AddImportCandidates( outer, inputs );
         this._collection.UnloadProject( outer );
 
         foreach ( var framework in frameworks )
@@ -103,6 +104,31 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         {
             inputs.Add( import.ImportedProject.FullPath );
         }
+    }
+
+    // The files that the SDK would import if they existed, which are inputs although they do not exist yet: the cache records
+    // them as absent, so that their appearance invalidates the evaluation. They are the files that the SDK searches above the
+    // project, up to the first that exists, and those that the restore writes.
+    private static void AddImportCandidates( Project project, HashSet<string> inputs )
+    {
+        foreach ( var name in new[] { "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props" } )
+        {
+            for ( var directory = new DirectoryInfo( project.DirectoryPath ); directory != null; directory = directory.Parent )
+            {
+                var candidate = Path.Combine( directory.FullName, name );
+                inputs.Add( candidate );
+
+                if ( File.Exists( candidate ) )
+                {
+                    break;
+                }
+            }
+        }
+
+        var extensions = GetPath( project, "MSBuildProjectExtensionsPath" ) ?? Path.Combine( project.DirectoryPath, "obj" );
+        var projectFile = Path.GetFileName( project.FullPath );
+        inputs.Add( Path.Combine( extensions, projectFile + ".nuget.g.props" ) );
+        inputs.Add( Path.Combine( extensions, projectFile + ".nuget.g.targets" ) );
     }
 
     private static IReadOnlyList<string> GetTargetFrameworks( Project project )

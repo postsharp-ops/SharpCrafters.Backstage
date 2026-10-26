@@ -10,37 +10,6 @@ using System.Linq;
 namespace SharpCrafters.Aspects.Introspection.Query;
 
 /// <summary>
-/// The provenance of the objects of a merged model: the targets, each a project and a target framework, whose files hold them.
-/// </summary>
-internal sealed class ModelProvenance
-{
-    private readonly Dictionary<object, List<IntrospectionTarget>> _targets = new( ReferenceEqualityComparer.Instance );
-
-    public ModelProvenance( IReadOnlyList<IntrospectionTarget> allTargets )
-    {
-        this.AllTargets = allTargets;
-    }
-
-    public IReadOnlyList<IntrospectionTarget> AllTargets { get; }
-
-    public IReadOnlyList<IntrospectionTarget> GetTargets( object value ) => this._targets.TryGetValue( value, out var targets ) ? targets : this.AllTargets;
-
-    public void Add( object value, IntrospectionTarget target )
-    {
-        if ( !this._targets.TryGetValue( value, out var targets ) )
-        {
-            targets = [];
-            this._targets.Add( value, targets );
-        }
-
-        if ( !targets.Contains( target ) )
-        {
-            targets.Add( target );
-        }
-    }
-}
-
-/// <summary>
 /// Merges the models of the files of several projects and target frameworks into one model
 /// (Documentation/future/Introspection-Cli.md of PostSharp, section 5.6). The objects are matched by keys that do not depend on
 /// the build: declarations by their identifier qualified with their assembly, aspect classes by their type, aspect instances
@@ -127,6 +96,16 @@ internal static class ModelMerger
             canonical.HasLimitedLicense |= aspectClass.HasLimitedLicense;
 
             return canonical;
+        }
+
+        // Every aspect class of every file, with its license flag, including those of which no aspect instance or predecessor
+        // of the file is new.
+        foreach ( var (target, model) in files )
+        {
+            foreach ( var aspectClass in model.AspectClasses )
+            {
+                provenance.Add( MapClass( aspectClass ), target );
+            }
         }
 
         // The aspect instances, before the predecessors that refer to them.

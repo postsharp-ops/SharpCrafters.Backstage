@@ -76,7 +76,7 @@ internal sealed class IntrospectionSession
         if ( sourceFile != null && projectPaths.Count > 1 )
         {
             // The project whose directory holds the file, the deepest when they are nested.
-            var owner = projectPaths.Where( p => IsUnder( sourceFile, Path.GetDirectoryName( p )! ) ).OrderByDescending( p => p.Length ).FirstOrDefault();
+            var owner = projectPaths.Where( p => IsUnder( sourceFile, Path.GetDirectoryName( p )! ) ).OrderByDescending( p => Path.GetDirectoryName( p )!.Length ).FirstOrDefault();
 
             if ( owner != null )
             {

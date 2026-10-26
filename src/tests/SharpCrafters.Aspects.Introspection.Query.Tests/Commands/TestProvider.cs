@@ -23,6 +23,9 @@ internal sealed class TestProvider : IntrospectionProvider
 
     public bool HasLocations { get; init; }
 
+    // The target framework whose locations are given, or null for every target framework.
+    public string? LocationFramework { get; init; }
+
     public override string ProductName => "TestProduct";
 
     public override string FileProperty => "TestSymbolFile";
@@ -38,7 +41,8 @@ internal sealed class TestProvider : IntrospectionProvider
 
     public override bool Provides( string typeName, string? fieldName ) => typeName != "diagnostic" && fieldName != "isSkipped";
 
-    public override IIntrospectionSourceLocations? GetSourceLocations( IntrospectionTarget target ) => this.HasLocations ? new SourceLocations( this ) : null;
+    public override IIntrospectionSourceLocations? GetSourceLocations( IntrospectionTarget target )
+        => this.HasLocations && (this.LocationFramework == null || this.LocationFramework == target.TargetFramework) ? new SourceLocations( this ) : null;
 
     public override void AddCommands( IConfigurator<CommandSettings> branch, IntrospectionCommandOptions options )
         => branch.AddCommand<FilesCommand>( "files" ).WithData( options );
