@@ -92,7 +92,7 @@ internal sealed class IntrospectionSession
                    settings.Framework,
                    new EvaluationCache( options.CacheDirectory ),
                    solutionPath,
-                   options.ErrorOutput.WriteLine ) )
+                   m => IntrospectionConsole.WriteWarning( options, settings.Color, m ) ) )
         {
             projects.AddRange( projectPaths.Select( locator.Locate ) );
         }
@@ -140,14 +140,18 @@ internal sealed class IntrospectionSession
 
         foreach ( var target in missing )
         {
-            options.ErrorOutput.WriteLine(
-                $"warning: the file of '{target.Project.Name}' ({target.Configuration}, {target.TargetFramework}) does not exist, so the result leaves it out. {provider.MissingFileHint}" );
+            IntrospectionConsole.WriteWarning(
+                options,
+                settings.Color,
+                $"the file of '{target.Project.Name}' ({target.Configuration}, {target.TargetFramework}) does not exist, so the result leaves it out. {provider.MissingFileHint}" );
         }
 
         foreach ( var target in existing.Where( t => t.IsStale ) )
         {
-            options.ErrorOutput.WriteLine(
-                $"warning: the file of '{target.Project.Name}' ({target.TargetFramework}) is older than a source file: it may not describe the current source. Build the project to refresh it." );
+            IntrospectionConsole.WriteWarning(
+                options,
+                settings.Color,
+                $"the file of '{target.Project.Name}' ({target.TargetFramework}) is older than a source file: it may not describe the current source. Build the project to refresh it." );
         }
 
         return existing;

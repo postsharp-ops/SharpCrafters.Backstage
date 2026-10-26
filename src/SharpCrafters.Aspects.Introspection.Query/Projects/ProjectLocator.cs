@@ -66,7 +66,7 @@ internal sealed class ProjectLocator : IDisposable
             this._hasWarnedAboutSdk = true;
 
             this._warn(
-                "warning: no .NET SDK is compatible with the runtime of this process, so the projects were not evaluated: their files were searched under "
+                "no .NET SDK is compatible with the runtime of this process, so the projects were not evaluated: their files were searched under "
                 + "their 'bin' directories and the 'artifacts/bin' directory of the repository instead." );
         }
 
