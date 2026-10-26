@@ -7,6 +7,7 @@ using Microsoft.OData.UriParser;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Querying;
@@ -127,51 +128,44 @@ internal static partial class QueryOptionParser
     /// are not checked as <c>--select</c> is: the user did not write them.
     /// </summary>
     public static IReadOnlyList<FieldPath> GetDefaultColumns( TypeDefinition type, IntrospectionProvider provider )
-    {
-        var columns = new List<FieldPath>();
-
-        foreach ( var text in type.DefaultColumns )
-        {
-            var fields = new List<FieldDefinition>();
-            var current = type;
-            var isCount = false;
-            var isProvided = true;
-
-            foreach ( var segment in text.Split( '/' ) )
-            {
-                if ( segment == "$count" )
-                {
-                    isCount = true;
-
-                    break;
-                }
-
-                var field = current?.GetField( segment ) ?? throw new InvalidOperationException( $"The default column '{text}' of {type.Name} is not a path of the schema." );
-
-                if ( !provider.Provides( current.Name, field.Name ) )
-                {
-                    isProvided = false;
-
-                    break;
-                }
-
-                fields.Add( field );
-                current = field.Kind == ValueKind.Object ? IntrospectionSchema.GetType( field.TypeName! ) : null;
-            }
-
-            if ( isProvided )
-            {
-                columns.Add( new FieldPath( fields, isCount, text ) );
-            }
-        }
-
-        return columns;
-    }
+        => type.DefaultColumns.Select(
+                text => WalkPath(
+                    type,
+                    text,
+                    0,
+                    ( current, segment, _ ) => current.GetField( segment ) is { } field
+                        ? provider.Provides( current.Name, field.Name ) ? field : null
+                        : throw new InvalidOperationException( $"The default column '{text}' of {type.Name} is not a path of the schema." ),
+                    ( message, _ ) => new InvalidOperationException( $"The default column '{text}' of {type.Name} is invalid: {message}" ) ) )
+            .OfType<FieldPath>()
+            .ToList();
 
     private static FieldPath ParsePath( QueryText query, IntrospectionUriResolver resolver, TypeDefinition type, string item, int start )
     {
         var pathText = item.Trim();
-        var position = start + item.IndexOf( pathText, StringComparison.Ordinal );
+
+        return WalkPath(
+            type,
+            pathText,
+            start + item.IndexOf( pathText, StringComparison.Ordinal ),
+            ( current, segment, position ) => resolver.ResolveField( current, segment, position ),
+            ( message, position ) => query.Error( message, position ) )!;
+    }
+
+    /// <summary>
+    /// Walks a path from a type: fields separated by <c>/</c>, then optionally <c>$count</c> after a collection.
+    /// </summary>
+    /// <param name="resolve">Gets the field of a segment, or <c>null</c> to leave the path out; it throws when the field does not
+    /// exist.</param>
+    /// <param name="fail">Creates the exception of a malformed path, from its message and the position of the segment.</param>
+    /// <returns>The path, or <c>null</c> when <paramref name="resolve"/> left it out.</returns>
+    private static FieldPath? WalkPath(
+        TypeDefinition type,
+        string pathText,
+        int position,
+        Func<TypeDefinition, string, int, FieldDefinition?> resolve,
+        Func<string, int, Exception> fail )
+    {
         var segments = pathText.Split( '/' );
         var fields = new List<FieldDefinition>();
         var current = (TypeDefinition?) type;
@@ -185,27 +179,31 @@ internal static partial class QueryOptionParser
 
             if ( segment.Length == 0 )
             {
-                throw query.Error( $"Expected a field{(i == 0 ? "" : $" after '{prefix}/'")}. {QueryText.ShellHint}", position );
+                throw fail( $"Expected a field{(i == 0 ? "" : $" after '{prefix}/'")}. {QueryText.ShellHint}", position );
             }
 
             if ( isCount )
             {
-                throw query.Error( $"'{prefix}' is an integer, which has no field.", position );
+                throw fail( $"'{prefix}' is an integer, which has no field.", position );
             }
 
             if ( previous is { Kind: ValueKind.ObjectList or ValueKind.StringList } )
             {
                 isCount = segment == "$count"
                     ? true
-                    : throw query.Error( $"'{prefix}' is a collection: it is followed by $count, not by '{segment}'.", position );
+                    : throw fail( $"'{prefix}' is a collection: it is followed by $count, not by '{segment}'.", position );
             }
             else if ( current == null )
             {
-                throw query.Error( $"'{prefix}' is a {previous!.Kind.ToString().ToLowerInvariant()}, which has no field.", position );
+                throw fail( $"'{prefix}' is a {previous!.Kind.ToString().ToLowerInvariant()}, which has no field.", position );
             }
             else
             {
-                var field = resolver.ResolveField( current, segment, position );
+                if ( resolve( current, segment, position ) is not { } field )
+                {
+                    return null;
+                }
+
                 fields.Add( field );
                 current = field.Kind == ValueKind.Object ? IntrospectionSchema.GetType( field.TypeName! ) : null;
             }
@@ -233,8 +231,22 @@ internal static partial class QueryOptionParser
         {
             var match = PositionRegex().Match( e.Message );
 
-            throw query.Error( e.Message, match.Success ? int.Parse( match.Groups["position"].Value, CultureInfo.InvariantCulture ) : null );
+            throw query.Error( RemoveExpression( e.Message, query.Text ), match.Success ? int.Parse( match.Groups["position"].Value, CultureInfo.InvariantCulture ) : null );
         }
+    }
+
+    // Microsoft.OData.Core ends a message with " in '<expression>'.", which the error repeats under the message with its caret.
+    internal static string RemoveExpression( string message, string expression )
+    {
+        foreach ( var suffix in new[] { $" in '{expression}'.", $" in '{expression}'" } )
+        {
+            if ( message.EndsWith( suffix, StringComparison.Ordinal ) )
+            {
+                return message[..^suffix.Length] + ".";
+            }
+        }
+
+        return message;
     }
 
     private static void CheckStrippedCount( QueryText query )

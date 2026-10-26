@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 
@@ -249,6 +250,8 @@ public static partial class DotNetSdkLocator
 
         using ( process )
         {
+            // Both streams are read while the process runs: a child that fills the pipe of an unread stream blocks forever. The reads
+            // end before the process is disposed, which would otherwise fault them.
             var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();
 
@@ -263,16 +266,32 @@ public static partial class DotNetSdkLocator
                     // The process exited in the meantime.
                 }
 
+                WaitForReads( output, error );
+
                 return ([], $"'{fileName} --list-sdks' did not exit within {timeout.TotalSeconds:0} seconds, so no .NET SDK can be found.");
             }
 
-            // The asynchronous reads end with the process.
-            var outputText = output.GetAwaiter().GetResult();
-            var errorText = error.GetAwaiter().GetResult().Trim();
+            WaitForReads( output, error );
+
+            var outputText = output.IsCompletedSuccessfully ? output.Result : "";
+            var errorText = error.IsCompletedSuccessfully ? error.Result.Trim() : "";
 
             return process.ExitCode == 0
                 ? (ParseSdkList( outputText ), null)
                 : ([], $"'{fileName} --list-sdks' failed with exit code {process.ExitCode}, so no .NET SDK can be found.{(errorText.Length > 0 ? " " + errorText : "")}");
+        }
+    }
+
+    // Waits for the reads of the streams of a process, which end when it exits or is killed, and observes their exceptions.
+    internal static void WaitForReads( params Task[] reads )
+    {
+        try
+        {
+            Task.WaitAll( reads, TimeSpan.FromSeconds( 5 ) );
+        }
+        catch ( AggregateException )
+        {
+            // A read that failed gives no output.
         }
     }
 
