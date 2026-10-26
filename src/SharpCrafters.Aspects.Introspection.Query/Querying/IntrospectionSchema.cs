@@ -2,8 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Aspects.Introspection.Query.Projects;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Querying;
@@ -179,7 +181,28 @@ internal static class IntrospectionSchema
                     Object( "aspectInstance", "aspectInstance", "The aspect instance that reported the diagnostic.", ( _, _ ) => null )
                 ],
                 ["id", "severity", "message"],
-                _ => [] )
+                _ => [] ),
+
+            new TypeDefinition(
+                "file",
+                "files",
+                "file",
+                "The files that the query read: one per project and target framework of the scope. The other results do not repeat them.",
+                [
+                    Field( "project", ValueKind.String, "The name of the project.", ( _, o ) => ((IntrospectionTarget) o).Project.Name, summary: true ),
+                    Field( "targetFramework", ValueKind.String, "The target framework, such as net10.0.", ( _, o ) => ((IntrospectionTarget) o).TargetFramework, summary: true ),
+                    Field( "configuration", ValueKind.String, "The configuration, such as Debug.", ( _, o ) => ((IntrospectionTarget) o).Configuration ),
+                    Field( "assembly", ValueKind.String, "The name of the assembly that the project builds.", ( _, o ) => ((IntrospectionTarget) o).AssemblyName ),
+                    Field( "path", ValueKind.String, "The path of the file, relative to the current directory.", ( c, o ) => c.GetRelativePath( ((IntrospectionTarget) o).FilePath ), summary: true ),
+                    Field(
+                        "writtenAt",
+                        ValueKind.String,
+                        "When the file was written, in UTC, as yyyy-MM-ddTHH:mm:ssZ.",
+                        ( _, o ) => ((IntrospectionTarget) o).WrittenAtUtc?.ToString( "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture ) ),
+                    Field( "stale", ValueKind.Boolean, "Whether a source file is newer than the file, which may not describe the current source.", ( _, o ) => ((IntrospectionTarget) o).IsStale )
+                ],
+                ["project", "targetFramework", "configuration", "path", "writtenAt", "stale"],
+                c => c.Targets )
         ];
 
         _byName = Types.ToDictionary( t => t.Name, StringComparer.Ordinal );

@@ -75,6 +75,9 @@ internal sealed class QueryContext
 
     public IntrospectionTarget Target { get; }
 
+    // The targets whose files the query read, which the collection files lists.
+    public IReadOnlyList<IntrospectionTarget> Targets => [this.Target];
+
     public IntrospectionProvider Provider { get; }
 
     public IIntrospectionSourceLocations? Locations { get; }

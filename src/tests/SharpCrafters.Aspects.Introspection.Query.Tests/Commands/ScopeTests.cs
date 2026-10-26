@@ -76,9 +76,8 @@ public sealed class ScopeTests
         Assert.Equal( IntrospectionExitCodes.Error, exitCode );
         Assert.Contains( "several target frameworks (net10.0, net48): choose one with -f", error, StringComparison.Ordinal );
 
-        (exitCode, var output, error) = CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48", "--format", "json"] );
-        Assert.True( exitCode == 0, error );
-        Assert.Contains( "\"targetFramework\": \"net48\"", output, StringComparison.Ordinal );
+        Assert.Equal( 0, CommandRunner.Run( project.Directory, this._provider, ["list", "aspect-classes", "-f", "net48"] ).ExitCode );
+        Assert.Equal( "net48", Assert.Single( CommandRunner.Files( project.Directory, this._provider, "-f", "net48" ) ).GetProperty( "targetFramework" ).GetString() );
     }
 
     [Fact]

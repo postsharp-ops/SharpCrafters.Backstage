@@ -119,7 +119,6 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     w =>
                     {
                         w.WriteStartObject();
-                        JsonOutput.WriteFiles( w, session.Context, session.Targets );
                         w.WritePropertyName( type.Name );
                         JsonOutput.WriteObject( w, session.Context, type, value, JsonDetail.Expanded );
                         w.WriteEndObject();
@@ -189,7 +188,6 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                 w =>
                 {
                     w.WriteStartObject();
-                    JsonOutput.WriteFiles( w, context, session.Targets );
                     w.WritePropertyName( "declaration" );
                     JsonOutput.WriteObject( w, context, IntrospectionSchema.GetType( "declaration" ), declaration, JsonDetail.Full );
                     WriteList( w, "relatedDeclarations", "declaration", related.Skip( 1 ), JsonDetail.Summary );
@@ -234,7 +232,6 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                 w =>
                 {
                     w.WriteStartObject();
-                    JsonOutput.WriteFiles( w, session.Context, session.Targets );
                     w.WriteNull( "declaration" );
                     w.WriteString( "message", message );
                     w.WriteEndObject();
