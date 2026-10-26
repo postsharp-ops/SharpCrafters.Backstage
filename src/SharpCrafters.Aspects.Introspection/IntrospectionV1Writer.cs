@@ -116,7 +116,7 @@ public sealed class IntrospectionV1Writer : IDisposable
             throw new ArgumentException( "The identifier of a declaration cannot be empty.", nameof(formatIdentifier) );
         }
 
-        handle = new DeclarationHandle( this._identifiers.Count );
+        handle = new DeclarationHandle( this, this._identifiers.Count );
         this._declarations.Add( key, handle );
         this._identifiers.Add( identifier );
         this._references.Add( null );
@@ -475,7 +475,7 @@ public sealed class IntrospectionV1Writer : IDisposable
 
     private void CheckHandle( DeclarationHandle handle, string parameterName )
     {
-        if ( handle.IsNil || handle.Index >= this._identifiers.Count )
+        if ( handle.IsNil || !ReferenceEquals( handle.Owner, this ) || handle.Index >= this._identifiers.Count )
         {
             throw new ArgumentException( $"The handle {handle} was not defined by this writer.", parameterName );
         }
