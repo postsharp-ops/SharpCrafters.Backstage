@@ -59,7 +59,25 @@ public sealed class ShowSelectorTests : IDisposable
     {
         const string key = "App.CacheAttribute@[App]M:App.Repository.Get(System.Int32)";
 
-        Assert.Equal( key, this.RunJson( "show", "aspect-instance", key ).GetProperty( "aspectInstance" ).GetProperty( "key" ).GetString() );
+        var id = this.RunJson( "list", "aspect-instances", "--where", $"key eq '{key}'", "--select", "id" ).GetProperty( "items" )[0].GetProperty( "id" ).GetString();
+        Assert.Equal( id, this.RunJson( "show", "aspect-instance", key ).GetProperty( "aspectInstance" ).GetProperty( "id" ).GetString() );
+    }
+
+    [Fact]
+    public void TheStructuralKeyIsWrittenOnlyWhenItIsSelected()
+    {
+        // The identifier is the hash of the key, which repeats the aspect class and the target declaration of the object.
+        var item = this.RunJson( "list", "aspect-instances" ).GetProperty( "items" )[0];
+        Assert.False( item.TryGetProperty( "key", out _ ) );
+        Assert.True( item.TryGetProperty( "id", out _ ) );
+        Assert.False( this.RunJson( "show", "aspect-class", "Log" ).GetProperty( "aspectClass" ).GetProperty( "aspectInstances" ).GetProperty( "items" )[0].TryGetProperty( "key", out _ ) );
+
+        var selected = this.RunJson( "list", "predecessors", "--select", "id,key" ).GetProperty( "items" )[0];
+        Assert.StartsWith( "attribute:[App]T:App.Customer:", selected.GetProperty( "key" ).GetString(), System.StringComparison.Ordinal );
+
+        Assert.Contains(
+            this.RunJson( "schema", "aspect-instances" ).GetProperty( "collections" )[0].GetProperty( "fields" ).EnumerateArray(),
+            f => f.GetProperty( "name" ).GetString() == "key" );
     }
 
     [Fact]
