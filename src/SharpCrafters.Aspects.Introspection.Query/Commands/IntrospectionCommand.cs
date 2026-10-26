@@ -28,7 +28,7 @@ public abstract class IntrospectionCommand<T> : Command<T>
         }
         catch ( IntrospectionCommandException e )
         {
-            options.ErrorOutput.WriteLine( "error: " + e.Message );
+            IntrospectionConsole.WriteError( options, settings.Color, e.Message );
 
             return e.ExitCode;
         }
@@ -45,28 +45,9 @@ public abstract class IntrospectionCommand<T> : Command<T>
     /// </summary>
     internal static void WriteJson( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, string json )
     {
-        var color = settings.Color switch
+        if ( IntrospectionConsole.IsColored( options, settings.Color, options.IsOutputTerminal ) && settings.Format == "json" )
         {
-            "always" => true,
-            "never" => false,
-            _ => options.IsOutputTerminal && string.IsNullOrEmpty( options.GetEnvironmentVariable( "NO_COLOR" ) )
-        };
-
-        if ( color && settings.Format == "json" )
-        {
-            var console = AnsiConsole.Create(
-                new AnsiConsoleSettings
-                {
-                    Out = new AnsiConsoleOutput( options.StandardOutput ),
-                    Ansi = AnsiSupport.Yes,
-
-                    // Detection finds no color on a redirected output, which --color always colors.
-                    ColorSystem = ColorSystemSupport.Standard,
-                    Interactive = InteractionSupport.No
-                } );
-
-            // A line of JSON is never wrapped: a break inside a string would make the copied output invalid.
-            console.Profile.Width = int.MaxValue / 2;
+            var console = IntrospectionConsole.Create( options.StandardOutput );
             console.Write( new JsonText( json ) );
             console.WriteLine();
         }

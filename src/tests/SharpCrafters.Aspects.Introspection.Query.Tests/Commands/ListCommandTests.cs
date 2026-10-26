@@ -283,4 +283,26 @@ public sealed class ListCommandTests : IDisposable
         var plain = System.Text.RegularExpressions.Regex.Replace( colored, @"\u001b\[[0-9;]*m", "" );
         Assert.Equal( "TestProduct", JsonDocument.Parse( plain ).RootElement.GetProperty( "product" ).GetString() );
     }
+
+    [Fact]
+    public void AnErrorIsRedAndAWarningYellowOnATerminalOnly()
+    {
+        const string red = "\u001b[91m";
+        const string yellow = "\u001b[93m";
+
+        // An error, whose message holds brackets that markup must not read as styles.
+        string Error( bool isErrorTerminal, string? noColor = null, string color = "auto" )
+            => CommandRunner.Run( this._project.Directory, this._provider, ["show", "aspect-class", "[Nope]", "--color", color], isErrorTerminal: isErrorTerminal, noColor: noColor ).Error;
+
+        Assert.StartsWith( red + "error: No aspect class is named '[Nope]'.", Error( true ), StringComparison.Ordinal );
+        Assert.StartsWith( "error: No aspect class is named '[Nope]'.", Error( false ), StringComparison.Ordinal );
+        Assert.DoesNotContain( "\u001b[", Error( true, noColor: "1" ), StringComparison.Ordinal );
+        Assert.DoesNotContain( "\u001b[", Error( true, color: "never" ), StringComparison.Ordinal );
+        Assert.StartsWith( red, Error( false, color: "always" ), StringComparison.Ordinal );
+
+        // A warning: the file is older than a source file.
+        File.SetLastWriteTimeUtc( this._project.SourceFile, DateTime.UtcNow.AddMinutes( 10 ) );
+        var warning = CommandRunner.Run( this._project.Directory, this._provider, ["list", "aspect-classes"], isErrorTerminal: true ).Error;
+        Assert.StartsWith( yellow + "warning: ", warning, StringComparison.Ordinal );
+    }
 }

@@ -33,7 +33,7 @@ internal sealed class IntrospectionSession
     {
         var provider = options.Provider;
         var projectPath = ResolveProject( options.WorkingDirectory, settings );
-        var project = ProjectLocator.Locate( projectPath, provider, settings.Configuration, settings.Framework, options.ErrorOutput.WriteLine );
+        var project = ProjectLocator.Locate( projectPath, provider, settings.Configuration, settings.Framework, m => IntrospectionConsole.WriteWarning( options, settings.Color, m ) );
 
         // A framework that the project does not have is not a sign that the project does not use the product.
         if ( project.Targets.Count == 0 && settings.Framework != null && project.TargetFrameworks.Count > 0
@@ -86,8 +86,10 @@ internal sealed class IntrospectionSession
 
         if ( target.IsStale )
         {
-            options.ErrorOutput.WriteLine(
-                $"warning: '{target.FilePath}' is older than a source file of '{project.Name}': it may not describe the current source. Build the project to refresh it." );
+            IntrospectionConsole.WriteWarning(
+                options,
+                settings.Color,
+                $"'{target.FilePath}' is older than a source file of '{project.Name}': it may not describe the current source. Build the project to refresh it." );
         }
 
         return new IntrospectionSession( target, new QueryContext( model, target, provider, provider.GetSourceLocations( target ), options.WorkingDirectory ) );

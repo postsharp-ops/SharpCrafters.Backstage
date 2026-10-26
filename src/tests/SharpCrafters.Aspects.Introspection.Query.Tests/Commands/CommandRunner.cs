@@ -20,7 +20,8 @@ internal static class CommandRunner
         IntrospectionProvider provider,
         string[] arguments,
         bool isTerminal = false,
-        string? noColor = null )
+        string? noColor = null,
+        bool isErrorTerminal = false )
     {
         var output = new StringWriter();
         var error = new StringWriter();
@@ -33,7 +34,10 @@ internal static class CommandRunner
 
                 IntrospectionCommandFactory.AddIntrospectBranch(
                     c,
-                    new IntrospectionCommandOptions( provider, output, error, workingDirectory, isTerminal, n => n == "NO_COLOR" ? noColor : null ) );
+                    new IntrospectionCommandOptions( provider, output, error, workingDirectory, isTerminal, n => n == "NO_COLOR" ? noColor : null )
+                    {
+                        IsErrorTerminal = isErrorTerminal
+                    } );
             } );
 
         var exitCode = app.Run( new[] { "introspect" }.Concat( arguments ) );

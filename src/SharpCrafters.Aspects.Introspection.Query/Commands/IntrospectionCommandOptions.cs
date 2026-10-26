@@ -37,6 +37,7 @@ public sealed class IntrospectionCommandOptions
         this.ErrorOutput = errorOutput ?? Console.Error;
         this.WorkingDirectory = Path.GetFullPath( workingDirectory ?? Environment.CurrentDirectory );
         this.IsOutputTerminal = isOutputTerminal ?? (standardOutput == null && !Console.IsOutputRedirected);
+        this.IsErrorTerminal = errorOutput == null && !Console.IsErrorRedirected;
         this.GetEnvironmentVariable = getEnvironmentVariable ?? Environment.GetEnvironmentVariable;
     }
 
@@ -64,6 +65,12 @@ public sealed class IntrospectionCommandOptions
     /// Gets a value indicating whether the standard output is a terminal.
     /// </summary>
     public bool IsOutputTerminal { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the standard error is a terminal, where errors are written in red and warnings in yellow.
+    /// By default, whether <see cref="Console.Error"/> is not redirected, when no error output is given.
+    /// </summary>
+    public bool IsErrorTerminal { get; init; }
 
     /// <summary>
     /// Gets the function that reads an environment variable.
