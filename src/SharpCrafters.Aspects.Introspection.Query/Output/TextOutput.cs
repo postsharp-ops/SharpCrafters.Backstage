@@ -19,9 +19,9 @@ namespace SharpCrafters.Aspects.Introspection.Query.Output;
 /// </summary>
 internal static class TextOutput
 {
-    public static string Table( QueryContext context, IReadOnlyList<object> items, IReadOnlyList<PathExpression> columns )
+    public static string Table( QueryContext context, IReadOnlyList<object> items, IReadOnlyList<FieldPath> columns )
     {
-        var rows = items.Select( item => columns.Select( c => FormatCell( c.Evaluate( context, item, new Dictionary<string, object?>() ) ) ).ToArray() ).ToList();
+        var rows = items.Select( item => columns.Select( c => FormatCell( c.Evaluate( context, item ) ) ).ToArray() ).ToList();
         var headers = columns.Select( c => c.Text ).ToArray();
         var widths = headers.Select( ( h, i ) => Math.Max( h.Length, rows.Count == 0 ? 0 : rows.Max( r => r[i].Length ) ) ).ToArray();
 
