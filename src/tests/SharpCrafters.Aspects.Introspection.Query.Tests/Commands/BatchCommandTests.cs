@@ -150,9 +150,22 @@ public sealed class BatchCommandTests : IDisposable
     }
 
     [Fact]
+    public void TheWarningsOfTheQueriesAreYellowOnATerminal()
+    {
+        // The file is older than a source file: the query that opens the scope warns, without color, and the batch writes the
+        // warning with the colors of its standard error.
+        File.SetLastWriteTimeUtc( this._project.SourceFile, DateTime.UtcNow.AddMinutes( 10 ) );
+
+        var (exitCode, _, error) = CommandRunner.Run( this._project.Directory, this._provider, ["batch"], input: "list aspect-classes", isErrorTerminal: true );
+
+        Assert.Equal( 0, exitCode );
+        Assert.StartsWith( "\u001b[93mwarning: ", error, StringComparison.Ordinal );
+    }
+
+    [Fact]
     public void TheTextOutputNamesEachQuery()
     {
-        var (exitCode, output, error) = this.Run( "list aspect-classes --count\nlist nothings" );
+        var (exitCode, output, error) = this.Run( "list aspect-classes --count\nlist nothings", "--format", "text" );
 
         Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
         Assert.StartsWith( "> list aspect-classes --count" + Environment.NewLine + "3" + Environment.NewLine, output, StringComparison.Ordinal );

@@ -22,7 +22,8 @@ internal static class CommandRunner
         bool isTerminal = false,
         string? noColor = null,
         string cacheDirectory = "",
-        string? input = null )
+        string? input = null,
+        bool isErrorTerminal = false )
     {
         var output = new StringWriter();
         var error = new StringWriter();
@@ -44,7 +45,10 @@ internal static class CommandRunner
                         n => n == "NO_COLOR" ? noColor : null,
                         cacheDirectory,
                         input == null ? TextReader.Null : new StringReader( input ),
-                        input == null ) );
+                        input == null )
+                    {
+                        IsErrorTerminal = isErrorTerminal
+                    } );
             } );
 
         var exitCode = app.Run( new[] { "introspect" }.Concat( arguments ) );

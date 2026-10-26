@@ -72,7 +72,7 @@ internal sealed class ProjectLocator : IDisposable
             this._hasWarnedAboutSdk = true;
 
             this._warn(
-                $"warning: {registration.Failure} The projects were therefore not evaluated: their files were searched under "
+                $"{registration.Failure} The projects were therefore not evaluated: their files were searched under "
                 + "their 'bin' directories and the 'artifacts/bin' directory of the repository instead." );
         }
 

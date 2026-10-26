@@ -86,7 +86,7 @@ public sealed class OutputLimitTests : IDisposable
     [Fact]
     public void TheTextOutputSaysWhatItLeftOut()
     {
-        var (exitCode, output, error) = this.Run( "show", "aspect-class", "Log", "--limit", "1" );
+        var (exitCode, output, error) = this.Run( "show", "aspect-class", "Log", "--limit", "1", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.Contains(
@@ -100,7 +100,7 @@ public sealed class OutputLimitTests : IDisposable
     {
         var id = this.RunJson( "list", "aspect-instances", "--where", "aspectClass/shortName eq 'Log'", "--limit", "1" ).GetProperty( "items" )[0].GetProperty( "id" ).GetString()!;
 
-        var (exitCode, output, error) = this.Run( "show", "aspect-instance", id, "--limit", "0" );
+        var (exitCode, output, error) = this.Run( "show", "aspect-instance", id, "--limit", "0", "--format", "text" );
 
         Assert.True( exitCode == 0, error );
         Assert.Contains( "... 1 more predecessors, 1 in all", output, StringComparison.Ordinal );
@@ -160,7 +160,7 @@ public sealed class OutputLimitTests : IDisposable
 
         Assert.Equal( 5, this.RunJson( "list", "aspect-instances", "--limit", "2", "--count" ).GetProperty( "count" ).GetInt32() );
 
-        var (_, text, _) = this.Run( "list", "aspect-instances", "--limit", "2" );
+        var (_, text, _) = this.Run( "list", "aspect-instances", "--limit", "2", "--format", "text" );
         Assert.Contains( "Showing 2 of 5 aspect-instances, from 1.", text, StringComparison.Ordinal );
     }
 

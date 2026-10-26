@@ -52,7 +52,7 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
 
         var sessions = new IntrospectionSessionCache();
         var scope = GetScopeArguments( settings );
-        var results = queries.Select( q => Run( options, sessions, q, scope, settings.Format == "text" ? "text" : "json" ) ).ToList();
+        var results = queries.Select( q => Run( options, settings, sessions, q, scope, settings.Format == "text" ? "text" : "json" ) ).ToList();
 
         switch ( settings.Format )
         {
@@ -60,7 +60,19 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
                 foreach ( var result in results )
                 {
                     options.StandardOutput.WriteLine( "> " + result.Query );
-                    options.StandardOutput.Write( result.ExitCode == 0 ? result.Output : "error: " + result.Error + Environment.NewLine );
+                    if ( result.ExitCode == 0 )
+                    {
+                        options.StandardOutput.Write( result.Output );
+                    }
+                    else if ( IntrospectionConsole.IsColored( options, settings.Color, options.IsOutputTerminal ) )
+                    {
+                        IntrospectionConsole.Create( options.StandardOutput ).MarkupLine( $"[red]{Markup.Escape( "error: " + result.Error )}[/]" );
+                    }
+                    else
+                    {
+                        options.StandardOutput.WriteLine( "error: " + result.Error );
+                    }
+
                     options.StandardOutput.WriteLine();
                 }
 
@@ -148,7 +160,13 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
         return arguments;
     }
 
-    private static QueryResult Run( IntrospectionCommandOptions options, IntrospectionSessionCache sessions, string query, List<string> scope, string format )
+    private static QueryResult Run(
+        IntrospectionCommandOptions options,
+        BatchCommandSettings settings,
+        IntrospectionSessionCache sessions,
+        string query,
+        List<string> scope,
+        string format )
     {
         string[] words;
 
@@ -208,8 +226,19 @@ public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
 
         if ( exitCode == IntrospectionExitCodes.Success )
         {
-            // The warnings, such as about a stale file, which the first query that opens the scope writes.
-            options.ErrorOutput.Write( errorText );
+            // The warnings, such as about a stale file, which the first query that opens the scope writes without color, and which
+            // the batch writes with the colors of its own standard error.
+            foreach ( var line in errorText.Split( '\n' ).Select( l => l.TrimEnd( '\r' ) ).Where( l => l.Length > 0 ) )
+            {
+                if ( line.StartsWith( "warning: ", StringComparison.Ordinal ) )
+                {
+                    IntrospectionConsole.WriteWarning( options, settings.Color, line["warning: ".Length..] );
+                }
+                else
+                {
+                    options.ErrorOutput.WriteLine( line );
+                }
+            }
 
             return new QueryResult( query, exitCode, output.ToString(), "" );
         }
