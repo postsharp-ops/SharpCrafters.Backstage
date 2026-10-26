@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 
@@ -113,9 +114,10 @@ public static partial class DotNetSdkLocator
                 return [];
             }
 
-            // Both streams are read while the process runs: a child that fills the pipe of an unread stream blocks forever.
+            // Both streams are read while the process runs: a child that fills the pipe of an unread stream blocks forever. The reads
+            // end before the process is disposed, which would otherwise fault them.
             var output = process.StandardOutput.ReadToEndAsync();
-            _ = process.StandardError.ReadToEndAsync();
+            var error = process.StandardError.ReadToEndAsync();
 
             // dotnet --list-sdks answers in well under a second; a muxer that hangs must not hang the command.
             if ( !process.WaitForExit( _listTimeout ) )
@@ -129,15 +131,32 @@ public static partial class DotNetSdkLocator
                     // It exited meanwhile.
                 }
 
+                WaitForReads( output, error );
+
                 return [];
             }
 
-            return process.ExitCode == 0 ? ParseSdkList( output.GetAwaiter().GetResult() ) : [];
+            WaitForReads( output, error );
+
+            return process.ExitCode == 0 && output.IsCompletedSuccessfully ? ParseSdkList( output.Result ) : [];
         }
         catch ( System.ComponentModel.Win32Exception )
         {
             // dotnet is not on the path.
             return [];
+        }
+    }
+
+    // Waits for the reads of the streams of a process, which end when it exits or is killed, and observes their exceptions.
+    internal static void WaitForReads( params Task[] reads )
+    {
+        try
+        {
+            Task.WaitAll( reads, TimeSpan.FromSeconds( 5 ) );
+        }
+        catch ( AggregateException )
+        {
+            // A read that failed gives no output.
         }
     }
 

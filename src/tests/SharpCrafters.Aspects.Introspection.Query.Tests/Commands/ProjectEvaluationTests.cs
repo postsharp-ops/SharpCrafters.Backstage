@@ -216,16 +216,26 @@ public sealed class ProjectEvaluationTests
                 File.WriteAllText( file, TestProject.DefaultSymbols );
             }
 
+            // The file of the build, and those of a runtime identifier and of a publish, which are left out.
+            Write( "src", "App", "bin", "Debug", "net10.0", "App.pssym" );
             Write( "src", "App", "bin", "Debug", "net10.0", "win-x64", "App.pssym" );
+            Write( "src", "App", "bin", "Debug", "net10.0", "publish", "App.pssym" );
             Write( "artifacts", "bin", "App", "release_net48", "App.pssym" );
+            Write( "artifacts", "bin", "App", "release_net48_win-x64", "App.pssym" );
             Write( "artifacts", "bin", "App", "debug_net10.0_linux-x64", "App.pssym" );
+
+            // A framework of which only the output of a runtime identifier exists, and another project.
+            Write( "artifacts", "bin", "App", "debug_net9.0_linux-x64", "App.pssym" );
             Write( "artifacts", "bin", "Other", "debug_net10.0", "Other.pssym" );
 
             var found = ProjectLocator.Search( projectPath, this._provider, null, null );
 
             Assert.Equal(
-                ["Debug net10.0", "debug net10.0", "release net48"],
+                ["Debug net10.0", "debug net9.0", "release net48"],
                 found.Targets.Select( t => $"{t.Configuration} {t.TargetFramework}" ).Order( StringComparer.Ordinal ) );
+
+            Assert.Equal( Path.Combine( root, "src", "App", "bin", "Debug", "net10.0", "App.pssym" ), found.Targets.Single( t => t.TargetFramework == "net10.0" ).FilePath );
+            Assert.Equal( Path.Combine( root, "artifacts", "bin", "App", "release_net48", "App.pssym" ), found.Targets.Single( t => t.TargetFramework == "net48" ).FilePath );
 
             Assert.Equal(
                 ["release net48"],

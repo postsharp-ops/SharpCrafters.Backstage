@@ -96,7 +96,9 @@ internal sealed class ProjectLocator : IDisposable
     {
         var project = new IntrospectionProject( projectPath, false );
         var projectWriteTime = File.Exists( project.Path ) ? File.GetLastWriteTimeUtc( project.Path ) : (DateTime?) null;
-        var found = new List<(string File, string Configuration, string Framework)>();
+        // The depth is the number of folders of the layout that the file is under: a file of a runtime identifier, or under publish or
+        // ref, is deeper than the file of the build.
+        var found = new List<(string File, string Configuration, string Framework, int Depth)>();
 
         // bin/<configuration>/<target framework>[/<runtime identifier>]/<file>.
         var bin = Path.Combine( project.Directory, "bin" );
@@ -104,7 +106,7 @@ internal sealed class ProjectLocator : IDisposable
         foreach ( var file in EnumerateFiles( bin, provider ) )
         {
             var parts = Path.GetRelativePath( bin, Path.GetDirectoryName( file )! ).Split( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar );
-            found.Add( (file, parts[0], parts.Length > 1 ? parts[1] : "") );
+            found.Add( (file, parts[0], parts.Length > 1 ? parts[1] : "", parts.Length) );
         }
 
         // artifacts/bin/<project>/<configuration>[_<target framework>[_<runtime identifier>]]/<file>, with a lower-case configuration.
@@ -112,12 +114,17 @@ internal sealed class ProjectLocator : IDisposable
         {
             foreach ( var file in EnumerateFiles( artifacts, provider ) )
             {
-                var pivot = Path.GetRelativePath( artifacts, Path.GetDirectoryName( file )! ).Split( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar )[0].Split( '_' );
-                found.Add( (file, pivot[0], pivot.Length > 1 ? pivot[1] : "") );
+                var folders = Path.GetRelativePath( artifacts, Path.GetDirectoryName( file )! ).Split( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar );
+                var pivot = folders[0].Split( '_' );
+                found.Add( (file, pivot[0], pivot.Length > 1 ? pivot[1] : "", pivot.Length + folders.Length - 1) );
             }
         }
 
-        foreach ( var (file, fileConfiguration, framework) in found )
+        // One file per configuration and target framework: that of the build, rather than that of a runtime identifier or a publish.
+        var targets = found.GroupBy( f => (f.Configuration.ToLowerInvariant(), f.Framework.ToLowerInvariant()) )
+            .Select( g => g.OrderBy( f => f.Depth ).ThenBy( f => f.File, StringComparer.Ordinal ).First() );
+
+        foreach ( var (file, fileConfiguration, framework, _) in targets )
         {
             if ( (targetFramework != null && !string.Equals( framework, targetFramework, StringComparison.OrdinalIgnoreCase ))
                  || (configuration != null && !string.Equals( fileConfiguration, configuration, StringComparison.OrdinalIgnoreCase )) )
