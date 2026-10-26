@@ -15,8 +15,8 @@ internal sealed class ListQuery
     public ListQuery(
         TypeDefinition type,
         IReadOnlyList<QueryExpression> conditions,
-        IReadOnlyList<PathExpression>? selection,
-        IReadOnlyList<(PathExpression Path, bool IsDescending)> orderings,
+        IReadOnlyList<FieldPath>? selection,
+        IReadOnlyList<(QueryExpression Expression, bool IsDescending)> orderings,
         int skip,
         int? limit )
     {
@@ -33,9 +33,9 @@ internal sealed class ListQuery
     public IReadOnlyList<QueryExpression> Conditions { get; }
 
     // The paths of --select, or null for every field.
-    public IReadOnlyList<PathExpression>? Selection { get; }
+    public IReadOnlyList<FieldPath>? Selection { get; }
 
-    public IReadOnlyList<(PathExpression Path, bool IsDescending)> Orderings { get; }
+    public IReadOnlyList<(QueryExpression Expression, bool IsDescending)> Orderings { get; }
 
     public int Skip { get; }
 
@@ -51,12 +51,12 @@ internal sealed class ListQuery
 
         if ( this.Orderings.Count > 0 )
         {
-            var comparer = Comparer<object?>.Create( CompareValues );
+            var comparer = QueryValues.Comparer;
             IOrderedEnumerable<object>? ordered = null;
 
-            foreach ( var (path, isDescending) in this.Orderings )
+            foreach ( var (expression, isDescending) in this.Orderings )
             {
-                object? Key( object item ) => path.Evaluate( context, item, _empty );
+                object? Key( object item ) => expression.Evaluate( context, item );
 
                 ordered = ordered == null
                     ? isDescending ? items.OrderByDescending( Key, comparer ) : items.OrderBy( Key, comparer )
@@ -76,17 +76,4 @@ internal sealed class ListQuery
 
         return (page.ToList(), all);
     }
-
-    private static readonly IReadOnlyDictionary<string, object?> _empty = new Dictionary<string, object?>();
-
-    // null first, then strings by ordinal, numbers, and false before true.
-    private static int CompareValues( object? x, object? y )
-        => (x, y) switch
-        {
-            (null, null) => 0,
-            (null, _) => -1,
-            (_, null) => 1,
-            (string a, string b) => string.CompareOrdinal( a, b ),
-            _ => Comparer<object>.Default.Compare( x, y )
-        };
 }

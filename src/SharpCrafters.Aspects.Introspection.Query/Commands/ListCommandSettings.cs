@@ -20,10 +20,12 @@ public sealed class ListCommandSettings : IntrospectionCommandSettings
     public string Collection { get; init; } = "";
 
     /// <summary>
-    /// Gets the conditions, which are combined with <c>and</c>.
+    /// Gets the conditions, which are combined with <c>and</c>. A condition takes the whole OData 4.01 <c>$filter</c> grammar;
+    /// the functions that the evaluator supports are those of <see cref="Querying.QueryCompiler.Functions"/>.
     /// </summary>
     [Description(
-        "A condition in the subset of the OData $filter syntax, such as \"aspectClass/shortName eq 'Log'\". Several are combined with 'and'. "
+        "A condition in the OData $filter syntax, such as \"aspectClass/shortName eq 'Log'\". Several are combined with 'and'. The functions are "
+        + "contains, startswith, endswith, matchesPattern, indexof, length, substring, concat, tolower, toupper and trim. "
         + "Quote it with single quotes in a shell that expands $ inside double quotes, or escape the $ of $count. See 'introspect schema' for the fields." )]
     [CommandOption( "--where <CONDITION>" )]
     public string[] Where { get; init; } = [];
@@ -36,9 +38,9 @@ public sealed class ListCommandSettings : IntrospectionCommandSettings
     public string? Select { get; init; }
 
     /// <summary>
-    /// Gets the ordering.
+    /// Gets the ordering, in the OData <c>$orderby</c> syntax.
     /// </summary>
-    [Description( "The order, as fields separated by commas, each followed by asc or desc, such as \"targetDeclaration/id desc\"." )]
+    [Description( "The order in the OData $orderby syntax: expressions separated by commas, each followed by asc or desc, such as \"targetDeclaration/id desc\"." )]
     [CommandOption( "--order-by <ORDERING>" )]
     public string? OrderBy { get; init; }
 

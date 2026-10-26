@@ -12,6 +12,7 @@
     <ItemGroup>
         <ProjectReference Include="..\SharpCrafters.Aspects.Introspection\SharpCrafters.Aspects.Introspection.csproj" />
         <PackageReference Include="System.IO.Hashing" />
+        <PackageReference Include="Microsoft.OData.Core" />
         <PackageReference Include="Spectre.Console.Cli" />
         <PackageReference Include="Spectre.Console.Json" />
 

@@ -70,6 +70,8 @@ public sealed class ListCommandTests : IDisposable
     [InlineData( "contains(tolower(aspectClass/name), 'notify')", 1 )]
     [InlineData( "matchesPattern(targetDeclaration/id, '^M:.*Get')", 2 )]
     [InlineData( "targetDeclaration/declaringType/id eq 'T:App.Repository'", 3 )]
+    [InlineData( "length(id) gt 10", 5 )]
+    [InlineData( "substring(targetDeclaration/id, 0, 2) eq 'M:'", 4 )]
     public void TheConditionsFilterTheObjects( string condition, int count )
         => Assert.Equal( count, this.RunJson( "list", "aspect-instances", "--where", condition ).GetProperty( "count" ).GetInt32() );
 
@@ -156,23 +158,84 @@ public sealed class ListCommandTests : IDisposable
         Assert.DoesNotContain( items, i => i!.Contains( "k__OriginalField", StringComparison.Ordinal ) );
     }
 
+    // The subset that the former hand-written parser accepted is now the whole grammar of Microsoft.OData.Core.
     [Theory]
-    [InlineData( "aspectclass/shortName eq 'Log'", "did you mean 'aspectClass'?" )]
-    [InlineData( "foo eq 1", "The fields of aspectInstance are: id, key," )]
-    [InlineData( "predecessors/any(p: p/kind eq 'Multicst')", "'Multicst' is not a value of 'p/kind'. The values are: Attribute, Multicast," )]
-    [InlineData( "linesOfCodeAvoided eq 'two'", "A integer cannot be compared with a string" )]
-    [InlineData( "transformations/ gt 1", "the shell removed it" )]
-    [InlineData( "aspectClass eq 'Log'", "cannot be compared" )]
-    [InlineData( "id eq 'a", "The string is not closed." )]
-    [InlineData( "linesOfCodeAvoided", "is a integer, not a Boolean" )]
-    [InlineData( "isSkipped eq true", "The files of TestProduct do not record 'isSkipped' of aspectInstance." )]
-    public void AnInvalidConditionIsAnErrorWithItsPosition( string condition, string message )
+    [InlineData( "concat(aspectClass/shortName, 'Aspect') eq 'LogAspect'", "aspectClass/shortName eq 'Log'" )]
+    [InlineData( "indexof(aspectClass/name, 'Log') ge 0", "contains(aspectClass/name, 'Log')" )]
+    [InlineData( "linesOfCodeAvoided add 1 gt 1", "linesOfCodeAvoided gt 0" )]
+    [InlineData( "predecessors/any(p: p/kind in ('Multicast', 'Xml'))", "predecessors/any(p: p/kind eq 'Multicast' or p/kind eq 'Xml')" )]
+    [InlineData( "transformations/$count($filter=semantic eq 'Getter') gt 0", "transformations/any(t: t/semantic eq 'Getter')" )]
+    [InlineData( "trim(toupper(aspectClass/shortName)) eq 'CACHE'", "aspectClass/shortName eq 'Cache'" )]
+    public void TheConstructsOfTheWholeGrammarAreEvaluated( string condition, string equivalent )
+    {
+        var count = this.RunJson( "list", "aspect-instances", "--where", condition ).GetProperty( "count" ).GetInt32();
+
+        Assert.NotEqual( 0, count );
+        Assert.Equal( this.RunJson( "list", "aspect-instances", "--where", equivalent ).GetProperty( "count" ).GetInt32(), count );
+    }
+
+    [Theory]
+    [InlineData( "round(linesOfCodeAvoided) eq 1", "The function 'round' is not supported. The supported functions are: contains," )]
+    [InlineData( "isof('Introspection.aspectInstance')", "The function 'isof' is not supported." )]
+    [InlineData( "cast(id, Edm.String) eq 'x'", "The function 'cast' is not supported." )]
+    public void AConstructThatTheEvaluatorDoesNotSupportIsAnError( string condition, string message )
     {
         var (exitCode, _, error) = this.Run( "list", "aspect-instances", "--where", condition );
 
         Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
+        Assert.Contains( "--where: " + message, error, StringComparison.Ordinal );
+    }
+
+    // Microsoft.OData.Core gives the position of a syntax error, not that of a name it cannot resolve.
+    [Theory]
+    [InlineData( "aspectclass/shortName eq 'Log'", "did you mean 'aspectClass'?", false )]
+    [InlineData( "foo eq 1", "The fields of aspectInstance are: id, key,", false )]
+    [InlineData( "predecessors/any(p: p/kind eq 'Multicst')", "'Multicst' is not a value of 'p/kind'. The values are: Attribute, Multicast,", false )]
+    [InlineData( "predecessors/any(p: p/kind in ('Xml', 'Multicst'))", "'Multicst' is not a value of 'p/kind'. The values are: Attribute, Multicast,", false )]
+    [InlineData( "linesOfCodeAvoided eq 'two'", "Found operand types 'Edm.Int64' and 'Edm.String' for operator kind 'Equal'", false )]
+    [InlineData( "transformations/ gt 1", "the shell removed it", true )]
+    [InlineData( "aspectClass eq 'Log'", "Found operand types 'Introspection.aspectClass' and 'Edm.String'", false )]
+    [InlineData( "id eq 'a", "There is an unterminated string literal at position 8", true )]
+    [InlineData( "linesOfCodeAvoided", "The $filter expression must evaluate to a single boolean value.", false )]
+    [InlineData( "isSkipped eq true", "The files of TestProduct do not record 'isSkipped' of aspectInstance.", false )]
+    [InlineData( "matchesPattern(id, '(')", "'(' is not a valid regular expression", false )]
+    [InlineData( " ", "Expression expected at position 1", true )]
+    public void AnInvalidConditionIsAnError( string condition, string message, bool hasPosition )
+    {
+        var (exitCode, _, error) = this.Run( "list", "aspect-instances", "--where", condition );
+
+        Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
+        Assert.Contains( "--where: ", error, StringComparison.Ordinal );
         Assert.Contains( message, error, StringComparison.Ordinal );
-        Assert.Contains( "^", error, StringComparison.Ordinal );
+        Assert.Contains( condition, error, StringComparison.Ordinal );
+        Assert.Equal( hasPosition, error.Contains( '^', StringComparison.Ordinal ) );
+    }
+
+    [Theory]
+    [InlineData( "--select", "id,aspectclass/shortName", "did you mean 'aspectClass'?" )]
+    [InlineData( "--select", "transformations/", "the shell removed it" )]
+    [InlineData( "--select", "transformations/order", "'transformations' is a collection: it is followed by $count, not by 'order'." )]
+    [InlineData( "--select", "isSkipped", "The files of TestProduct do not record 'isSkipped' of aspectInstance." )]
+    [InlineData( "--order-by", "aspectClass/foo desc", "'foo' is not a field of aspectClass." )]
+    [InlineData( "--order-by", "transformations/ desc", "the shell removed it" )]
+    public void AnInvalidSelectionOrOrderingIsAnError( string option, string text, string message )
+    {
+        var (exitCode, _, error) = this.Run( "list", "aspect-instances", option, text );
+
+        Assert.Equal( IntrospectionExitCodes.InvalidQuery, exitCode );
+        Assert.Contains( $"{option}: ", error, StringComparison.Ordinal );
+        Assert.Contains( message, error, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void TheOrderingTakesExpressions()
+    {
+        var items = this.RunJson( "list", "aspect-classes", "--order-by", "length(shortName) desc, shortName", "--select", "shortName" )
+            .GetProperty( "items" )
+            .EnumerateArray()
+            .Select( i => i.GetProperty( "shortName" ).GetString() );
+
+        Assert.Equal( ["NotifyPropertyChanged", "Cache", "Log"], items );
     }
 
     [Fact]

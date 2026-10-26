@@ -13,6 +13,11 @@ namespace SharpCrafters.Aspects.Introspection.Query.Querying;
 /// (Documentation/future/Introspection-Cli.md of PostSharp, section 5.3). The field names are those of the JSON output; the
 /// <c>schema</c> command describes them.
 /// </summary>
+/// <remarks>
+/// It is the single source of truth of the queries: <see cref="IntrospectionEdmModel"/> is built from it, Microsoft.OData.Core
+/// parses and binds the whole <c>$filter</c> and <c>$orderby</c> grammar against that model, and <see cref="QueryCompiler"/>
+/// evaluates the bound tree through <see cref="FieldDefinition.GetValue"/>.
+/// </remarks>
 internal static class IntrospectionSchema
 {
     public static IReadOnlyList<TypeDefinition> Types { get; }

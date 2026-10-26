@@ -3,26 +3,24 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using System;
-using System.Collections.Generic;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Querying;
 
 /// <summary>
-/// An expression of the subset of the OData <c>$filter</c> syntax that <c>--where</c> takes, bound to the schema
-/// (Documentation/future/Introspection-Cli.md of PostSharp, section 5.4). Its <see cref="Evaluate"/> returns a string, a
-/// <see cref="long"/>, a <see cref="bool"/>, an object of the model, a list, or <c>null</c>.
+/// An expression of <c>--where</c> or <c>--order-by</c>, bound by Microsoft.OData.Core and compiled by
+/// <see cref="QueryCompiler"/>. Its <see cref="Evaluate"/> returns a string, a <see cref="long"/>, a <see cref="double"/>, a
+/// <see cref="bool"/>, an object of the model, a list, or <c>null</c>.
 /// </summary>
-internal abstract class QueryExpression
+internal sealed class QueryExpression
 {
-    protected QueryExpression( ExpressionType type )
+    private readonly Func<QueryScope, object?> _evaluate;
+
+    public QueryExpression( Func<QueryScope, object?> evaluate )
     {
-        this.Type = type;
+        this._evaluate = evaluate;
     }
 
-    public ExpressionType Type { get; }
+    public object? Evaluate( QueryContext context, object current ) => this._evaluate( new QueryScope( context, current ) );
 
-    public abstract object? Evaluate( QueryContext context, object current, IReadOnlyDictionary<string, object?> variables );
-
-    public bool IsTrue( QueryContext context, object current )
-        => this.Evaluate( context, current, new Dictionary<string, object?>( StringComparer.Ordinal ) ) is true;
+    public bool IsTrue( QueryContext context, object current ) => this.Evaluate( context, current ) is true;
 }

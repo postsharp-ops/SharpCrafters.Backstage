@@ -30,9 +30,9 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
         // The query is parsed and bound before any file is read, so that an invalid one fails fast.
         var query = new ListQuery(
             type,
-            settings.Where.Select( w => QueryParser.ParseCondition( w, type, provider ) ).ToList(),
-            settings.Select == null ? null : QueryParser.ParsePaths( settings.Select, "--select", type, provider ),
-            settings.OrderBy == null ? [] : QueryParser.ParseOrderings( settings.OrderBy, type, provider ),
+            settings.Where.Select( w => QueryOptionParser.ParseCondition( w, type, provider ) ).ToList(),
+            settings.Select == null ? null : QueryOptionParser.ParsePaths( settings.Select, "--select", type, provider ),
+            settings.OrderBy == null ? [] : QueryOptionParser.ParseOrderings( settings.OrderBy, type, provider ),
             Math.Max( 0, settings.Skip ),
             settings.GetEffectiveLimit() );
 
@@ -51,7 +51,7 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                 break;
 
             case "text":
-                var columns = query.Selection ?? QueryParser.ParsePaths( string.Join( ",", type.DefaultColumns ), "--select", type, provider );
+                var columns = query.Selection ?? QueryOptionParser.ParsePaths( string.Join( ",", type.DefaultColumns ), "--select", type, provider );
                 options.StandardOutput.Write( TextOutput.Table( context, items, columns ) );
 
                 if ( truncated )
