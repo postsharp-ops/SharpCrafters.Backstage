@@ -190,13 +190,15 @@ internal sealed class IntrospectionSession
     }
 
     /// <summary>
-    /// Gets the targets of the project whose directory holds a source file, the deepest when the project directories are nested.
+    /// Gets the targets of the project whose directory holds a source file, the deepest when the project directories are nested,
+    /// or every target when no project directory holds it: a file outside the projects, such as one that a project includes with
+    /// <c>&lt;Compile Include="..\Shared\*.cs" /&gt;</c>, may be compiled by any of them.
     /// </summary>
     public static IReadOnlyList<IntrospectionTarget> GetTargetsOfSourceFile( IReadOnlyList<IntrospectionTarget> targets, string file )
     {
         var owner = targets.Where( t => IsUnder( file, t.Project.Directory ) ).OrderByDescending( t => t.Project.Directory.Length ).FirstOrDefault();
 
-        return owner == null ? [] : targets.Where( t => t.Project == owner.Project ).ToList();
+        return owner == null ? targets : targets.Where( t => t.Project == owner.Project ).ToList();
     }
 
     /// <summary>

@@ -191,6 +191,20 @@ public sealed class SolutionTests : IDisposable
     }
 
     [Fact]
+    public void APositionInAFileOutsideTheProjectsIsLookedUpInEveryProject()
+    {
+        // A file that a project compiles from outside of its directory, as <Compile Include="../Shared/*.cs" /> does.
+        var provider = new TestProvider { HasLocations = true };
+        var linked = Path.Combine( this._root, "Shared", "Linked.cs" );
+        provider.Locations["M:App.Program.Main"] = new IntrospectionSourceLocation( linked, 3, 5 );
+
+        var (exitCode, output, error) = CommandRunner.Run( this._root, provider, ["show", "declaration", "Shared/Linked.cs:3", "--format", "text"] );
+
+        Assert.True( exitCode == 0, error );
+        Assert.StartsWith( "Method App.Program.Main at Shared/Linked.cs:3:5 ", output, StringComparison.Ordinal );
+    }
+
+    [Fact]
     public void ADeclarationAtAPositionReadsOnlyItsProject()
     {
         var provider = new TestProvider { HasLocations = true };
