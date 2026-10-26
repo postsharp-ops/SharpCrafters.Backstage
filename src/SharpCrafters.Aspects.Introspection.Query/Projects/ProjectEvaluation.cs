@@ -18,12 +18,16 @@ internal sealed class ProjectEvaluation
 
     public List<EvaluatedTarget> Targets { get; set; } = [];
 
+    // Every target framework of the project, including those that -f leaves out of the scope.
+    public List<string> TargetFrameworks { get; set; } = [];
+
     // The project file and every file that its evaluation imported (Directory.Build.props, obj/*.nuget.g.props and the others).
     public List<string> Inputs { get; set; } = [];
 
     public IntrospectionProject ToProject( bool isEvaluated )
     {
         var project = new IntrospectionProject( this.ProjectPath, isEvaluated );
+        project.TargetFrameworksList.AddRange( this.TargetFrameworks );
         var projectWriteTime = File.GetLastWriteTimeUtc( this.ProjectPath );
 
         foreach ( var target in this.Targets )

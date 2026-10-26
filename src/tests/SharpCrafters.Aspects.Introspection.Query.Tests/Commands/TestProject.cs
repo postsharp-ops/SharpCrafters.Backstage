@@ -49,7 +49,8 @@ internal sealed class TestProject : IDisposable
         string targetFrameworks = "<TargetFramework>net10.0</TargetFramework>",
         bool setProperty = true,
         string? directory = null,
-        string assemblyName = "App" )
+        string assemblyName = "App",
+        string extraProperties = "" )
     {
         this.AssemblyName = assemblyName;
         this.Directory = directory ?? Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
@@ -66,6 +67,7 @@ internal sealed class TestProject : IDisposable
                  {targetFrameworks}
                  <AssemblyName>{assemblyName}</AssemblyName>
                  {property}
+                 {extraProperties}
                </PropertyGroup>
              </Project>
              """ );

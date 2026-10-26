@@ -170,8 +170,7 @@ public static partial class DotNetSdkLocator
     internal static DotNetSdk? Choose( IEnumerable<DotNetSdk> sdks, Version runtimeVersion, string runtimeIdentifier, List<string>? rejections = null )
     {
         var candidates = sdks.Select( s => (Sdk: s, Version: ParseVersion( s.Version )) )
-            .OrderByDescending( s => s.Version )
-            .ThenBy( s => s.Sdk.Version, StringComparer.Ordinal )
+            .OrderByDescending( s => s.Sdk.Version, SdkVersionComparer.Instance )
             .ToList();
 
         foreach ( var (sdk, version) in candidates )

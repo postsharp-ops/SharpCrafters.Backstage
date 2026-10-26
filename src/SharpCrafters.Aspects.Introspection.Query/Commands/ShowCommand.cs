@@ -70,7 +70,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                 return this.ShowDeclaration( options, settings, session );
 
             case "aspectInstance":
-                var instance = SelectByIdentifier( context.Model.AspectInstances, i => i.Id, i => i.StructuralKey, settings.Selector, "aspect instance" );
+                var instance = SelectByIdentifier( context.Model.AspectInstances, i => i.Id, i => i.StructuralKey, settings.Selector, "aspect instance", "an" );
 
                 return Write(
                     options,
@@ -81,7 +81,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     () => TextOutput.AspectInstance( context, instance, limit: lists.Limit ) );
 
             case "predecessor":
-                var predecessor = SelectByIdentifier( context.Model.Predecessors, p => p.Id, p => p.StructuralKey, settings.Selector, "predecessor" );
+                var predecessor = SelectByIdentifier( context.Model.Predecessors, p => p.Id, p => p.StructuralKey, settings.Selector, "predecessor", "a" );
 
                 return Write(
                     options,
@@ -148,10 +148,12 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
     private int ShowDeclaration( IntrospectionCommandOptions options, ShowCommandSettings settings, IntrospectionSession session )
     {
         var context = session.Context;
-        var declaration = SelectDeclaration( options, context, settings.Selector );
+        var declaration = SelectDeclaration( options, context, settings.Selector, out var noAspect );
 
         if ( declaration == null )
         {
+            WriteNoAspect( options, settings, session, noAspect! );
+
             return IntrospectionExitCodes.Success;
         }
 
@@ -224,12 +226,39 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
             => JsonOutput.WriteRelatedList( w, context, name, IntrospectionSchema.GetType( typeName ), items.ToList(), detail, lists, next, depth: 0 );
     }
 
+    // A position whose declarations no aspect applies to is a result, not an error: the declaration exists, and has no aspect. The
+    // JSON has the files and a null declaration, so that it is valid JSON for a tool that reads it.
+    private static void WriteNoAspect( IntrospectionCommandOptions options, ShowCommandSettings settings, IntrospectionSession session, string message )
+    {
+        if ( settings.Format == "text" )
+        {
+            options.StandardOutput.WriteLine( message );
+
+            return;
+        }
+
+        WriteJson(
+            options,
+            settings,
+            JsonOutput.Write(
+                w =>
+                {
+                    w.WriteStartObject();
+                    JsonOutput.WriteFiles( w, session.Context, session.Targets );
+                    w.WriteNull( "declaration" );
+                    w.WriteString( "message", message );
+                    w.WriteEndObject();
+                },
+                settings.Format == "json" ) );
+    }
+
     /// <summary>
     /// Selects a declaration by a source position, an exact documentation comment identifier, or a C# name, possibly partial.
-    /// Returns <c>null</c> after writing why when the position has a declaration that the file does not mention.
+    /// Returns <c>null</c>, with the sentence that says why, when the position has a declaration that the file does not mention.
     /// </summary>
-    internal static IntrospectionDeclaration? SelectDeclaration( IntrospectionCommandOptions options, QueryContext context, string selector )
+    internal static IntrospectionDeclaration? SelectDeclaration( IntrospectionCommandOptions options, QueryContext context, string selector, out string? noAspect )
     {
+        noAspect = null;
         var declarations = context.Model.Declarations;
 
         if ( DocumentationIdRegex().IsMatch( selector ) )
@@ -248,7 +277,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
 
         if ( TryGetPosition( selector, out var path, out var line ) )
         {
-            return SelectDeclarationAtPosition( options, context, path, line );
+            return SelectDeclarationAtPosition( options, context, path, line, out noAspect );
         }
 
         // A C# name without parameters: the whole name, or its end at a period.
@@ -273,8 +302,21 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
         };
     }
 
-    private static IntrospectionDeclaration? SelectDeclarationAtPosition( IntrospectionCommandOptions options, QueryContext context, string path, int line )
+    // The line of a position: a positive 32-bit integer.
+    internal static int ParseLine( string value )
+        => int.TryParse( value, NumberStyles.None, CultureInfo.InvariantCulture, out var line ) && line > 0
+            ? line
+            : throw new IntrospectionCommandException( $"'{value}' is not a line number: a line is a positive integer of at most {int.MaxValue}.", IntrospectionExitCodes.InvalidQuery );
+
+    private static IntrospectionDeclaration? SelectDeclarationAtPosition(
+        IntrospectionCommandOptions options,
+        QueryContext context,
+        string path,
+        int line,
+        out string? noAspect )
     {
+        noAspect = null;
+
         var file = Path.GetFullPath( Path.Combine( options.WorkingDirectory, path ) );
 
         // The targets of the project whose directory holds the file: the session read only the files of that project.
@@ -313,12 +355,12 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
             }
         }
 
-        options.StandardOutput.WriteLine( $"No aspect applies to {ids[0]} at {path}:{line}, or to the declarations that contain it." );
+        noAspect = $"No aspect applies to {ids[0]} at {path}:{line}, or to the declarations that contain it.";
 
         return null;
     }
 
-    private static T SelectByIdentifier<T>( IReadOnlyList<T> items, Func<T, string> getId, Func<T, string> getKey, string selector, string what )
+    private static T SelectByIdentifier<T>( IReadOnlyList<T> items, Func<T, string> getId, Func<T, string> getKey, string selector, string what, string article )
         where T : class
     {
         var byKey = items.Where( i => getKey( i ) == selector ).ToList();
@@ -331,7 +373,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
         if ( !IdentifierPrefixRegex().IsMatch( selector ) )
         {
             throw new IntrospectionCommandException(
-                $"'{selector}' is neither the identifier of an {what} (12 hexadecimal characters, or a unique prefix of them) nor its structural key.",
+                $"'{selector}' is neither the identifier of {article} {what} (12 hexadecimal characters, or a unique prefix of them) nor its structural key.",
                 IntrospectionExitCodes.InvalidQuery );
         }
 
@@ -378,7 +420,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
         if ( !DocumentationIdRegex().IsMatch( selector ) && match.Success && Path.HasExtension( match.Groups["path"].Value ) )
         {
             path = match.Groups["path"].Value;
-            line = int.Parse( match.Groups["line"].Value, CultureInfo.InvariantCulture );
+            line = ParseLine( match.Groups["line"].Value );
 
             return true;
         }
