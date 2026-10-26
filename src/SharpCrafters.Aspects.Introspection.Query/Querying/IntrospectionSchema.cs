@@ -63,7 +63,12 @@ internal static class IntrospectionSchema
                 "The aspect instances: one aspect on one target declaration.",
                 [
                     Field( "id", ValueKind.String, "The identifier: 12 hexadecimal characters, of which any unique prefix is accepted.", ( _, o ) => ((IntrospectionAspectInstance) o).Id, summary: true ),
-                    Field( "key", ValueKind.String, "The structural key, from which the identifier is computed.", ( _, o ) => ((IntrospectionAspectInstance) o).StructuralKey, summary: true ),
+                    Field(
+                            "key",
+                            ValueKind.String,
+                            "The structural key, from which the identifier is computed. Written only when --select names it: the identifier is its hash.",
+                            ( _, o ) => ((IntrospectionAspectInstance) o).StructuralKey,
+                            writtenByDefault: false ),
                     Object( "aspectClass", "aspectClass", "The aspect class.", ( _, o ) => ((IntrospectionAspectInstance) o).AspectClass, summary: true ),
                     Object( "targetDeclaration", "declaration", "The declaration to which the aspect is applied.", ( _, o ) => ((IntrospectionAspectInstance) o).TargetDeclaration, summary: true ),
                     Field( "project", ValueKind.String, "The project.", ( c, _ ) => c.Project ),
@@ -84,7 +89,12 @@ internal static class IntrospectionSchema
                 "What created aspect instances: a custom attribute, a multicast attribute, an XML element, a fabric or an aspect instance.",
                 [
                     Field( "id", ValueKind.String, "The identifier: 12 hexadecimal characters, of which any unique prefix is accepted.", ( _, o ) => ((IntrospectionPredecessor) o).Id, summary: true ),
-                    Field( "key", ValueKind.String, "The structural key, from which the identifier is computed.", ( _, o ) => ((IntrospectionPredecessor) o).StructuralKey, summary: true ),
+                    Field(
+                        "key",
+                        ValueKind.String,
+                        "The structural key, from which the identifier is computed. Written only when --select names it: the identifier is its hash.",
+                        ( _, o ) => ((IntrospectionPredecessor) o).StructuralKey,
+                        writtenByDefault: false ),
                     Field( "kind", ValueKind.Enum, "How the predecessor created its aspect instances.", ( _, o ) => ((IntrospectionPredecessor) o).Kind.ToString(), summary: true, values: predecessorKinds ),
                     Field( "isKindInferred", ValueKind.Boolean, "Whether the kind is inferred, because the file does not give it.", ( _, o ) => ((IntrospectionPredecessor) o).IsKindInferred ),
                     Object( "declaration", "declaration", "The declaration that carries the attribute, or the fabric type.", ( _, o ) => ((IntrospectionPredecessor) o).Declaration, summary: true ),
@@ -224,8 +234,9 @@ internal static class IntrospectionSchema
         string description,
         Func<QueryContext, object, object?> getValue,
         bool summary = false,
-        IReadOnlyList<string>? values = null )
-        => new( name, kind, description, getValue ) { IsInSummary = summary, EnumValues = values };
+        IReadOnlyList<string>? values = null,
+        bool writtenByDefault = true )
+        => new( name, kind, description, getValue ) { IsInSummary = summary, EnumValues = values, IsWrittenByDefault = writtenByDefault };
 
     private static FieldDefinition Object( string name, string typeName, string description, Func<QueryContext, object, object?> getValue, bool summary = false )
         => new( name, ValueKind.Object, description, getValue ) { TypeName = typeName, IsInSummary = summary };
