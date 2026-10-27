@@ -67,7 +67,7 @@ internal sealed class ListQuery
         }
 
         var all = items.ToList();
-        IEnumerable<object> page = all.Skip( this.Skip );
+        var page = all.Skip( this.Skip );
 
         if ( this.Limit != null )
         {

@@ -87,7 +87,7 @@ internal static class RelatedLists
     /// and another is double-quoted with <c>\</c>, <c>"</c>, <c>$</c> and <c>`</c> escaped.
     /// </summary>
     public static string Quote( string word )
-        => !word.Contains( '\'' )
+        => !word.Contains( '\'', StringComparison.Ordinal )
             ? "'" + word + "'"
             : "\"" + word.Replace( "\\", "\\\\", StringComparison.Ordinal )
                   .Replace( "\"", "\\\"", StringComparison.Ordinal )

@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using System;
+using System.Globalization;
 using System.IO;
 using Xunit;
 
@@ -222,7 +223,7 @@ public sealed class IntrospectionV1ReaderTests
     [InlineData( "<Symbols xmlns=\"{0}\"><Evolution Source=\"M:A\" Target=\"M:B\" /></Symbols>garbage" )]
     public void ContentAfterTheRootIsAnError( string format )
     {
-        using var reader = V1TestHelper.CreateReader( string.Format( format, _namespace ) );
+        using var reader = V1TestHelper.CreateReader( string.Format( CultureInfo.InvariantCulture, format, _namespace ) );
 
         Assert.Throws<IntrospectionFormatException>( () => ReadAll( reader ) );
     }
