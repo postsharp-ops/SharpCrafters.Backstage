@@ -29,7 +29,7 @@ public sealed class ProjectEvaluationTests
     }
 
     [Theory]
-    [InlineData( new[] { "--solution", "All.sln" }, "--solution is not supported yet" )]
+    [InlineData( new[] { "--solution", "All.sln" }, "The solution 'All.sln' does not exist." )]
     [InlineData( new[] { "--project", "Missing.csproj" }, "The project 'Missing.csproj' does not exist." )]
     public void AnInvalidScopeIsAnError( string[] options, string message )
     {
@@ -53,7 +53,7 @@ public sealed class ProjectEvaluationTests
     }
 
     [Fact]
-    public void ADirectoryWithASolutionOrNothingIsReported()
+    public void AnEmptyDirectoryOrSolutionIsReported()
     {
         var directory = CreateDirectory();
 
@@ -63,10 +63,11 @@ public sealed class ProjectEvaluationTests
             Assert.Equal( IntrospectionExitCodes.Error, exitCode );
             Assert.Contains( "holds no project or solution file: give one with --project or --solution.", error, StringComparison.Ordinal );
 
-            File.WriteAllText( Path.Combine( directory, "All.sln" ), "" );
+            // The solution of the directory is the scope.
+            File.WriteAllText( Path.Combine( directory, "All.slnx" ), "<Solution />" );
             (exitCode, _, error) = this.Run( directory, "list", "aspect-classes" );
             Assert.Equal( IntrospectionExitCodes.Error, exitCode );
-            Assert.Contains( "Solutions are not supported yet", error, StringComparison.Ordinal );
+            Assert.Contains( "All.slnx' has no project.", error, StringComparison.Ordinal );
         }
         finally
         {

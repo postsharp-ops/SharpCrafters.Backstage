@@ -22,8 +22,10 @@ namespace SharpCrafters.Aspects.Introspection.Query;
 /// <item><term>Aspect instance</term><description><c>&lt;aspect class&gt;@&lt;target declaration&gt;[#n]</c></description></item>
 /// <item><term>Attribute, multicast attribute, inherited attribute</term><description><c>attribute:</c>, <c>multicast:</c> or
 /// <c>inherited:</c>, then <c>&lt;declaration&gt;:&lt;attribute class&gt;[#n]</c></description></item>
-/// <item><term>XML element</term><description><c>xml:&lt;file&gt;(&lt;line&gt;,&lt;column&gt;)</c>, with the path of the file
-/// relative to the directory of the project when the loader is given it, and forward slashes</description></item>
+/// <item><term>XML element</term><description><c>xml:[&lt;assembly&gt;]&lt;file&gt;(&lt;line&gt;,&lt;column&gt;)</c>, with the path of
+/// the file relative to the directory of the project when the loader is given it, and forward slashes. The assembly
+/// distinguishes the files of two projects that have the same relative path, such as their <c>postsharp.config</c>; it is the
+/// same in every target framework of a project</description></item>
 /// <item><term>Fabric</term><description><c>fabric:&lt;fabric type&gt;</c></description></item>
 /// <item><term>Aspect instance as predecessor</term><description><c>aspect:&lt;key of the aspect instance&gt;</c></description></item>
 /// </list>
@@ -60,7 +62,7 @@ internal static class StructuralKeys
 
         AssignUnique(
             model.PredecessorsList,
-            GetPredecessorKey,
+            p => GetPredecessorKey( p, model.Assembly ),
             ( p, key ) =>
             {
                 p.StructuralKey = key;
@@ -79,7 +81,7 @@ internal static class StructuralKeys
         return Convert.ToHexString( hash, 0, 6 ).ToLowerInvariant();
     }
 
-    private static string GetPredecessorKey( IntrospectionPredecessor predecessor )
+    private static string GetPredecessorKey( IntrospectionPredecessor predecessor, string assembly )
         => predecessor.Kind switch
         {
             AspectPredecessorKind.Attribute => "attribute:" + GetAttributeKey( predecessor ),
@@ -87,7 +89,8 @@ internal static class StructuralKeys
             AspectPredecessorKind.Inherited => "inherited:" + GetAttributeKey( predecessor ),
             AspectPredecessorKind.Xml => string.Format(
                 CultureInfo.InvariantCulture,
-                "xml:{0}({1},{2})",
+                "xml:[{0}]{1}({2},{3})",
+                assembly,
                 predecessor.KeyFile,
                 predecessor.Line,
                 predecessor.Column ),

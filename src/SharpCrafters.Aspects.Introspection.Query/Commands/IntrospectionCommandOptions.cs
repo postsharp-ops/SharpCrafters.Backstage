@@ -24,13 +24,17 @@ public sealed class IntrospectionCommandOptions
     /// <see cref="Console.Out"/> is not redirected, when <paramref name="standardOutput"/> is not given.</param>
     /// <param name="getEnvironmentVariable">Reads an environment variable, such as <c>NO_COLOR</c>; by default
     /// <see cref="Environment.GetEnvironmentVariable(string)"/>.</param>
+    /// <param name="cacheDirectory">The directory of the cache of the evaluations of the projects and of the indexes of the files;
+    /// by default <c>SharpCrafters/Introspection</c> in the local application data of the user. An empty string caches
+    /// nothing.</param>
     public IntrospectionCommandOptions(
         IntrospectionProvider provider,
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
         string? workingDirectory = null,
         bool? isOutputTerminal = null,
-        Func<string, string?>? getEnvironmentVariable = null )
+        Func<string, string?>? getEnvironmentVariable = null,
+        string? cacheDirectory = null )
     {
         this.Provider = provider;
         this.StandardOutput = standardOutput ?? Console.Out;
@@ -39,7 +43,15 @@ public sealed class IntrospectionCommandOptions
         this.IsOutputTerminal = isOutputTerminal ?? (standardOutput == null && !Console.IsOutputRedirected);
         this.IsErrorTerminal = errorOutput == null && !Console.IsErrorRedirected;
         this.GetEnvironmentVariable = getEnvironmentVariable ?? Environment.GetEnvironmentVariable;
+
+        cacheDirectory ??= Path.Combine( Environment.GetFolderPath( Environment.SpecialFolder.LocalApplicationData ), "SharpCrafters", "Introspection" );
+        this.CacheDirectory = cacheDirectory.Length == 0 ? null : cacheDirectory;
     }
+
+    /// <summary>
+    /// Gets the directory of the cache, or <c>null</c> to cache nothing.
+    /// </summary>
+    public string? CacheDirectory { get; }
 
     /// <summary>
     /// Gets the provider of the product.

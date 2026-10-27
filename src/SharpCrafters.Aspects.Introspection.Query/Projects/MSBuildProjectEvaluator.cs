@@ -17,15 +17,16 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 /// <remarks>
 /// A project is evaluated once to read its target frameworks, then once per target framework with the global properties
 /// <c>TargetFramework</c> and <c>Configuration</c>. The evaluations share one <see cref="ProjectCollection"/>, so the
-/// resolution of the SDK and the imported files are cached across projects.
+/// resolution of the SDK and the imported files are cached across the projects of a command.
 /// </remarks>
 internal sealed class MSBuildProjectEvaluator : IDisposable
 {
     private readonly ProjectCollection _collection = new();
 
-    public IntrospectionProject Evaluate( string projectPath, IntrospectionProvider provider, string? configuration, string? targetFramework )
+    public ProjectEvaluation Evaluate( string projectPath, IntrospectionProvider provider, string? configuration, string? targetFramework )
     {
-        var project = new IntrospectionProject( projectPath, true );
+        var evaluation = new ProjectEvaluation { ProjectPath = Path.GetFullPath( projectPath ) };
+        var inputs = new HashSet<string>( StringComparer.OrdinalIgnoreCase ) { evaluation.ProjectPath };
         var globalProperties = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
 
         if ( configuration != null )
@@ -33,20 +34,22 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
             globalProperties["Configuration"] = configuration;
         }
 
-        var outer = this.Load( project.Path, globalProperties );
+        var outer = this.Load( evaluation.ProjectPath, globalProperties );
         var frameworks = GetTargetFrameworks( outer );
+        AddImports( outer, inputs );
+        AddImportCandidates( outer, inputs );
 
         // A project that is not SDK-style has one target framework, given by TargetFrameworkVersion, and is evaluated once: a
         // TargetFramework global property would mean nothing to it.
         if ( frameworks.Count == 0 && GetLegacyTargetFramework( outer ) is { } legacy )
         {
-            project.TargetFrameworksList.Add( legacy );
+            evaluation.TargetFrameworks = [legacy];
 
             try
             {
                 if ( targetFramework == null || string.Equals( legacy, targetFramework, StringComparison.OrdinalIgnoreCase ) )
                 {
-                    AddTarget( project, outer, legacy, provider );
+                    AddTarget( evaluation, outer, legacy, provider );
                 }
             }
             finally
@@ -54,11 +57,13 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
                 this._collection.UnloadProject( outer );
             }
 
-            return project;
+            evaluation.Inputs = inputs.ToList();
+
+            return evaluation;
         }
 
         this._collection.UnloadProject( outer );
-        project.TargetFrameworksList.AddRange( frameworks );
+        evaluation.TargetFrameworks = frameworks.ToList();
 
         foreach ( var framework in frameworks )
         {
@@ -67,11 +72,12 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
                 continue;
             }
 
-            var inner = this.Load( project.Path, new Dictionary<string, string>( globalProperties ) { ["TargetFramework"] = framework } );
+            var inner = this.Load( evaluation.ProjectPath, new Dictionary<string, string>( globalProperties ) { ["TargetFramework"] = framework } );
 
             try
             {
-                AddTarget( project, inner, framework, provider );
+                AddImports( inner, inputs );
+                AddTarget( evaluation, inner, framework, provider );
             }
             finally
             {
@@ -79,10 +85,12 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
             }
         }
 
-        return project;
+        evaluation.Inputs = inputs.ToList();
+
+        return evaluation;
     }
 
-    private static void AddTarget( IntrospectionProject project, Project evaluated, string framework, IntrospectionProvider provider )
+    private static void AddTarget( ProjectEvaluation evaluation, Project evaluated, string framework, IntrospectionProvider provider )
     {
         var file = GetPath( evaluated, provider.FileProperty );
 
@@ -92,20 +100,19 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
             return;
         }
 
-        var additionalFiles = provider.AdditionalFileProperties
-            .Select( p => (Property: p, Path: GetPath( evaluated, p )) )
-            .Where( p => p.Path != null )
-            .ToDictionary( p => p.Property, p => p.Path!, StringComparer.OrdinalIgnoreCase );
-
-        project.TargetsList.Add(
-            new IntrospectionTarget(
-                project,
-                framework,
-                evaluated.GetPropertyValue( "Configuration" ),
-                evaluated.GetPropertyValue( "AssemblyName" ),
-                file,
-                additionalFiles,
-                GetNewestSourceWriteTime( evaluated ) ) );
+        evaluation.Targets.Add(
+            new EvaluatedTarget
+            {
+                TargetFramework = framework,
+                Configuration = evaluated.GetPropertyValue( "Configuration" ),
+                AssemblyName = evaluated.GetPropertyValue( "AssemblyName" ),
+                FilePath = file,
+                AdditionalFiles = provider.AdditionalFileProperties
+                    .Select( p => (Property: p, Path: GetPath( evaluated, p )) )
+                    .Where( p => p.Path != null )
+                    .ToDictionary( p => p.Property, p => p.Path!, StringComparer.OrdinalIgnoreCase ),
+                SourceFiles = GetSourceFiles( evaluated )
+            } );
     }
 
     // The short name of the target framework of a project that is not SDK-style, such as net472 for v4.7.2, or null.
@@ -131,6 +138,83 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         }
     }
 
+    private static void AddImports( Project project, HashSet<string> inputs )
+    {
+        foreach ( var import in project.Imports )
+        {
+            inputs.Add( import.ImportedProject.FullPath );
+        }
+
+        AddMissingImports( project, inputs );
+    }
+
+    // The imports that were skipped because their file does not exist, such as the targets of a NuGet package that is not in the
+    // packages folder (obj/*.nuget.g.targets imports them under Exists conditions). They are inputs that the cache records as
+    // absent: a restore that brings the package back rewrites no other input. The path of an import is expanded with the final
+    // properties of the project, which are those of the import in the common case of a path that does not change afterwards.
+    private static void AddMissingImports( Project project, HashSet<string> inputs )
+    {
+        var files = project.Imports.Select( i => i.ImportedProject ).Prepend( project.Xml );
+
+        foreach ( var file in files )
+        {
+            foreach ( var element in file.Imports )
+            {
+                // An import of an SDK is resolved by the SDK resolver, not by its path.
+                if ( !string.IsNullOrEmpty( element.Sdk ) )
+                {
+                    continue;
+                }
+
+                var path = project.ExpandString( element.Project ).Trim();
+
+                if ( path.Length == 0 || path.IndexOfAny( ['*', '?', ';'] ) >= 0 )
+                {
+                    continue;
+                }
+
+                try
+                {
+                    path = Path.GetFullPath( Path.Combine( file.DirectoryPath, path ) );
+                }
+                catch ( Exception e ) when ( e is ArgumentException or NotSupportedException or PathTooLongException )
+                {
+                    continue;
+                }
+
+                if ( !File.Exists( path ) )
+                {
+                    inputs.Add( path );
+                }
+            }
+        }
+    }
+
+    // The files that the SDK would import if they existed, which are inputs although they do not exist yet: the cache records
+    // them as absent, so that their appearance invalidates the evaluation. They are the files that the SDK searches above the
+    // project, up to the first that exists, and those that the restore writes.
+    private static void AddImportCandidates( Project project, HashSet<string> inputs )
+    {
+        foreach ( var name in new[] { "Directory.Build.props", "Directory.Build.targets", "Directory.Packages.props" } )
+        {
+            for ( var directory = new DirectoryInfo( project.DirectoryPath ); directory != null; directory = directory.Parent )
+            {
+                var candidate = Path.Combine( directory.FullName, name );
+                inputs.Add( candidate );
+
+                if ( File.Exists( candidate ) )
+                {
+                    break;
+                }
+            }
+        }
+
+        var extensions = GetPath( project, "MSBuildProjectExtensionsPath" ) ?? Path.Combine( project.DirectoryPath, "obj" );
+        var projectFile = Path.GetFileName( project.FullPath );
+        inputs.Add( Path.Combine( extensions, projectFile + ".nuget.g.props" ) );
+        inputs.Add( Path.Combine( extensions, projectFile + ".nuget.g.targets" ) );
+    }
+
     private static IReadOnlyList<string> GetTargetFrameworks( Project project )
     {
         var frameworks = project.GetPropertyValue( "TargetFrameworks" );
@@ -151,30 +235,17 @@ internal sealed class MSBuildProjectEvaluator : IDisposable
         return string.IsNullOrWhiteSpace( value ) ? null : Path.GetFullPath( Path.Combine( project.DirectoryPath, value.Trim() ) );
     }
 
-    // The newest of the project file and the compiled source files: a file older than it may not describe the current source.
-    private static DateTime GetNewestSourceWriteTime( Project project )
+    // The compiled source files. The generated sources under obj are rewritten by every build, sometimes after the file, and are
+    // not source.
+    private static List<string> GetSourceFiles( Project project )
     {
-        var newest = File.GetLastWriteTimeUtc( project.FullPath );
+        var obj = Path.Combine( project.DirectoryPath, "obj" ) + Path.DirectorySeparatorChar;
 
-        foreach ( var item in project.GetItems( "Compile" ) )
-        {
-            var path = Path.GetFullPath( Path.Combine( project.DirectoryPath, item.EvaluatedInclude ) );
-
-            // Generated sources under obj are rewritten by every build, after the file sometimes, and are not source.
-            if ( path.StartsWith( Path.Combine( project.DirectoryPath, "obj" ) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase ) )
-            {
-                continue;
-            }
-
-            var time = File.GetLastWriteTimeUtc( path );
-
-            if ( time > newest && File.Exists( path ) )
-            {
-                newest = time;
-            }
-        }
-
-        return newest;
+        return project.GetItems( "Compile" )
+            .Select( i => Path.GetFullPath( Path.Combine( project.DirectoryPath, i.EvaluatedInclude ) ) )
+            .Where( p => !p.StartsWith( obj, StringComparison.OrdinalIgnoreCase ) )
+            .Distinct( StringComparer.OrdinalIgnoreCase )
+            .ToList();
     }
 
     public void Dispose() => this._collection.Dispose();

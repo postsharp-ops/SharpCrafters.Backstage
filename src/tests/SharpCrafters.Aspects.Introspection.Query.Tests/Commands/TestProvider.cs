@@ -24,6 +24,9 @@ internal sealed class TestProvider : IntrospectionProvider
 
     public bool HasLocations { get; init; }
 
+    // The target framework whose locations are given, or null for every target framework.
+    public string? LocationFramework { get; init; }
+
     // The fields that the product does not record, besides isSkipped, as "type.field".
     public HashSet<string> Unprovided { get; } = new( StringComparer.Ordinal );
 
@@ -45,10 +48,28 @@ internal sealed class TestProvider : IntrospectionProvider
     public override bool Provides( string typeName, string? fieldName )
         => typeName != "diagnostic" && fieldName != "isSkipped" && !this.Unprovided.Contains( typeName + "." + fieldName );
 
-    public override IIntrospectionSourceLocations? GetSourceLocations( IntrospectionTarget target ) => this.HasLocations ? new SourceLocations( this ) : null;
+    public override IIntrospectionSourceLocations? GetSourceLocations( IntrospectionTarget target )
+        => this.HasLocations && (this.LocationFramework == null || this.LocationFramework == target.TargetFramework) ? new SourceLocations( this ) : null;
 
     public override void AddCommands( IConfigurator<CommandSettings> branch, IntrospectionCommandOptions options )
-        => branch.AddCommand<AdditionalFilesCommand>( "additional-files" ).WithData( options );
+    {
+        branch.AddCommand<FilesCommand>( "files" ).WithData( options );
+        branch.AddCommand<AdditionalFilesCommand>( "additional-files" ).WithData( options );
+    }
+
+    /// <summary>
+    /// A command of the product, which reads the files of the scope itself.
+    /// </summary>
+    private sealed class FilesCommand : IntrospectionCommand<IntrospectionCommandSettings>
+    {
+        protected override int Execute( IntrospectionCommandOptions options, IntrospectionCommandSettings settings )
+        {
+            var targets = GetTargets( options, settings );
+            WriteJson( options, settings, "[" + string.Join( ",", targets.Select( t => $"\"{t.Project.Name} {t.TargetFramework}\"" ) ) + "]" );
+
+            return 0;
+        }
+    }
 
     /// <summary>
     /// A command of the product, which writes the other files of the product that the evaluation found.
@@ -57,7 +78,7 @@ internal sealed class TestProvider : IntrospectionProvider
     {
         protected override int Execute( IntrospectionCommandOptions options, IntrospectionCommandSettings settings )
         {
-            options.StandardOutput.WriteLine( JsonSerializer.Serialize( IntrospectionSession.Open( options, settings ).Target.AdditionalFiles ) );
+            options.StandardOutput.WriteLine( JsonSerializer.Serialize( GetTargets( options, settings )[0].AdditionalFiles ) );
 
             return 0;
         }

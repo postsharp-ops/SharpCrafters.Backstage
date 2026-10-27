@@ -72,6 +72,16 @@ public sealed class ShowCommandTests : IDisposable
     }
 
     [Fact]
+    public void ADeclarationIsSelectedByItsPositionInAnAbsolutePath()
+    {
+        // On Windows, the path starts with a drive letter and a colon, like a documentation comment identifier.
+        var (exitCode, output, error) = this.Run( "show", "declaration", Path.Combine( this._project.Directory, "Customer.cs" ) + ":18", "--format", "text" );
+
+        Assert.True( exitCode == 0, error );
+        Assert.StartsWith( "Property App.Customer.FullName at Customer.cs:18:19 (App).", output, StringComparison.Ordinal );
+    }
+
+    [Fact]
     public void APositionWithoutAspectsSaysSo()
     {
         this._provider.Locations["T:App.Unrelated"] = new IntrospectionSourceLocation( this._project.SourceFile, 30, 1 );

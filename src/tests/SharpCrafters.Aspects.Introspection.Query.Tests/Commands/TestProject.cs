@@ -48,9 +48,12 @@ internal sealed class TestProject : IDisposable
         string projectName = "App",
         string targetFrameworks = "<TargetFramework>net10.0</TargetFramework>",
         bool setProperty = true,
+        string? directory = null,
+        string assemblyName = "App",
         string extraProperties = "" )
     {
-        this.Directory = Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
+        this.AssemblyName = assemblyName;
+        this.Directory = directory ?? Path.Combine( Path.GetTempPath(), "introspection-tests", Guid.NewGuid().ToString( "N" ) );
         System.IO.Directory.CreateDirectory( this.Directory );
 
         var property = setProperty ? "<TestSymbolFile>bin/$(Configuration)/$(TargetFramework)/$(AssemblyName).pssym</TestSymbolFile>" : "";
@@ -62,7 +65,7 @@ internal sealed class TestProject : IDisposable
              <Project Sdk="Microsoft.NET.Sdk">
                <PropertyGroup>
                  {targetFrameworks}
-                 <AssemblyName>App</AssemblyName>
+                 <AssemblyName>{assemblyName}</AssemblyName>
                  {property}
                  {extraProperties}
                </PropertyGroup>
@@ -84,11 +87,13 @@ internal sealed class TestProject : IDisposable
 
     public string Directory { get; }
 
+    public string AssemblyName { get; }
+
     public string SourceFile { get; }
 
     public string WriteSymbols( string targetFramework, string symbols )
     {
-        var path = Path.Combine( this.Directory, "bin", "Debug", targetFramework, "App.pssym" );
+        var path = Path.Combine( this.Directory, "bin", "Debug", targetFramework, this.AssemblyName + ".pssym" );
         System.IO.Directory.CreateDirectory( Path.GetDirectoryName( path )! );
         File.WriteAllText( path, symbols );
 

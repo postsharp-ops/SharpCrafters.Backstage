@@ -21,17 +21,17 @@ internal sealed class QueryContext
     private readonly Dictionary<IntrospectionDeclaration, List<IntrospectionAnnotation>> _annotationsByTarget = new();
     private readonly Dictionary<IntrospectionDeclaration, List<IntrospectionDeclarationMapping>> _mappingsByDeclaration = new();
 
+    private readonly Dictionary<IntrospectionTarget, IIntrospectionSourceLocations?> _locations = new();
+
     public QueryContext(
         IntrospectionModel model,
-        IntrospectionTarget target,
+        ModelProvenance provenance,
         IntrospectionProvider provider,
-        IIntrospectionSourceLocations? locations,
         string workingDirectory )
     {
         this.Model = model;
-        this.Target = target;
+        this.Provenance = provenance;
         this.Provider = provider;
-        this.Locations = locations;
         this.WorkingDirectory = workingDirectory;
 
         foreach ( var instance in model.AspectInstances )
@@ -73,20 +73,56 @@ internal sealed class QueryContext
 
     public IntrospectionModel Model { get; }
 
-    public IntrospectionTarget Target { get; }
+    public ModelProvenance Provenance { get; }
 
     // The targets whose files the query read, which the collection files lists.
-    public IReadOnlyList<IntrospectionTarget> Targets => [this.Target];
+    public IReadOnlyList<IntrospectionTarget> Targets => this.Provenance.AllTargets;
 
     public IntrospectionProvider Provider { get; }
 
-    public IIntrospectionSourceLocations? Locations { get; }
-
     public string WorkingDirectory { get; }
 
-    public IReadOnlyList<string> TargetFrameworks => [this.Target.TargetFramework];
+    /// <summary>
+    /// Gets the target frameworks of the files that hold an object.
+    /// </summary>
+    public IReadOnlyList<string> GetTargetFrameworks( object value )
+        => this.Provenance.GetTargets( value ).Select( t => t.TargetFramework ).Distinct( System.StringComparer.OrdinalIgnoreCase ).ToList();
 
-    public string Project => this.Target.Project.Name;
+    /// <summary>
+    /// Gets the project of an object: for a declaration, the project that builds its assembly when it is in the scope; otherwise
+    /// the first project whose file holds it.
+    /// </summary>
+    public string GetProject( object value )
+    {
+        var targets = this.Provenance.GetTargets( value );
+
+        if ( value is IntrospectionDeclaration declaration && this.GetTarget( declaration ) is { } own )
+        {
+            return own.Project.Name;
+        }
+
+        return targets.Count == 0 ? "" : targets[0].Project.Name;
+    }
+
+    /// <summary>
+    /// Gets the targets whose assembly declares a declaration, which are those whose source locations give its location.
+    /// </summary>
+    public IntrospectionTarget? GetTarget( IntrospectionDeclaration declaration )
+        => this.Targets.FirstOrDefault( t => string.Equals( t.AssemblyName, declaration.Assembly, System.StringComparison.Ordinal ) );
+
+    /// <summary>
+    /// Gets the source locations of a target, which the provider reads once.
+    /// </summary>
+    public IIntrospectionSourceLocations? GetSourceLocations( IntrospectionTarget target )
+    {
+        if ( !this._locations.TryGetValue( target, out var locations ) )
+        {
+            locations = this.Provider.GetSourceLocations( target );
+            this._locations.Add( target, locations );
+        }
+
+        return locations;
+    }
 
     public IReadOnlyList<IntrospectionAspectInstance> GetAspectInstances( IntrospectionDeclaration declaration )
         => this._aspectInstancesByTarget.GetValueOrDefault( declaration ) ?? [];
@@ -105,9 +141,16 @@ internal sealed class QueryContext
     /// </summary>
     public string? GetLocation( IntrospectionDeclaration declaration )
     {
-        var location = this.Locations?.GetLocation( declaration );
+        // Each target framework of the assembly in turn: a declaration under a preprocessor symbol is compiled into some of them only.
+        foreach ( var target in this.Targets.Where( t => string.Equals( t.AssemblyName, declaration.Assembly, System.StringComparison.Ordinal ) ) )
+        {
+            if ( this.GetSourceLocations( target )?.GetLocation( declaration ) is { } location )
+            {
+                return this.FormatLocation( location.File, location.Line, location.Column );
+            }
+        }
 
-        return location == null ? null : this.FormatLocation( location.File, location.Line, location.Column );
+        return null;
     }
 
     /// <summary>
