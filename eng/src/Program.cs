@@ -83,6 +83,7 @@ var product = new Product( BackstageDependencies.Backstage )
         "SharpCrafters.Backstage.FileLocks.$(PackageVersion).nupkg",             // Required by SharpCrafters.Backstage.
         "SharpCrafters.Backstage.ProcessClassification.$(PackageVersion).nupkg", // Required by SharpCrafters.Backstage.
         "SharpCrafters.Aspects.Introspection.$(PackageVersion).nupkg",          // Required by PostSharp, which writes the .pssym file with it.
+        "SharpCrafters.Aspects.Introspection.Query.$(PackageVersion).nupkg",    // To be required by the introspect commands of PostSharp.Tool and Metalama.Tool.
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
         "Metalama.Backstage.Tools.$(PackageVersion).nupkg",         // Required by Metalama.Framework.Engine and Metalama.Vsx.
         "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.
