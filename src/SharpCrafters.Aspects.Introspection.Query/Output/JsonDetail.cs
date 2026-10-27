@@ -15,6 +15,10 @@ internal enum JsonDetail
     // Every field but the lists of objects, which list writes.
     Full,
 
-    // Every field, and the lists of objects with their own fields, which show writes.
-    Expanded
+    // Every field, and the lists of objects as summary rows, which show writes.
+    Expanded,
+
+    // Every field, and the lists of objects with their own fields but their lists, which show declaration writes for the aspect
+    // instances of the declaration.
+    ExpandedFull
 }

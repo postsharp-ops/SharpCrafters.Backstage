@@ -38,6 +38,12 @@ public static class IntrospectionCommandFactory
                     .WithData( options )
                     .WithDescription( "Describes the collections and their fields, which --where, --select and --order-by use." );
 
+                branch.AddCommand<BatchCommand>( "batch" )
+                    .WithData( options )
+                    .WithDescription(
+                        "Runs several queries, one per line of the standard input or of --file, over one load of the files. Each line is a command without 'introspect', such as 'show declaration src/Customer.cs:18'." )
+                    .WithExample( "introspect", "batch", "--file", "queries.txt" );
+
                 options.Provider.AddCommands( branch, options );
             } );
 }

@@ -1,0 +1,288 @@
+// Copyright (c) 2020-2025 SharpCrafters s.r.o. and contributors.
+// SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
+// Refer to LICENSE.md in the repository root for complete details.
+
+using SharpCrafters.Aspects.Introspection.Query.Output;
+using Spectre.Console;
+using Spectre.Console.Cli;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+
+namespace SharpCrafters.Aspects.Introspection.Query.Commands;
+
+/// <summary>
+/// <c>introspect batch</c>: runs several queries, one per line of the standard input or of a file, over one evaluation of the projects
+/// and one load of their files.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A line is a command line without <c>introspect</c>, such as <c>show declaration src/Customer.cs:18</c>. Blank lines and lines
+/// that start with <c>#</c> are skipped. The scope and the format are those of the batch, and a line cannot set them.
+/// </para>
+/// <para>
+/// Each line runs through a command line of its own, with only the <c>introspect</c> branch, so that it is parsed and validated as
+/// it is on the command line and the commands of the provider run too. Its options share the sessions of the batch
+/// (<see cref="IntrospectionSessionCache"/>), which is what makes the batch cheaper than separate calls.
+/// </para>
+/// <para>
+/// Every query runs, even after one fails. The exit code is that of the first query that failed, or 0.
+/// </para>
+/// </remarks>
+public sealed class BatchCommand : IntrospectionCommand<BatchCommandSettings>
+{
+    // The options of a query that the batch sets for all of its queries.
+    private static readonly string[] _batchOptions = ["--project", "--solution", "-f", "--framework", "-c", "--configuration", "--format", "--color", "--file"];
+
+    /// <inheritdoc />
+    protected override int Execute( IntrospectionCommandOptions options, BatchCommandSettings settings )
+    {
+        var queries = ReadInput( options, settings )
+            .Split( '\n' )
+            .Select( l => l.Trim() )
+            .Where( l => l.Length > 0 && !l.StartsWith( '#' ) )
+            .ToList();
+
+        if ( queries.Count == 0 )
+        {
+            throw new IntrospectionCommandException( "The batch holds no query: write one command per line, such as 'list aspect-classes'.", IntrospectionExitCodes.InvalidQuery );
+        }
+
+        var sessions = new IntrospectionSessionCache();
+        var scope = GetScopeArguments( settings );
+        var results = queries.Select( q => Run( options, settings, sessions, q, scope, settings.Format == "text" ? "text" : "json" ) ).ToList();
+
+        switch ( settings.Format )
+        {
+            case "text":
+                foreach ( var result in results )
+                {
+                    options.StandardOutput.WriteLine( "> " + result.Query );
+                    if ( result.ExitCode == 0 )
+                    {
+                        options.StandardOutput.Write( result.Output );
+                    }
+                    else if ( IntrospectionConsole.IsColored( options, settings.Color, options.IsOutputTerminal ) )
+                    {
+                        IntrospectionConsole.Create( options.StandardOutput ).MarkupLine( $"[red]{Markup.Escape( "error: " + result.Error )}[/]" );
+                    }
+                    else
+                    {
+                        options.StandardOutput.WriteLine( "error: " + result.Error );
+                    }
+
+                    options.StandardOutput.WriteLine();
+                }
+
+                break;
+
+            case "jsonl":
+                foreach ( var result in results )
+                {
+                    options.StandardOutput.WriteLine( JsonOutput.Write( w => WriteResult( w, result ), indented: false ) );
+                }
+
+                break;
+
+            default:
+                WriteJson(
+                    options,
+                    settings,
+                    JsonOutput.Write(
+                        w =>
+                        {
+                            w.WriteStartObject();
+                            w.WriteStartArray( "results" );
+
+                            foreach ( var result in results )
+                            {
+                                WriteResult( w, result );
+                            }
+
+                            w.WriteEndArray();
+                            w.WriteEndObject();
+                        } ) );
+
+                break;
+        }
+
+        return results.Select( r => r.ExitCode ).FirstOrDefault( c => c != IntrospectionExitCodes.Success );
+    }
+
+    private static string ReadInput( IntrospectionCommandOptions options, BatchCommandSettings settings )
+    {
+        if ( settings.File != null && settings.File != "-" )
+        {
+            var path = Path.GetFullPath( Path.Combine( options.WorkingDirectory, settings.File ) );
+
+            return System.IO.File.Exists( path )
+                ? System.IO.File.ReadAllText( path )
+                : throw new IntrospectionCommandException( $"The file '{settings.File}' does not exist.", IntrospectionExitCodes.Error );
+        }
+
+        if ( options.IsInputTerminal )
+        {
+            // Without this, the command would wait for input that an agent never sends.
+            throw new IntrospectionCommandException(
+                "The batch reads its queries, one per line, from the standard input or from --file. The standard input is a terminal: pipe the queries, for example with a heredoc, or give --file.",
+                IntrospectionExitCodes.InvalidQuery );
+        }
+
+        return options.StandardInput.ReadToEnd();
+    }
+
+    private static List<string> GetScopeArguments( IntrospectionCommandSettings settings )
+    {
+        var arguments = new List<string>();
+
+        void Add( string name, string? value )
+        {
+            if ( value != null )
+            {
+                arguments.Add( name );
+                arguments.Add( value );
+            }
+        }
+
+        Add( "--project", settings.Project );
+        Add( "--solution", settings.Solution );
+        Add( "--framework", settings.Framework );
+        Add( "--configuration", settings.Configuration );
+
+        return arguments;
+    }
+
+    private static QueryResult Run(
+        IntrospectionCommandOptions options,
+        BatchCommandSettings settings,
+        IntrospectionSessionCache sessions,
+        string query,
+        List<string> scope,
+        string format )
+    {
+        string[] words;
+
+        try
+        {
+            words = QueryLineSplitter.Split( query );
+        }
+        catch ( FormatException e )
+        {
+            return new QueryResult( query, IntrospectionExitCodes.InvalidQuery, "", e.Message );
+        }
+
+        if ( words.Length > 0 && words[0] == "batch" )
+        {
+            return new QueryResult( query, IntrospectionExitCodes.InvalidQuery, "", "A batch cannot run another batch." );
+        }
+
+        var batchOption = words.FirstOrDefault( w => _batchOptions.Any( o => w == o || w.StartsWith( o + "=", StringComparison.Ordinal ) ) );
+
+        if ( batchOption != null )
+        {
+            return new QueryResult(
+                query,
+                IntrospectionExitCodes.InvalidQuery,
+                "",
+                $"A query of a batch cannot set {batchOption.Split( '=' )[0]}: the scope and the format are those of the batch." );
+        }
+
+        var output = new StringWriter();
+        var error = new StringWriter();
+        var app = new CommandApp();
+
+        app.Configure(
+            c =>
+            {
+                // The help of a command, which Spectre writes to its console, is the output of the query. A parse error is an exception,
+                // because of PropagateExceptions, and the commands write their errors to the error writer of the query.
+                c.ConfigureConsole( AnsiConsole.Create( new AnsiConsoleSettings { Out = new AnsiConsoleOutput( output ), Ansi = AnsiSupport.No } ) );
+                c.PropagateExceptions();
+                IntrospectionCommandFactory.AddIntrospectBranch( c, options.ForQuery( output, error, sessions ) );
+            } );
+
+        int exitCode;
+
+        try
+        {
+            exitCode = app.Run( ["introspect", .. words, .. scope, "--format", format, "--color", "never"] );
+        }
+        catch ( CommandAppException e )
+        {
+            // An unknown command or option, a missing argument, or an invalid value.
+            error.WriteLine( "error: " + e.Message );
+            exitCode = IntrospectionExitCodes.InvalidQuery;
+        }
+
+        var errorText = error.ToString();
+
+        if ( exitCode == IntrospectionExitCodes.Success )
+        {
+            // The warnings, such as about a stale file, which the first query that opens the scope writes without color, and which
+            // the batch writes with the colors of its own standard error.
+            foreach ( var line in errorText.Split( '\n' ).Select( l => l.TrimEnd( '\r' ) ).Where( l => l.Length > 0 ) )
+            {
+                if ( line.StartsWith( "warning: ", StringComparison.Ordinal ) )
+                {
+                    IntrospectionConsole.WriteWarning( options, settings.Color, line["warning: ".Length..] );
+                }
+                else
+                {
+                    options.ErrorOutput.WriteLine( line );
+                }
+            }
+
+            return new QueryResult( query, exitCode, output.ToString(), "" );
+        }
+
+        var message = string.Join(
+            Environment.NewLine,
+            errorText.Split( '\n' ).Select( l => l.TrimEnd( '\r' ) ).Where( l => l.Length > 0 ).Select( l => l.StartsWith( "error: ", StringComparison.Ordinal ) ? l[7..] : l ) );
+
+        return new QueryResult( query, exitCode, output.ToString(), message );
+    }
+
+    private static void WriteResult( Utf8JsonWriter writer, QueryResult result )
+    {
+        writer.WriteStartObject();
+        writer.WriteString( "query", result.Query );
+        writer.WriteNumber( "exitCode", result.ExitCode );
+
+        if ( result.ExitCode != IntrospectionExitCodes.Success )
+        {
+            writer.WriteString( "error", result.Error );
+        }
+        else if ( TryParse( result.Output ) is { } document )
+        {
+            // Written again rather than copied, so that the result follows the indentation of the batch.
+            using ( document )
+            {
+                writer.WritePropertyName( "result" );
+                document.RootElement.WriteTo( writer );
+            }
+        }
+        else
+        {
+            // The help of a command, which is text.
+            writer.WriteString( "output", result.Output );
+        }
+
+        writer.WriteEndObject();
+    }
+
+    private static JsonDocument? TryParse( string json )
+    {
+        try
+        {
+            return json.Length == 0 ? null : JsonDocument.Parse( json );
+        }
+        catch ( JsonException )
+        {
+            return null;
+        }
+    }
+
+    private sealed record QueryResult( string Query, int ExitCode, string Output, string Error );
+}

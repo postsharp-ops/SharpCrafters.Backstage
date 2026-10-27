@@ -70,7 +70,7 @@ public sealed class ShowSelectorTests : IDisposable
         var item = this.RunJson( "list", "aspect-instances" ).GetProperty( "items" )[0];
         Assert.False( item.TryGetProperty( "key", out _ ) );
         Assert.True( item.TryGetProperty( "id", out _ ) );
-        Assert.False( this.RunJson( "show", "aspect-class", "Log" ).GetProperty( "aspectClass" ).GetProperty( "aspectInstances" )[0].TryGetProperty( "key", out _ ) );
+        Assert.False( this.RunJson( "show", "aspect-class", "Log" ).GetProperty( "aspectClass" ).GetProperty( "aspectInstances" ).GetProperty( "items" )[0].TryGetProperty( "key", out _ ) );
 
         var selected = this.RunJson( "list", "predecessors", "--select", "id,key" ).GetProperty( "items" )[0];
         Assert.StartsWith( "attribute:[App]T:App.Customer:", selected.GetProperty( "key" ).GetString(), System.StringComparison.Ordinal );
@@ -229,7 +229,7 @@ public sealed class ShowSelectorTests : IDisposable
         Assert.Equal( "M:App.Customer.set_FirstName(System.String)", result.GetProperty( "declaration" ).GetProperty( "id" ).GetString() );
 
         var field = this.RunJson( "show", "declaration", "F:App.Customer.<FirstName>k__BackingField" );
-        var mapping = Assert.Single( field.GetProperty( "declarationMappings" ).EnumerateArray() );
+        var mapping = Assert.Single( field.GetProperty( "declarationMappings" ).GetProperty( "items" ).EnumerateArray() );
         Assert.Equal( "F:App.Customer.<FirstName>k__OriginalField", mapping.GetProperty( "target" ).GetProperty( "id" ).GetString() );
 
         var (exitCode, text, error) = this.Run( "show", "declaration", "F:App.Customer.<FirstName>k__BackingField", "--format", "text" );
@@ -244,13 +244,13 @@ public sealed class ShowSelectorTests : IDisposable
         var type = this.RunJson( "show", "declaration", "App.Customer" );
         var withMembers = this.RunJson( "show", "declaration", "App.Customer", "--members" );
 
-        var related = withMembers.GetProperty( "relatedDeclarations" ).EnumerateArray().Select( d => d.GetProperty( "id" ).GetString() ).ToList();
+        var related = withMembers.GetProperty( "relatedDeclarations" ).GetProperty( "items" ).EnumerateArray().Select( d => d.GetProperty( "id" ).GetString() ).ToList();
         Assert.Contains( "P:App.Customer.FullName", related );
         Assert.Contains( "M:App.Customer.get_FullName", related );
 
         // The aspect instances of the members are added to that of the type, each once.
-        var instances = withMembers.GetProperty( "aspectInstances" ).EnumerateArray().Select( i => i.GetProperty( "id" ).GetString() ).ToList();
-        Assert.True( instances.Count > type.GetProperty( "aspectInstances" ).GetArrayLength() );
+        var instances = withMembers.GetProperty( "aspectInstances" ).GetProperty( "items" ).EnumerateArray().Select( i => i.GetProperty( "id" ).GetString() ).ToList();
+        Assert.True( instances.Count > type.GetProperty( "aspectInstances" ).GetProperty( "count" ).GetInt32() );
         Assert.Equal( instances.Count, instances.Distinct().Count() );
     }
 

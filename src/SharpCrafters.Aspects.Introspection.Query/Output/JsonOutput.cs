@@ -37,7 +37,15 @@ internal static class JsonOutput
         return Encoding.UTF8.GetString( stream.ToArray() );
     }
 
-    public static void WriteObject( Utf8JsonWriter writer, QueryContext context, TypeDefinition type, object value, JsonDetail detail, int depth = 0 )
+    /// <param name="lists">How show writes the lists of objects, or <c>null</c> to write them as arrays.</param>
+    public static void WriteObject(
+        Utf8JsonWriter writer,
+        QueryContext context,
+        TypeDefinition type,
+        object value,
+        JsonDetail detail,
+        int depth = 0,
+        RelatedListOptions? lists = null )
     {
         writer.WriteStartObject();
 
@@ -49,10 +57,71 @@ internal static class JsonOutput
                 continue;
             }
 
-            WriteField( writer, context, field, field.GetValue( context, value ), detail, depth );
+            WriteField( writer, context, field, field.GetValue( context, value ), detail, depth, owner: (type.Name, value), lists: lists );
         }
 
         writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// Writes a list of objects as <c>show</c> does: <c>{ "count", "truncated", "items" }</c>, with <c>byNamespace</c> and
+    /// <c>next</c> when the list has more objects than <see cref="RelatedListOptions.Limit"/>.
+    /// </summary>
+    /// <param name="next">The command, without <c>introspect</c>, that lists all the objects, or <c>null</c>.</param>
+    public static void WriteRelatedList(
+        Utf8JsonWriter writer,
+        QueryContext context,
+        string name,
+        TypeDefinition itemType,
+        IReadOnlyList<object> items,
+        JsonDetail itemDetail,
+        RelatedListOptions lists,
+        string? next,
+        int depth = 1 )
+    {
+        var truncated = lists.Limit is { } limit && items.Count > limit;
+
+        writer.WriteStartObject( name );
+        writer.WriteNumber( "count", items.Count );
+        writer.WriteBoolean( "truncated", truncated );
+        writer.WriteStartArray( "items" );
+
+        foreach ( var item in truncated ? items.Take( lists.Limit!.Value ) : items )
+        {
+            WriteObject( writer, context, itemType, item, itemDetail, depth, lists );
+        }
+
+        writer.WriteEndArray();
+
+        if ( truncated )
+        {
+            WriteByNamespace( writer, items );
+
+            if ( next != null )
+            {
+                writer.WriteString( "next", next );
+            }
+        }
+
+        writer.WriteEndObject();
+    }
+
+    /// <summary>
+    /// Writes the number of objects of each namespace, the largest first.
+    /// </summary>
+    public static void WriteByNamespace( Utf8JsonWriter writer, IEnumerable<object> items )
+    {
+        writer.WriteStartArray( "byNamespace" );
+
+        foreach ( var (ns, count) in RelatedLists.ByNamespace( items ) )
+        {
+            writer.WriteStartObject();
+            writer.WriteString( "namespace", ns );
+            writer.WriteNumber( "count", count );
+            writer.WriteEndObject();
+        }
+
+        writer.WriteEndArray();
     }
 
     /// <summary>
@@ -114,7 +183,16 @@ internal static class JsonOutput
         }
     }
 
-    private static void WriteField( Utf8JsonWriter writer, QueryContext context, FieldDefinition field, object? value, JsonDetail detail, int depth, string? name = null )
+    private static void WriteField(
+        Utf8JsonWriter writer,
+        QueryContext context,
+        FieldDefinition field,
+        object? value,
+        JsonDetail detail,
+        int depth,
+        string? name = null,
+        (string Type, object Value)? owner = null,
+        RelatedListOptions? lists = null )
     {
         name ??= field.Name;
 
@@ -168,8 +246,18 @@ internal static class JsonOutput
             case ValueKind.ObjectList:
                 var itemType = IntrospectionSchema.GetType( field.TypeName! );
 
-                // Expanded once: the objects of a list are written with their fields but their own lists.
-                var itemDetail = detail == JsonDetail.Expanded && depth == 0 ? JsonDetail.Full : JsonDetail.Summary;
+                // Expanded once: the objects of a list are summary rows, or, for the aspect instances of show declaration, written with
+                // their fields but their own lists.
+                var itemDetail = detail == JsonDetail.ExpandedFull && depth == 0 ? JsonDetail.Full : JsonDetail.Summary;
+
+                if ( lists != null )
+                {
+                    var next = owner is { } o ? RelatedLists.GetNext( o.Type, field.Name, o.Value ) : null;
+                    WriteRelatedList( writer, context, name, itemType, ((IEnumerable) value).Cast<object>().ToList(), itemDetail, lists, next, depth + 1 );
+
+                    return;
+                }
+
                 writer.WriteStartArray( name );
 
                 foreach ( var item in (IEnumerable) value )

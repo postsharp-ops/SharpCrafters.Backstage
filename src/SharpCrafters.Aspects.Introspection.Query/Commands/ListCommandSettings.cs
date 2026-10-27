@@ -52,11 +52,18 @@ public sealed class ListCommandSettings : IntrospectionCommandSettings
     public int Skip { get; init; }
 
     /// <summary>
-    /// Gets the maximal number of objects.
+    /// Gets the maximal number of objects, or <c>null</c> for the default limit.
     /// </summary>
-    [Description( "Writes at most this number of objects." )]
+    [Description( "Writes at most this number of objects. By default 100, except with --format jsonl. The output says when the result is truncated." )]
     [CommandOption( "--limit <N>" )]
     public int? Limit { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether every object is written, without the default limit.
+    /// </summary>
+    [Description( "Writes every object, without the default limit." )]
+    [CommandOption( "--all" )]
+    public bool All { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether only the number of objects is written.
@@ -64,4 +71,22 @@ public sealed class ListCommandSettings : IntrospectionCommandSettings
     [Description( "Writes only the number of objects that satisfy the conditions." )]
     [CommandOption( "--count" )]
     public bool Count { get; init; }
+
+    /// <summary>
+    /// The number of objects that list writes by default.
+    /// </summary>
+    public const int DefaultLimit = 100;
+
+    /// <inheritdoc />
+    public override Spectre.Console.ValidationResult Validate()
+        => this.All && this.Limit != null
+            ? Spectre.Console.ValidationResult.Error( "--all and --limit cannot both be given." )
+            : this.Limit < 0
+                ? Spectre.Console.ValidationResult.Error( "--limit cannot be negative." )
+                : base.Validate();
+
+    /// <summary>
+    /// Gets the limit of the query: the one given, none with --all, --count or the format jsonl, or the default one.
+    /// </summary>
+    internal int? GetEffectiveLimit() => this.All || this.Count || (this.Limit == null && this.Format == "jsonl") ? this.Limit : this.Limit ?? DefaultLimit;
 }

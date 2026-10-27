@@ -17,9 +17,10 @@ namespace SharpCrafters.Aspects.Introspection.Query.Commands;
 /// </summary>
 internal sealed class IntrospectionSession
 {
-    private IntrospectionSession( IReadOnlyList<IntrospectionTarget> targets, QueryContext context )
+    private IntrospectionSession( IReadOnlyList<IntrospectionTarget> targets, IReadOnlyDictionary<IntrospectionTarget, IntrospectionModel> models, QueryContext context )
     {
         this.Targets = targets;
+        this.Models = models;
         this.Context = context;
     }
 
@@ -27,6 +28,11 @@ internal sealed class IntrospectionSession
     /// Gets the targets whose files the command read.
     /// </summary>
     public IReadOnlyList<IntrospectionTarget> Targets { get; }
+
+    /// <summary>
+    /// Gets the model of each target, before the merge.
+    /// </summary>
+    public IReadOnlyDictionary<IntrospectionTarget, IntrospectionModel> Models { get; }
 
     public QueryContext Context { get; }
 
@@ -37,27 +43,53 @@ internal sealed class IntrospectionSession
     /// <param name="settings">The settings of the command.</param>
     /// <param name="sourceFile">The full path of a source file, for a query that needs only the project whose directory holds it,
     /// such as <c>show declaration</c> with a source position; or <c>null</c> to read every project of the scope.</param>
+    /// <remarks>
+    /// In a batch, every query reads the session of the whole scope, which the first query opens
+    /// (<see cref="IntrospectionSessionCache"/>): a source file does not restrict it.
+    /// </remarks>
     public static IntrospectionSession Open( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, string? sourceFile = null )
+        => options.SessionCache?.GetOrOpen( settings, () => OpenCore( options, settings, null ) ) ?? OpenCore( options, settings, sourceFile );
+
+    /// <summary>
+    /// Gets the targets of the scope whose file exists, and warns about the targets whose file is missing or stale.
+    /// </summary>
+    public static IReadOnlyList<IntrospectionTarget> GetTargets( IntrospectionCommandOptions options, IntrospectionCommandSettings settings )
+        => options.SessionCache != null ? Open( options, settings ).Targets : LocateTargets( options, settings );
+
+    /// <summary>
+    /// Gets the model of one target, before the merge with the other targets.
+    /// </summary>
+    public static IntrospectionModel GetModel( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, IntrospectionTarget target )
+        => options.SessionCache != null && Open( options, settings ).Models.TryGetValue( target, out var model ) ? model : LoadModel( options, target );
+
+    private static IntrospectionSession OpenCore( IntrospectionCommandOptions options, IntrospectionCommandSettings settings, string? sourceFile )
     {
         var provider = options.Provider;
         var existing = LocateTargets( options, settings, sourceFile );
-        var models = new List<(IntrospectionTarget, IntrospectionModel)>();
+        var models = new Dictionary<IntrospectionTarget, IntrospectionModel>();
 
         foreach ( var target in existing )
         {
-            try
-            {
-                models.Add( (target, ModelIndex.Load( target, provider, options.CacheDirectory )) );
-            }
-            catch ( IntrospectionFormatException e )
-            {
-                throw new IntrospectionCommandException( $"The file '{target.FilePath}' is malformed: {e.Message}", IntrospectionExitCodes.Error );
-            }
+            models.Add( target, LoadModel( options, target ) );
         }
 
-        var (model, provenance) = models.Count == 1 ? (models[0].Item2, ModelMerger.Single( existing[0] )) : ModelMerger.Merge( models );
+        var (model, provenance) = models.Count == 1
+            ? (models[existing[0]], ModelMerger.Single( existing[0] ))
+            : ModelMerger.Merge( existing.Select( t => (t, models[t]) ).ToList() );
 
-        return new IntrospectionSession( existing, new QueryContext( model, provenance, provider, options.WorkingDirectory ) );
+        return new IntrospectionSession( existing, models, new QueryContext( model, provenance, provider, options.WorkingDirectory ) );
+    }
+
+    private static IntrospectionModel LoadModel( IntrospectionCommandOptions options, IntrospectionTarget target )
+    {
+        try
+        {
+            return ModelIndex.Load( target, options.Provider, options.CacheDirectory );
+        }
+        catch ( IntrospectionFormatException e )
+        {
+            throw new IntrospectionCommandException( $"The file '{target.FilePath}' is malformed: {e.Message}", IntrospectionExitCodes.Error );
+        }
     }
 
     /// <summary>

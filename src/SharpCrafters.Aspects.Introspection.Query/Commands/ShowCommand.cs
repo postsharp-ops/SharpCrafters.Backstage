@@ -62,6 +62,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
 
         var session = IntrospectionSession.Open( options, settings, sourceFile );
         var context = session.Context;
+        var lists = settings.GetListOptions();
 
         switch ( type.Name )
         {
@@ -77,7 +78,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     session,
                     type,
                     instance,
-                    () => TextOutput.AspectInstance( context, instance ) );
+                    () => TextOutput.AspectInstance( context, instance, limit: lists.Limit ) );
 
             case "predecessor":
                 var predecessor = SelectByIdentifier( context.Model.Predecessors, p => p.Id, p => p.StructuralKey, settings.Selector, "predecessor", "a" );
@@ -89,7 +90,11 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     type,
                     predecessor,
                     () => TextOutput.Predecessor( context, predecessor ) + Environment.NewLine
-                                                                       + string.Concat( predecessor.AspectInstances.Select( i => Environment.NewLine + TextOutput.AspectInstance( context, i ) ) ) );
+                                                                       + TextOutput.AspectInstances(
+                                                                           context,
+                                                                           predecessor.AspectInstances,
+                                                                           lists.Limit,
+                                                                           RelatedLists.GetNext( "predecessor", "aspectInstances", predecessor ) ) );
 
             default:
                 var aspectClass = SelectAspectClass( context.Model, settings.Selector );
@@ -101,9 +106,14 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     type,
                     aspectClass,
                     () => $"Aspect class {aspectClass.FullName} ({aspectClass.AspectInstances.Count} aspect instances)." + Environment.NewLine
-                                                                                                                     + string.Concat(
-                                                                                                                         aspectClass.AspectInstances.Select(
-                                                                                                                             i => Environment.NewLine + TextOutput.AspectInstance( context, i ) ) ) );
+                                                                                                                     + TextOutput.AspectInstances(
+                                                                                                                         context,
+                                                                                                                         aspectClass.AspectInstances,
+                                                                                                                         lists.Limit,
+                                                                                                                         RelatedLists.GetNext(
+                                                                                                                             "aspectClass",
+                                                                                                                             "aspectInstances",
+                                                                                                                             aspectClass ) ) );
         }
     }
 
@@ -125,7 +135,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     {
                         w.WriteStartObject();
                         w.WritePropertyName( type.Name );
-                        JsonOutput.WriteObject( w, session.Context, type, value, JsonDetail.Expanded );
+                        JsonOutput.WriteObject( w, session.Context, type, value, JsonDetail.Expanded, lists: settings.GetListOptions() );
                         w.WriteEndObject();
                     },
                     settings.Format == "json" ) );
@@ -172,9 +182,14 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
             declaration.Members.ToList().ForEach( Add );
         }
 
+        var lists = settings.GetListOptions();
+
+        // A truncated list of the declaration is listed in full by the same command with --all.
+        var next = $"show declaration {RelatedLists.Quote( declaration.QualifiedId )}{(settings.Members ? " --members" : "")} --all";
+
         if ( settings.Format == "text" )
         {
-            options.StandardOutput.Write( TextOutput.Declaration( context, declaration, related ) );
+            options.StandardOutput.Write( TextOutput.Declaration( context, declaration, related, lists.Limit, next ) );
             options.StandardOutput.WriteLine();
             options.StandardOutput.WriteLine( TextOutput.Files( context, session.Targets ) );
 
@@ -196,7 +211,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
                     w.WritePropertyName( "declaration" );
                     JsonOutput.WriteObject( w, context, IntrospectionSchema.GetType( "declaration" ), declaration, JsonDetail.Full );
                     WriteList( w, "relatedDeclarations", "declaration", related.Skip( 1 ), JsonDetail.Summary );
-                    WriteList( w, "aspectInstances", "aspectInstance", instances, JsonDetail.Expanded );
+                    WriteList( w, "aspectInstances", "aspectInstance", instances, JsonDetail.ExpandedFull );
                     WriteList( w, "annotations", "annotation", related.SelectMany( context.GetAnnotations ).Distinct(), JsonDetail.Full );
                     WriteList( w, "declarationMappings", "declarationMapping", related.SelectMany( context.GetDeclarationMappings ).Distinct(), JsonDetail.Full );
                     w.WriteEndObject();
@@ -206,17 +221,7 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
         return IntrospectionExitCodes.Success;
 
         void WriteList( Utf8JsonWriter w, string name, string typeName, IEnumerable<object> items, JsonDetail detail )
-        {
-            var itemType = IntrospectionSchema.GetType( typeName );
-            w.WriteStartArray( name );
-
-            foreach ( var item in items )
-            {
-                JsonOutput.WriteObject( w, context, itemType, item, detail );
-            }
-
-            w.WriteEndArray();
-        }
+            => JsonOutput.WriteRelatedList( w, context, name, IntrospectionSchema.GetType( typeName ), items.ToList(), detail, lists, next, depth: 0 );
     }
 
     // A position whose declarations no aspect applies to is a result, not an error: the declaration exists, and has no aspect. The

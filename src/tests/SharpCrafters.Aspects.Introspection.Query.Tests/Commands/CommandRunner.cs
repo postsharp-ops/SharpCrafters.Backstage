@@ -25,6 +25,7 @@ internal static class CommandRunner
         bool isTerminal = false,
         string? noColor = null,
         string cacheDirectory = "",
+        string? input = null,
         bool isErrorTerminal = false )
     {
         var output = new StringWriter();
@@ -38,7 +39,16 @@ internal static class CommandRunner
 
                 IntrospectionCommandFactory.AddIntrospectBranch(
                     c,
-                    new IntrospectionCommandOptions( provider, output, error, workingDirectory, isTerminal, n => n == "NO_COLOR" ? noColor : null, cacheDirectory )
+                    new IntrospectionCommandOptions(
+                        provider,
+                        output,
+                        error,
+                        workingDirectory,
+                        isTerminal,
+                        n => n == "NO_COLOR" ? noColor : null,
+                        cacheDirectory,
+                        input == null ? TextReader.Null : new StringReader( input ),
+                        input == null )
                     {
                         IsErrorTerminal = isErrorTerminal
                     } );

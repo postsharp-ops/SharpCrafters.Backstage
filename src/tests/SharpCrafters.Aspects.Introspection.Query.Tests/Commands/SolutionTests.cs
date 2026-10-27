@@ -91,7 +91,7 @@ public sealed class SolutionTests : IDisposable
         // One aspect class, which both files name.
         var aspectClass = Assert.Single( this.RunJson( "list", "aspect-classes" ).GetProperty( "items" ).EnumerateArray() );
         Assert.Equal( "Lib.LogAttribute", aspectClass.GetProperty( "name" ).GetString() );
-        Assert.Equal( 3, this.RunJson( "show", "aspect-class", "Log" ).GetProperty( "aspectClass" ).GetProperty( "aspectInstances" ).GetArrayLength() );
+        Assert.Equal( 3, this.RunJson( "show", "aspect-class", "Log" ).GetProperty( "aspectClass" ).GetProperty( "aspectInstances" ).GetProperty( "count" ).GetInt32() );
 
         // A declaration is of the project that builds its assembly.
         Assert.Equal(

@@ -36,10 +36,17 @@ internal sealed class TestProvider : IntrospectionProvider
 
     public override string FileExtension => ".pssym";
 
+    /// <summary>
+    /// Gets the number of files that the provider loaded.
+    /// </summary>
+    public int LoadCount { get; private set; }
+
     public override IReadOnlyList<string> AdditionalFileProperties => ["TestSymbolLocationFile"];
 
     public override IntrospectionModel Load( IntrospectionTarget target )
     {
+        this.LoadCount++;
+
         using var stream = File.OpenRead( target.FilePath );
 
         return IntrospectionV1Loader.Load( stream, target.AssemblyName, target.Project.Directory );

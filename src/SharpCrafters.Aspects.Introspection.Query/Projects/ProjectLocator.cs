@@ -46,10 +46,16 @@ internal sealed class ProjectLocator : IDisposable
 
     public IntrospectionProject Locate( string projectPath )
     {
-        var sdk = DotNetSdkLocator.EnsureRegistered();
+        var registration = DotNetSdkLocator.EnsureRegistered();
 
-        if ( sdk != null )
+        if ( registration.Sdk is { } sdk )
         {
+            // The SDK that a host registered may have no known version, which the cache entries depend on.
+            if ( sdk.Version.Length == 0 )
+            {
+                return this.Evaluate( projectPath ).ToProject( true );
+            }
+
             return this._cache.Evaluate(
                     projectPath,
                     this._provider,
@@ -66,7 +72,7 @@ internal sealed class ProjectLocator : IDisposable
             this._hasWarnedAboutSdk = true;
 
             this._warn(
-                "no .NET SDK is compatible with the runtime of this process, so the projects were not evaluated: their files were searched under "
+                $"{registration.Failure} The projects were therefore not evaluated: their files were searched under "
                 + "their 'bin' directories and the 'artifacts/bin' directory of the repository instead." );
         }
 

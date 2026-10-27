@@ -34,22 +34,32 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
             settings.Select == null ? null : QueryOptionParser.ParsePaths( settings.Select, "--select", type, provider ),
             settings.OrderBy == null ? [] : QueryOptionParser.ParseOrderings( settings.OrderBy, type, provider ),
             Math.Max( 0, settings.Skip ),
-            settings.Limit );
+            settings.GetEffectiveLimit() );
 
         var session = IntrospectionSession.Open( options, settings );
         var context = session.Context;
-        var items = query.Run( context );
+        var (items, matching) = query.Run( context );
+
+        // The default limit keeps the output readable by an agent; the output says when it cut the result.
+        var truncated = query.Skip + items.Count < matching.Count;
 
         switch ( settings.Format )
         {
             case "text" when settings.Count:
-                options.StandardOutput.WriteLine( items.Count );
+                options.StandardOutput.WriteLine( matching.Count );
 
                 break;
 
             case "text":
                 var columns = query.Selection ?? QueryOptionParser.GetDefaultColumns( type, provider );
                 options.StandardOutput.Write( TextOutput.Table( context, items, columns ) );
+
+                if ( truncated )
+                {
+                    options.StandardOutput.WriteLine(
+                        $"Showing {items.Count} of {matching.Count} {type.CollectionName}, from {query.Skip + 1}. Use --skip and --limit for another page, --all for all of them, or --count for their number." );
+                }
+
                 options.StandardOutput.WriteLine( TextOutput.Files( context, session.Targets ) );
 
                 break;
@@ -70,10 +80,12 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                         w =>
                         {
                             w.WriteStartObject();
-                            w.WriteNumber( "count", items.Count );
+                            // The number of objects that satisfy the conditions, whatever the page.
+                            w.WriteNumber( "count", matching.Count );
 
                             if ( !settings.Count )
                             {
+                                w.WriteBoolean( "truncated", truncated );
                                 w.WriteStartArray( "items" );
 
                                 foreach ( var item in items )
@@ -82,6 +94,11 @@ public sealed class ListCommand : IntrospectionCommand<ListCommandSettings>
                                 }
 
                                 w.WriteEndArray();
+
+                                if ( truncated )
+                                {
+                                    JsonOutput.WriteByNamespace( w, matching );
+                                }
                             }
 
                             w.WriteEndObject();

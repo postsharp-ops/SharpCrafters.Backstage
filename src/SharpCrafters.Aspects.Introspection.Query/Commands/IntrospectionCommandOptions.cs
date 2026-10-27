@@ -27,6 +27,11 @@ public sealed class IntrospectionCommandOptions
     /// <param name="cacheDirectory">The directory of the cache of the evaluations of the projects and of the indexes of the files;
     /// by default <c>SharpCrafters/Introspection</c> in the local application data of the user. An empty string caches
     /// nothing.</param>
+    /// <param name="standardInput">The standard input, from which <c>introspect batch</c> reads its queries; by default
+    /// <see cref="Console.In"/>.</param>
+    /// <param name="isInputTerminal">Whether the standard input is a terminal, in which case <c>introspect batch</c> does not wait
+    /// for it; by default, whether <see cref="Console.In"/> is not redirected, when <paramref name="standardInput"/> is not
+    /// given.</param>
     public IntrospectionCommandOptions(
         IntrospectionProvider provider,
         TextWriter? standardOutput = null,
@@ -34,8 +39,12 @@ public sealed class IntrospectionCommandOptions
         string? workingDirectory = null,
         bool? isOutputTerminal = null,
         Func<string, string?>? getEnvironmentVariable = null,
-        string? cacheDirectory = null )
+        string? cacheDirectory = null,
+        TextReader? standardInput = null,
+        bool? isInputTerminal = null )
     {
+        this.StandardInput = standardInput ?? Console.In;
+        this.IsInputTerminal = isInputTerminal ?? (standardInput == null && !Console.IsInputRedirected);
         this.Provider = provider;
         this.StandardOutput = standardOutput ?? Console.Out;
         this.ErrorOutput = errorOutput ?? Console.Error;
@@ -52,6 +61,30 @@ public sealed class IntrospectionCommandOptions
     /// Gets the directory of the cache, or <c>null</c> to cache nothing.
     /// </summary>
     public string? CacheDirectory { get; }
+
+    /// <summary>
+    /// Gets the standard input.
+    /// </summary>
+    public TextReader StandardInput { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the standard input is a terminal.
+    /// </summary>
+    public bool IsInputTerminal { get; }
+
+    /// <summary>
+    /// Gets the sessions of the batch that runs the command, or <c>null</c> outside a batch.
+    /// </summary>
+    internal IntrospectionSessionCache? SessionCache { get; private init; }
+
+    /// <summary>
+    /// Gets the options of one query of a batch: the same product, directories and sessions, with outputs of its own.
+    /// </summary>
+    internal IntrospectionCommandOptions ForQuery( TextWriter standardOutput, TextWriter errorOutput, IntrospectionSessionCache sessionCache )
+        => new( this.Provider, standardOutput, errorOutput, this.WorkingDirectory, false, this.GetEnvironmentVariable, this.CacheDirectory ?? "", TextReader.Null, true )
+        {
+            SessionCache = sessionCache
+        };
 
     /// <summary>
     /// Gets the provider of the product.
