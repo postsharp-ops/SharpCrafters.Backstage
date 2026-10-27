@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Symbols xmlns="http://schemas.postsharp.org/2.0/symbols">
+  <Class Class="#1=T:[ConsoleApplication1]ConsoleApplication1.MyEventAspect">
+    <Instance Declaration="#2=T:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents" Id="78acef302393581c">
+      <Target Target="#3=E:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents::AutoEvent">
+        <JoinPoint Advised="#4=M:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents::add_AutoEvent([ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents+AutoEventEventHandler)" Description="#5=Intercepted by advice OnAddHandler" Semantic="AddOn" />
+        <JoinPoint Advised="#6=M:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents::remove_AutoEvent([ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents+AutoEventEventHandler)" Description="#7=Intercepted by advice OnRemoveHandler" Semantic="RemoveOn" />
+      </Target>
+      <Target Target="#8=E:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents::Event1">
+        <JoinPoint Advised="#9=M:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents::add_Event1(System.EventHandler)" Description="#5" Semantic="AddOn" />
+        <JoinPoint Advised="#10=M:[ConsoleApplication1]ConsoleApplication1.When_EventWithAspect.ClassWithEvents::remove_Event1(System.EventHandler)" Description="#7" Semantic="RemoveOn" />
+      </Target>
+    </Instance>
+  </Class>
+</Symbols>
