@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -100,7 +101,7 @@ public sealed class ShowSelectorTests : IDisposable
 
         for ( var i = 0; i < 17; i++ )
         {
-            instances.Append( $"""<Instance Declaration="M:[App]App.C::M{i}()"><Target><JoinPoint /></Target></Instance>""" );
+            instances.Append( CultureInfo.InvariantCulture, $"""<Instance Declaration="M:[App]App.C::M{i}()"><Target><JoinPoint /></Target></Instance>""" );
         }
 
         this.WriteSymbols( $"""<Symbols xmlns="{TestProject.SymbolsNamespace}"><Class Class="T:[App]App.LogAttribute">{instances}</Class></Symbols>""" );
