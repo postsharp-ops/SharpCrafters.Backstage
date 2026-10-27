@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <!-- The common model of the introspection of aspects and its loaders, for the tools of PostSharp and Metalama
-             (Documentation/future/Introspection-Cli.md of PostSharp, sections 6 and 7.1). -->
+        <!-- The common model of the introspection of aspects, its loaders, the evaluation of the projects, the query
+             language and the introspect commands, for the tools of PostSharp and Metalama
+             (Documentation/future/Introspection-Cli.md of PostSharp, sections 5, 6 and 7). -->
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <RootNamespace>SharpCrafters.Aspects.Introspection.Query</RootNamespace>
@@ -11,6 +12,19 @@
     <ItemGroup>
         <ProjectReference Include="..\SharpCrafters.Aspects.Introspection\SharpCrafters.Aspects.Introspection.csproj" />
         <PackageReference Include="System.IO.Hashing" />
+        <PackageReference Include="Microsoft.OData.Core" />
+        <PackageReference Include="Spectre.Console.Cli" />
+        <PackageReference Include="Spectre.Console.Json" />
+
+        <!-- The MSBuild assemblies are resolved from the .NET SDK by Microsoft.Build.Locator, so none is copied to the output
+             of a tool, where it would be found before the locator registers the SDK. Excluding the run-time assets of a
+             package does not exclude those of its dependencies, so Microsoft.Build.Framework and Microsoft.NET.StringTools are
+             excluded too (Metalama.Framework.Workspaces learnt this with a TypeLoadException and a MissingMethodException).
+             PrivateAssets keeps them from the consumers of this package, to which ExcludeAssets does not flow. -->
+        <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Build.Framework" ExcludeAssets="runtime" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.NET.StringTools" ExcludeAssets="runtime" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Build.Locator" />
     </ItemGroup>
 
     <ItemGroup>
