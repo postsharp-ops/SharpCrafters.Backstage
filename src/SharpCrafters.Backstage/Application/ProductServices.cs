@@ -54,22 +54,11 @@ internal sealed class ProductServices
             LazyThreadSafetyMode.ExecutionAndPublication );
 
         this._telemetryConfigurationService = new Lazy<ITelemetryConfigurationService>(
-            () =>
-            {
-                if ( isPrimary )
-                {
-                    // The outer provider initializes it, through the composite service.
-                    return new TelemetryConfigurationService( this.ServiceProvider );
-                }
-                else
-                {
-                    // The inner provider is not initialized, so its service is initialized here.
-                    var service = this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
-                    service.Initialize();
-
-                    return service;
-                }
-            },
+            // The outer provider initializes the service of the primary product, through the composite service, and
+            // CompositeProductServices initializes the service of an inner provider when it creates the provider.
+            () => isPrimary
+                ? new TelemetryConfigurationService( this.ServiceProvider )
+                : this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>(),
             LazyThreadSafetyMode.ExecutionAndPublication );
 
         this._ideExtensionStatusService = new Lazy<IIdeExtensionStatusService>(

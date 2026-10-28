@@ -2,8 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Licensing.LicenseServer;
-using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Collections.Generic;
@@ -22,7 +20,7 @@ namespace SharpCrafters.Backstage.Application;
 /// <remarks>
 /// <para>
 /// A license key is routed to the product that owns the product of the key (see
-/// <see cref="CompositeProductServices.GetOwner"/>), which is the product to which it is native. A key that two
+/// <see cref="CompositeProductServices.GetOwner(string)"/>), which is the product to which it is native. A key that two
 /// families accept, such as a PostSharp Ultimate key, is native to one family only, so it goes to that family. A license
 /// server URL, and a string that is not a license key, go to the primary product, which reports the error of a string
 /// that it cannot register.
@@ -52,18 +50,7 @@ internal sealed class CompositeLicenseRegistrationService : ILicenseRegistration
 
     private void OnPropertyChanged( object? sender, PropertyChangedEventArgs e ) => this.PropertyChanged?.Invoke( this, e );
 
-    private ILicenseRegistrationService GetService( string licenseString )
-    {
-        if ( !LicenseServerUrl.IsLicenseServerUrl( licenseString )
-             && LicenseKeyData.TryDeserialize( licenseString, out var licenseKeyData, out _ ) )
-        {
-            return this._products.GetOwner( licenseKeyData.Product ).LicenseRegistrationService;
-        }
-        else
-        {
-            return this.Primary;
-        }
-    }
+    private ILicenseRegistrationService GetService( string licenseString ) => this._products.GetOwner( licenseString ).LicenseRegistrationService;
 
     public LicenseRegistrationResult Register( SelfRegisteredEdition edition, SelfRegisteredEditionOptions? options = null )
     {

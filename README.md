@@ -48,15 +48,17 @@ tools extractor. It uses the instances of the outer provider for the services th
 are the service types marked with `ProductNeutralServiceAttribute`, such as the logger factory, the clock, the HTTP
 client factory, the event dispatcher, the file system and the registry. It keeps its own configuration store, so
 Metalama keeps its files and PostSharp keeps its registry keys, and the build of each product reads what the extension
-writes.
+writes. An inner provider has its own unattended process detector, because each product reads its own
+`<PREFIX>FORCE_ATTENDED` variable. Its telemetry stays in its upload queue: it uploads nothing and sends no analytics,
+and the processes of that product upload the queue.
 
 The following services of the outer provider answer for all products:
 
 | Service | Behaviour |
 |---|---|
 | `ILicenseRegistrationService` | Lists the licenses and the editions of every product. A license key is stored by the product family to which its product is native (`ILicenseProductCatalog.IsNativeProduct`), so a PostSharp Framework or PostSharp Ultimate key, which Metalama also accepts, is stored by PostSharp. A license server is stored by the primary product. `RemoveLicenses` removes the licenses of every product |
-| `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. When none does, the primary product reports the message and the notification once |
-| `ITelemetryConfigurationService` | Reports the maximal effective consent over all products, and writes a consent to every product |
+| `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. When none does, one message and one notification name the licenses of every product. A license key of the project is given only to the product that owns it |
+| `ITelemetryConfigurationService` | Reports the maximal effective consent over all products, unless the primary product is opted out at the process level. Writes a consent to every product. A compare-exchange of a consent is made for each product against its own consent |
 | `IIdeExtensionStatusService` | Reads the status of the primary product, and writes it to every product |
 
 The composite services update the products one after the other. A configuration file must not be updated inside the

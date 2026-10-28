@@ -56,19 +56,23 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
 
     /// <inheritdoc />
     /// <remarks>
-    /// The comparison is made against the consent of the primary product. When it succeeds, the new consent is written
-    /// to the other products whatever their consent was, so that the products stay aligned.
+    /// <para>
+    /// The comparison is made for each product against its own consent, so a product whose consent differs keeps it.
+    /// This matters because the services call this method without a gesture of the user: a usage session changes
+    /// <see cref="TelemetryConsent.Default"/> to <see cref="TelemetryConsent.Yes"/>, and it must not change the
+    /// <see cref="TelemetryConsent.No"/> of another product.
+    /// </para>
+    /// <para>
+    /// The result is that of the primary product, whose pipeline reacts to it.
+    /// </para>
     /// </remarks>
     public bool CompareExchangeConsent( TelemetryScenario scenario, TelemetryConsent newAction, TelemetryConsent oldAction )
     {
-        if ( !this.Primary.CompareExchangeConsent( scenario, newAction, oldAction ) )
-        {
-            return false;
-        }
+        var result = this.Primary.CompareExchangeConsent( scenario, newAction, oldAction );
 
-        CompositeBackstageProduct.ForEach( this.Services.Skip( 1 ), s => s.SetConsent( scenario, newAction ) );
+        CompositeBackstageProduct.ForEach( this.Services.Skip( 1 ), s => s.CompareExchangeConsent( scenario, newAction, oldAction ) );
 
-        return true;
+        return result;
     }
 
     public Guid DeviceId => this.Primary.DeviceId;
@@ -76,19 +80,32 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
     /// <inheritdoc />
     /// <remarks>
     /// The result is the maximal effective consent over all products, in the order <see cref="TelemetryConsent.No"/>,
-    /// <see cref="TelemetryConsent.Default"/>, <see cref="TelemetryConsent.Yes"/>. Reading it creates the inner service
-    /// providers.
+    /// <see cref="TelemetryConsent.Default"/>, <see cref="TelemetryConsent.Yes"/>, unless telemetry is disabled for the
+    /// primary product at the process level. Reading it creates the inner service providers.
     /// </remarks>
     public TelemetryConsent GetEffectiveConsent( TelemetryScenario scenario ) => this.GetEffectiveConsentAndReason( scenario ).Consent;
 
     /// <inheritdoc />
     /// <remarks>
-    /// The result is that of the product with the maximal effective consent (see <see cref="GetEffectiveConsent"/>). When
-    /// several products have it, the first of them, starting with the primary product, gives the reason.
+    /// <para>
+    /// When telemetry is disabled for the primary product at the process level (see <see cref="IsGloballyEnabled"/>),
+    /// for instance by its opt-out environment variable, the result is that of the primary product. The outer provider
+    /// runs the pipeline of the primary product, so the consent of another product must not override such an opt-out.
+    /// </para>
+    /// <para>
+    /// Otherwise, the result is that of the product with the maximal effective consent (see
+    /// <see cref="GetEffectiveConsent"/>). When several products have it, the first of them, starting with the primary
+    /// product, gives the reason.
+    /// </para>
     /// </remarks>
     public (TelemetryConsent Consent, TelemetryDisabledReason Reason) GetEffectiveConsentAndReason( TelemetryScenario scenario )
     {
         var result = this.Primary.GetEffectiveConsentAndReason( scenario );
+
+        if ( !this.Primary.IsGloballyEnabled )
+        {
+            return result;
+        }
 
         foreach ( var service in this.Services.Skip( 1 ) )
         {

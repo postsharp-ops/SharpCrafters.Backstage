@@ -25,6 +25,7 @@ using SharpCrafters.Backstage.Welcome;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -44,6 +45,9 @@ public sealed class CompositeProductTests : IDisposable
     private readonly ITestOutputHelper _logger;
     private readonly TestLicenseKeyProvider _licenseKeys = new();
     private readonly TestRegistryService _registry = new();
+
+    // PostSharp detects the unattended mode with its own detector, which reads the machine unless this variable is set.
+    private readonly TestEnvironmentVariableProvider _environment = new() { Environment = { ["POSTSHARP_FORCE_ATTENDED"] = "true" } };
     private readonly List<IDisposable> _serviceProviders = [];
 
     public CompositeProductTests( ITestOutputHelper logger )
@@ -93,7 +97,7 @@ public sealed class CompositeProductTests : IDisposable
         builder.AddService( typeof(IHttpClientFactory), serviceProvider => new TestHttpClientFactory( serviceProvider ) );
         builder.AddService( typeof(IMachineIdProvider), new TestMachineIdProvider() );
         builder.AddService( typeof(IUserIdentityProvider), new TestUserIdentityProvider() );
-        builder.AddService( typeof(IEnvironmentVariableProvider), new TestEnvironmentVariableProvider() );
+        builder.AddService( typeof(IEnvironmentVariableProvider), this._environment );
         builder.AddService( typeof(IUserDeviceDetectionService), new TestUserDeviceDetectionService { IsInteractiveDevice = true } );
         builder.AddService( typeof(IUnattendedProcessDetector), new TestUnattendedProcessDetector() );
 
@@ -119,6 +123,10 @@ public sealed class CompositeProductTests : IDisposable
     /// PostSharp from the registry, so a license that the extension wrote to the wrong store would be invisible to
     /// the build of the product that needs it.
     /// </summary>
+    /// <remarks>
+    /// Away from Windows, PostSharp keeps its configuration in files too, in a directory of its own, so the stores are
+    /// still separate but no registry is written.
+    /// </remarks>
     [Fact]
     public async Task EachProductKeepsItsOwnStore()
     {
@@ -127,10 +135,15 @@ public sealed class CompositeProductTests : IDisposable
 
         var metalamaConfiguration = products.Products[0].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
         var postSharpConfiguration = products.Products[1].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
+        var isWindows = RuntimeInformation.IsOSPlatform( OSPlatform.Windows );
 
         Assert.Same( serviceProvider.GetRequiredBackstageService<IConfigurationManager>(), metalamaConfiguration );
         Assert.NotSame( metalamaConfiguration, postSharpConfiguration );
-        Assert.IsType<RegistryConfigurationManager>( postSharpConfiguration );
+
+        if ( isWindows )
+        {
+            Assert.IsType<RegistryConfigurationManager>( postSharpConfiguration );
+        }
 
         var registryWritesBefore = this._registry.WriteCount;
 
@@ -142,8 +155,10 @@ public sealed class CompositeProductTests : IDisposable
 
         Assert.True( (await registrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpCaching )).IsSuccess );
 
-        // A PostSharp key is written to the registry.
-        Assert.True( this._registry.WriteCount > registryWritesBefore );
+        // A PostSharp key is written to the store of PostSharp, which is the registry on Windows.
+        Assert.Equal( isWindows, this._registry.WriteCount > registryWritesBefore );
+        Assert.Equal( [this._licenseKeys.MetalamaProfessionalBusiness], GetRegisteredLicenseStrings( products.Products[0] ) );
+        Assert.Equal( [this._licenseKeys.PostSharpCaching], GetRegisteredLicenseStrings( products.Products[1] ) );
     }
 
     /// <summary>
@@ -260,6 +275,127 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
+    /// Tests the message of a requirement that no product satisfies while a product holds a license. The user holds a
+    /// license that is not enough, and being told that they hold none would send them looking for a key they have
+    /// already registered.
+    /// </summary>
+    [Fact]
+    public async Task AFailureNamesTheLicensesOfEveryProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var products = GetProducts( serviceProvider );
+
+        // PostSharp Caching does not license the tooling, and Metalama holds nothing.
+        Assert.True( (await products.Products[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpCaching )).IsSuccess );
+
+        var messages = new List<LicensingMessage>();
+        var consumer = await serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumerAsync();
+
+        Assert.False( consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ), messages.Add, showsToastNotification: false ) );
+        var message = Assert.Single( messages );
+        Assert.Equal( LicensingMessageKind.RequirementNotSatisfied, message.Kind );
+        Assert.Contains( "PostSharp Caching", message.Text, StringComparison.Ordinal );
+    }
+
+    /// <summary>
+    /// Tests that a license key of the project is given only to the product that owns it. Another product would report
+    /// that the key belongs to another product family, and the build would show a warning about a key that works.
+    /// </summary>
+    [Fact]
+    public async Task AProjectLicenseKeyIsReportedOnlyByItsProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+
+        var messages = new List<LicensingMessage>();
+
+        var consumer = await serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>()
+            .CreateConsumerAsync( new LicenseConsumptionOptions { ProjectLicenseKey = this._licenseKeys.MetalamaProfessionalBusiness }, messages.Add );
+
+        Assert.True( consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ), messages.Add, showsToastNotification: false ) );
+        Assert.Empty( messages );
+    }
+
+    /// <summary>
+    /// Tests that a pasted license key goes to the same product as the key itself. A key copied from an e-mail often
+    /// carries line breaks or quotes, and a PostSharp key read as garbage would go to Metalama, which would then store
+    /// it where PostSharp never reads.
+    /// </summary>
+    [Fact]
+    public async Task APastedLicenseKeyIsStoredByItsProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var products = GetProducts( serviceProvider );
+        var licenseKey = this._licenseKeys.PostSharpUltimate;
+
+        var result = await serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>()
+            .RegisterLicenseAsync( "\"" + licenseKey.Insert( 10, Environment.NewLine ) + "\" " );
+
+        Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
+        Assert.Empty( GetRegisteredLicenseStrings( products.Products[0] ) );
+        Assert.Single( GetRegisteredLicenseStrings( products.Products[1] ) );
+    }
+
+    /// <summary>
+    /// Tests that a usage session, which turns an unset consent into a consent without asking the user, does not
+    /// change the refusal of another product. A user who refused telemetry in PostSharp must not find it enabled because
+    /// they opened Visual Studio.
+    /// </summary>
+    [Fact]
+    public void AnAutomaticConsentDoesNotOverrideTheRefusalOfAnotherProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
+        var products = GetProducts( serviceProvider );
+
+        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Usage, TelemetryConsent.No );
+
+        var telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
+        Assert.True( telemetryConfigurationService.CompareExchangeConsent( TelemetryScenario.Usage, TelemetryConsent.Yes, TelemetryConsent.Default ) );
+
+        Assert.Equal( TelemetryConsent.Yes, GetUsageConsent( products.Products[0] ) );
+        Assert.Equal( TelemetryConsent.No, GetUsageConsent( products.Products[1] ) );
+
+        static TelemetryConsent GetUsageConsent( ProductServices product )
+            => product.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<TelemetryConfiguration>().UsageConsent;
+    }
+
+    /// <summary>
+    /// Tests that the opt-out environment variable of the primary product wins over the consent of another product.
+    /// The outer pipeline is that of the primary product, and a user who set the variable expects it to report nothing.
+    /// </summary>
+    [Fact]
+    public void TheProcessLevelOptOutOfThePrimaryProductWins()
+    {
+        this._environment.Environment["METALAMA_TELEMETRY_OPT_OUT"] = "true";
+
+        var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
+        var products = GetProducts( serviceProvider );
+
+        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Yes );
+        Assert.Equal( TelemetryConsent.Yes, products.Products[1].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+
+        var (consent, reason) = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>()
+            .GetEffectiveConsentAndReason( TelemetryScenario.Exception );
+
+        Assert.Equal( TelemetryConsent.No, consent );
+        Assert.Equal( TelemetryDisabledReason.EnvironmentVariableOptOut, reason );
+    }
+
+    /// <summary>
+    /// Tests that an inner service provider is usable as soon as it exists. Its license audit reads the telemetry
+    /// configuration directly, without going through the composite service, and an uninitialized configuration would
+    /// throw instead of queuing the audit.
+    /// </summary>
+    [Fact]
+    public void TheServicesOfAnInnerProviderAreInitialized()
+    {
+        var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
+        var inner = GetProducts( serviceProvider ).Products[1].ServiceProvider;
+
+        _ = inner.GetRequiredBackstageService<ITelemetryConfigurationService>().GetEffectiveConsent( TelemetryScenario.Usage );
+        _ = inner.GetRequiredBackstageService<IUnattendedProcessDetector>().IsCurrentProcessUnattended;
+    }
+
+    /// <summary>
     /// Tests that the one telemetry switch of the extension applies to both products. A user who turns telemetry off in
     /// Visual Studio expects PostSharp to stop reporting as well as Metalama.
     /// </summary>
@@ -343,7 +479,18 @@ public sealed class CompositeProductTests : IDisposable
         Assert.Same( serviceProvider.GetBackstageService<ILoggerFactory>(), inner.GetBackstageService<ILoggerFactory>() );
         Assert.Same( serviceProvider.GetBackstageService<IEventDispatcher>(), inner.GetBackstageService<IEventDispatcher>() );
         Assert.Same( serviceProvider.GetBackstageService<IFileSystem>(), inner.GetBackstageService<IFileSystem>() );
-        Assert.Same( this._registry, inner.GetBackstageService<IRegistryService>() );
+        if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
+        {
+            Assert.Same( this._registry, inner.GetBackstageService<IRegistryService>() );
+        }
+
+        // The telemetry of the inner provider stays in its queue: it uploads nothing and sends no analytics.
+        Assert.NotSame( serviceProvider.GetBackstageService<ITelemetryUploader>(), inner.GetBackstageService<ITelemetryUploader>() );
+        Assert.False( inner.GetRequiredBackstageService<ITelemetryUploader>().StartUpload( force: true ) );
+        Assert.Null( inner.GetBackstageService<MatomoUploader>() );
+
+        // The unattended mode can be forced for each product separately, so each product has its own detector.
+        Assert.NotSame( serviceProvider.GetBackstageService<IUnattendedProcessDetector>(), inner.GetBackstageService<IUnattendedProcessDetector>() );
 
         // The services that depend on the product are not.
         Assert.Same( PostSharpProduct.Profile, inner.GetRequiredBackstageService<ProductProfile>() );
@@ -354,7 +501,7 @@ public sealed class CompositeProductTests : IDisposable
     /// Tests that the inner service providers are created only when needed and disposed with the outer one. An inner
     /// provider that outlived the extension would keep watching the registry of PostSharp.
     /// </summary>
-    [Fact]
+    [PlatformFact( TestPlatforms.Windows )]
     public void InnerServiceProvidersAreDisposedWithTheOuterOne()
     {
         var serviceProvider = this.CreateServiceProvider( isLongRunningProcess: true ).InitializeBackstageServices();

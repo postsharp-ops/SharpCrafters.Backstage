@@ -2,6 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using System;
 using System.Collections.Generic;
@@ -34,23 +36,46 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
 
     /// <inheritdoc />
     /// <remarks>
-    /// The consumer of each product is given the same options, so the license keys of the project are offered to every
-    /// product. A message that several products report in the same words is reported once.
+    /// <para>
+    /// A license key of the project, given by <see cref="LicenseConsumptionOptions.ProjectLicenseKey"/> or
+    /// <see cref="LicenseConsumptionOptions.ExplicitLicenses"/>, is given only to the product that owns it (see
+    /// <see cref="CompositeProductServices.GetOwner(string)"/>). Another product would report the key as a key of
+    /// another product family, although the composite product can use it.
+    /// </para>
+    /// <para>
+    /// A message that several products report in the same words is reported once.
+    /// </para>
     /// </remarks>
     public async ValueTask<ILicenseConsumer> CreateConsumerAsync(
         LicenseConsumptionOptions? options = null,
         Action<LicensingMessage>? reportMessage = null,
         CancellationToken cancellationToken = default )
     {
+        options ??= LicenseConsumptionOptions.Default;
+
         var reportedMessages = new HashSet<string>( StringComparer.Ordinal );
-        var consumers = ImmutableArray.CreateBuilder<ILicenseConsumer>( this._products.Products.Length );
+        var consumers = ImmutableArray.CreateBuilder<LicenseConsumer>( this._products.Products.Length );
 
         foreach ( var product in this._products.Products )
         {
-            consumers.Add( await product.LicenseConsumptionService.CreateConsumerAsync( options, ReportMessage, cancellationToken ) );
+            var productOptions = options with
+            {
+                ProjectLicenseKey = this._products.GetOwner( options.ProjectLicenseKey ) == product ? options.ProjectLicenseKey : null,
+                ExplicitLicenses = options.ExplicitLicenses.IsDefault
+                    ? options.ExplicitLicenses
+                    : options.ExplicitLicenses.Where( l => this._products.GetOwner( l.LicenseString ) == product ).ToImmutableArray()
+            };
+
+            var consumer = await product.LicenseConsumptionService.CreateConsumerAsync( productOptions, ReportMessage, cancellationToken );
+
+            // The service of a product is always the standard service, which creates this type.
+            consumers.Add( (LicenseConsumer) consumer );
         }
 
-        return new CompositeLicenseConsumer( consumers.MoveToImmutable() );
+        return new CompositeLicenseConsumer(
+            consumers.MoveToImmutable(),
+            this._products.ServiceProvider.GetRequiredBackstageService<ILicenseProductCatalog>(),
+            this._products.ServiceProvider.GetRequiredBackstageService<IEventDispatcher>() );
 
         void ReportMessage( LicensingMessage message )
         {
@@ -86,11 +111,15 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
     /// </summary>
     private sealed class CompositeLicenseConsumer : ILicenseConsumer
     {
-        private readonly ImmutableArray<ILicenseConsumer> _consumers;
+        private readonly ImmutableArray<LicenseConsumer> _consumers;
+        private readonly ILicenseProductCatalog _catalog;
+        private readonly IEventDispatcher _eventDispatcher;
 
-        public CompositeLicenseConsumer( ImmutableArray<ILicenseConsumer> consumers )
+        public CompositeLicenseConsumer( ImmutableArray<LicenseConsumer> consumers, ILicenseProductCatalog catalog, IEventDispatcher eventDispatcher )
         {
             this._consumers = consumers;
+            this._catalog = catalog;
+            this._eventDispatcher = eventDispatcher;
             this.Licenses = consumers.SelectMany( c => c.Licenses ).ToImmutableArray();
         }
 
@@ -99,21 +128,23 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
         /// <inheritdoc />
         /// <remarks>
         /// <para>
-        /// The consumers are asked in order, without a notification and with their messages held back. The first one
-        /// that satisfies the requirement wins: it marks its license for audit, and its messages are reported.
+        /// The consumers are asked in order, and their messages are held back. The first one that satisfies the
+        /// requirement wins: it marks its license for audit, and its messages are reported.
         /// </para>
         /// <para>
-        /// When no consumer satisfies the requirement, the consumer of the primary product is asked again, and this time
-        /// it reports its messages and publishes its notification, so the user is told once.
+        /// When no consumer satisfies the requirement, the messages of all consumers are reported, and then one message,
+        /// and one notification, that names the licenses of all products and the eligible products of the union catalog.
         /// </para>
         /// </remarks>
         public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage = null, bool showsToastNotification = true )
         {
+            var heldMessages = new List<LicensingMessage>();
+
             foreach ( var consumer in this._consumers )
             {
                 var messages = new List<LicensingMessage>();
 
-                if ( consumer.TryConsume( requirement, messages.Add, false ) )
+                if ( consumer.TryConsumeCore( requirement, messages.Add ) )
                 {
                     if ( reportMessage != null )
                     {
@@ -122,9 +153,24 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
 
                     return true;
                 }
+
+                heldMessages.AddRange( messages );
             }
 
-            return this._consumers[0].TryConsume( requirement, reportMessage, showsToastNotification );
+            if ( reportMessage != null )
+            {
+                heldMessages.GroupBy( m => m.Text, StringComparer.Ordinal ).Select( g => g.First() ).ToList().ForEach( reportMessage );
+            }
+
+            LicenseConsumer.ReportRequirementNotSatisfied(
+                requirement,
+                this._catalog,
+                this.Licenses,
+                this._eventDispatcher,
+                reportMessage,
+                showsToastNotification );
+
+            return false;
         }
     }
 }

@@ -5,10 +5,16 @@
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.LicenseServer;
+using SharpCrafters.Backstage.Licensing.Licenses;
+using SharpCrafters.Backstage.ProcessClassification;
+using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Tools;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Application;
 
@@ -23,14 +29,22 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
     /// The services that an inner provider never registers, in addition to those that its options disable.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The crash dump service is registered with the diagnostics, which an inner provider needs for its telemetry and
     /// license audit services. The dumper of the outer provider is enough for the process.
+    /// </para>
+    /// <para>
+    /// The analytics uploader is optional for its consumers, so an inner provider sends no analytics directly. With
+    /// <see cref="QueueOnlyTelemetryUploader"/>, this keeps the telemetry of a secondary product in its queue, where the
+    /// processes of that product upload it.
+    /// </para>
     /// </remarks>
-    private static readonly Type[] _suppressedServiceTypes = [typeof(IMiniDumper), typeof(IBackstageToolsExtractor)];
+    private static readonly Type[] _suppressedServiceTypes = [typeof(IMiniDumper), typeof(IBackstageToolsExtractor), typeof(MatomoUploader)];
 
     private readonly IServiceProvider _serviceProvider;
     private readonly BackstageInitializationOptions _options;
     private readonly object _sync = new();
+    private readonly List<IDisposable> _innerServiceProviders = [];
     private bool _isDisposed;
 
     public CompositeProductServices( IServiceProvider serviceProvider, ImmutableArray<BackstageProduct> products, BackstageInitializationOptions options )
@@ -44,6 +58,11 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
                     : new ProductServices( product, false, () => this.CreateInnerServiceProvider( product ), options ) )
             .ToImmutableArray();
     }
+
+    /// <summary>
+    /// Gets the outer service provider.
+    /// </summary>
+    public IServiceProvider ServiceProvider => this._serviceProvider;
 
     /// <summary>
     /// Gets the services of each product, the primary product first.
@@ -61,8 +80,31 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
            ?? this.Products.FirstOrDefault( p => p.Catalog.IsProductOfFamily( licenseProduct ) )
            ?? this.Primary;
 
+    /// <summary>
+    /// Gets the services of the product that owns a license string: the owner of the product of a license key (see
+    /// <see cref="GetOwner(LicenseProduct)"/>), or the primary product for the URL of a license server and for a string
+    /// that is not a license key.
+    /// </summary>
+    /// <remarks>
+    /// The license key is cleaned as the standard services clean it before they read it, so that a key pasted with
+    /// line breaks, spaces or quotes goes to the same product as the key itself.
+    /// </remarks>
+    public ProductServices GetOwner( string? licenseString )
+    {
+        if ( string.IsNullOrWhiteSpace( licenseString ) || LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
+        {
+            return this.Primary;
+        }
+
+        return LicenseKeyData.TryDeserialize( License.CleanLicenseKey( licenseString! ), out var licenseKeyData, out _ )
+            ? this.GetOwner( licenseKeyData.Product )
+            : this.Primary;
+    }
+
     private IServiceProvider CreateInnerServiceProvider( BackstageProduct product )
     {
+        // The whole creation is under the lock, and so is Dispose, so a provider is either never created or recorded
+        // before Dispose reads the record.
         lock ( this._sync )
         {
             if ( this._isDisposed )
@@ -83,7 +125,11 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
                         return;
                     }
 
-                    if ( this.GetSharedInstance( type ) is { } sharedInstance )
+                    if ( type == typeof(ITelemetryUploader) )
+                    {
+                        innerBuilder.AddService( type, QueueOnlyTelemetryUploader.Instance );
+                    }
+                    else if ( this.GetSharedInstance( type ) is { } sharedInstance )
                     {
                         innerBuilder.AddService( type, sharedInstance );
                     }
@@ -102,8 +148,6 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
                     innerBuilder.AddService( type, this.GetSharedInstance( type ) ?? instance );
                 } );
 
-            // The inner provider is not initialized with InitializeBackstageServices: the outer provider already runs the
-            // background services, the upload and the shutdown hooks of the process.
             filteringBuilder.AddBackstageServices(
                 new BackstageInitializationOptions( this._options.ApplicationInfo, product )
                 {
@@ -122,7 +166,17 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
                     AutoUploadTelemetry = false
                 } );
 
-            return innerBuilder.ServiceProvider;
+            var serviceProvider = innerBuilder.ServiceProvider;
+            this._innerServiceProviders.Add( (IDisposable) serviceProvider );
+
+            // The inner provider is not initialized with InitializeBackstageServices: the outer provider already runs the
+            // background services and the shutdown hooks of the process. Only the services that throw until they are
+            // initialized are initialized here, in the order of InitializeBackstageServices, so that every service of the
+            // inner provider can use them, and not only the composite services.
+            serviceProvider.GetBackstageService<IUnattendedProcessDetector>()?.Initialize();
+            serviceProvider.GetBackstageService<ITelemetryConfigurationService>()?.Initialize();
+
+            return serviceProvider;
         }
     }
 
@@ -139,6 +193,8 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
     /// </summary>
     public void Dispose()
     {
+        IDisposable[] innerServiceProviders;
+
         lock ( this._sync )
         {
             if ( this._isDisposed )
@@ -147,11 +203,11 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
             }
 
             this._isDisposed = true;
+            innerServiceProviders = this._innerServiceProviders.ToArray();
+            this._innerServiceProviders.Clear();
         }
 
-        CompositeBackstageProduct.ForEach(
-            this.Products.Where( p => !p.IsPrimary && p.IsServiceProviderCreated ),
-            p => (p.ServiceProvider as IDisposable)?.Dispose() );
+        CompositeBackstageProduct.ForEach( innerServiceProviders, p => p.Dispose() );
     }
 
     /// <summary>
@@ -172,5 +228,20 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
 
         public object? GetService( Type serviceType )
             => serviceType == typeof(ILicenseProductCatalog) ? this._catalog : this._serviceProvider.GetService( serviceType );
+    }
+
+    /// <summary>
+    /// The telemetry uploader of an inner provider. It uploads nothing, so that a report of a secondary product stays in
+    /// the upload queue of that product, and the outer provider runs the only upload of the process.
+    /// </summary>
+    private sealed class QueueOnlyTelemetryUploader : ITelemetryUploader
+    {
+        public static QueueOnlyTelemetryUploader Instance { get; } = new();
+
+        private QueueOnlyTelemetryUploader() { }
+
+        public bool StartUpload( bool force = false ) => false;
+
+        public Task UploadAsync() => Task.CompletedTask;
     }
 }
