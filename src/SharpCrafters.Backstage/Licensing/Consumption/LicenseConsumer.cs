@@ -58,14 +58,37 @@ internal sealed class LicenseConsumer : ILicenseConsumer
 
         this._logger.Warning?.Log( $"TryConsume({{{requirement}}}: no eligible license found." );
 
+        ReportRequirementNotSatisfied( requirement, this._catalog, this.Licenses, this._eventDispatcher, reportMessage, showsToastNotification );
+
+        return false;
+    }
+
+    /// <summary>
+    /// Reports that no license satisfies a requirement: it reports a licensing message and, unless the application
+    /// provides its own user interface, publishes the event that shows a notification.
+    /// </summary>
+    /// <param name="requirement">The requirement that is not satisfied.</param>
+    /// <param name="catalog">The catalog that names the products that would satisfy the requirement.</param>
+    /// <param name="licenses">The licenses that were considered.</param>
+    /// <param name="eventDispatcher">The dispatcher of the event.</param>
+    /// <param name="reportMessage">A delegate that receives the message.</param>
+    /// <param name="showsToastNotification">Whether to publish the event.</param>
+    internal static void ReportRequirementNotSatisfied(
+        LicenseRequirement requirement,
+        ILicenseProductCatalog catalog,
+        ImmutableArray<LicenseConsumptionProperties> licenses,
+        IEventDispatcher eventDispatcher,
+        Action<LicensingMessage>? reportMessage,
+        bool showsToastNotification )
+    {
         var messageText =
             $"The component '{requirement.ComponentNameWithServicingPhase}' is not licensed. It requires one of the following products: "
-            + string.Join( ", ", requirement.GetEligibleProductNames( this._catalog ) )
+            + string.Join( ", ", requirement.GetEligibleProductNames( catalog ) )
             + ".";
 
         LicensingMessageKind messageKind;
 
-        if ( this._licenses.IsEmpty )
+        if ( licenses.IsEmpty )
         {
             messageText += " Could not find any valid registered license.";
 
@@ -81,7 +104,7 @@ internal sealed class LicenseConsumer : ILicenseConsumer
             // credential: naming the keys here would disclose every key the user holds to everyone who can
             // read a build log.
             messageText +=
-                $" {this._licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", this._licenses.Select( x => x.Properties.DisplayName ) )}.";
+                $" {licenses.Length} license keys were considered, but none was eligible: {string.Join( "; ", licenses.Select( x => x.DisplayName ) )}.";
 
             messageKind = LicensingMessageKind.RequirementNotSatisfied;
         }
@@ -92,10 +115,8 @@ internal sealed class LicenseConsumer : ILicenseConsumer
         // Publish the event, so that the user interface can show a notification, unless the application provides its own UI.
         if ( showsToastNotification )
         {
-            this._eventDispatcher.Publish( new LicenseRequirementNotSatisfiedEvent( requirement, messageText ) );
+            eventDispatcher.Publish( new LicenseRequirementNotSatisfiedEvent( requirement, messageText ) );
         }
-
-        return false;
     }
 
     /// <summary>
@@ -134,7 +155,11 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     /// <summary>
     /// Looks for a licence that satisfies a requirement, and reports its use when one does.
     /// </summary>
-    private bool TryConsumeCore( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
+    /// <summary>
+    /// Attempts to consume a license, without reporting that the requirement is not satisfied. The messages about the
+    /// licenses that were skipped are still reported.
+    /// </summary>
+    internal bool TryConsumeCore( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
     {
         foreach ( var license in this._licenses )
         {

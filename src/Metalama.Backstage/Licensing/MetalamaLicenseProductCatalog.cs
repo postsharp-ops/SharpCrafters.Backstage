@@ -63,6 +63,14 @@ public sealed class MetalamaLicenseProductCatalog : LicenseProductCatalog
 
     /// <inheritdoc />
     /// <remarks>
+    /// PostSharp Framework and PostSharp Ultimate are of the family, because Metalama consumes their keys, but they
+    /// are native to PostSharp.
+    /// </remarks>
+    public override bool IsNativeProduct( LicenseProduct product )
+        => this.IsProductOfFamily( product ) && product is not (LicenseProduct.PostSharpFramework or LicenseProduct.PostSharpUltimate);
+
+    /// <inheritdoc />
+    /// <remarks>
     /// Metalama expresses the free edition through the product, so the license type is not read.
     /// </remarks>
     public override bool IsFreeLicense( LicenseProduct product, LicenseType licenseType )

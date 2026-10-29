@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Extensibility;
 
 namespace SharpCrafters.Backstage.Diagnostics
 {
+    [ProductNeutralService]
     public interface ILoggerFactory : IBackstageService
     {
         ILogger GetLogger( string category );

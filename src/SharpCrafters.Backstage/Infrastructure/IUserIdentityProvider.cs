@@ -22,6 +22,7 @@ namespace SharpCrafters.Backstage.Infrastructure;
 /// </para>
 /// </remarks>
 [PublicAPI]
+[ProductNeutralService]
 public interface IUserIdentityProvider : IBackstageService
 {
     /// <summary>

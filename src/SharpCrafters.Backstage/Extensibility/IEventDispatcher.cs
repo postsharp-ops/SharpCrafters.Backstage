@@ -34,6 +34,7 @@ namespace SharpCrafters.Backstage.Extensibility;
 /// </para>
 /// </remarks>
 [PublicAPI]
+[ProductNeutralService]
 public interface IEventDispatcher : IBackstageService
 {
     /// <summary>

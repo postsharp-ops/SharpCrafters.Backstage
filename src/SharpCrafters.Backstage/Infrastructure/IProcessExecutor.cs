@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace SharpCrafters.Backstage.Infrastructure;
 
 [PublicAPI]
+[ProductNeutralService]
 public interface IProcessExecutor : IBackstageService
 {
     IProcess Start( ProcessStartInfo startInfo );
