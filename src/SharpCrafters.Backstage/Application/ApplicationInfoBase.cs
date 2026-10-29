@@ -38,7 +38,5 @@ namespace SharpCrafters.Backstage.Application
         public virtual bool ShouldCreateLocalCrashReports => true;
 
         public virtual ImmutableArray<IComponentInfo> Components => ImmutableArray<IComponentInfo>.Empty;
-
-        public virtual bool IsWorkerProcess => false;
     }
 }
