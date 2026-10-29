@@ -77,7 +77,7 @@ param(
 # The packages this product produces, those of the whole closure of its package dependencies, and those of its
 # source dependencies with their own closures: everything the build can reach and therefore everything whose
 # stale copy it could restore. Ordered and deduplicated by the SDK, so this list is stable between runs.
-$NuGetCachePackagePatterns = @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.backstage*', 'sharpcrafters.common*')
+$NuGetCachePackagePatterns = @('metalama.backstage*', 'postsharp.backstage*', 'postsharp.engineering', 'postsharp.engineering.*', 'sharpcrafters.aspects*', 'sharpcrafters.backstage*', 'sharpcrafters.common*')
 ####
 
 $ErrorActionPreference = 'Stop'
@@ -257,7 +257,7 @@ function Remove-StalePackages
 # at checkout with "Error while applying patch" and thousands of "failed to remove ...: Permission denied".
 #
 # The containers go first, so that nothing is still writing when the agent's command runs. What that command is,
-# is the agent's business: BUILDAGENT_CLEANUP_SCRIPT names it -- typically "sudo /opt/buildAgent/bin/chown-all.sh"
+# is the agent's business: BUILDAGENT_CLEANUP_SCRIPT names it -- typically "sudo /usr/local/sbin/teamcity-chown-all"
 # on the Linux agents -- and unset means no command, which is every Windows agent, where the question does not
 # arise.
 function Remove-BuildLeftovers
