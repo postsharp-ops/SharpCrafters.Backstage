@@ -82,8 +82,8 @@ public abstract class SelfRegisteredEdition
     /// </summary>
     /// <remarks>
     /// An edition that only an earlier version of the product can consume is not offered to someone setting the
-    /// product up for the first time. Neither is one that <see cref="RequiresReason"/>: the setup pages have no way to
-    /// ask the question.
+    /// product up for the first time. For an edition that <see cref="RequiresReason"/>, the setup pages ask for the
+    /// reason before they register it.
     /// </remarks>
     public virtual string? SetupTitle => null;
 

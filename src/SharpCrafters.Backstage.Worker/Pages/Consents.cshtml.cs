@@ -46,14 +46,14 @@ internal class ConsentsPageModel : PageModel
 
     public IActionResult OnGet()
     {
-        this.BackUrl = GlobalState.SelectedAction == SelectedAction.Register ? "/LicenseKey" : "/ChooseLicenseKind";
+        this.BackUrl = this.GetBackUrl();
 
         return this.Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        this.BackUrl = GlobalState.SelectedAction == SelectedAction.Register ? "/LicenseKey" : "/ChooseLicenseKind";
+        this.BackUrl = this.GetBackUrl();
 
         if ( !this.AcceptLicense )
         {
@@ -135,6 +135,26 @@ internal class ConsentsPageModel : PageModel
 
                 return false;
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the page that precedes this one, which is the page that asked for the last input of the user.
+    /// </summary>
+    private string GetBackUrl()
+    {
+        switch ( GlobalState.SelectedAction )
+        {
+            case SelectedAction.Register:
+                return "/LicenseKey";
+
+            case SelectedAction.SelfRegisteredEdition
+                when this._catalog.SelfRegisteredEditions.Any(
+                    e => e.RequiresReason && string.Equals( e.Alias, GlobalState.SelfRegisteredEditionAlias, StringComparison.OrdinalIgnoreCase ) ):
+                return "/CommunityLicenseReason";
+
+            default:
+                return "/ChooseLicenseKind";
         }
     }
 }

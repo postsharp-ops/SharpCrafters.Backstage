@@ -73,8 +73,10 @@ public class ChooseLicenseKindPageModel : PageModel
             {
                 GlobalState.SelectedAction = SelectedAction.SelfRegisteredEdition;
                 GlobalState.SelfRegisteredEditionAlias = edition.Alias;
+                GlobalState.CommunityLicenseReason = CommunityLicenseReason.None;
 
-                return this.Redirect( "/Consents" );
+                // An edition that requires a reason asks for it before the consents.
+                return this.Redirect( edition.RequiresReason ? "/CommunityLicenseReason" : "/Consents" );
             }
         }
 

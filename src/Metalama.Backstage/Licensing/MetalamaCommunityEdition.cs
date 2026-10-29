@@ -28,11 +28,7 @@ internal sealed class MetalamaCommunityEdition : SelfRegisteredEdition
     public override bool RequiresReason => true;
 
     /// <inheritdoc />
-    /// <remarks>
-    /// The edition is installed by the Visual Studio extension, which asks the question that entitles the user to it.
-    /// Nobody registers it by hand, so the command line does not advertise a verb for it.
-    /// </remarks>
-    public override bool IsAvailableFromCommandLine => false;
+    public override string SetupTitle => "Start with Metalama Community";
 
     /// <inheritdoc />
     /// <remarks>
