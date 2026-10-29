@@ -17,7 +17,6 @@ using SharpCrafters.Backstage.UserInterface.Toasts;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 
 namespace SharpCrafters.Backstage.Commands;
@@ -59,32 +58,6 @@ public sealed class BackstageCommandOptions
         errorOutput,
         ansiSupport,
         standardInput ) { }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="BackstageCommandOptions"/> class for a host that was compiled
-    /// against the constructor without a standard input. The commands read <see cref="Console.In"/>.
-    /// </summary>
-    /// <remarks>
-    /// No parameter is optional, so a call that omits arguments binds to the constructor above without ambiguity.
-    /// This overload only keeps the signature that an already-compiled host calls.
-    /// </remarks>
-    [EditorBrowsable( EditorBrowsableState.Never )]
-    public BackstageCommandOptions(
-        IApplicationInfo applicationInfo,
-        BackstageProduct product,
-        Action<ServiceProviderBuilder>? addToolsExtractor,
-        TextWriter? standardOutput,
-        TextWriter? errorOutput,
-        AnsiSupport ansiSupport,
-        Action<ServiceProviderBuilder>? registerServices ) : this(
-        applicationInfo,
-        product,
-        addToolsExtractor,
-        standardOutput,
-        errorOutput,
-        ansiSupport,
-        registerServices,
-        null ) { }
 
     /// <summary>
     /// Gets the product family that hosts the commands.
