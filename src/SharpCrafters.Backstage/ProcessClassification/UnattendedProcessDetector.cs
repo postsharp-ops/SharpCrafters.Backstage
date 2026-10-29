@@ -28,7 +28,6 @@ internal class UnattendedProcessDetector : IUnattendedProcessDetector
     private readonly ProductProfile _productProfile;
     private readonly IParentProcessSearch _parentProcessSearch;
     private readonly IEnvironmentVariableProvider _environmentVariableProvider;
-    private readonly IApplicationInfo _applicationInfo;
 
     public UnattendedProcessDetector( IServiceProvider serviceProvider )
     {
@@ -37,7 +36,6 @@ internal class UnattendedProcessDetector : IUnattendedProcessDetector
         this._productProfile = serviceProvider.GetRequiredBackstageService<ProductProfile>();
         this._parentProcessSearch = serviceProvider.GetRequiredBackstageService<IParentProcessSearch>();
         this._environmentVariableProvider = serviceProvider.GetRequiredBackstageService<IEnvironmentVariableProvider>();
-        this._applicationInfo = serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
     }
 
     private bool? _isCurrentProcessUnattended;
@@ -61,15 +59,6 @@ internal class UnattendedProcessDetector : IUnattendedProcessDetector
 
     private bool IsCurrentProcessUnattendedCore()
     {
-        // The worker is started in the background by a product process and has no user interface. Its parent has
-        // usually exited, so the examination of the process below would say nothing about the user.
-        if ( this._applicationInfo.IsWorkerProcess )
-        {
-            this._logger.Trace?.Log( "Unattended mode detected because the application is a worker process." );
-
-            return true;
-        }
-
         var variableName = this._productProfile.GetEnvironmentVariableName( ForceAttendedVariableName );
 
         if ( bool.TryParse( this._environmentVariableProvider.GetEnvironmentVariable( variableName ), out var forceAttended ) && forceAttended )

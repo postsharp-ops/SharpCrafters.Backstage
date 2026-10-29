@@ -23,13 +23,6 @@ namespace SharpCrafters.Backstage.Application
         bool IsLongRunningProcess { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the application is the background worker process of a product. The worker
-        /// has no user interface, so <see cref="IUnattendedProcessDetector"/> classifies it as unattended without
-        /// examining the process.
-        /// </summary>
-        bool IsWorkerProcess { get; }
-
-        /// <summary>
         /// Gets a value indicating whether telemetry is enabled for the application.
         /// </summary>
         bool IsTelemetryEnabled { get; }
