@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
 
 namespace SharpCrafters.Backstage.Utilities;
 
@@ -12,14 +11,15 @@ internal static class EnumerableExtensions
 {
     /// <summary>
     /// Invokes an action for each item, and continues after an item throws, so that one item that fails does not
-    /// prevent the action on the others. The first exception is rethrown after the last item.
+    /// prevent the action on the others. After the last item, an <see cref="AggregateException"/> that holds every
+    /// exception is thrown.
     /// </summary>
     /// <remarks>
     /// The items are processed one after the other, never one inside the other.
     /// </remarks>
     public static void ForEachContinueOnException<T>( this IEnumerable<T> items, Action<T> action )
     {
-        Exception? firstException = null;
+        List<Exception>? exceptions = null;
 
         foreach ( var item in items )
         {
@@ -29,13 +29,13 @@ internal static class EnumerableExtensions
             }
             catch ( Exception e )
             {
-                firstException ??= e;
+                (exceptions ??= []).Add( e );
             }
         }
 
-        if ( firstException != null )
+        if ( exceptions != null )
         {
-            ExceptionDispatchInfo.Capture( firstException ).Throw();
+            throw new AggregateException( exceptions );
         }
     }
 }
