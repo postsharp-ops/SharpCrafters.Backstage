@@ -18,7 +18,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Vsx.Composite;
+namespace SharpCrafters.Backstage.Vsx;
 
 /// <summary>
 /// Holds the members of a composite product, one for each product, and chooses the member that handles a license. The

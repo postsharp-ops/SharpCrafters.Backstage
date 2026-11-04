@@ -7,7 +7,6 @@ using Metalama.Backstage;
 using PostSharp.Backstage;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Telemetry;
-using SharpCrafters.Backstage.Vsx.Composite;
 using System;
 
 namespace SharpCrafters.Backstage.Vsx;

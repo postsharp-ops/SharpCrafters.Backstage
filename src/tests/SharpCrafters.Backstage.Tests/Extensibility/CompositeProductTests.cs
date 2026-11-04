@@ -23,7 +23,6 @@ using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Rss;
 using SharpCrafters.Backstage.UserInterface.Toasts;
 using SharpCrafters.Backstage.Vsx;
-using SharpCrafters.Backstage.Vsx.Composite;
 using SharpCrafters.Backstage.Welcome;
 using System;
 using System.Collections.Generic;

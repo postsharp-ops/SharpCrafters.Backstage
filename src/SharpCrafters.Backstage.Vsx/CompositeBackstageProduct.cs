@@ -15,7 +15,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace SharpCrafters.Backstage.Vsx.Composite;
+namespace SharpCrafters.Backstage.Vsx;
 
 /// <summary>
 /// Builds a <see cref="BackstageProduct"/> that hosts several products in one process, and registers the services that

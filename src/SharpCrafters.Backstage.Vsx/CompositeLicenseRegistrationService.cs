@@ -12,7 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Vsx.Composite;
+namespace SharpCrafters.Backstage.Vsx;
 
 /// <summary>
 /// The <see cref="ILicenseRegistrationService"/> of a composite product. It reports the licenses and the editions of

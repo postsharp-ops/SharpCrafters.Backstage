@@ -11,7 +11,7 @@ using SharpCrafters.Backstage.Telemetry;
 using System;
 using System.Threading;
 
-namespace SharpCrafters.Backstage.Vsx.Composite;
+namespace SharpCrafters.Backstage.Vsx;
 
 /// <summary>
 /// The services of one product of a composite product. Each service is created when it is first requested.

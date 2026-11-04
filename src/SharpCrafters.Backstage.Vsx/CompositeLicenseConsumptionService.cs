@@ -12,7 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Vsx.Composite;
+namespace SharpCrafters.Backstage.Vsx;
 
 /// <summary>
 /// The <see cref="ILicenseConsumptionService"/> of a composite product. Its consumer satisfies a requirement when the

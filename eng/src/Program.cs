@@ -87,8 +87,7 @@ var product = new Product( BackstageDependencies.Backstage )
         "Metalama.Backstage.$(PackageVersion).nupkg",               // Required by Metalama.Framework.
         "Metalama.Backstage.Tools.$(PackageVersion).nupkg",         // Required by Metalama.Framework.Engine and Metalama.Vsx.
         "PostSharp.Backstage.$(PackageVersion).nupkg",              // Required by PostSharp.
-        "PostSharp.Backstage.Tools.$(PackageVersion).nupkg",        // Required by PostSharp and PostSharp.Vsx.
-        "SharpCrafters.Backstage.Vsx.$(PackageVersion).nupkg" ),    // Required by Metalama.Vsx.
+        "PostSharp.Backstage.Tools.$(PackageVersion).nupkg" ),      // Required by PostSharp and PostSharp.Vsx.
 
     // The Linux images of the platform tests. The product builds on Windows only, so these images run the test archives
     // and build nothing. They carry PowerShell, which RunTests.ps1 needs, and the .NET SDK rather than the runtime only,
