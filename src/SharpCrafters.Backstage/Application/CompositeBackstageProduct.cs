@@ -21,7 +21,7 @@ namespace SharpCrafters.Backstage.Application;
 /// </summary>
 /// <remarks>
 /// <see cref="BackstageProduct"/> is a sealed record, so a composite product is an ordinary instance of it: it carries
-/// the values of the primary product, the union of the license product catalogs, and a
+/// the values of the primary product, its license product catalog included, and a
 /// <see cref="BackstageProduct.OverrideServices"/> action that this class implements.
 /// </remarks>
 internal sealed class CompositeBackstageProduct
@@ -72,11 +72,7 @@ internal sealed class CompositeBackstageProduct
 
         var composite = new CompositeBackstageProduct( products );
 
-        return primary with
-        {
-            LicenseProductCatalog = new CompositeLicenseProductCatalog( products.Select( p => p.LicenseProductCatalog ).ToImmutableArray() ),
-            OverrideServices = composite.OverrideServices
-        };
+        return primary with { OverrideServices = composite.OverrideServices };
     }
 
     private void OverrideServices( ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )

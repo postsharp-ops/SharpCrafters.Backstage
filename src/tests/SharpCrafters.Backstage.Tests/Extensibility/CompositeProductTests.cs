@@ -185,10 +185,27 @@ public sealed class CompositeProductTests : IDisposable
         Assert.Contains( availableEditions, e => MetalamaProduct.LicenseProductCatalog.SelfRegisteredEditions.Contains( e ) );
         Assert.Contains( availableEditions, e => PostSharpProduct.LicenseProductCatalog.SelfRegisteredEditions.Contains( e ) );
 
-        // The union catalog lists the editions of both families, so an edition of each can be registered through it.
-        var catalog = serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>();
-        Assert.True( catalog.IsProductOfFamily( LicenseProduct.MetalamaProfessional ) );
-        Assert.True( catalog.IsProductOfFamily( LicenseProduct.PostSharpCachingLibrary ) );
+        // The catalog of the outer provider is that of the primary product, so that every service of the outer provider
+        // sees the same catalog. The union is provided by the composite services.
+        Assert.Same( MetalamaProduct.LicenseProductCatalog, serviceProvider.GetRequiredBackstageService<ILicenseProductCatalog>() );
+    }
+
+    /// <summary>
+    /// Tests that a license reports whether it is free as the family that reads it decides. The free edition of
+    /// PostSharp is a PostSharp Ultimate key of the Community type, which Metalama would take for a paid key, and the
+    /// extension would then warn the user that a subscription they never bought is about to expire.
+    /// </summary>
+    [Fact]
+    public async Task AFreeLicenseOfAnotherProductIsReportedAsFree()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var products = GetProducts( serviceProvider );
+
+        Assert.True( (await products.Products[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpEssentials )).IsSuccess );
+
+        var license = Assert.Single( serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>().RegisteredLicenses );
+        Assert.True( license.IsFree );
+        Assert.False( MetalamaProduct.LicenseProductCatalog.IsFreeLicense( license.Product, license.LicenseType ) );
     }
 
     /// <summary>

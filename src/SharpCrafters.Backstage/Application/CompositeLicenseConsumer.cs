@@ -40,7 +40,8 @@ internal sealed class CompositeLicenseConsumer : ILicenseConsumer
     /// </para>
     /// <para>
     /// When no consumer satisfies the requirement, the messages of all consumers are reported, and then one message,
-    /// and one notification, that names the licenses of all products and the eligible products of the union catalog.
+    /// and one notification, that names the licenses of all products and the products that would satisfy the
+    /// requirement.
     /// </para>
     /// </remarks>
     public bool TryConsume( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage = null, bool showsToastNotification = true )

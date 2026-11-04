@@ -47,6 +47,15 @@ namespace SharpCrafters.Backstage.Licensing.Registration
         public Version? MinVersion { get; init; }
 
         /// <summary>
+        /// Gets a value indicating whether the licence is a free edition, which has no subscription to renew.
+        /// </summary>
+        /// <remarks>
+        /// The value comes from <see cref="ILicenseProductCatalog.IsFreeLicense"/> of the family that reads the licence,
+        /// so that a consumer of the properties does not need the catalog of that family.
+        /// </remarks>
+        public bool IsFree { get; init; }
+
+        /// <summary>
         /// Gets the URL of the license server that leases the licence, or <c>null</c> when the licence is a key.
         /// </summary>
         public string? LicenseServerUrl { get; init; }

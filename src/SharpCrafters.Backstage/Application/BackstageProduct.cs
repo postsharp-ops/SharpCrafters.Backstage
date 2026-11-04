@@ -84,7 +84,9 @@ public sealed record BackstageProduct(
     /// <para>
     /// The service provider created for the composite product is the service provider of <paramref name="primary"/>:
     /// there is one logger, one telemetry pipeline, and one set of notifications, welcome page and RSS client. Its
-    /// <see cref="LicenseProductCatalog"/> is the union of the catalogs of all products.
+    /// <see cref="LicenseProductCatalog"/> is the catalog of <paramref name="primary"/>: the licenses and the editions
+    /// of all products are reported by the composite <see cref="Licensing.Registration.ILicenseRegistrationService"/>,
+    /// and each license key is routed by the catalog of each product.
     /// </para>
     /// <para>
     /// The provider creates, when it first needs it, one inner service provider for each of <paramref name="others"/>.

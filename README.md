@@ -40,7 +40,8 @@ var serviceProvider = BackstageServiceFactory.CreateServiceProvider( new Backsta
 The first argument is the primary product. The service provider is the service provider of the primary product: it
 has its profile, its web links, its telemetry endpoints and its configuration store, and it runs the only logger,
 telemetry pipeline, notifications, welcome page and RSS client of the process. Its license product catalog is the
-union of the catalogs of all products.
+catalog of the primary product: the composite licensing services below answer for all products, and each license key
+is routed by the catalog of each product.
 
 Each other product gets an inner service provider, which is created when it is first needed and disposed with the
 outer one. An inner provider has no user interface, notifications, welcome page, RSS client, crash dump service or

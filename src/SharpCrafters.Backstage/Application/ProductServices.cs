@@ -73,8 +73,8 @@ internal sealed class ProductServices
     public bool IsPrimary { get; }
 
     /// <summary>
-    /// Gets the service provider of the product: the outer service provider, seen through the catalog of the product,
-    /// for the primary product, or the inner service provider for another product.
+    /// Gets the service provider of the product: the outer service provider for the primary product, or the inner
+    /// service provider for another product.
     /// </summary>
     public IServiceProvider ServiceProvider => this._serviceProvider.Value;
 

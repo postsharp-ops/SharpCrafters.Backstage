@@ -53,7 +53,7 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
 
         this.Products = products.Select(
                 ( product, index ) => index == 0
-                    ? new ProductServices( product, true, () => new PrimaryServiceProvider( serviceProvider, product.LicenseProductCatalog ), options )
+                    ? new ProductServices( product, true, () => serviceProvider, options )
                     : new ProductServices( product, false, () => this.CreateInnerServiceProvider( product ), options ) )
             .ToImmutableArray();
     }
