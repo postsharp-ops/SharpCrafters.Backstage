@@ -5,7 +5,6 @@
 using Metalama.Backstage;
 using PostSharp.Backstage;
 using SharpCrafters.Backstage.Application;
-using SharpCrafters.Backstage.Application.Composite;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Diagnostics;
@@ -23,6 +22,8 @@ using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Rss;
 using SharpCrafters.Backstage.UserInterface.Toasts;
+using SharpCrafters.Backstage.Vsx;
+using SharpCrafters.Backstage.Vsx.Composite;
 using SharpCrafters.Backstage.Welcome;
 using System;
 using System.Collections.Generic;
@@ -72,7 +73,7 @@ public sealed class CompositeProductTests : IDisposable
             IsLongRunningProcess = isLongRunningProcess, IsTelemetryEnabled = true
         };
 
-        var product = BackstageProduct.CreateComposite( MetalamaProduct.Instance, PostSharpProduct.Instance );
+        var product = VsxProduct.Instance;
 
         var options = new BackstageInitializationOptions( applicationInfo, product )
         {
@@ -503,17 +504,19 @@ public sealed class CompositeProductTests : IDisposable
             Assert.Same( this._registry, inner.GetBackstageService<IRegistryService>() );
         }
 
-        // The outer provider reports the telemetry of the process: the inner provider collects, reports and uploads
-        // nothing, and keeps only the telemetry configuration, to which the composite writes the consents.
-        Assert.NotNull( serviceProvider.GetBackstageService<ITelemetryUploader>() );
-        Assert.Null( inner.GetBackstageService<ITelemetryUploader>() );
+        // The outer provider reports the usage and the exceptions of the process: the inner provider collects neither.
+        Assert.NotNull( serviceProvider.GetBackstageService<ITelemetryService>() );
         Assert.Null( inner.GetBackstageService<ITelemetryService>() );
         Assert.Null( inner.GetBackstageService<IExceptionCapturer>() );
         Assert.Null( inner.GetBackstageService<IExceptionReportManager>() );
         Assert.Null( inner.GetBackstageService<IUsageSessionFactory>() );
-        Assert.Null( inner.GetBackstageService<MatomoUploader>() );
-        Assert.NotNull( serviceProvider.GetBackstageService<ILicenseAuditManager>() );
-        Assert.Null( inner.GetBackstageService<ILicenseAuditManager>() );
+
+        // Each product audits its own licenses, through its own upload queue and analytics site, so the inner provider
+        // keeps the license audit and the upload channel, and its own telemetry configuration.
+        Assert.NotNull( inner.GetBackstageService<ILicenseAuditManager>() );
+        Assert.NotSame( serviceProvider.GetBackstageService<ILicenseAuditManager>(), inner.GetBackstageService<ILicenseAuditManager>() );
+        Assert.NotSame( serviceProvider.GetBackstageService<ITelemetryUploader>(), inner.GetBackstageService<ITelemetryUploader>() );
+        Assert.NotNull( inner.GetBackstageService<MatomoUploader>() );
         Assert.NotNull( inner.GetBackstageService<ITelemetryConfigurationService>() );
 
         // The unattended mode can be forced for each product separately, so each product has its own detector.
@@ -521,7 +524,21 @@ public sealed class CompositeProductTests : IDisposable
 
         // The services that depend on the product are not.
         Assert.Same( PostSharpProduct.Profile, inner.GetRequiredBackstageService<ProductProfile>() );
-        Assert.Same( MetalamaProduct.Profile, serviceProvider.GetRequiredBackstageService<ProductProfile>() );
+        Assert.Same( VsxProduct.Profile, serviceProvider.GetRequiredBackstageService<ProductProfile>() );
+    }
+
+    /// <summary>
+    /// Tests that the extension is a product of its own for its telemetry, while it keeps the configuration of Metalama.
+    /// Usage reported under the name of Metalama would be counted as usage of Metalama.
+    /// </summary>
+    [Fact]
+    public void TheExtensionReportsUnderItsOwnNameAndKeepsTheConfigurationOfMetalama()
+    {
+        Assert.Equal( "PostSharp and Metalama VSX", VsxProduct.Instance.Profile.Name );
+        Assert.Equal( MetalamaProduct.Profile.DataDirectoryName, VsxProduct.Instance.Profile.DataDirectoryName );
+        Assert.Equal( MetalamaProduct.Profile.EnvironmentVariablePrefix, VsxProduct.Instance.Profile.EnvironmentVariablePrefix );
+        Assert.Same( MetalamaProduct.LicenseProductCatalog, VsxProduct.Instance.LicenseProductCatalog );
+        Assert.Null( VsxProduct.Instance.TelemetryOptions.AnalyticsUri );
     }
 
     /// <summary>
@@ -601,15 +618,18 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that a composite product holds products of different families only. Two products of one family would
-    /// share one store, and every change would be written to it twice.
+    /// Tests that a composite product holds products of different families only, holds no composite product, and keeps
+    /// the store of its primary member. Two products of one family would share one store, and every change would be
+    /// written to it twice.
     /// </summary>
     [Fact]
-    public void AProductCannotBeAddedTwice()
+    public void ACompositeProductIsValidated()
     {
-        Assert.Throws<ArgumentException>( () => BackstageProduct.CreateComposite( MetalamaProduct.Instance, MetalamaProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( MetalamaProduct.Instance, MetalamaProduct.Instance, MetalamaProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( VsxProduct.Instance, MetalamaProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( MetalamaProduct.Instance, VsxProduct.Instance ) );
 
-        var composite = BackstageProduct.CreateComposite( MetalamaProduct.Instance, PostSharpProduct.Instance );
-        Assert.Throws<ArgumentException>( () => BackstageProduct.CreateComposite( composite ) );
+        // The host must keep the store of the primary member, whose services the outer provider creates.
+        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( PostSharpProduct.Instance, MetalamaProduct.Instance ) );
     }
 }

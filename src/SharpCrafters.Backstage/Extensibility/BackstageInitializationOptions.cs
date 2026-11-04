@@ -84,11 +84,11 @@ public record BackstageInitializationOptions( IApplicationInfo ApplicationInfo, 
     internal bool AutoUploadTelemetry { get; init; } = true;
 
     /// <summary>
-    /// Gets a value indicating whether the support services include the services that collect, report and upload
-    /// telemetry, the license audit included. When it is <c>false</c>, the telemetry configuration is the only telemetry
-    /// service. It is considered only when <see cref="AddSupportServices"/> is <c>true</c>. A composite product sets it
-    /// to <c>false</c> for its inner service providers, because the outer provider reports the telemetry of the
-    /// process.
+    /// Gets a value indicating whether the support services include the services that collect telemetry: usage sessions
+    /// and exception reports. When it is <c>false</c>, the telemetry services are only the configuration and the upload
+    /// channel, which the license audit uses. It is considered only when <see cref="AddSupportServices"/> is
+    /// <c>true</c>. A composite product sets it to <c>false</c> for its inner service providers, because the outer
+    /// provider reports the usage and the exceptions of the process, while each product audits its own licenses.
     /// </summary>
-    internal bool AddTelemetryPipeline { get; init; } = true;
+    internal bool AddTelemetryCollection { get; init; } = true;
 }

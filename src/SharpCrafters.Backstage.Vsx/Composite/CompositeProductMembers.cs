@@ -2,8 +2,10 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.LicenseServer;
 using SharpCrafters.Backstage.Licensing.Licenses;
@@ -16,7 +18,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Application.Composite;
+namespace SharpCrafters.Backstage.Vsx.Composite;
 
 /// <summary>
 /// Holds the members of a composite product, one for each product, and chooses the member that handles a license. The
@@ -34,8 +36,9 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
     /// dumper of the outer provider is enough for the process.
     /// </para>
     /// <para>
-    /// An inner provider has no telemetry pipeline at all (see <see cref="BackstageInitializationOptions.AddTelemetryPipeline"/>):
-    /// for telemetry, the host of the composite product is one product, and the outer provider reports for it.
+    /// An inner provider collects no telemetry (see <see cref="BackstageInitializationOptions.AddTelemetryCollection"/>):
+    /// the outer provider reports the usage and the exceptions of the process under the identity of the host. Each
+    /// inner provider keeps the license audit of its product, which goes to the upload queue of that product.
     /// </para>
     /// </remarks>
     private static readonly Type[] _suppressedServiceTypes = [typeof(IMiniDumper), typeof(IBackstageToolsExtractor)];
@@ -158,7 +161,7 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
                     OpenWelcomePage = false,
                     DetectToastNotifications = false,
                     AddRssClient = false,
-                    AddTelemetryPipeline = false
+                    AddTelemetryCollection = false
                 } );
 
             var serviceProvider = innerBuilder.ServiceProvider;
@@ -169,7 +172,19 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
             // initialized are initialized here, in the order of InitializeBackstageServices, so that every service of the
             // inner provider can use them, and not only the composite services.
             serviceProvider.GetBackstageService<IUnattendedProcessDetector>()?.Initialize();
-            serviceProvider.GetBackstageService<ITelemetryConfigurationService>()?.Initialize();
+            var telemetryConfigurationService = serviceProvider.GetBackstageService<ITelemetryConfigurationService>();
+            telemetryConfigurationService?.Initialize();
+
+            // The current process uploads the queue of the product, in which the license audit of the product is queued,
+            // as InitializeBackstageServices does for the outer provider. It uploads in process because the worker of the
+            // product may not have been extracted on the machine.
+            if ( this._options.AutoUploadTelemetry
+                 && telemetryConfigurationService?.IsActivated != false
+                 && serviceProvider.GetBackstageService<ITelemetryUploader>() is TelemetryUploader telemetryUploader )
+            {
+                this._serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>()
+                    .Enqueue( () => telemetryUploader.StartUploadInProcess() );
+            }
 
             return serviceProvider;
         }

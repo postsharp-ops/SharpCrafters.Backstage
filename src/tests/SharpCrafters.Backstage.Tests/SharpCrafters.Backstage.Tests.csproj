@@ -17,6 +17,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\Metalama.Backstage\Metalama.Backstage.csproj" />
         <ProjectReference Include="..\..\PostSharp.Backstage\PostSharp.Backstage.csproj" />
+        <ProjectReference Include="..\..\SharpCrafters.Backstage.Vsx\SharpCrafters.Backstage.Vsx.csproj" />
         <ProjectReference Include="..\SharpCrafters.Backstage.Testing\SharpCrafters.Backstage.Testing.csproj" />
     </ItemGroup>
 

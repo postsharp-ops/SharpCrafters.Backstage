@@ -29,6 +29,13 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
     private readonly IUnattendedProcessDetector _unattendedProcessDetector;
 
     public LicenseAuditManager( IServiceProvider serviceProvider )
+        : this( serviceProvider, serviceProvider.GetBackstageService<MatomoUploader>() ) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LicenseAuditManager"/> class that sends the analytics events of the
+    /// audit with a given uploader, which may report for a product other than the one of the service provider.
+    /// </summary>
+    public LicenseAuditManager( IServiceProvider serviceProvider, MatomoUploader? matomoAuditUploader )
     {
         this._serviceProvider = serviceProvider;
         this._configurationManager = serviceProvider.GetRequiredBackstageService<IConfigurationManager>();
@@ -36,7 +43,7 @@ internal sealed class LicenseAuditManager : ILicenseAuditManager
         this._time = serviceProvider.GetRequiredBackstageService<IDateTimeProvider>();
         this._logger = serviceProvider.GetLoggerFactory().Licensing();
         this._telemetryReportUploader = serviceProvider.GetRequiredBackstageService<TelemetryReportUploader>();
-        this._matomoAuditUploader = serviceProvider.GetBackstageService<MatomoUploader>();
+        this._matomoAuditUploader = matomoAuditUploader;
         this._backgroundTasksService = serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>();
         this._telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
         this._auditKeyProvider = serviceProvider.GetRequiredBackstageService<ILicenseAuditKeyProvider>();

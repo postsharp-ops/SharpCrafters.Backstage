@@ -69,6 +69,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Pla
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.PlatformTestHelper", "src\tests\SharpCrafters.Backstage.PlatformTestHelper\SharpCrafters.Backstage.PlatformTestHelper.csproj", "{1406CA20-869A-4077-8062-3284B19B706F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Vsx", "src\SharpCrafters.Backstage.Vsx\SharpCrafters.Backstage.Vsx.csproj", "{ADEEABFC-008A-4737-84EA-90112153F8EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -451,6 +453,18 @@ Global
 		{1406CA20-869A-4077-8062-3284B19B706F}.Release|x64.Build.0 = Release|Any CPU
 		{1406CA20-869A-4077-8062-3284B19B706F}.Release|x86.ActiveCfg = Release|Any CPU
 		{1406CA20-869A-4077-8062-3284B19B706F}.Release|x86.Build.0 = Release|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Debug|x64.Build.0 = Debug|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Debug|x86.Build.0 = Debug|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Release|x64.ActiveCfg = Release|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Release|x64.Build.0 = Release|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Release|x86.ActiveCfg = Release|Any CPU
+		{ADEEABFC-008A-4737-84EA-90112153F8EB}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
