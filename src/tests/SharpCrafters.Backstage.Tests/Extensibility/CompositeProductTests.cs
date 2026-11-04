@@ -507,12 +507,14 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that the composite product runs one user interface, that of the primary product, and that it detects no
-    /// notification and runs no RSS client although the host asks for them: the builds of each product show their own.
-    /// It keeps the welcome page service, but leaves the opening of the welcome page to the extension.
+    /// Tests that the composite product shows no notification or news of its own: the outer provider detects no
+    /// notification and runs no RSS client although the host asks for them, because the builds of each product show
+    /// their own. It keeps the notification service, for the notifications that the extension raises, and the welcome
+    /// page service, but leaves the opening of the welcome page to the extension. The inner provider has no user
+    /// interface at all, so nothing is shown twice.
     /// </summary>
     [Fact]
-    public void OnlyThePrimaryProductHasAUserInterface()
+    public void TheCompositeUserInterfaceShowsNoNotificationOrNewsOfItsOwn()
     {
         var serviceProvider = this.CreateServiceProvider( addUserInterface: true );
         var inner = GetProducts( serviceProvider ).Members[1].ServiceProvider;
@@ -530,37 +532,58 @@ public sealed class CompositeProductTests : IDisposable
         Assert.Null( inner.GetBackstageService<IRssClient>() );
         Assert.Null( inner.GetBackstageService<IUserInterfaceService>() );
         Assert.Null( inner.GetBackstageService<IMiniDumper>() );
+    }
 
-        // The services that do not depend on the product are the instances of the outer provider.
+    /// <summary>
+    /// Tests that the inner provider uses the instances of the outer provider for the services that do not depend on
+    /// the product, and its own instances for those that do. Two loggers or two file systems in one process would
+    /// compete for the same files; one unattended process detector would make the variable of one product force the
+    /// mode of the other.
+    /// </summary>
+    [Fact]
+    public void TheInnerProviderSharesTheProductNeutralServices()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var inner = GetProducts( serviceProvider ).Members[1].ServiceProvider;
+
         Assert.Same( serviceProvider.GetBackstageService<ILoggerFactory>(), inner.GetBackstageService<ILoggerFactory>() );
         Assert.Same( serviceProvider.GetBackstageService<IEventDispatcher>(), inner.GetBackstageService<IEventDispatcher>() );
         Assert.Same( serviceProvider.GetBackstageService<IFileSystem>(), inner.GetBackstageService<IFileSystem>() );
+
         if ( RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
             Assert.Same( this._registry, inner.GetBackstageService<IRegistryService>() );
         }
 
-        // The outer provider reports the usage and the exceptions of the process: the inner provider collects neither.
+        // The unattended mode can be forced for each product separately, so each product has its own detector.
+        Assert.NotSame( serviceProvider.GetBackstageService<IUnattendedProcessDetector>(), inner.GetBackstageService<IUnattendedProcessDetector>() );
+
+        Assert.Same( PostSharpProduct.Profile, inner.GetRequiredBackstageService<ProductProfile>() );
+        Assert.Same( VsxProduct.Profile, serviceProvider.GetRequiredBackstageService<ProductProfile>() );
+    }
+
+    /// <summary>
+    /// Tests that the inner provider audits the licenses of its product but collects no telemetry. The outer provider
+    /// reports the usage and the exceptions of the process under the identity of the extension, while each product
+    /// audits its own licenses through its own upload queue and analytics site.
+    /// </summary>
+    [Fact]
+    public void TheInnerProviderAuditsLicensesButCollectsNoTelemetry()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var inner = GetProducts( serviceProvider ).Members[1].ServiceProvider;
+
         Assert.NotNull( serviceProvider.GetBackstageService<ITelemetryService>() );
         Assert.Null( inner.GetBackstageService<ITelemetryService>() );
         Assert.Null( inner.GetBackstageService<IExceptionCapturer>() );
         Assert.Null( inner.GetBackstageService<IExceptionReportManager>() );
         Assert.Null( inner.GetBackstageService<IUsageSessionFactory>() );
 
-        // Each product audits its own licenses, through its own upload queue and analytics site, so the inner provider
-        // keeps the license audit and the upload channel, and its own telemetry configuration.
         Assert.NotNull( inner.GetBackstageService<ILicenseAuditManager>() );
         Assert.NotSame( serviceProvider.GetBackstageService<ILicenseAuditManager>(), inner.GetBackstageService<ILicenseAuditManager>() );
         Assert.NotSame( serviceProvider.GetBackstageService<ITelemetryUploader>(), inner.GetBackstageService<ITelemetryUploader>() );
         Assert.NotNull( inner.GetBackstageService<MatomoUploader>() );
         Assert.NotNull( inner.GetBackstageService<ITelemetryConfigurationService>() );
-
-        // The unattended mode can be forced for each product separately, so each product has its own detector.
-        Assert.NotSame( serviceProvider.GetBackstageService<IUnattendedProcessDetector>(), inner.GetBackstageService<IUnattendedProcessDetector>() );
-
-        // The services that depend on the product are not.
-        Assert.Same( PostSharpProduct.Profile, inner.GetRequiredBackstageService<ProductProfile>() );
-        Assert.Same( VsxProduct.Profile, serviceProvider.GetRequiredBackstageService<ProductProfile>() );
     }
 
     /// <summary>
