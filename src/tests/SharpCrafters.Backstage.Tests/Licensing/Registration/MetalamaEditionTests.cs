@@ -37,18 +37,16 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// The Community edition is installed by the Visual Studio extension, which asks the question that entitles the
-    /// user to it. Nobody registers it by hand, so the command line advertises no verb for it.
+    /// The Community edition is offered from the command line and during setup. Both ask why the user is entitled to it.
     /// </summary>
     [Fact]
-    public void TheCommunityEditionIsNotOfferedFromTheCommandLine()
+    public void TheCommunityEditionIsOfferedFromTheCommandLineAndDuringSetup()
     {
         var edition = this.GetEdition( SelfRegisteredEditionKind.Free );
 
-        Assert.False( edition.IsAvailableFromCommandLine );
-
-        // Nor during setup, which has no way to ask the question.
-        Assert.Null( edition.SetupTitle );
+        Assert.True( edition.IsAvailableFromCommandLine );
+        Assert.True( edition.RequiresReason );
+        Assert.Equal( "Start with Metalama Community", edition.SetupTitle );
     }
 
     /// <summary>
@@ -105,18 +103,18 @@ public sealed class MetalamaEditionTests : LicensingTestsBase
     }
 
     /// <summary>
-    /// Only the trial and the legacy free edition are offered from the command line, and neither of them during
-    /// setup: Metalama runs unlicensed, so the page offers the open source edition instead.
+    /// Every edition is offered from the command line. The legacy free edition is not offered during setup, because
+    /// only an earlier version of Metalama can consume it.
     /// </summary>
     [Fact]
-    public void OnlyTheTrialIsOfferedDuringSetup()
+    public void TheLegacyFreeEditionIsNotOfferedDuringSetup()
     {
         Assert.Equal(
-            new[] { SelfRegisteredEditionKind.LegacyFree, SelfRegisteredEditionKind.Trial },
+            new[] { SelfRegisteredEditionKind.Free, SelfRegisteredEditionKind.LegacyFree, SelfRegisteredEditionKind.Trial },
             this.Catalog.SelfRegisteredEditions.Where( e => e.IsAvailableFromCommandLine ).Select( e => e.Kind ).ToArray() );
 
         Assert.Equal(
-            new[] { SelfRegisteredEditionKind.Trial },
+            new[] { SelfRegisteredEditionKind.Free, SelfRegisteredEditionKind.Trial },
             this.Catalog.SelfRegisteredEditions.Where( e => e.SetupTitle != null ).Select( e => e.Kind ).ToArray() );
     }
 

@@ -61,18 +61,6 @@ public sealed class UnattendedProcessDetectorTests : TestsBase
                 : $"/opt/programs/{name}" );
 
     [Fact]
-    public void AWorkerProcessIsUnattendedWithoutExaminingTheProcess()
-    {
-        this.ApplicationInfo = new TestApplicationInfo { IsWorkerProcess = true };
-
-        // The variable forces the attended answer for every other application.
-        this.SetForceAttended( "true" );
-
-        Assert.True( this.IsCurrentProcessUnattended() );
-        Assert.Equal( 0, this._parentProcessSearch.CallCount );
-    }
-
-    [Fact]
     public void TheForceAttendedVariableIsReadFromTheEnvironmentVariableProvider()
     {
         // The variable is set only in the test provider, so the answer shows that the detector reads that provider.

@@ -69,11 +69,15 @@ public static class BackstageCommandFactory
                             .WithData( options )
                             .WithDescription( "Acquires a lease from the registered license server and prints the license it leases." );
 
+                        // An edition that requires a reason gets the command that has the --reason option, so that the
+                        // help of the other editions does not describe an option they ignore.
                         foreach ( var edition in editions )
                         {
-                            license.AddCommand<RegisterEditionCommand>( edition.Alias )
-                                .WithData( options )
-                                .WithDescription( edition.Description );
+                            var command = edition.RequiresReason
+                                ? license.AddCommand<RegisterCommunityEditionCommand>( edition.Alias )
+                                : license.AddCommand<RegisterEditionCommand>( edition.Alias );
+
+                            command.WithData( options ).WithDescription( edition.Description );
                         }
 
                         configureBranch?.Invoke( "license", license );
