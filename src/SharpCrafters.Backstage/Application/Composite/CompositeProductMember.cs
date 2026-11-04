@@ -11,7 +11,7 @@ using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Threading;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The services of one product of a composite product. Each service is created when it is first requested.
@@ -22,7 +22,7 @@ namespace SharpCrafters.Backstage.Application;
 /// product are resolved from its inner provider, except <see cref="IIdeExtensionStatusService"/>, which an inner
 /// provider does not register because it has no user interface.
 /// </remarks>
-internal sealed class ProductServices
+internal sealed class CompositeProductMember
 {
     private readonly Lazy<IServiceProvider> _serviceProvider;
     private readonly Lazy<ILicenseRegistrationService> _licenseRegistrationService;
@@ -30,7 +30,7 @@ internal sealed class ProductServices
     private readonly Lazy<ITelemetryConfigurationService> _telemetryConfigurationService;
     private readonly Lazy<IIdeExtensionStatusService> _ideExtensionStatusService;
 
-    public ProductServices(
+    public CompositeProductMember(
         BackstageProduct product,
         bool isPrimary,
         Func<IServiceProvider> createServiceProvider,

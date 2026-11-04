@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -11,7 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The <see cref="ILicenseRegistrationService"/> of a composite product. It reports the licenses and the editions of
@@ -20,7 +21,7 @@ namespace SharpCrafters.Backstage.Application;
 /// <remarks>
 /// <para>
 /// A license key is routed to the product that owns the product of the key (see
-/// <see cref="CompositeProductServices.GetOwner(string)"/>), which is the product to which it is native. A key that two
+/// <see cref="CompositeProductServices.GetMemberForLicense(string)"/>), which is the product to which it is native. A key that two
 /// families accept, such as a PostSharp Ultimate key, is native to one family only, so it goes to that family. A license
 /// server URL, and a string that is not a license key, go to the primary product, which reports the error of a string
 /// that it cannot register.
@@ -38,25 +39,25 @@ internal sealed class CompositeLicenseRegistrationService : ILicenseRegistration
     {
         this._products = products;
 
-        foreach ( var product in products.Products )
+        foreach ( var product in products.Members )
         {
             product.LicenseRegistrationService.PropertyChanged += this.OnPropertyChanged;
         }
     }
 
-    private IEnumerable<ILicenseRegistrationService> Services => this._products.Products.Select( p => p.LicenseRegistrationService );
+    private IEnumerable<ILicenseRegistrationService> Services => this._products.Members.Select( p => p.LicenseRegistrationService );
 
     private ILicenseRegistrationService Primary => this._products.Primary.LicenseRegistrationService;
 
     private void OnPropertyChanged( object? sender, PropertyChangedEventArgs e ) => this.PropertyChanged?.Invoke( this, e );
 
-    private ILicenseRegistrationService GetService( string licenseString ) => this._products.GetOwner( licenseString ).LicenseRegistrationService;
+    private ILicenseRegistrationService GetService( string licenseString ) => this._products.GetMemberForLicense( licenseString ).LicenseRegistrationService;
 
     public LicenseRegistrationResult Register( SelfRegisteredEdition edition, SelfRegisteredEditionOptions? options = null )
     {
         // An edition is compared by identity, as the standard service does. An edition of no product goes to the primary
         // product, which reports that it is not one of its editions.
-        var product = this._products.Products.FirstOrDefault( p => p.Catalog.SelfRegisteredEditions.Contains( edition ) ) ?? this._products.Primary;
+        var product = this._products.Members.FirstOrDefault( p => p.Catalog.SelfRegisteredEditions.Contains( edition ) ) ?? this._products.Primary;
 
         return product.LicenseRegistrationService.Register( edition, options );
     }
@@ -69,7 +70,7 @@ internal sealed class CompositeLicenseRegistrationService : ILicenseRegistration
     [Obsolete( "Use RegisterLicenseAsync." )]
     public LicenseRegistrationResult RegisterLicense( string licenseString ) => this.GetService( licenseString ).RegisterLicense( licenseString );
 
-    public void RemoveLicenses() => CompositeBackstageProduct.ForEach( this.Services, s => s.RemoveLicenses() );
+    public void RemoveLicenses() => this.Services.ForEachContinueOnException( s => s.RemoveLicenses() );
 
     public IEnumerable<LicenseRegistrationProperties> RegisteredLicenses => this.Services.SelectMany( s => s.RegisteredLicenses );
 

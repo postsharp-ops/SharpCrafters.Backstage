@@ -3,11 +3,12 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Telemetry;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The <see cref="ITelemetryConfigurationService"/> of a composite product. It writes a consent to every product, so
@@ -30,7 +31,9 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
 
     private ITelemetryConfigurationService Primary => this._products.Primary.TelemetryConfigurationService;
 
-    private IEnumerable<ITelemetryConfigurationService> Services => this._products.Products.Select( p => p.TelemetryConfigurationService );
+    // The products are updated one after the other, never one inside the other, because the configuration update scope
+    // is thread-static and a configuration file must not be updated inside the transformation of another one.
+    private IEnumerable<ITelemetryConfigurationService> Services => this._products.Members.Select( p => p.TelemetryConfigurationService );
 
     /// <inheritdoc />
     /// <remarks>
@@ -44,15 +47,15 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
     public bool IsActivated => this.Primary.IsActivated;
 
     [Obsolete( "Use SetConsent instead." )]
-    public void SetStatus( bool enabled ) => CompositeBackstageProduct.ForEach( this.Services, s => s.SetStatus( enabled ) );
+    public void SetStatus( bool enabled ) => this.Services.ForEachContinueOnException( s => s.SetStatus( enabled ) );
 
     [Obsolete( "Use SetConsent instead." )]
-    public void SetStatus( TelemetryScenario scenario, bool enabled ) => CompositeBackstageProduct.ForEach( this.Services, s => s.SetStatus( scenario, enabled ) );
+    public void SetStatus( TelemetryScenario scenario, bool enabled ) => this.Services.ForEachContinueOnException( s => s.SetStatus( scenario, enabled ) );
 
-    public void SetConsent( TelemetryConsent action ) => CompositeBackstageProduct.ForEach( this.Services, s => s.SetConsent( action ) );
+    public void SetConsent( TelemetryConsent action ) => this.Services.ForEachContinueOnException( s => s.SetConsent( action ) );
 
     public void SetConsent( TelemetryScenario scenario, TelemetryConsent action )
-        => CompositeBackstageProduct.ForEach( this.Services, s => s.SetConsent( scenario, action ) );
+        => this.Services.ForEachContinueOnException( s => s.SetConsent( scenario, action ) );
 
     /// <inheritdoc />
     /// <remarks>
@@ -70,7 +73,7 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
     {
         var result = this.Primary.CompareExchangeConsent( scenario, newAction, oldAction );
 
-        CompositeBackstageProduct.ForEach( this.Services.Skip( 1 ), s => s.CompareExchangeConsent( scenario, newAction, oldAction ) );
+        this.Services.Skip( 1 ).ForEachContinueOnException( s => s.CompareExchangeConsent( scenario, newAction, oldAction ) );
 
         return result;
     }
@@ -136,9 +139,9 @@ internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigu
 
     public bool IsGloballyEnabled => this.Primary.IsGloballyEnabled;
 
-    public void ResetDeviceId() => CompositeBackstageProduct.ForEach( this.Services, s => s.ResetDeviceId() );
+    public void ResetDeviceId() => this.Services.ForEachContinueOnException( s => s.ResetDeviceId() );
 
-    public void ResetReportedIssues() => CompositeBackstageProduct.ForEach( this.Services, s => s.ResetReportedIssues() );
+    public void ResetReportedIssues() => this.Services.ForEachContinueOnException( s => s.ResetReportedIssues() );
 
     public long GetSalt( TelemetrySaltKind kind ) => this.Primary.GetSalt( kind );
 

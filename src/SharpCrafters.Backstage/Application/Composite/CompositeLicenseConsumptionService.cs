@@ -12,7 +12,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The <see cref="ILicenseConsumptionService"/> of a composite product. Its consumer satisfies a requirement when the
@@ -26,7 +26,7 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
     {
         this._products = products;
 
-        foreach ( var product in products.Products )
+        foreach ( var product in products.Members )
         {
             product.LicenseConsumptionService.Changed += this.OnChanged;
         }
@@ -39,7 +39,7 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
     /// <para>
     /// A license key of the project, given by <see cref="LicenseConsumptionOptions.ProjectLicenseKey"/> or
     /// <see cref="LicenseConsumptionOptions.ExplicitLicenses"/>, is given only to the product that owns it (see
-    /// <see cref="CompositeProductServices.GetOwner(string)"/>). Another product would report the key as a key of
+    /// <see cref="CompositeProductServices.GetMemberForLicense(string)"/>). Another product would report the key as a key of
     /// another product family, although the composite product can use it.
     /// </para>
     /// <para>
@@ -54,16 +54,16 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
         options ??= LicenseConsumptionOptions.Default;
 
         var reportedMessages = new HashSet<string>( StringComparer.Ordinal );
-        var consumers = ImmutableArray.CreateBuilder<LicenseConsumer>( this._products.Products.Length );
+        var consumers = ImmutableArray.CreateBuilder<LicenseConsumer>( this._products.Members.Length );
 
-        foreach ( var product in this._products.Products )
+        foreach ( var product in this._products.Members )
         {
             var productOptions = options with
             {
-                ProjectLicenseKey = this._products.GetOwner( options.ProjectLicenseKey ) == product ? options.ProjectLicenseKey : null,
+                ProjectLicenseKey = this._products.GetMemberForLicense( options.ProjectLicenseKey ) == product ? options.ProjectLicenseKey : null,
                 ExplicitLicenses = options.ExplicitLicenses.IsDefault
                     ? options.ExplicitLicenses
-                    : options.ExplicitLicenses.Where( l => this._products.GetOwner( l.LicenseString ) == product ).ToImmutableArray()
+                    : options.ExplicitLicenses.Where( l => this._products.GetMemberForLicense( l.LicenseString ) == product ).ToImmutableArray()
             };
 
             var consumer = await product.LicenseConsumptionService.CreateConsumerAsync( productOptions, ReportMessage, cancellationToken );

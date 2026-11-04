@@ -8,12 +8,11 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// Builds the <see cref="BackstageProduct"/> that <see cref="BackstageProduct.CreateComposite"/> returns, and registers
@@ -99,36 +98,6 @@ internal sealed class CompositeBackstageProduct
         {
             serviceProviderBuilder.AddSingleton<IIdeExtensionStatusService>(
                 serviceProvider => new CompositeIdeExtensionStatusService( serviceProvider.GetRequiredBackstageService<CompositeProductServices>() ) );
-        }
-    }
-
-    /// <summary>
-    /// Invokes an action for each item, and continues after an item throws, so that one product that cannot be updated
-    /// does not prevent the update of the others. The first exception is rethrown at the end.
-    /// </summary>
-    /// <remarks>
-    /// The items are updated one after the other, never one inside the other. The configuration update scope is
-    /// thread-static, and a configuration file must not be updated inside the transformation of another one.
-    /// </remarks>
-    internal static void ForEach<T>( IEnumerable<T> items, Action<T> action )
-    {
-        Exception? firstException = null;
-
-        foreach ( var item in items )
-        {
-            try
-            {
-                action( item );
-            }
-            catch ( Exception e )
-            {
-                firstException ??= e;
-            }
-        }
-
-        if ( firstException != null )
-        {
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture( firstException ).Throw();
         }
     }
 }

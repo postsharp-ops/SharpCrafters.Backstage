@@ -10,12 +10,13 @@ using SharpCrafters.Backstage.Licensing.Licenses;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Tools;
+using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// Holds the services of each product of a composite product. The services of the primary product are created from the
@@ -51,10 +52,10 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
         this._serviceProvider = serviceProvider;
         this._options = options;
 
-        this.Products = products.Select(
+        this.Members = products.Select(
                 ( product, index ) => index == 0
-                    ? new ProductServices( product, true, () => serviceProvider, options )
-                    : new ProductServices( product, false, () => this.CreateInnerServiceProvider( product ), options ) )
+                    ? new CompositeProductMember( product, true, () => serviceProvider, options )
+                    : new CompositeProductMember( product, false, () => this.CreateInnerServiceProvider( product ), options ) )
             .ToImmutableArray();
     }
 
@@ -64,31 +65,31 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
     public IServiceProvider ServiceProvider => this._serviceProvider;
 
     /// <summary>
-    /// Gets the services of each product, the primary product first.
+    /// Gets the members of the composite product, the primary product first.
     /// </summary>
-    public ImmutableArray<ProductServices> Products { get; }
+    public ImmutableArray<CompositeProductMember> Members { get; }
 
-    public ProductServices Primary => this.Products[0];
+    public CompositeProductMember Primary => this.Members[0];
 
     /// <summary>
-    /// Gets the services of the product to which a license product is native, or of the first product whose family
-    /// includes it, or of the primary product.
+    /// Gets the member whose product a license product is native to, or the first member whose product family includes
+    /// it, or the primary member.
     /// </summary>
-    public ProductServices GetOwner( LicenseProduct licenseProduct )
-        => this.Products.FirstOrDefault( p => p.Catalog.IsNativeProduct( licenseProduct ) )
-           ?? this.Products.FirstOrDefault( p => p.Catalog.IsProductOfFamily( licenseProduct ) )
+    public CompositeProductMember GetMemberForProduct( LicenseProduct licenseProduct )
+        => this.Members.FirstOrDefault( p => p.Catalog.IsNativeProduct( licenseProduct ) )
+           ?? this.Members.FirstOrDefault( p => p.Catalog.IsProductOfFamily( licenseProduct ) )
            ?? this.Primary;
 
     /// <summary>
-    /// Gets the services of the product that owns a license string: the owner of the product of a license key (see
-    /// <see cref="GetOwner(LicenseProduct)"/>), or the primary product for the URL of a license server and for a string
-    /// that is not a license key.
+    /// Gets the member that handles a license string: for a license key, the member of its license product (see
+    /// <see cref="GetMemberForProduct(LicenseProduct)"/>); for the URL of a license server or a string that is not a
+    /// license key, the primary member.
     /// </summary>
     /// <remarks>
     /// The license key is cleaned as the standard services clean it before they read it, so that a key pasted with
     /// line breaks, spaces or quotes goes to the same product as the key itself.
     /// </remarks>
-    public ProductServices GetOwner( string? licenseString )
+    public CompositeProductMember GetMemberForLicense( string? licenseString )
     {
         if ( string.IsNullOrWhiteSpace( licenseString ) || LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
         {
@@ -96,7 +97,7 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
         }
 
         return LicenseKeyData.TryDeserialize( License.CleanLicenseKey( licenseString! ), out var licenseKeyData, out _ )
-            ? this.GetOwner( licenseKeyData.Product )
+            ? this.GetMemberForProduct( licenseKeyData.Product )
             : this.Primary;
     }
 
@@ -206,6 +207,6 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
             this._innerServiceProviders.Clear();
         }
 
-        CompositeBackstageProduct.ForEach( innerServiceProviders, p => p.Dispose() );
+        innerServiceProviders.ForEachContinueOnException( p => p.Dispose() );
     }
 }

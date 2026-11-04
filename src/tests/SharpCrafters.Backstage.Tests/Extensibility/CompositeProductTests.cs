@@ -5,6 +5,7 @@
 using Metalama.Backstage;
 using PostSharp.Backstage;
 using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Application.Composite;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Diagnostics;
@@ -115,8 +116,8 @@ public sealed class CompositeProductTests : IDisposable
     private static CompositeProductServices GetProducts( IServiceProvider serviceProvider )
         => serviceProvider.GetRequiredBackstageService<CompositeProductServices>();
 
-    private static IEnumerable<string> GetRegisteredLicenseStrings( ProductServices product )
-        => product.LicenseRegistrationService.RegisteredLicenses.Select( l => l.LicenseString );
+    private static IEnumerable<string> GetRegisteredLicenseStrings( CompositeProductMember member )
+        => member.LicenseRegistrationService.RegisteredLicenses.Select( l => l.LicenseString );
 
     /// <summary>
     /// Tests that each product keeps its own configuration store. Metalama reads its licenses from its files and
@@ -133,8 +134,8 @@ public sealed class CompositeProductTests : IDisposable
         var serviceProvider = this.CreateServiceProvider();
         var products = GetProducts( serviceProvider );
 
-        var metalamaConfiguration = products.Products[0].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
-        var postSharpConfiguration = products.Products[1].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
+        var metalamaConfiguration = products.Members[0].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
+        var postSharpConfiguration = products.Members[1].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
         var isWindows = RuntimeInformation.IsOSPlatform( OSPlatform.Windows );
 
         Assert.Same( serviceProvider.GetRequiredBackstageService<IConfigurationManager>(), metalamaConfiguration );
@@ -157,8 +158,8 @@ public sealed class CompositeProductTests : IDisposable
 
         // A PostSharp key is written to the store of PostSharp, which is the registry on Windows.
         Assert.Equal( isWindows, this._registry.WriteCount > registryWritesBefore );
-        Assert.Equal( [this._licenseKeys.MetalamaProfessionalBusiness], GetRegisteredLicenseStrings( products.Products[0] ) );
-        Assert.Equal( [this._licenseKeys.PostSharpCaching], GetRegisteredLicenseStrings( products.Products[1] ) );
+        Assert.Equal( [this._licenseKeys.MetalamaProfessionalBusiness], GetRegisteredLicenseStrings( products.Members[0] ) );
+        Assert.Equal( [this._licenseKeys.PostSharpCaching], GetRegisteredLicenseStrings( products.Members[1] ) );
     }
 
     /// <summary>
@@ -172,8 +173,8 @@ public sealed class CompositeProductTests : IDisposable
         var products = GetProducts( serviceProvider );
 
         // Registered by each product directly, as the build of each product would.
-        Assert.True( (await products.Products[0].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.MetalamaProfessionalBusiness )).IsSuccess );
-        Assert.True( (await products.Products[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpCaching )).IsSuccess );
+        Assert.True( (await products.Members[0].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.MetalamaProfessionalBusiness )).IsSuccess );
+        Assert.True( (await products.Members[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpCaching )).IsSuccess );
 
         var registrationService = serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
 
@@ -201,7 +202,7 @@ public sealed class CompositeProductTests : IDisposable
         var serviceProvider = this.CreateServiceProvider();
         var products = GetProducts( serviceProvider );
 
-        Assert.True( (await products.Products[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpEssentials )).IsSuccess );
+        Assert.True( (await products.Members[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpEssentials )).IsSuccess );
 
         var license = Assert.Single( serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>().RegisteredLicenses );
         Assert.True( license.IsFree );
@@ -232,15 +233,15 @@ public sealed class CompositeProductTests : IDisposable
         var result = await registrationService.RegisterLicenseAsync( licenseKey );
         Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
 
-        for ( var i = 0; i < products.Products.Length; i++ )
+        for ( var i = 0; i < products.Members.Length; i++ )
         {
             if ( i == expectedProductIndex )
             {
-                Assert.Equal( [licenseKey], GetRegisteredLicenseStrings( products.Products[i] ) );
+                Assert.Equal( [licenseKey], GetRegisteredLicenseStrings( products.Members[i] ) );
             }
             else
             {
-                Assert.Empty( GetRegisteredLicenseStrings( products.Products[i] ) );
+                Assert.Empty( GetRegisteredLicenseStrings( products.Members[i] ) );
             }
         }
 
@@ -259,12 +260,12 @@ public sealed class CompositeProductTests : IDisposable
         var serviceProvider = this.CreateServiceProvider();
         var products = GetProducts( serviceProvider );
 
-        Assert.True( (await products.Products[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpUltimate )).IsSuccess );
+        Assert.True( (await products.Members[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpUltimate )).IsSuccess );
 
         var requirement = new ToolingLicenseRequirement( MetalamaProduct.Profile );
 
         // Metalama alone does not see the key, which is in the store of PostSharp.
-        var metalamaConsumer = await products.Products[0].LicenseConsumptionService.CreateConsumerAsync();
+        var metalamaConsumer = await products.Members[0].LicenseConsumptionService.CreateConsumerAsync();
         Assert.False( metalamaConsumer.TryConsume( requirement, showsToastNotification: false ) );
 
         var messages = new List<LicensingMessage>();
@@ -303,7 +304,7 @@ public sealed class CompositeProductTests : IDisposable
         var products = GetProducts( serviceProvider );
 
         // PostSharp Caching does not license the tooling, and Metalama holds nothing.
-        Assert.True( (await products.Products[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpCaching )).IsSuccess );
+        Assert.True( (await products.Members[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpCaching )).IsSuccess );
 
         var messages = new List<LicensingMessage>();
         var consumer = await serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumerAsync();
@@ -348,8 +349,8 @@ public sealed class CompositeProductTests : IDisposable
             .RegisterLicenseAsync( "\"" + licenseKey.Insert( 10, Environment.NewLine ) + "\" " );
 
         Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
-        Assert.Empty( GetRegisteredLicenseStrings( products.Products[0] ) );
-        Assert.Single( GetRegisteredLicenseStrings( products.Products[1] ) );
+        Assert.Empty( GetRegisteredLicenseStrings( products.Members[0] ) );
+        Assert.Single( GetRegisteredLicenseStrings( products.Members[1] ) );
     }
 
     /// <summary>
@@ -363,16 +364,16 @@ public sealed class CompositeProductTests : IDisposable
         var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
         var products = GetProducts( serviceProvider );
 
-        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Usage, TelemetryConsent.No );
+        products.Members[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Usage, TelemetryConsent.No );
 
         var telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
         Assert.True( telemetryConfigurationService.CompareExchangeConsent( TelemetryScenario.Usage, TelemetryConsent.Yes, TelemetryConsent.Default ) );
 
-        Assert.Equal( TelemetryConsent.Yes, GetUsageConsent( products.Products[0] ) );
-        Assert.Equal( TelemetryConsent.No, GetUsageConsent( products.Products[1] ) );
+        Assert.Equal( TelemetryConsent.Yes, GetUsageConsent( products.Members[0] ) );
+        Assert.Equal( TelemetryConsent.No, GetUsageConsent( products.Members[1] ) );
 
-        static TelemetryConsent GetUsageConsent( ProductServices product )
-            => product.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<TelemetryConfiguration>().UsageConsent;
+        static TelemetryConsent GetUsageConsent( CompositeProductMember member )
+            => member.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<TelemetryConfiguration>().UsageConsent;
     }
 
     /// <summary>
@@ -387,8 +388,8 @@ public sealed class CompositeProductTests : IDisposable
         var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
         var products = GetProducts( serviceProvider );
 
-        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Yes );
-        Assert.Equal( TelemetryConsent.Yes, products.Products[1].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+        products.Members[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Yes );
+        Assert.Equal( TelemetryConsent.Yes, products.Members[1].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
 
         var (consent, reason) = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>()
             .GetEffectiveConsentAndReason( TelemetryScenario.Exception );
@@ -406,7 +407,7 @@ public sealed class CompositeProductTests : IDisposable
     public void TheServicesOfAnInnerProviderAreInitialized()
     {
         var serviceProvider = this.CreateServiceProvider().InitializeBackstageServices();
-        var inner = GetProducts( serviceProvider ).Products[1].ServiceProvider;
+        var inner = GetProducts( serviceProvider ).Members[1].ServiceProvider;
 
         _ = inner.GetRequiredBackstageService<ITelemetryConfigurationService>().GetEffectiveConsent( TelemetryScenario.Usage );
         _ = inner.GetRequiredBackstageService<IUnattendedProcessDetector>().IsCurrentProcessUnattended;
@@ -426,7 +427,7 @@ public sealed class CompositeProductTests : IDisposable
 
         telemetryConfigurationService.SetConsent( TelemetryConsent.No );
 
-        foreach ( var product in products.Products )
+        foreach ( var product in products.Members )
         {
             var configuration = product.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<TelemetryConfiguration>();
             Assert.Equal( TelemetryConsent.No, configuration.UsageConsent );
@@ -435,7 +436,7 @@ public sealed class CompositeProductTests : IDisposable
 
         telemetryConfigurationService.SetConsent( TelemetryScenario.Usage, TelemetryConsent.Yes );
 
-        foreach ( var product in products.Products )
+        foreach ( var product in products.Members )
         {
             var configuration = product.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<TelemetryConfiguration>();
             Assert.Equal( TelemetryConsent.Yes, configuration.UsageConsent );
@@ -454,18 +455,18 @@ public sealed class CompositeProductTests : IDisposable
         var products = GetProducts( serviceProvider );
         var telemetryConfigurationService = serviceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>();
 
-        products.Products[0].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.No );
-        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Yes );
+        products.Members[0].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.No );
+        products.Members[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Yes );
 
-        Assert.Equal( TelemetryConsent.No, products.Products[0].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
-        Assert.Equal( TelemetryConsent.Yes, products.Products[1].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+        Assert.Equal( TelemetryConsent.No, products.Members[0].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
+        Assert.Equal( TelemetryConsent.Yes, products.Members[1].TelemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
         Assert.Equal( TelemetryConsent.Yes, telemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
 
         // Default, which asks the user, is more permissive than No.
-        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Default );
+        products.Members[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.Default );
         Assert.Equal( TelemetryConsent.Default, telemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
 
-        products.Products[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.No );
+        products.Members[1].TelemetryConfigurationService.SetConsent( TelemetryScenario.Exception, TelemetryConsent.No );
         Assert.Equal( TelemetryConsent.No, telemetryConfigurationService.GetEffectiveConsent( TelemetryScenario.Exception ) );
     }
 
@@ -477,7 +478,7 @@ public sealed class CompositeProductTests : IDisposable
     public void OnlyThePrimaryProductHasAUserInterface()
     {
         var serviceProvider = this.CreateServiceProvider( addUserInterface: true );
-        var inner = GetProducts( serviceProvider ).Products[1].ServiceProvider;
+        var inner = GetProducts( serviceProvider ).Members[1].ServiceProvider;
 
         Assert.NotNull( serviceProvider.GetBackstageService<IToastNotificationService>() );
         Assert.NotNull( serviceProvider.GetBackstageService<IToastNotificationDetectionService>() );
@@ -524,10 +525,10 @@ public sealed class CompositeProductTests : IDisposable
         var serviceProvider = this.CreateServiceProvider( isLongRunningProcess: true ).InitializeBackstageServices();
         var products = GetProducts( serviceProvider );
 
-        Assert.False( products.Products[1].IsServiceProviderCreated );
+        Assert.False( products.Members[1].IsServiceProviderCreated );
 
         // Creating the configuration manager of PostSharp starts watching its registry keys.
-        _ = products.Products[1].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
+        _ = products.Members[1].ServiceProvider.GetRequiredBackstageService<IConfigurationManager>();
         Assert.True( this._registry.WatcherCount > 0 );
 
         ((IDisposable) serviceProvider).Dispose();

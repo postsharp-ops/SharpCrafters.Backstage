@@ -5,7 +5,7 @@
 using SharpCrafters.Backstage.Telemetry;
 using System.Threading.Tasks;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The telemetry uploader of an inner service provider of a composite product. It uploads nothing, so that a report of

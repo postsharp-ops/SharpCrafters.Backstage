@@ -3,9 +3,10 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.Utilities;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Application;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The <see cref="IIdeExtensionStatusService"/> of a composite product. It reads the status of the primary product and
@@ -27,6 +28,6 @@ internal sealed class CompositeIdeExtensionStatusService : IIdeExtensionStatusSe
     public bool IsVisualStudioExtensionInstalled
     {
         get => this.Primary.IsVisualStudioExtensionInstalled;
-        set => CompositeBackstageProduct.ForEach( this._products.Products.Select( p => p.IdeExtensionStatusService ), s => s.IsVisualStudioExtensionInstalled = value );
+        set => this._products.Members.Select( p => p.IdeExtensionStatusService ).ForEachContinueOnException( s => s.IsVisualStudioExtensionInstalled = value );
     }
 }
