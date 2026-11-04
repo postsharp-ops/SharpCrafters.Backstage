@@ -58,9 +58,9 @@ public interface ILicenseProductCatalog : IBackstageService
     /// <remarks>
     /// A family can consume the keys of a product of another family: Metalama consumes PostSharp Framework and
     /// PostSharp Ultimate keys. Such a product is of the family (see <see cref="IsProductOfFamily"/>) but is not
-    /// native to it. A host that registers the keys of several families, which is what the product of the Visual Studio
-    /// extension does (see <c>VsxProduct</c> in the <c>SharpCrafters.Backstage.Vsx</c> package), stores a key in the
-    /// store of the family to which its product is native.
+    /// native to it. A host that registers the keys of several families, which is what a composite product does (see
+    /// <see cref="Application.BackstageProduct.CreateComposite"/>), stores a key in the store of the family to which
+    /// its product is native.
     /// </remarks>
     bool IsNativeProduct( LicenseProduct product );
 

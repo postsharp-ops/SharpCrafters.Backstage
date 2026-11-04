@@ -23,7 +23,7 @@ customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 | `SharpCrafters.Aspects.Introspection` | The forward-only reader and writer of the weaving symbol file of PostSharp (`.pssym`, schema version 1), which the PostSharp compiler writes through. It has no dependency, and no other package depends on it but the next one. The design is `Documentation/future/Introspection-Cli.md` of PostSharp, section 7.2 |
 | `SharpCrafters.Aspects.Introspection.Query` | The common model of the introspection of aspects (aspect classes, aspect instances, predecessors, transformations, annotations, declaration mappings, declarations), its loader from schema version 1, the conversion of the names of version 1 to documentation comment identifiers, the structural keys and 48-bit identifiers of the aspect instances and predecessors, the evaluation of the projects with the MSBuild of a .NET SDK, the OData queries of `--where` and `--order-by`, parsed by Microsoft.OData.Core and evaluated against the model, the merge of the files of the projects of a solution and their target frameworks, the caches of the evaluations and of the files (in `SharpCrafters/Introspection` of the local application data), and the `introspect` commands (`list`, `show`, `schema`, and `batch`, which runs several of them, one per line of the standard input or of a file, over one load of the files), which a tool adds with `IntrospectionCommandFactory.AddIntrospectBranch` and an `IntrospectionProvider` of its product (same document, sections 5 to 7). It depends on `SharpCrafters.Aspects.Introspection`, Spectre.Console, `Microsoft.OData.Core` and `Microsoft.Build.Locator`; the MSBuild assemblies come from the .NET SDK |
 | `Metalama.Backstage`, `PostSharp.Backstage` | What each product family adds: its profile, its licence catalogue, its web links and its telemetry endpoints |
-| `SharpCrafters.Backstage.Vsx` | The product of the Visual Studio extension, which hosts Metalama and PostSharp in one process |
+| `SharpCrafters.Backstage.Vsx` | The product of the Visual Studio extension, `VsxProduct`: a composite of Metalama and PostSharp. It is a private package |
 
 A type belongs in one of the packages that depend only on the abstractions when a component that starts no service
 needs it, such as a build task loaded by MSBuild. Those packages must not gain a dependency on
@@ -38,6 +38,10 @@ the `SharpCrafters.Backstage.Vsx` package:
 ```csharp
 var serviceProvider = BackstageServiceFactory.CreateServiceProvider( new BackstageInitializationOptions( applicationInfo, VsxProduct.Instance ) { ... } );
 ```
+
+`VsxProduct.Instance` is a composite product, which `BackstageProduct.CreateComposite( host, members )` creates. The
+composite is implemented in `SharpCrafters.Backstage`, because it uses internal services of that package and only the
+test projects see its internals.
 
 For its usage and exception reports, the extension is a product of its own: they are sent under the name
 `Visual Studio Tools for PostSharp and Metalama`, and its analytics events go to the analytics site of the extension.

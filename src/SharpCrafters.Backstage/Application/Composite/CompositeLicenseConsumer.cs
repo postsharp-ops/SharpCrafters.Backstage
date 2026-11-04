@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace SharpCrafters.Backstage.Vsx;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The <see cref="ILicenseConsumer"/> that <see cref="CompositeLicenseConsumptionService"/> creates. It holds the

@@ -60,8 +60,6 @@
              uses the public API, so that what a product needs is what anyone can rely on. -->
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
         <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
-        <!-- The Visual Studio extension product hosts several products in one process with the internal services. -->
-        <InternalsVisibleTo Include="SharpCrafters.Backstage.Vsx" />
     </ItemGroup>
 
 </Project>

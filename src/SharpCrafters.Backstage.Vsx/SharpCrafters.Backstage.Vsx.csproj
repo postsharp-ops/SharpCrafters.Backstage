@@ -17,13 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="System.Collections.Immutable" />
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <InternalsVisibleTo Include="SharpCrafters.Backstage.Tests" />
-        <InternalsVisibleTo Include="SharpCrafters.Backstage.Testing" />
     </ItemGroup>
 
 </Project>

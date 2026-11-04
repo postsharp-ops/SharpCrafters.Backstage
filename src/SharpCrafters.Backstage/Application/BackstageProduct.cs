@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using JetBrains.Annotations;
+using SharpCrafters.Backstage.Application.Composite;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Telemetry;
@@ -67,9 +68,57 @@ public sealed record BackstageProduct(
     /// <summary>
     /// Gets an action that <see cref="RegisterServiceExtensions.AddBackstageServices"/> invokes after every other
     /// registration, so that the services it registers replace the standard ones. It is <see langword="null"/> except
-    /// for a product that hosts several products in one process, such as the product of the Visual Studio extension in
-    /// the <c>SharpCrafters.Backstage.Vsx</c> package, which replaces the services that have to answer for every
-    /// product it holds.
+    /// for a composite product (see <see cref="CreateComposite"/>), which replaces the services that have to answer for
+    /// every product it holds.
     /// </summary>
     internal Action<ServiceProviderBuilder, BackstageInitializationOptions>? OverrideServices { get; init; }
+
+    /// <summary>
+    /// Creates a product that hosts the Backstage services of several product families in one process, for instance
+    /// Metalama and PostSharp in the Visual Studio extension that serves both.
+    /// </summary>
+    /// <param name="host">The product whose profile, web links, telemetry endpoints, user interface addresses and
+    /// license product catalog the composite product carries. The process reports its usage and its exceptions under
+    /// the identity of the host. The host must keep the configuration store of the primary member.</param>
+    /// <param name="members">The hosted products, the primary member first. Each one keeps its own configuration store,
+    /// so its registered licenses and its telemetry consents stay where its own tools read them.</param>
+    /// <returns>A product that can be passed to <see cref="BackstageInitializationOptions"/> like any other.</returns>
+    /// <remarks>
+    /// <para>
+    /// The service provider created for the composite product is the outer service provider. It holds the services of
+    /// the primary member, and runs the only logger, usage and exception telemetry, notifications, welcome page and RSS
+    /// client of the process.
+    /// </para>
+    /// <para>
+    /// The outer provider creates, when it first needs it, one inner service provider for each other member. An inner
+    /// provider has no user interface, notifications, welcome page, RSS client, crash dump service or tools extractor,
+    /// and collects no usage or exception telemetry. It uses the same instances as the outer provider for the service
+    /// types marked with <see cref="ProductNeutralServiceAttribute"/>. Disposing the outer provider disposes the inner
+    /// providers.
+    /// </para>
+    /// <para>
+    /// Each member audits its own licenses: the audit report goes to the upload queue of the member and the analytics
+    /// event to the analytics site of the member. The process uploads the queue of each inner member itself.
+    /// </para>
+    /// <para>
+    /// The following services of the outer provider answer for all members:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description><see cref="Licensing.Registration.ILicenseRegistrationService"/> reports the licenses and the
+    /// editions of every member. It registers a license key in the store of the product family to which the product of
+    /// the key is native (see <see cref="ILicenseProductCatalog.IsNativeProduct"/>), registers a license server in the
+    /// store of the primary member, and removes the licenses of every store.</description></item>
+    /// <item><description><see cref="Licensing.Consumption.ILicenseConsumptionService"/> creates a consumer that
+    /// satisfies a requirement when the licenses of any member satisfy it.</description></item>
+    /// <item><description><see cref="Telemetry.ITelemetryConfigurationService"/> reports the maximal consent of the
+    /// members and writes a consent to every member.</description></item>
+    /// <item><description><see cref="UserInterface.IIdeExtensionStatusService"/> keeps the installation status of the
+    /// extension once for all products, and also writes it to the configuration store of every member, where earlier
+    /// versions of the products read it.</description></item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentException">A product is a composite product, the same product family is given twice, or
+    /// the host does not keep the configuration store of the primary member.</exception>
+    public static BackstageProduct CreateComposite( BackstageProduct host, params BackstageProduct[] members )
+        => CompositeBackstageProduct.Create( host, members );
 }

@@ -5,6 +5,7 @@
 using Metalama.Backstage;
 using PostSharp.Backstage;
 using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Application.Composite;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Diagnostics;
@@ -625,11 +626,11 @@ public sealed class CompositeProductTests : IDisposable
     [Fact]
     public void ACompositeProductIsValidated()
     {
-        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( MetalamaProduct.Instance, MetalamaProduct.Instance, MetalamaProduct.Instance ) );
-        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( VsxProduct.Instance, MetalamaProduct.Instance ) );
-        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( MetalamaProduct.Instance, VsxProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => BackstageProduct.CreateComposite( MetalamaProduct.Instance, MetalamaProduct.Instance, MetalamaProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => BackstageProduct.CreateComposite( VsxProduct.Instance, MetalamaProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => BackstageProduct.CreateComposite( MetalamaProduct.Instance, VsxProduct.Instance ) );
 
         // The host must keep the store of the primary member, whose services the outer provider creates.
-        Assert.Throws<ArgumentException>( () => CompositeBackstageProduct.Create( PostSharpProduct.Instance, MetalamaProduct.Instance ) );
+        Assert.Throws<ArgumentException>( () => BackstageProduct.CreateComposite( PostSharpProduct.Instance, MetalamaProduct.Instance ) );
     }
 }

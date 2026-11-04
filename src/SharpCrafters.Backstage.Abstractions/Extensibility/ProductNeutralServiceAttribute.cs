@@ -10,8 +10,8 @@ namespace SharpCrafters.Backstage.Extensibility;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A product that hosts several products in one process (see <c>VsxProduct</c> in the <c>SharpCrafters.Backstage.Vsx</c>
-/// package) creates an inner service provider for each of its secondary products. When the inner provider registers a service type that carries this attribute, and the outer
+/// A composite product (see <c>BackstageProduct.CreateComposite</c>) creates an inner service provider for each of its
+/// secondary products. When the inner provider registers a service type that carries this attribute, and the outer
 /// provider has an instance of that type, the inner provider uses the instance of the outer provider instead of
 /// creating its own.
 /// </para>

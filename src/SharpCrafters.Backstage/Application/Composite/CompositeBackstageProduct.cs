@@ -2,7 +2,6 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Audit;
@@ -15,7 +14,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace SharpCrafters.Backstage.Vsx;
+namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// Builds a <see cref="BackstageProduct"/> that hosts several products in one process, and registers the services that
