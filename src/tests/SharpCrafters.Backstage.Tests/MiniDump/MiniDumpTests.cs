@@ -147,12 +147,6 @@ public sealed class MiniDumpTests : TestsBase, IDisposable
     }
 
     /// <summary>
-    /// The exception that the first step of a dump throws, which is the only one that the dumper of the test writes a dump
-    /// of.
-    /// </summary>
-    private sealed class DumpWhileWritingException : Exception;
-
-    /// <summary>
     /// A temporary directory on the disk, which the dump needs, because the runtime writes it.
     /// </summary>
     private sealed class DiskTempFileManager : ITempFileManager

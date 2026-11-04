@@ -14,7 +14,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Application;
 
@@ -208,40 +207,5 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
         }
 
         CompositeBackstageProduct.ForEach( innerServiceProviders, p => p.Dispose() );
-    }
-
-    /// <summary>
-    /// The outer service provider as the primary product sees it: the license product catalog is the catalog of the
-    /// primary product and not the union catalog, so that the licensing services of the primary product read and write
-    /// the license keys of that product only.
-    /// </summary>
-    private sealed class PrimaryServiceProvider : IServiceProvider
-    {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILicenseProductCatalog _catalog;
-
-        public PrimaryServiceProvider( IServiceProvider serviceProvider, ILicenseProductCatalog catalog )
-        {
-            this._serviceProvider = serviceProvider;
-            this._catalog = catalog;
-        }
-
-        public object? GetService( Type serviceType )
-            => serviceType == typeof(ILicenseProductCatalog) ? this._catalog : this._serviceProvider.GetService( serviceType );
-    }
-
-    /// <summary>
-    /// The telemetry uploader of an inner provider. It uploads nothing, so that a report of a secondary product stays in
-    /// the upload queue of that product, and the outer provider runs the only upload of the process.
-    /// </summary>
-    private sealed class QueueOnlyTelemetryUploader : ITelemetryUploader
-    {
-        public static QueueOnlyTelemetryUploader Instance { get; } = new();
-
-        private QueueOnlyTelemetryUploader() { }
-
-        public bool StartUpload( bool force = false ) => false;
-
-        public Task UploadAsync() => Task.CompletedTask;
     }
 }
