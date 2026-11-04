@@ -31,16 +31,18 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands
             string commandLine,
             string? expectedOutput = null,
             string? unexpectedOutput = null,
-            int expectedExitCode = 0 )
-            => this.TestCommandAsync( commandLine.Split( ' ' ), expectedOutput, unexpectedOutput, expectedExitCode );
+            int expectedExitCode = 0,
+            string? input = null )
+            => this.TestCommandAsync( commandLine.Split( ' ' ), expectedOutput, unexpectedOutput, expectedExitCode, input );
 
         protected async Task TestCommandAsync(
             string[] commandLine,
             string? expectedOutput = null,
             string? unexpectedOutput = null,
-            int expectedExitCode = 0 )
+            int expectedExitCode = 0,
+            string? input = null )
         {
-            var result = await this.RunAsync( commandLine );
+            var result = await this.RunAsync( commandLine, input );
 
             // Both streams, because a test of this kind is looking for something the command said and does not care
             // whether it said it to the console or to the log.
@@ -81,7 +83,12 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands
             return result.Console;
         }
 
-        private async Task<(string Console, string Log, int ExitCode)> RunAsync( string[] commandLine )
+        /// <param name="commandLine">The arguments of the command.</param>
+        /// <param name="input">
+        /// What the command reads from the standard input, or <see langword="null"/> for an input that is already at
+        /// its end, as when no terminal is attached.
+        /// </param>
+        private async Task<(string Console, string Log, int ExitCode)> RunAsync( string[] commandLine, string? input = null )
         {
             var console = new StringWriter();
             var log = new StringWriter();
@@ -94,7 +101,7 @@ namespace SharpCrafters.Backstage.Commands.Tests.Commands
 
             BackstageCommandFactory.ConfigureCommandApp(
                 commandApp,
-                new BackstageCommandOptions( this, MetalamaProduct.Instance, console, console, AnsiSupport.No ) );
+                new BackstageCommandOptions( this, MetalamaProduct.Instance, console, console, AnsiSupport.No, new StringReader( input ?? "" ) ) );
 
             var exitCode = await commandApp.RunAsync( commandLine );
 

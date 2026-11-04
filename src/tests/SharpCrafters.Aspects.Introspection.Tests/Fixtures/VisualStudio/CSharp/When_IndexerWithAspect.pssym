@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Symbols xmlns="http://schemas.postsharp.org/2.0/symbols">
+  <Class Class="#1=T:[ConsoleApplication1]MyLocationAspect">
+    <Instance Declaration="#2=T:[ConsoleApplication1]When_IndexerWithAspect.Class1" Id="78acef30d678ba2d">
+      <Target Target="#3=P:[ConsoleApplication1]When_IndexerWithAspect.Class1::Item(System.Int32, System.Int32)">
+        <JoinPoint Advised="#4=M:[ConsoleApplication1]When_IndexerWithAspect.Class1::get_Item(System.Int32, System.Int32)" Description="#5=Intercepted by advice OnGetValue" Semantic="Getter" />
+        <JoinPoint Advised="#6=M:[ConsoleApplication1]When_IndexerWithAspect.Class1::set_Item(System.Int32, System.Int32, System.Int32)" Description="#7=Intercepted by advice OnSetValue" Semantic="Setter" />
+      </Target>
+    </Instance>
+  </Class>
+</Symbols>

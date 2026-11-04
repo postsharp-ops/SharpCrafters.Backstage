@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Registration;
 using System;
 using System.Linq;
@@ -18,9 +19,10 @@ namespace SharpCrafters.Backstage.Commands.Licensing;
 /// which is the alias the product family gave it, so that adding an edition to a family adds a command without
 /// adding a class.
 /// </remarks>
-internal class RegisterEditionCommand : BaseCommand<BaseCommandSettings>
+internal abstract class RegisterEditionCommand<TSettings> : BaseCommand<TSettings>
+    where TSettings : BaseCommandSettings
 {
-    protected override void Execute( ExtendedCommandContext context, BaseCommandSettings settings )
+    protected override void Execute( ExtendedCommandContext context, TSettings settings )
     {
         var edition = context.BackstageCommandOptions.Product.LicenseProductCatalog.SelfRegisteredEditions
                           .FirstOrDefault( e => string.Equals( e.Alias, context.CommandName, StringComparison.OrdinalIgnoreCase ) )
@@ -30,7 +32,11 @@ internal class RegisterEditionCommand : BaseCommand<BaseCommandSettings>
 
         var result = service.Register(
             edition,
-            new SelfRegisteredEditionOptions { ReportMessage = message => context.Console.WriteWarning( message.Text ) } );
+            new SelfRegisteredEditionOptions
+            {
+                CommunityLicenseReason = this.GetReason( context, settings, edition ),
+                ReportMessage = message => context.Console.WriteWarning( message.Text )
+            } );
 
         if ( !result.IsSuccess )
         {
@@ -39,4 +45,16 @@ internal class RegisterEditionCommand : BaseCommand<BaseCommandSettings>
 
         context.Console.WriteSuccess( edition.SuccessMessage );
     }
+
+    /// <summary>
+    /// Gets the reason for which the user is entitled to the <paramref name="edition"/>. The default returns
+    /// <see cref="CommunityLicenseReason.None"/>, for an edition that does not require a reason.
+    /// </summary>
+    protected virtual CommunityLicenseReason GetReason( ExtendedCommandContext context, TSettings settings, SelfRegisteredEdition edition )
+        => CommunityLicenseReason.None;
 }
+
+/// <summary>
+/// Registers an edition that does not require a reason.
+/// </summary>
+internal sealed class RegisterEditionCommand : RegisterEditionCommand<BaseCommandSettings>;

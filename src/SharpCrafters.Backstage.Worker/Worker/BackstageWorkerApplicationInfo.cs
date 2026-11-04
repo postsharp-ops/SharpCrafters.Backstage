@@ -36,6 +36,4 @@ public abstract class BackstageWorkerApplicationInfo : ApplicationInfoBase
 
     /// <inheritdoc />
     public override bool IsLongRunningProcess => false;
-
-    public override bool IsWorkerProcess => true;
 }

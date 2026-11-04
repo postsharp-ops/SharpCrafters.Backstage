@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Symbols xmlns="http://schemas.postsharp.org/2.0/symbols">
+  <Class Class="#1=T:[PostSharp.Patterns.Model]PostSharp.Patterns.Contracts.RequiredAttribute">
+    <Instance Declaration="#2=R:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::Method(System.String)@parameter1" Id="78acef302eed9813">
+      <Target>
+        <JoinPoint Advised="#3=M:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::Method(System.String)" Advising="#1" Description="#4=Add validation to parameter 'parameter1'" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#5=R:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::get_IndexedProperty1(System.String)@propertyParameter1" Id="78acef3083115807">
+      <Target>
+        <JoinPoint Advised="#6=M:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::get_IndexedProperty1(System.String)" Advising="#1" Description="#7=Add validation to parameter 'propertyParameter1'" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#8=R:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::set_IndexedProperty1(System.String, System.Int32)@propertyParameter1" Id="78acef306e2bea6c">
+      <Target>
+        <JoinPoint Advised="#9=M:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::set_IndexedProperty1(System.String, System.Int32)" Advising="#1" Description="#7" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#10=R:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::set_IndexedPropertyWithAspectOnSetterValueParameter(System.String)@value" Id="78acef308840c084">
+      <Target>
+        <JoinPoint Advised="#11=M:[ConsoleApplication1]ConsoleApplication1.When_ParameterWithAspect.ClassWithMethods::set_IndexedPropertyWithAspectOnSetterValueParameter(System.String)" Advising="#1" Description="#12=Add validation to parameter 'value'" />
+      </Target>
+    </Instance>
+  </Class>
+</Symbols>

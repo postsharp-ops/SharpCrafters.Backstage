@@ -50,12 +50,14 @@ public sealed class BackstageCommandOptions
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
         AnsiSupport ansiSupport = AnsiSupport.Detect,
-        Action<ServiceProviderBuilder>? registerServices = null ) : this(
+        Action<ServiceProviderBuilder>? registerServices = null,
+        TextReader? standardInput = null ) : this(
         new CommandServiceProvider( applicationInfo, product, addToolsExtractor, registerServices ),
         product,
         standardOutput,
         errorOutput,
-        ansiSupport ) { }
+        ansiSupport,
+        standardInput ) { }
 
     /// <summary>
     /// Gets the product family that hosts the commands.
@@ -72,13 +74,15 @@ public sealed class BackstageCommandOptions
         BackstageProduct product,
         TextWriter? standardOutput = null,
         TextWriter? errorOutput = null,
-        AnsiSupport ansiSupport = AnsiSupport.Detect )
+        AnsiSupport ansiSupport = AnsiSupport.Detect,
+        TextReader? standardInput = null )
     {
         this._ansiSupport = ansiSupport;
         this.Product = product;
         this.ServiceProvider = serviceProvider;
         this.StandardOutput = standardOutput ?? Console.Out;
         this.ErrorOutput = errorOutput ?? Console.Error;
+        this.StandardInput = standardInput ?? Console.In;
         this.AddConfigurationFileAdapter<DiagnosticsConfiguration>();
         this.AddConfigurationFileAdapter<ToastNotificationsConfiguration>();
         this.AddConfigurationFileAdapter<RssClientConfiguration>();
@@ -105,6 +109,12 @@ public sealed class BackstageCommandOptions
     internal TextWriter StandardOutput { get; }
 
     internal TextWriter ErrorOutput { get; }
+
+    /// <summary>
+    /// Gets the input from which a command reads the answer to a question, such as the reason for which the user is
+    /// entitled to a community license.
+    /// </summary>
+    internal TextReader StandardInput { get; }
 
     internal IReadOnlyDictionary<string, ConfigurationFileCommandAdapter> ConfigurationFileCommandAdapters => this._configurationFileCommandAdapters;
 

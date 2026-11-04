@@ -92,7 +92,14 @@ internal class WebServerCommand : AsyncCommand<WebServerCommandSettings>
                 break;
             }
 
-            await Task.Delay( shutDownTime - now, cancellationToken );
+            // Wait for the server as well as for the delay, so that the command ends as soon as the server stops (on
+            // Ctrl+C, for instance) rather than when the delay elapses. Each ping extends the delay, so a setup page left
+            // open would otherwise keep the process alive after the server has stopped.
+            await Task.WhenAny( serverTask, Task.Delay( shutDownTime - now, cancellationToken ) );
+
+            // Task.WhenAny does not throw when the delay is canceled, and the loop would otherwise spin until the
+            // shutdown time.
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         await app.StopAsync( cancellationToken );

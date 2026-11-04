@@ -68,8 +68,6 @@ namespace SharpCrafters.Backstage.Testing
         /// <inheritdoc />
         public bool IsLongRunningProcess { get; init; }
 
-        public bool IsWorkerProcess { get; init; }
-
         /// <inheritdoc />
         public bool IsTelemetryEnabled { get; init; }
 

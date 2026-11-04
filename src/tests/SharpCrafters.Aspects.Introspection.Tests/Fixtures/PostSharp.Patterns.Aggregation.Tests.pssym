@@ -1,0 +1,632 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Symbols LinesOfCode="2375" PostSharpLinesOfCode="0" EnhancedTypesCount="41" SchemaVersion="1" PostSharpVersion="2027.0.4.0" xmlns="http://schemas.postsharp.org/2.0/symbols">
+  <Evolution Source="#1=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetBase::&lt;ChildA&gt;k__BackingField" Target="#2=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetBase::&lt;ChildA&gt;k__OriginalField" />
+  <Evolution Source="#2" Target="#3=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetBase::{ChildA}k__BackingField()" />
+  <Evolution Source="#4=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetDerived::&lt;ChildB&gt;k__BackingField" Target="#5=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetDerived::&lt;ChildB&gt;k__OriginalField" />
+  <Evolution Source="#5" Target="#6=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetDerived::{ChildB}k__BackingField()" />
+  <Evolution Source="#7=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::&lt;Child1&gt;k__BackingField" Target="#8=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::&lt;Child1&gt;k__OriginalField" />
+  <Evolution Source="#8" Target="#9=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::{Child1}k__BackingField()" />
+  <Evolution Source="#10=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::&lt;Children&gt;k__BackingField" Target="#11=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::&lt;Children&gt;k__OriginalField" />
+  <Evolution Source="#11" Target="#12=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::{Children}k__BackingField()" />
+  <Evolution Source="#13=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::&lt;SurrogateChild1&gt;k__BackingField" Target="#14=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::&lt;SurrogateChild1&gt;k__OriginalField" />
+  <Evolution Source="#14" Target="#15=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable::{SurrogateChild1}k__BackingField()" />
+  <Evolution Source="#16=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreNotChildren{T}::ChildA" Target="#17=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreNotChildren{T}::&lt;ChildA&gt;k__OriginalField" />
+  <Evolution Source="#17" Target="#18=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreNotChildren{T}::ChildA()" />
+  <Evolution Source="#19=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreChildren{T}::ChildA" Target="#20=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreChildren{T}::&lt;ChildA&gt;k__OriginalField" />
+  <Evolution Source="#20" Target="#21=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreChildren{T}::ChildA()" />
+  <Evolution Source="#22=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable::ChildA" Target="#23=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable::&lt;ChildA&gt;k__OriginalField" />
+  <Evolution Source="#23" Target="#24=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable::ChildA()" />
+  <Evolution Source="#25=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable::&lt;ChildB&gt;k__BackingField" Target="#26=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable::&lt;ChildB&gt;k__OriginalField" />
+  <Evolution Source="#26" Target="#27=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable::{ChildB}k__BackingField()" />
+  <Evolution Source="#28=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods::Child" Target="#29=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods::&lt;Child&gt;k__OriginalField" />
+  <Evolution Source="#29" Target="#30=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods::Child()" />
+  <Evolution Source="#31=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods::Child2" Target="#32=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods::&lt;Child2&gt;k__OriginalField" />
+  <Evolution Source="#32" Target="#33=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods::Child2()" />
+  <Evolution Source="#34=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithOneParentField::&lt;Child&gt;k__BackingField" Target="#35=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithOneParentField::&lt;Child&gt;k__OriginalField" />
+  <Evolution Source="#35" Target="#36=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithOneParentField::{Child}k__BackingField()" />
+  <Evolution Source="#37=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject::ChildField" Target="#38=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject::&lt;ChildField&gt;k__OriginalField" />
+  <Evolution Source="#38" Target="#39=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject::ChildField()" />
+  <Evolution Source="#40=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject::SurrogateField" Target="#41=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject::&lt;SurrogateField&gt;k__OriginalField" />
+  <Evolution Source="#41" Target="#42=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject::SurrogateField()" />
+  <Evolution Source="#43=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableParent::SurrogateField" Target="#44=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableParent::&lt;SurrogateField&gt;k__OriginalField" />
+  <Evolution Source="#44" Target="#45=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableParent::SurrogateField()" />
+  <Evolution Source="#46=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+ObjectWithSurrogate::Dict" Target="#47=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+ObjectWithSurrogate::&lt;Dict&gt;k__OriginalField" />
+  <Evolution Source="#47" Target="#48=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+ObjectWithSurrogate::Dict()" />
+  <Evolution Source="#49=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject::ChildField" Target="#50=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject::&lt;ChildField&gt;k__OriginalField" />
+  <Evolution Source="#50" Target="#51=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject::ChildField()" />
+  <Evolution Source="#52=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject::SurrogateField" Target="#53=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject::&lt;SurrogateField&gt;k__OriginalField" />
+  <Evolution Source="#53" Target="#54=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject::SurrogateField()" />
+  <Evolution Source="#55=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableParent::SurrogateField" Target="#56=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableParent::&lt;SurrogateField&gt;k__OriginalField" />
+  <Evolution Source="#56" Target="#57=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableParent::SurrogateField()" />
+  <Evolution Source="#58=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::Field1" Target="#59=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::&lt;Field1&gt;k__OriginalField" />
+  <Evolution Source="#59" Target="#60=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::Field1()" />
+  <Evolution Source="#61=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::Field2" Target="#62=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::&lt;Field2&gt;k__OriginalField" />
+  <Evolution Source="#62" Target="#63=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::Field2()" />
+  <Evolution Source="#64=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::Collection1" Target="#65=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::&lt;Collection1&gt;k__OriginalField" />
+  <Evolution Source="#65" Target="#66=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject::Collection1()" />
+  <Evolution Source="#67=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChild::Child" Target="#68=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChild::&lt;Child&gt;k__OriginalField" />
+  <Evolution Source="#68" Target="#69=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChild::Child()" />
+  <Evolution Source="#70=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChildCollection::Surrogate" Target="#71=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChildCollection::&lt;Surrogate&gt;k__OriginalField" />
+  <Evolution Source="#71" Target="#72=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChildCollection::Surrogate()" />
+  <Evolution Source="#73=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject::ChildField" Target="#74=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject::&lt;ChildField&gt;k__OriginalField" />
+  <Evolution Source="#74" Target="#75=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject::ChildField()" />
+  <Evolution Source="#76=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject::SurrogateField" Target="#77=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject::&lt;SurrogateField&gt;k__OriginalField" />
+  <Evolution Source="#77" Target="#78=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject::SurrogateField()" />
+  <Evolution Source="#79=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+BaseAggregatable::&lt;BaseChild&gt;k__BackingField" Target="#80=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+BaseAggregatable::&lt;BaseChild&gt;k__OriginalField" />
+  <Evolution Source="#80" Target="#81=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+BaseAggregatable::{BaseChild}k__BackingField()" />
+  <Evolution Source="#82=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+MiddleAggregatable::&lt;MiddleChild&gt;k__BackingField" Target="#83=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+MiddleAggregatable::&lt;MiddleChild&gt;k__OriginalField" />
+  <Evolution Source="#83" Target="#84=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+MiddleAggregatable::{MiddleChild}k__BackingField()" />
+  <Evolution Source="#85=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+DerivedAggregatable::&lt;DerivedChild&gt;k__BackingField" Target="#86=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+DerivedAggregatable::&lt;DerivedChild&gt;k__OriginalField" />
+  <Evolution Source="#86" Target="#87=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+DerivedAggregatable::{DerivedChild}k__BackingField()" />
+  <Evolution Source="#88=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_BaseAggregatable::&lt;BaseChild&gt;k__BackingField" Target="#89=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_BaseAggregatable::&lt;BaseChild&gt;k__OriginalField" />
+  <Evolution Source="#89" Target="#90=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_BaseAggregatable::{BaseChild}k__BackingField()" />
+  <Evolution Source="#91=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_DerivedAggregatable::&lt;DerivedChild&gt;k__BackingField" Target="#92=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_DerivedAggregatable::&lt;DerivedChild&gt;k__OriginalField" />
+  <Evolution Source="#92" Target="#93=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_DerivedAggregatable::{DerivedChild}k__BackingField()" />
+  <Evolution Source="#94=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_BaseAggregatable::&lt;BaseChild&gt;k__BackingField" Target="#95=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_BaseAggregatable::&lt;BaseChild&gt;k__OriginalField" />
+  <Evolution Source="#95" Target="#96=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_BaseAggregatable::{BaseChild}k__BackingField()" />
+  <Evolution Source="#97=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_DerivedAggregatable::&lt;DerivedChild&gt;k__BackingField" Target="#98=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_DerivedAggregatable::&lt;DerivedChild&gt;k__OriginalField" />
+  <Evolution Source="#98" Target="#99=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_DerivedAggregatable::{DerivedChild}k__BackingField()" />
+  <Evolution Source="#100=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridCollectionTests+AggregatableClass::&lt;Child&gt;k__BackingField" Target="#101=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridCollectionTests+AggregatableClass::&lt;Child&gt;k__OriginalField" />
+  <Evolution Source="#101" Target="#102=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridCollectionTests+AggregatableClass::{Child}k__BackingField()" />
+  <Evolution Source="#103=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridDictionaryTests+AggregatableClass::&lt;Child&gt;k__BackingField" Target="#104=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridDictionaryTests+AggregatableClass::&lt;Child&gt;k__OriginalField" />
+  <Evolution Source="#104" Target="#105=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridDictionaryTests+AggregatableClass::{Child}k__BackingField()" />
+  <Evolution Source="#106=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.StructTests+AggregatableObject::&lt;AggregatableStruct&gt;k__BackingField" Target="#107=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.StructTests+AggregatableObject::&lt;AggregatableStruct&gt;k__OriginalField" />
+  <Evolution Source="#107" Target="#108=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.StructTests+AggregatableObject::{AggregatableStruct}k__BackingField()" />
+  <Evolution Source="#109=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.SurrogateTests+SomeClass::Parts" Target="#110=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.SurrogateTests+SomeClass::&lt;Parts&gt;k__OriginalField" />
+  <Evolution Source="#110" Target="#111=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.SurrogateTests+SomeClass::Parts()" />
+  <Evolution Source="#112=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.Model.Issue25003+Item::items" Target="#113=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.Model.Issue25003+Item::&lt;items&gt;k__OriginalField" />
+  <Evolution Source="#113" Target="#114=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.Model.Issue25003+Item::items()" />
+  <Evolution Source="#115=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;SurrogateCollection&gt;k__BackingField" Target="#116=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;SurrogateCollection&gt;k__OriginalField" />
+  <Evolution Source="#116" Target="#117=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::{SurrogateCollection}k__BackingField()" />
+  <Evolution Source="#118=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;SurrogateDictionary&gt;k__BackingField" Target="#119=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;SurrogateDictionary&gt;k__OriginalField" />
+  <Evolution Source="#119" Target="#120=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::{SurrogateDictionary}k__BackingField()" />
+  <Evolution Source="#121=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;ChildCollection&gt;k__BackingField" Target="#122=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;ChildCollection&gt;k__OriginalField" />
+  <Evolution Source="#122" Target="#123=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::{ChildCollection}k__BackingField()" />
+  <Evolution Source="#124=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;ChildDictionary&gt;k__BackingField" Target="#125=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::&lt;ChildDictionary&gt;k__OriginalField" />
+  <Evolution Source="#125" Target="#126=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect::{ChildDictionary}k__BackingField()" />
+  <Evolution Source="#127=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomCollection{T}::&lt;SurrogateCollection&gt;k__BackingField" Target="#128=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomCollection{T}::&lt;SurrogateCollection&gt;k__OriginalField" />
+  <Evolution Source="#128" Target="#129=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomCollection{T}::{SurrogateCollection}k__BackingField()" />
+  <Evolution Source="#130=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomDictionary{TKey,TValue}::&lt;SurrogateCollection&gt;k__BackingField" Target="#131=F:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomDictionary{TKey,TValue}::&lt;SurrogateCollection&gt;k__OriginalField" />
+  <Evolution Source="#131" Target="#132=P:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomDictionary{TKey,TValue}::{SurrogateCollection}k__BackingField()" />
+  <Class Class="#133=T:[PostSharp]PostSharp.Serialization.PSerializableAttribute">
+    <Instance Declaration="#134=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+MockAggregatableClientAttribute" Id="50368a9b00008005">
+      <Target />
+    </Instance>
+  </Class>
+  <Class Class="#135=T:[PostSharp.Patterns.Aggregation]PostSharp.Patterns.Model.AggregatableAttribute">
+    <Instance Declaration="#136=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetBase" Id="50368a9b00008006">
+      <Target>
+        <JoinPoint Advising="#135" Description="#137=Introduces method OnChildDetached" Ordinal="0" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138=Introduces method OnChildAttached" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139=Introduces method OnParentChanged" Ordinal="2" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140=Introduces method OnAncestorChanged" Ordinal="3" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141=Introduces method __GetCanonicalAggregatableAttribute" Ordinal="4" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142=Introduces method VisitChildren" Ordinal="5" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143=Introduces method VisitChildrenCore" Ordinal="6" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#144=Introduces method OnDeserialization" Ordinal="7" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145=Introduces interface(s) IAttachable, IAggregatable" Ordinal="8" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#146=Introduces interface(s) IDeserializationCallback" Ordinal="9" LinesAvoided="0" />
+        <JoinPoint Advised="#2" Advising="#135" Description="#147=Registers the value as a child of the current object" Semantic="Setter" Ordinal="10" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#148=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+SerializableTargetDerived" Id="50368a9b00008007">
+      <Target>
+        <JoinPoint Advising="#135" Description="#139" Ordinal="11" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="12" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="13" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#144" Ordinal="14" LinesAvoided="0" />
+        <JoinPoint Advised="#5" Advising="#135" Description="#147" Semantic="Setter" Ordinal="15" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#149=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Clonable" Id="50368a9b00008008">
+      <Target>
+        <JoinPoint Advising="#135" Description="#142" Ordinal="16" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="17" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="18" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="19" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="20" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="21" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="22" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="23" LinesAvoided="0" />
+        <JoinPoint Advised="#8" Advising="#135" Description="#147" Semantic="Setter" Ordinal="24" LinesAvoided="1" />
+        <JoinPoint Advised="#11" Advising="#135" Description="#147" Semantic="Setter" Ordinal="25" LinesAvoided="1" />
+        <JoinPoint Advised="#14" Advising="#135" Description="#147" Semantic="Setter" Ordinal="26" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#150=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreNotChildren{T}" Id="50368a9ba320d365">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="27" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="28" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="29" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="30" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="31" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="32" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="33" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="34" LinesAvoided="0" />
+        <JoinPoint Advised="#17" Advising="#135" Description="#147" Semantic="Setter" Ordinal="35" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#151=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+HybridCollectionItemsAreChildren{T}" Id="50368a9ba120d365">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="36" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="37" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="38" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="39" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="40" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="41" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="42" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="43" LinesAvoided="0" />
+        <JoinPoint Advised="#20" Advising="#135" Description="#147" Semantic="Setter" Ordinal="44" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#152=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+Aggregatable" Id="50368a9b00008009">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="45" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="46" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="47" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="48" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="49" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="50" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="51" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="52" LinesAvoided="0" />
+        <JoinPoint Advised="#23" Advising="#135" Description="#147" Semantic="Setter" Ordinal="53" LinesAvoided="1" />
+        <JoinPoint Advised="#26" Advising="#135" Description="#147" Semantic="Setter" Ordinal="54" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#153=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithChildAttachedMethods" Id="50368a9b0000800a">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="55" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="56" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="57" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="58" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="59" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="60" LinesAvoided="0" />
+        <JoinPoint Advised="#29" Advising="#135" Description="#147" Semantic="Setter" Ordinal="61" LinesAvoided="1" />
+        <JoinPoint Advised="#32" Advising="#135" Description="#147" Semantic="Setter" Ordinal="62" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#154=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableAspectTests+ObjectWithOneParentField" Id="50368a9b0000800b">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="63" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="64" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="65" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="66" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="67" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="68" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="69" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="70" LinesAvoided="0" />
+        <JoinPoint Advised="#35" Advising="#135" Description="#147" Semantic="Setter" Ordinal="71" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#155=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableObject" Id="50368a9b0000800c">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="72" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="73" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="74" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="75" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="76" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="77" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="78" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="79" LinesAvoided="0" />
+        <JoinPoint Advised="#38" Advising="#135" Description="#147" Semantic="Setter" Ordinal="80" LinesAvoided="1" />
+        <JoinPoint Advised="#41" Advising="#135" Description="#147" Semantic="Setter" Ordinal="81" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#156=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableParent" Id="50368a9b0000800d">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="82" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="83" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="84" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="85" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="86" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="87" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="88" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="89" LinesAvoided="0" />
+        <JoinPoint Advised="#44" Advising="#135" Description="#147" Semantic="Setter" Ordinal="90" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#157=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableCollectionTests+AggregatableChild" Id="50368a9b0000800e">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="91" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="92" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="93" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="94" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="95" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="96" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="97" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="98" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#158=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+ObjectWithSurrogate" Id="50368a9b0000800f">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="99" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="100" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="101" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="102" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="103" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="104" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="105" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="106" LinesAvoided="0" />
+        <JoinPoint Advised="#47" Advising="#135" Description="#147" Semantic="Setter" Ordinal="107" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#159=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableObject" Id="50368a9b00008010">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="108" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="109" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="110" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="111" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="112" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="113" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="114" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="115" LinesAvoided="0" />
+        <JoinPoint Advised="#50" Advising="#135" Description="#147" Semantic="Setter" Ordinal="116" LinesAvoided="1" />
+        <JoinPoint Advised="#53" Advising="#135" Description="#147" Semantic="Setter" Ordinal="117" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#160=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableParent" Id="50368a9b00008011">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="118" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="119" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="120" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="121" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="122" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="123" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="124" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="125" LinesAvoided="0" />
+        <JoinPoint Advised="#56" Advising="#135" Description="#147" Semantic="Setter" Ordinal="126" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#161=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableDictionaryTests+AggregatableChild" Id="50368a9b00008012">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="127" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="128" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="129" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="130" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="131" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="132" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="133" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="134" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#162=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableExtensionsTest+MyObject" Id="50368a9b00008013">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="135" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="136" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="137" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="138" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="139" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="140" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="141" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="142" LinesAvoided="0" />
+        <JoinPoint Advised="#59" Advising="#135" Description="#147" Semantic="Setter" Ordinal="143" LinesAvoided="1" />
+        <JoinPoint Advised="#62" Advising="#135" Description="#147" Semantic="Setter" Ordinal="144" LinesAvoided="1" />
+        <JoinPoint Advised="#65" Advising="#135" Description="#147" Semantic="Setter" Ordinal="145" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#163=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChild" Id="50368a9b00008014">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="146" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="147" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="148" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="149" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="150" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="151" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="152" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="153" LinesAvoided="0" />
+        <JoinPoint Advised="#68" Advising="#135" Description="#147" Semantic="Setter" Ordinal="154" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#164=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+ClassWithChildCollection" Id="50368a9b00008015">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="155" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="156" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="157" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="158" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="159" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="160" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="161" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="162" LinesAvoided="0" />
+        <JoinPoint Advised="#71" Advising="#135" Description="#147" Semantic="Setter" Ordinal="163" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#165=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableFieldInitializationTests+SimpleAggregatable" Id="50368a9b00008016">
+      <Target>
+        <JoinPoint Advising="#135" Description="#138" Ordinal="164" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="165" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="166" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="167" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="168" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="169" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="170" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="171" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#166=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHashSetTests+AggregatableObject" Id="50368a9b00008017">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="172" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="173" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="174" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="175" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="176" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="177" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="178" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="179" LinesAvoided="0" />
+        <JoinPoint Advised="#74" Advising="#135" Description="#147" Semantic="Setter" Ordinal="180" LinesAvoided="1" />
+        <JoinPoint Advised="#77" Advising="#135" Description="#147" Semantic="Setter" Ordinal="181" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#167=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+BaseAggregatable" Id="50368a9b00008018">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="182" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="183" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="184" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="185" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="186" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="187" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="188" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="189" LinesAvoided="0" />
+        <JoinPoint Advised="#80" Advising="#135" Description="#147" Semantic="Setter" Ordinal="190" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#168=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+MiddleAggregatable" Id="50368a9b00008019">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="191" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="192" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="193" LinesAvoided="0" />
+        <JoinPoint Advised="#83" Advising="#135" Description="#147" Semantic="Setter" Ordinal="194" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#169=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+DerivedAggregatable" Id="50368a9b0000801a">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="195" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="196" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="197" LinesAvoided="0" />
+        <JoinPoint Advised="#86" Advising="#135" Description="#147" Semantic="Setter" Ordinal="198" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#170=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_BaseAggregatable" Id="50368a9b0000801b">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="199" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="200" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="201" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="202" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="203" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="204" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="205" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="206" LinesAvoided="0" />
+        <JoinPoint Advised="#89" Advising="#135" Description="#147" Semantic="Setter" Ordinal="207" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#171=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnBase_DerivedAggregatable" Id="50368a9b0000801c">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="208" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="209" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="210" LinesAvoided="0" />
+        <JoinPoint Advised="#92" Advising="#135" Description="#147" Semantic="Setter" Ordinal="211" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#172=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_BaseAggregatable" Id="50368a9b0000801d">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="212" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="213" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="214" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="215" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="216" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="217" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="218" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="219" LinesAvoided="0" />
+        <JoinPoint Advised="#95" Advising="#135" Description="#147" Semantic="Setter" Ordinal="220" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#173=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableHierarchyTests+ParentOnDerived_DerivedAggregatable" Id="50368a9b0000801e">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="221" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="222" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="223" LinesAvoided="0" />
+        <JoinPoint Advised="#98" Advising="#135" Description="#147" Semantic="Setter" Ordinal="224" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#174=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridCollectionTests+AggregatableClass" Id="50368a9b0000801f">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="225" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="226" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="227" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="228" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="229" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="230" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="231" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="232" LinesAvoided="0" />
+        <JoinPoint Advised="#101" Advising="#135" Description="#147" Semantic="Setter" Ordinal="233" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#175=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridCollectionTests+HybridAggregatableCollection{T}" Id="50368a9ba7c33522">
+      <Target>
+        <JoinPoint Advising="#135" Description="#138" Ordinal="234" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="235" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="236" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="237" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="238" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="239" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="240" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="241" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#176=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridCollectionTests+HybridAggregatableSurrogateCollection{T}" Id="50368a9ba7c33523">
+      <Target>
+        <JoinPoint Advising="#135" Description="#138" Ordinal="242" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="243" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="244" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="245" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="246" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="247" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="248" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="249" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#177=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridDictionaryTests+AggregatableClass" Id="50368a9b00008020">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="250" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="251" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="252" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="253" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="254" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="255" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="256" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="257" LinesAvoided="0" />
+        <JoinPoint Advised="#104" Advising="#135" Description="#147" Semantic="Setter" Ordinal="258" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#178=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridDictionaryTests+HybridAggregatableDictionary{TKey,TValue}" Id="50368a9ba7c33524">
+      <Target>
+        <JoinPoint Advising="#135" Description="#138" Ordinal="259" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="260" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="261" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="262" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="263" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="264" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="265" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="266" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#179=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.HybridDictionaryTests+HybridAggregatableSurrogateDictionary{TKey,TValue}" Id="50368a9ba7c33525">
+      <Target>
+        <JoinPoint Advising="#135" Description="#138" Ordinal="267" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="268" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="269" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="270" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="271" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="272" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#143" Ordinal="273" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="274" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#180=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.StructTests+AggregatableObject" Id="50368a9b00008021">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="275" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="276" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="277" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="278" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="279" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="280" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="281" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="282" LinesAvoided="0" />
+        <JoinPoint Advised="#107" Advising="#135" Description="#147" Semantic="Setter" Ordinal="283" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#181=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.SurrogateTests+SomeClass" Id="50368a9b00008022">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="284" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="285" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="286" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="287" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="288" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="289" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="290" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="291" LinesAvoided="0" />
+        <JoinPoint Advised="#110" Advising="#135" Description="#147" Semantic="Setter" Ordinal="292" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#182=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.Model.Issue25003+Item" Id="50368a9b00008023">
+      <Target>
+        <JoinPoint Advising="#135" Description="#143" Ordinal="293" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#142" Ordinal="294" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#141" Ordinal="295" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#140" Ordinal="296" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#139" Ordinal="297" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#138" Ordinal="298" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#137" Ordinal="299" LinesAvoided="0" />
+        <JoinPoint Advising="#135" Description="#145" Ordinal="300" LinesAvoided="0" />
+        <JoinPoint Advised="#113" Advising="#135" Description="#147" Semantic="Setter" Ordinal="301" LinesAvoided="1" />
+      </Target>
+    </Instance>
+  </Class>
+  <Class Class="#134">
+    <Instance Declaration="#183=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+NodeWithAspect" Id="50368a9b00008024">
+      <Target>
+        <JoinPoint Description="#184=Overrides method OnDeserialization" Ordinal="312" LinesAvoided="0" />
+        <JoinPoint Description="#185=Overrides method OnChildAttached" Ordinal="313" LinesAvoided="0" />
+        <JoinPoint Description="#186=Introduces interface(s) AggregatableClientAttributeTests+IMockInterface" Ordinal="314" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#187=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+InitializedNodeWithAspect" Id="50368a9b00008025">
+      <Target>
+        <JoinPoint Description="#138" Ordinal="322" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#188=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomCollection{T}" Id="50368a9b00008026">
+      <Target>
+        <JoinPoint Description="#184" Ordinal="332" LinesAvoided="0" />
+        <JoinPoint Description="#185" Ordinal="333" LinesAvoided="0" />
+        <JoinPoint Description="#186" Ordinal="334" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#189=T:[PostSharp.Patterns.Aggregation.Tests]PostSharp.Patterns.Aggregation.Tests.AggregatableClientAttributeTests+CustomDictionary{TKey,TValue}" Id="50368a9b00008027">
+      <Target>
+        <JoinPoint Description="#184" Ordinal="345" LinesAvoided="0" />
+        <JoinPoint Description="#185" Ordinal="346" LinesAvoided="0" />
+        <JoinPoint Description="#186" Ordinal="347" LinesAvoided="0" />
+      </Target>
+    </Instance>
+  </Class>
+  <Class Class="#135">
+    <Instance Declaration="#183">
+      <Target>
+        <JoinPoint Description="#141" Ordinal="302" LinesAvoided="0" />
+        <JoinPoint Description="#140" Ordinal="303" LinesAvoided="0" />
+        <JoinPoint Description="#139" Ordinal="304" LinesAvoided="0" />
+        <JoinPoint Description="#144" Ordinal="305" LinesAvoided="0" />
+        <JoinPoint Description="#142" Ordinal="306" LinesAvoided="0" />
+        <JoinPoint Description="#137" Ordinal="307" LinesAvoided="0" />
+        <JoinPoint Description="#138" Ordinal="308" LinesAvoided="0" />
+        <JoinPoint Description="#143" Ordinal="309" LinesAvoided="0" />
+        <JoinPoint Description="#145" Ordinal="310" LinesAvoided="0" />
+        <JoinPoint Description="#146" Ordinal="311" LinesAvoided="0" />
+        <JoinPoint Advised="#116" Description="#147" Semantic="Setter" Ordinal="315" LinesAvoided="1" />
+        <JoinPoint Advised="#119" Description="#147" Semantic="Setter" Ordinal="316" LinesAvoided="1" />
+        <JoinPoint Advised="#122" Description="#147" Semantic="Setter" Ordinal="317" LinesAvoided="1" />
+        <JoinPoint Advised="#125" Description="#147" Semantic="Setter" Ordinal="318" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#187">
+      <Target>
+        <JoinPoint Description="#139" Ordinal="319" LinesAvoided="0" />
+        <JoinPoint Description="#142" Ordinal="320" LinesAvoided="0" />
+        <JoinPoint Description="#143" Ordinal="321" LinesAvoided="0" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#188">
+      <Target>
+        <JoinPoint Description="#144" Ordinal="323" LinesAvoided="0" />
+        <JoinPoint Description="#143" Ordinal="324" LinesAvoided="0" />
+        <JoinPoint Description="#142" Ordinal="325" LinesAvoided="0" />
+        <JoinPoint Description="#141" Ordinal="326" LinesAvoided="0" />
+        <JoinPoint Description="#139" Ordinal="327" LinesAvoided="0" />
+        <JoinPoint Description="#138" Ordinal="328" LinesAvoided="0" />
+        <JoinPoint Description="#137" Ordinal="329" LinesAvoided="0" />
+        <JoinPoint Description="#140" Ordinal="330" LinesAvoided="0" />
+        <JoinPoint Description="#145" Ordinal="331" LinesAvoided="0" />
+        <JoinPoint Advised="#128" Description="#147" Semantic="Setter" Ordinal="335" LinesAvoided="1" />
+      </Target>
+    </Instance>
+    <Instance Declaration="#189">
+      <Target>
+        <JoinPoint Description="#144" Ordinal="336" LinesAvoided="0" />
+        <JoinPoint Description="#143" Ordinal="337" LinesAvoided="0" />
+        <JoinPoint Description="#142" Ordinal="338" LinesAvoided="0" />
+        <JoinPoint Description="#141" Ordinal="339" LinesAvoided="0" />
+        <JoinPoint Description="#139" Ordinal="340" LinesAvoided="0" />
+        <JoinPoint Description="#138" Ordinal="341" LinesAvoided="0" />
+        <JoinPoint Description="#137" Ordinal="342" LinesAvoided="0" />
+        <JoinPoint Description="#140" Ordinal="343" LinesAvoided="0" />
+        <JoinPoint Description="#145" Ordinal="344" LinesAvoided="0" />
+        <JoinPoint Advised="#131" Description="#147" Semantic="Setter" Ordinal="348" LinesAvoided="1" />
+      </Target>
+    </Instance>
+  </Class>
+  <Annotation Target="#190=M:[PostSharp.Patterns.Aggregation]PostSharp.Patterns.Model.AggregatableAttribute::RuntimeInitializeInstance(PostSharp.Aspects.Advices.AspectInitializationReason)" Arguments="#191=2" Description="#192=PostSharp estimates that 2 lines of code are saved every time this advice is applied. Use the [LinesOfCodeAvoided] attribute on the aspect or specify the LinesOfCodeAvoided property on the advice attribute to override this value." />
+  <Annotation Target="#193=M:[PostSharp.Patterns.Aggregation]PostSharp.Patterns.Model.AggregatableAttribute::OnAspectsInitialized(PostSharp.Aspects.Advices.AspectInitializationReason)" Arguments="#191" Description="#192" />
+  <Annotation Target="#194=M:[PostSharp.Patterns.Aggregation]PostSharp.Patterns.Model.AggregatableAttribute::OnInstanceConstructed()" Arguments="#191" Description="#192" />
+  <Annotation Target="#195=M:[PostSharp.Patterns.Aggregation]PostSharp.Patterns.Model.AggregatableAttribute::__GetCanonicalAggregatableAttribute()" Arguments="#191" Description="#192" />
+  <Annotation Target="#196=M:[PostSharp.Patterns.Aggregation]PostSharp.Patterns.Model.AggregatableClientAttribute::InitializeAspectInstance(PostSharp.Aspects.Advices.AspectInitializationReason)" Arguments="#191" Description="#192" />
+</Symbols>
