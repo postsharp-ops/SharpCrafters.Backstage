@@ -516,6 +516,61 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
+    /// Tests that the installation status of the extension is kept once for all products, and also written to the
+    /// configuration store of every product, where earlier versions of the products read it. Without the legacy
+    /// writes, a build that uses an earlier version of PostSharp would recommend installing the extension that is
+    /// already installed.
+    /// </summary>
+    [PlatformFact( TestPlatforms.Windows )]
+    public void TheExtensionStatusIsWrittenForAllProducts()
+    {
+        var serviceProvider = this.CreateServiceProvider( addUserInterface: true );
+        var products = GetProducts( serviceProvider );
+
+        serviceProvider.GetRequiredBackstageService<IIdeExtensionStatusService>().IsVisualStudioExtensionInstalled = true;
+
+        using ( var key = this._registry.OpenKey( RegistryHiveKind.CurrentUser, IdeExtensionStatusService.KeyPath ) )
+        {
+            Assert.Equal( 1, key?.GetValue( IdeExtensionStatusService.VisualStudioValueName ) );
+        }
+
+        foreach ( var member in products.Members )
+        {
+            Assert.True(
+                member.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>()
+                    .Get<IdeExtensionsStatusConfiguration>()
+                    .IsVisualStudioExtensionInstalled );
+        }
+    }
+
+    /// <summary>
+    /// Tests that the status written by an earlier version of the extension, in the configuration store of one
+    /// product only, is read until the shared status is written, and that the shared status then wins.
+    /// </summary>
+    [PlatformFact( TestPlatforms.Windows )]
+    public void TheExtensionStatusOfAnEarlierVersionIsRead()
+    {
+        var serviceProvider = this.CreateServiceProvider( addUserInterface: true );
+        var products = GetProducts( serviceProvider );
+        var service = serviceProvider.GetRequiredBackstageService<IIdeExtensionStatusService>();
+
+        Assert.False( service.IsVisualStudioExtensionInstalled );
+
+        products.Members[1]
+            .ServiceProvider.GetRequiredBackstageService<IConfigurationManager>()
+            .Update<IdeExtensionsStatusConfiguration>( c => c with { IsVisualStudioExtensionInstalled = true } );
+
+        Assert.True( service.IsVisualStudioExtensionInstalled );
+
+        using ( var key = this._registry.GetOrCreateKey( RegistryHiveKind.CurrentUser, IdeExtensionStatusService.KeyPath ) )
+        {
+            key.SetDWordValue( IdeExtensionStatusService.VisualStudioValueName, 0 );
+        }
+
+        Assert.False( service.IsVisualStudioExtensionInstalled );
+    }
+
+    /// <summary>
     /// Tests that the inner service providers are created only when needed and disposed with the outer one. An inner
     /// provider that outlived the extension would keep watching the registry of PostSharp.
     /// </summary>

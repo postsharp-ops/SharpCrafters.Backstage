@@ -7,7 +7,6 @@ using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Telemetry;
-using SharpCrafters.Backstage.UserInterface;
 using System;
 using System.Threading;
 
@@ -19,8 +18,7 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// <remarks>
 /// The standard services of the primary product cannot be resolved from the outer service provider, because the
 /// composite services replace them there, so they are created here from the outer provider. The services of another
-/// product are resolved from its inner provider, except <see cref="IIdeExtensionStatusService"/>, which an inner
-/// provider does not register because it has no user interface.
+/// product are resolved from its inner provider.
 /// </remarks>
 internal sealed class CompositeProductMember
 {
@@ -28,7 +26,6 @@ internal sealed class CompositeProductMember
     private readonly Lazy<ILicenseRegistrationService> _licenseRegistrationService;
     private readonly Lazy<ILicenseConsumptionService> _licenseConsumptionService;
     private readonly Lazy<ITelemetryConfigurationService> _telemetryConfigurationService;
-    private readonly Lazy<IIdeExtensionStatusService> _ideExtensionStatusService;
 
     public CompositeProductMember(
         BackstageProduct product,
@@ -60,10 +57,6 @@ internal sealed class CompositeProductMember
                 ? new TelemetryConfigurationService( this.ServiceProvider )
                 : this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>(),
             LazyThreadSafetyMode.ExecutionAndPublication );
-
-        this._ideExtensionStatusService = new Lazy<IIdeExtensionStatusService>(
-            () => new IdeExtensionStatusService( this.ServiceProvider ),
-            LazyThreadSafetyMode.ExecutionAndPublication );
     }
 
     public BackstageProduct Product { get; }
@@ -85,6 +78,4 @@ internal sealed class CompositeProductMember
     public ILicenseConsumptionService LicenseConsumptionService => this._licenseConsumptionService.Value;
 
     public ITelemetryConfigurationService TelemetryConfigurationService => this._telemetryConfigurationService.Value;
-
-    public IIdeExtensionStatusService IdeExtensionStatusService => this._ideExtensionStatusService.Value;
 }

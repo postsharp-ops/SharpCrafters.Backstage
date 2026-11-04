@@ -60,7 +60,7 @@ The following services of the outer provider answer for all products:
 | `ILicenseRegistrationService` | Lists the licenses and the editions of every product. A license key is stored by the product family to which its product is native (`ILicenseProductCatalog.IsNativeProduct`), so a PostSharp Framework or PostSharp Ultimate key, which Metalama also accepts, is stored by PostSharp. A license server is stored by the primary product. `RemoveLicenses` removes the licenses of every product |
 | `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. When none does, one message and one notification name the licenses of every product. A license key of the project is given only to the product that owns it |
 | `ITelemetryConfigurationService` | Reports the maximal effective consent over all products, unless the primary product is opted out at the process level. Writes a consent to every product. A compare-exchange of a consent is made for each product against its own consent |
-| `IIdeExtensionStatusService` | Reads the status of the primary product, and writes it to every product |
+| `IIdeExtensionStatusService` | The status is product-neutral: every product reads it from `HKEY_CURRENT_USER\Software\SharpCrafters\IdeExtensions`. The composite service also writes it to the configuration store of every product, where earlier versions of the products read it |
 
 The composite services update the products one after the other. A configuration file must not be updated inside the
 transformation of another one, so a product is never updated from inside the update of another product.

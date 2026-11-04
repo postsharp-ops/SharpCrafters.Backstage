@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Registration;
@@ -93,11 +94,20 @@ internal sealed class CompositeBackstageProduct
                 serviceProvider => new CompositeTelemetryConfigurationService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
         }
 
-        // The standard service is registered with the user interface, and on Windows only.
+        // The status is product-neutral, but earlier versions of each product read it from the configuration store of
+        // that product, so the service writes it to the store of every product. The standard service is registered
+        // with the user interface, and on Windows only.
         if ( options.AddUserInterface && RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
             serviceProviderBuilder.AddSingleton<IIdeExtensionStatusService>(
-                serviceProvider => new CompositeIdeExtensionStatusService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
+                serviceProvider =>
+                {
+                    var members = serviceProvider.GetRequiredBackstageService<CompositeProductMembers>();
+
+                    return new IdeExtensionStatusService(
+                        serviceProvider,
+                        () => members.Members.Select( m => m.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>() ) );
+                } );
         }
     }
 }

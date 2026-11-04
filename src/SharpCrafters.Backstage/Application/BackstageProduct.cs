@@ -109,8 +109,9 @@ public sealed record BackstageProduct(
     /// satisfies a requirement when the licenses of any product satisfy it.</description></item>
     /// <item><description><see cref="Telemetry.ITelemetryConfigurationService"/> reports the consents of
     /// <paramref name="primary"/> and writes a consent to every product.</description></item>
-    /// <item><description><see cref="UserInterface.IIdeExtensionStatusService"/> writes the installation status of
-    /// the extension to every product.</description></item>
+    /// <item><description><see cref="UserInterface.IIdeExtensionStatusService"/> keeps the installation status of
+    /// the extension once for all products, and also writes it to the configuration store of every product, where
+    /// earlier versions of the products read it.</description></item>
     /// </list>
     /// </remarks>
     /// <exception cref="ArgumentException">A product is a composite product, or the same product is given twice.</exception>
