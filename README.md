@@ -50,8 +50,9 @@ are the service types marked with `ProductNeutralServiceAttribute`, such as the 
 client factory, the event dispatcher, the file system and the registry. It keeps its own configuration store, so
 Metalama keeps its files and PostSharp keeps its registry keys, and the build of each product reads what the extension
 writes. An inner provider has its own unattended process detector, because each product reads its own
-`<PREFIX>FORCE_ATTENDED` variable. Its telemetry stays in its upload queue: it uploads nothing and sends no analytics,
-and the processes of that product upload the queue.
+`<PREFIX>FORCE_ATTENDED` variable. For telemetry, the host of the composite product is one product, which the outer
+provider reports for: an inner provider collects, reports and uploads no telemetry and audits no license. It keeps
+only its telemetry configuration, to which the composite service writes the consents.
 
 The following services of the outer provider answer for all products:
 

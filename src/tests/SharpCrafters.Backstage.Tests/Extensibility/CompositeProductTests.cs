@@ -12,6 +12,7 @@ using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
 using SharpCrafters.Backstage.Licensing;
+using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Consumption.Requirements;
 using SharpCrafters.Backstage.Licensing.Consumption.Sources;
@@ -502,10 +503,18 @@ public sealed class CompositeProductTests : IDisposable
             Assert.Same( this._registry, inner.GetBackstageService<IRegistryService>() );
         }
 
-        // The telemetry of the inner provider stays in its queue: it uploads nothing and sends no analytics.
-        Assert.NotSame( serviceProvider.GetBackstageService<ITelemetryUploader>(), inner.GetBackstageService<ITelemetryUploader>() );
-        Assert.False( inner.GetRequiredBackstageService<ITelemetryUploader>().StartUpload( force: true ) );
+        // The outer provider reports the telemetry of the process: the inner provider collects, reports and uploads
+        // nothing, and keeps only the telemetry configuration, to which the composite writes the consents.
+        Assert.NotNull( serviceProvider.GetBackstageService<ITelemetryUploader>() );
+        Assert.Null( inner.GetBackstageService<ITelemetryUploader>() );
+        Assert.Null( inner.GetBackstageService<ITelemetryService>() );
+        Assert.Null( inner.GetBackstageService<IExceptionCapturer>() );
+        Assert.Null( inner.GetBackstageService<IExceptionReportManager>() );
+        Assert.Null( inner.GetBackstageService<IUsageSessionFactory>() );
         Assert.Null( inner.GetBackstageService<MatomoUploader>() );
+        Assert.NotNull( serviceProvider.GetBackstageService<ILicenseAuditManager>() );
+        Assert.Null( inner.GetBackstageService<ILicenseAuditManager>() );
+        Assert.NotNull( inner.GetBackstageService<ITelemetryConfigurationService>() );
 
         // The unattended mode can be forced for each product separately, so each product has its own detector.
         Assert.NotSame( serviceProvider.GetBackstageService<IUnattendedProcessDetector>(), inner.GetBackstageService<IUnattendedProcessDetector>() );

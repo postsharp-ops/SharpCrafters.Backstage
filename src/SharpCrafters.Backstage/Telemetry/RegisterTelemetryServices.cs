@@ -40,6 +40,12 @@ public static class RegisterTelemetryServices
             .AddSingleton<MatomoUploader>( serviceProvider => new MatomoUploader( serviceProvider ) );
 
     /// <summary>
+    /// Registers the telemetry configuration without the services that collect, report and upload telemetry.
+    /// </summary>
+    internal static ServiceProviderBuilder AddTelemetryConfigurationService( this ServiceProviderBuilder serviceProviderBuilder )
+        => serviceProviderBuilder.AddSingleton<ITelemetryConfigurationService>( serviceProvider => new TelemetryConfigurationService( serviceProvider ) );
+
+    /// <summary>
     /// Registers a <see cref="FileUsageSessionStore"/>, which keeps the record of each project in a file of its own.
     /// </summary>
     public static ServiceProviderBuilder AddFileUsageSessionStore( this ServiceProviderBuilder serviceProviderBuilder )

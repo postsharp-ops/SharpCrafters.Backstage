@@ -52,9 +52,13 @@ public static class RegisterServiceExtensions
         // both decided this way: see BackstageProduct.RegisterServices, which says which services a product owes.
         product.RegisterServices.Invoke( serviceProviderBuilder );
 
-        if ( options.AddSupportServices )
+        if ( options is { AddSupportServices: true, AddTelemetryPipeline: true } )
         {
             serviceProviderBuilder.AddTelemetryServices( product.TelemetryOptions );
+        }
+        else if ( options.AddSupportServices )
+        {
+            serviceProviderBuilder.AddTelemetryConfigurationService();
         }
 
         var userInterfaceOptions = product.UserInterfaceOptions with
@@ -89,7 +93,10 @@ public static class RegisterServiceExtensions
                 ? options.LicensingOptions
                 : options.LicensingOptions with { ProductCatalog = product.LicenseProductCatalog };
 
-            serviceProviderBuilder.AddLicensingServices( licensingOptions, applicationInfo );
+            serviceProviderBuilder.AddLicensingServices(
+                licensingOptions,
+                applicationInfo,
+                addLicenseAudit: applicationInfo.IsLicenseAuditEnabled && options.AddTelemetryPipeline );
         }
 
         serviceProviderBuilder.AddSingleton( serviceProvider => new BackstageServicesInitializer( serviceProvider, options ) );

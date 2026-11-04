@@ -30,16 +30,15 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The crash dump service is registered with the diagnostics, which an inner provider needs for its telemetry and
-    /// license audit services. The dumper of the outer provider is enough for the process.
+    /// The crash dump service is registered with the diagnostics, which an inner provider keeps for its logging. The
+    /// dumper of the outer provider is enough for the process.
     /// </para>
     /// <para>
-    /// The analytics uploader is optional for its consumers, so an inner provider sends no analytics directly. With
-    /// <see cref="QueueOnlyTelemetryUploader"/>, this keeps the telemetry of a secondary product in its queue, where the
-    /// processes of that product upload it.
+    /// An inner provider has no telemetry pipeline at all (see <see cref="BackstageInitializationOptions.AddTelemetryPipeline"/>):
+    /// for telemetry, the host of the composite product is one product, and the outer provider reports for it.
     /// </para>
     /// </remarks>
-    private static readonly Type[] _suppressedServiceTypes = [typeof(IMiniDumper), typeof(IBackstageToolsExtractor), typeof(MatomoUploader)];
+    private static readonly Type[] _suppressedServiceTypes = [typeof(IMiniDumper), typeof(IBackstageToolsExtractor)];
 
     private readonly IServiceProvider _serviceProvider;
     private readonly BackstageInitializationOptions _options;
@@ -125,11 +124,7 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
                         return;
                     }
 
-                    if ( type == typeof(ITelemetryUploader) )
-                    {
-                        innerBuilder.AddService( type, QueueOnlyTelemetryUploader.Instance );
-                    }
-                    else if ( this.GetSharedInstance( type ) is { } sharedInstance )
+                    if ( this.GetSharedInstance( type ) is { } sharedInstance )
                     {
                         innerBuilder.AddService( type, sharedInstance );
                     }
@@ -163,7 +158,7 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
                     OpenWelcomePage = false,
                     DetectToastNotifications = false,
                     AddRssClient = false,
-                    AutoUploadTelemetry = false
+                    AddTelemetryPipeline = false
                 } );
 
             var serviceProvider = innerBuilder.ServiceProvider;

@@ -28,6 +28,13 @@ public static class RegisterLicensingServices
         this ServiceProviderBuilder serviceProviderBuilder,
         LicensingInitializationOptions options,
         IApplicationInfo applicationInfo )
+        => serviceProviderBuilder.AddLicensingServices( options, applicationInfo, applicationInfo.IsLicenseAuditEnabled );
+
+    internal static ServiceProviderBuilder AddLicensingServices(
+        this ServiceProviderBuilder serviceProviderBuilder,
+        LicensingInitializationOptions options,
+        IApplicationInfo applicationInfo,
+        bool addLicenseAudit )
     {
         serviceProviderBuilder.AddSingleton(
             options.ProductCatalog
@@ -40,7 +47,7 @@ public static class RegisterLicensingServices
                 ? new TestLicensingAuthorityProvider( serviceProvider )
                 : options.AuthorityProviderFactory( serviceProvider ) );
 
-        if ( applicationInfo.IsLicenseAuditEnabled )
+        if ( addLicenseAudit )
         {
             serviceProviderBuilder.AddSingleton<ILicenseAuditManager>( serviceProvider => new LicenseAuditManager( serviceProvider ) );
         }
