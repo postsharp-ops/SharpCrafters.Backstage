@@ -16,18 +16,52 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// The <see cref="ILicenseConsumer"/> that <see cref="CompositeLicenseConsumptionService"/> creates. It holds the
 /// consumer of each product, the primary product first.
 /// </summary>
+/// <remarks>
+/// A license key that several products hold, because the composite registers a key in every store that accepts it, is
+/// considered only by the consumer of the product to which it is native. That product consumes it, whatever the
+/// requirement, so the key is audited once, by that product. The key is also listed once in <see cref="Licenses"/>.
+/// </remarks>
 internal sealed class CompositeLicenseConsumer : ILicenseConsumer
 {
     private readonly ImmutableArray<LicenseConsumer> _consumers;
+    private readonly ImmutableArray<Func<LicenseConsumptionProperties, bool>> _isIgnored;
     private readonly ILicenseProductCatalog _catalog;
     private readonly IEventDispatcher _eventDispatcher;
 
-    public CompositeLicenseConsumer( ImmutableArray<LicenseConsumer> consumers, ILicenseProductCatalog catalog, IEventDispatcher eventDispatcher )
+    /// <param name="consumers">The consumer of each member, in the order of <see cref="CompositeProductMembers.Members"/>.</param>
+    /// <param name="members">The members.</param>
+    /// <param name="catalog">The catalog that names the products that would satisfy a requirement.</param>
+    /// <param name="eventDispatcher">The dispatcher of the notification of an unsatisfied requirement.</param>
+    public CompositeLicenseConsumer(
+        ImmutableArray<LicenseConsumer> consumers,
+        CompositeProductMembers members,
+        ILicenseProductCatalog catalog,
+        IEventDispatcher eventDispatcher )
     {
         this._consumers = consumers;
         this._catalog = catalog;
         this._eventDispatcher = eventDispatcher;
-        this.Licenses = consumers.SelectMany( c => c.Licenses ).ToImmutableArray();
+
+        var licenseStrings = consumers
+            .Select( c => new HashSet<string>( c.Licenses.Select( l => l.LicenseString ).OfType<string>(), StringComparer.Ordinal ) )
+            .ToImmutableArray();
+
+        // A license is ignored by a consumer when the member to which it is native is another member that holds it too.
+        this._isIgnored = consumers.Select<LicenseConsumer, Func<LicenseConsumptionProperties, bool>>(
+                ( _, index ) => license =>
+                {
+                    if ( license.LicenseString == null )
+                    {
+                        return false;
+                    }
+
+                    var nativeIndex = members.Members.IndexOf( members.GetMemberForProduct( license.LicenseProduct ) );
+
+                    return nativeIndex != index && licenseStrings[nativeIndex].Contains( license.LicenseString );
+                } )
+            .ToImmutableArray();
+
+        this.Licenses = consumers.SelectMany( ( c, index ) => c.Licenses.Where( l => !this._isIgnored[index]( l ) ) ).ToImmutableArray();
     }
 
     public ImmutableArray<LicenseConsumptionProperties> Licenses { get; }
@@ -48,11 +82,11 @@ internal sealed class CompositeLicenseConsumer : ILicenseConsumer
     {
         var heldMessages = new List<LicensingMessage>();
 
-        foreach ( var consumer in this._consumers )
+        for ( var index = 0; index < this._consumers.Length; index++ )
         {
             var messages = new List<LicensingMessage>();
 
-            if ( consumer.TryConsumeCore( requirement, messages.Add ) )
+            if ( this._consumers[index].TryConsumeCore( requirement, messages.Add, this._isIgnored[index] ) )
             {
                 if ( reportMessage != null )
                 {

@@ -27,6 +27,8 @@ public static class RegisterServiceExtensions
     /// </summary>
     public static void AddBackstageServices( this ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
     {
+        options = options.Product.AdjustOptions?.Invoke( options ) ?? options;
+
         var applicationInfo = options.ApplicationInfo;
 
         var jsonTypeInfoResolvers = new List<IJsonTypeInfoResolver> { BackstageJsonContext.Default };

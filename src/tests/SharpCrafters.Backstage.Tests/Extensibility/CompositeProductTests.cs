@@ -212,17 +212,18 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
-    /// Tests where a license key is stored. A key goes to the product to which its product is native, so that the build
-    /// of that product, which reads only its own store, finds it. A PostSharp Ultimate key is accepted by Metalama as
-    /// well as by PostSharp, and it is stored by PostSharp, which is the only product of the two that it fully licenses.
+    /// Tests where a license key is stored. A key goes to every product that accepts it, so that the build of each of
+    /// them, which reads only its own store, finds it: registering a PostSharp Ultimate key also makes Metalama
+    /// eligible. The key is still listed once.
     /// </summary>
     [Theory]
-    [InlineData( nameof(TestLicenseKeyProvider.MetalamaProfessionalBusiness), 0 )]
-    [InlineData( nameof(TestLicenseKeyProvider.PostSharpCaching), 1 )]
-    [InlineData( nameof(TestLicenseKeyProvider.PostSharpUltimate), 1 )]
-    [InlineData( nameof(TestLicenseKeyProvider.PostSharpFramework), 1 )]
-    public async Task ALicenseKeyIsStoredByTheProductToWhichItIsNative( string licenseKeyName, int expectedProductIndex )
+    [InlineData( nameof(TestLicenseKeyProvider.MetalamaProfessionalBusiness), "0" )]
+    [InlineData( nameof(TestLicenseKeyProvider.PostSharpCaching), "1" )]
+    [InlineData( nameof(TestLicenseKeyProvider.PostSharpUltimate), "0,1" )]
+    [InlineData( nameof(TestLicenseKeyProvider.PostSharpFramework), "0,1" )]
+    public async Task ALicenseKeyIsStoredByEveryProductThatAcceptsIt( string licenseKeyName, string expectedProductIndexes )
     {
+        var expectedIndexes = expectedProductIndexes.Split( ',' ).Select( int.Parse ).ToList();
         var licenseKey = (string) typeof(TestLicenseKeyProvider).GetProperty( licenseKeyName )!.GetValue( this._licenseKeys )!;
 
         var serviceProvider = this.CreateServiceProvider();
@@ -235,9 +236,11 @@ public sealed class CompositeProductTests : IDisposable
         var result = await registrationService.RegisterLicenseAsync( licenseKey );
         Assert.True( result.IsSuccess, result.IsSuccess ? null : result.ErrorMessage );
 
+        Assert.Equal( [licenseKey], registrationService.RegisteredLicenses.Select( l => l.LicenseString ) );
+
         for ( var i = 0; i < products.Members.Length; i++ )
         {
-            if ( i == expectedProductIndex )
+            if ( expectedIndexes.Contains( i ) )
             {
                 Assert.Equal( [licenseKey], GetRegisteredLicenseStrings( products.Members[i] ) );
             }
@@ -250,6 +253,37 @@ public sealed class CompositeProductTests : IDisposable
         // Removing the licenses removes them from every store.
         registrationService.RemoveLicenses();
         Assert.Empty( registrationService.RegisteredLicenses );
+        Assert.All( products.Members, m => Assert.Empty( GetRegisteredLicenseStrings( m ) ) );
+    }
+
+    /// <summary>
+    /// Tests that a license key held by several products is consumed by the product to which it is native, whatever the
+    /// requirement, so that it is audited once, by that product, and that the consumer lists it once.
+    /// </summary>
+    [Fact]
+    public async Task AKeyHeldBySeveralProductsIsConsumedByItsNativeProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var products = GetProducts( serviceProvider );
+
+        Assert.True( (await serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>().RegisterLicenseAsync( this._licenseKeys.PostSharpUltimate )).IsSuccess );
+        Assert.All( products.Members, m => Assert.Equal( [this._licenseKeys.PostSharpUltimate], GetRegisteredLicenseStrings( m ) ) );
+
+        var consumer = await serviceProvider.GetRequiredBackstageService<ILicenseConsumptionService>().CreateConsumerAsync();
+
+        Assert.Single( consumer.Licenses );
+
+        // The requirement of the tooling, which Metalama, the primary product, could satisfy with the same key.
+        Assert.True( consumer.TryConsume( new ToolingLicenseRequirement( MetalamaProduct.Profile ), showsToastNotification: false ) );
+
+        // The audit is recorded in the store of the product that consumed the key, by a background task.
+        await serviceProvider.GetRequiredBackstageService<BackstageBackgroundTasksService>().WhenNoPendingTaskAsync();
+        Assert.False( HasAuditedLicense( products.Members[0] ) );
+        Assert.True( HasAuditedLicense( products.Members[1] ) );
+
+        static bool HasAuditedLicense( CompositeProductMember member )
+            => member.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<LicenseAuditConfiguration>() is var audit
+               && (audit.LastAuditTimesByLong.Count > 0 || audit.LastAuditTimesByString is { Count: > 0 });
     }
 
     /// <summary>
@@ -338,14 +372,14 @@ public sealed class CompositeProductTests : IDisposable
     /// <summary>
     /// Tests that a pasted license key goes to the same product as the key itself. A key copied from an e-mail often
     /// carries line breaks or quotes, and a PostSharp key read as garbage would go to Metalama, which would then store
-    /// it where PostSharp never reads.
+    /// it where PostSharp never reads. The key is a PostSharp Caching key, which Metalama does not accept.
     /// </summary>
     [Fact]
     public async Task APastedLicenseKeyIsStoredByItsProduct()
     {
         var serviceProvider = this.CreateServiceProvider();
         var products = GetProducts( serviceProvider );
-        var licenseKey = this._licenseKeys.PostSharpUltimate;
+        var licenseKey = this._licenseKeys.PostSharpCaching;
 
         var result = await serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>()
             .RegisterLicenseAsync( "\"" + licenseKey.Insert( 10, Environment.NewLine ) + "\" " );
@@ -473,8 +507,9 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that the composite product runs one pipeline of notifications, welcome page and RSS client, which is that
-    /// of the primary product. Two pipelines would show every notification twice and open two welcome pages.
+    /// Tests that the composite product runs one user interface, that of the primary product, and that it detects no
+    /// notification and runs no RSS client although the host asks for them: the builds of each product show their own.
+    /// It keeps the welcome page service, but leaves the opening of the welcome page to the extension.
     /// </summary>
     [Fact]
     public void OnlyThePrimaryProductHasAUserInterface()
@@ -483,9 +518,10 @@ public sealed class CompositeProductTests : IDisposable
         var inner = GetProducts( serviceProvider ).Members[1].ServiceProvider;
 
         Assert.NotNull( serviceProvider.GetBackstageService<IToastNotificationService>() );
-        Assert.NotNull( serviceProvider.GetBackstageService<IToastNotificationDetectionService>() );
+        Assert.Null( serviceProvider.GetBackstageService<IToastNotificationDetectionService>() );
         Assert.NotNull( serviceProvider.GetBackstageService<WelcomePageService>() );
-        Assert.NotNull( serviceProvider.GetBackstageService<IRssClient>() );
+        Assert.False( serviceProvider.GetRequiredBackstageService<UserInterfaceInitializationOptions>().OpenWelcomePageOnTelemetryActivation );
+        Assert.Null( serviceProvider.GetBackstageService<IRssClient>() );
         Assert.NotNull( serviceProvider.GetBackstageService<IMiniDumper>() );
 
         Assert.Null( inner.GetBackstageService<IToastNotificationService>() );
@@ -540,6 +576,28 @@ public sealed class CompositeProductTests : IDisposable
         Assert.Same( MetalamaProduct.LicenseProductCatalog, VsxProduct.Instance.LicenseProductCatalog );
         Assert.NotEqual( MetalamaProduct.TelemetryOptions.AnalyticsUri, VsxProduct.Instance.TelemetryOptions.AnalyticsUri );
         Assert.Equal( MetalamaProduct.TelemetryOptions.UploadUri, VsxProduct.Instance.TelemetryOptions.UploadUri );
+    }
+
+    /// <summary>
+    /// Tests that pausing the notifications, as the setup wizard of the extension does, pauses those of every product,
+    /// so that the build of PostSharp does not show a notification while the wizard is open.
+    /// </summary>
+    [Fact]
+    public void PausingTheNotificationsPausesThoseOfEveryProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider( addUserInterface: true );
+        var products = GetProducts( serviceProvider );
+
+        var cookie = serviceProvider.GetRequiredBackstageService<IToastNotificationStatusService>().PauseAll( TimeSpan.FromMinutes( 10 ) );
+
+        Assert.All( products.Members, m => Assert.NotEmpty( GetPauses( m ) ) );
+
+        cookie.Dispose();
+
+        Assert.All( products.Members, m => Assert.Empty( GetPauses( m ) ) );
+
+        static IEnumerable<object> GetPauses( CompositeProductMember member )
+            => member.ServiceProvider.GetRequiredBackstageService<IConfigurationManager>().Get<ToastNotificationsConfiguration>().Pauses.Cast<object>();
     }
 
     /// <summary>

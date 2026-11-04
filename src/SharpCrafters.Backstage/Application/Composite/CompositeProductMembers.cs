@@ -91,15 +91,39 @@ internal sealed class CompositeProductMembers : IBackstageService, IDisposable
     /// line breaks, spaces or quotes goes to the same product as the key itself.
     /// </remarks>
     public CompositeProductMember GetMemberForLicense( string? licenseString )
+        => TryGetLicenseProduct( licenseString, out var licenseProduct ) ? this.GetMemberForProduct( licenseProduct ) : this.Primary;
+
+    /// <summary>
+    /// Gets the members whose product family accepts a license string, the member that handles it first (see
+    /// <see cref="GetMemberForLicense(string)"/>). A license key that several families accept, such as a PostSharp
+    /// Ultimate key, is accepted by several members. The URL of a license server and a string that is not a license key
+    /// are handled by the primary member only.
+    /// </summary>
+    public ImmutableArray<CompositeProductMember> GetMembersAcceptingLicense( string? licenseString )
     {
-        if ( string.IsNullOrWhiteSpace( licenseString ) || LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
+        if ( !TryGetLicenseProduct( licenseString, out var licenseProduct ) )
         {
-            return this.Primary;
+            return [this.Primary];
         }
 
-        return LicenseKeyData.TryDeserialize( License.CleanLicenseKey( licenseString! ), out var licenseKeyData, out _ )
-            ? this.GetMemberForProduct( licenseKeyData.Product )
-            : this.Primary;
+        var owner = this.GetMemberForProduct( licenseProduct );
+
+        return [owner, ..this.Members.Where( m => m != owner && m.Catalog.IsProductOfFamily( licenseProduct ) )];
+    }
+
+    private static bool TryGetLicenseProduct( string? licenseString, out LicenseProduct licenseProduct )
+    {
+        if ( string.IsNullOrWhiteSpace( licenseString ) || LicenseServerUrl.IsLicenseServerUrl( licenseString )
+                                                        || !LicenseKeyData.TryDeserialize( License.CleanLicenseKey( licenseString! ), out var licenseKeyData, out _ ) )
+        {
+            licenseProduct = default;
+
+            return false;
+        }
+
+        licenseProduct = licenseKeyData.Product;
+
+        return true;
     }
 
     private IServiceProvider CreateInnerServiceProvider( BackstageProduct product )

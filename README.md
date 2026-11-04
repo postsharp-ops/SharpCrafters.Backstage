@@ -47,7 +47,9 @@ For its usage and exception reports, the extension is a product of its own: they
 `Visual Studio Tools for PostSharp and Metalama`, and its analytics events go to the analytics site of the extension.
 It keeps the configuration of Metalama, so its consents, notifications and device identifier are those of Metalama, and
 its license product catalog is the catalog of Metalama. The service provider is the outer provider: it holds the services of Metalama, the primary member, and runs
-the only logger, usage and exception telemetry, notifications, welcome page and RSS client of the process.
+the only logger and usage and exception telemetry of the process. It detects no notification and runs no RSS client,
+whatever the host asks, because the builds of each product show their own. It keeps the welcome page service but does not
+open the welcome page when telemetry is activated: the extension opens its own, which depends on the product in use.
 
 PostSharp gets an inner service provider, which is created when it is first needed and disposed with the outer one. An
 inner provider has no user interface, notifications, welcome page, RSS client, crash dump service or tools extractor,
@@ -67,8 +69,9 @@ The following services of the outer provider answer for all products:
 
 | Service | Behaviour |
 |---|---|
-| `ILicenseRegistrationService` | Lists the licenses and the editions of every product. A license key is stored by the product family to which its product is native (`ILicenseProductCatalog.IsNativeProduct`), so a PostSharp Framework or PostSharp Ultimate key, which Metalama also accepts, is stored by PostSharp. A license server is stored by Metalama. `RemoveLicenses` removes the licenses of every product |
-| `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. When none does, one message and one notification name the licenses of every product. A license key of the project is given only to the product that owns it |
+| `ILicenseRegistrationService` | Lists the licenses and the editions of every product, each license key once. A license key is stored by every product family that accepts it, so a PostSharp Framework or PostSharp Ultimate key is stored by both PostSharp and Metalama, the family to which it is native (`ILicenseProductCatalog.IsNativeProduct`) first. A store that cannot register it is reported as an exception of the tooling and does not fail the registration. A license server is stored by Metalama. `RemoveLicenses` removes the licenses of every product |
+| `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. A key held by several products is consumed, and so audited, by the product to which it is native. When no license satisfies the requirement, one message and one notification name the licenses of every product. A license key of the project is given only to the product that owns it |
+| `IToastNotificationStatusService` | `PauseAll`, which the setup wizard of the extension calls, pauses the notifications of every product |
 | `ITelemetryConfigurationService` | Reports the maximal effective consent over all products, unless Metalama is opted out at the process level. Writes a consent to every product. A compare-exchange of a consent is made for each product against its own consent |
 | `IIdeExtensionStatusService` | The status is product-neutral: every product reads it from `HKEY_CURRENT_USER\Software\SharpCrafters\IdeExtensions`. The composite service also writes it to the configuration store of every product, where earlier versions of the products read it |
 

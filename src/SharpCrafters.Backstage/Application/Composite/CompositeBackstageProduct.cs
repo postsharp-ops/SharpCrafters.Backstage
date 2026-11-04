@@ -9,6 +9,7 @@ using SharpCrafters.Backstage.Licensing.Consumption;
 using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.UserInterface;
+using SharpCrafters.Backstage.UserInterface.Toasts;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
@@ -90,8 +91,23 @@ internal sealed class CompositeBackstageProduct
 
         var composite = new CompositeBackstageProduct( members.ToImmutableArray() );
 
-        return host with { OverrideServices = composite.OverrideServices };
+        return host with
+        {
+            OverrideServices = composite.OverrideServices,
+            AdjustOptions = AdjustOptions,
+
+            // The extension that hosts a composite product opens a welcome page of its own, which depends on the product in
+            // use, so the welcome page is not opened when telemetry is activated.
+            UserInterfaceOptions = host.UserInterfaceOptions with { OpenWelcomePageOnTelemetryActivation = false }
+        };
     }
+
+    /// <summary>
+    /// Overrules the options of the host: a composite product detects no notification and runs no RSS client, because
+    /// the builds of each product show their own notifications and their own news.
+    /// </summary>
+    private static BackstageInitializationOptions AdjustOptions( BackstageInitializationOptions options )
+        => options with { DetectToastNotifications = false, AddRssClient = false };
 
     private void OverrideServices( ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
     {
@@ -123,6 +139,14 @@ internal sealed class CompositeBackstageProduct
         {
             serviceProviderBuilder.AddSingleton<ITelemetryConfigurationService>(
                 serviceProvider => new CompositeTelemetryConfigurationService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
+        }
+
+        if ( options.AddUserInterface )
+        {
+            serviceProviderBuilder.AddSingleton<IToastNotificationStatusService>(
+                serviceProvider => new CompositeToastNotificationStatusService(
+                    new ToastNotificationStatusService( serviceProvider ),
+                    serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
         }
 
         // The status is product-neutral, but earlier versions of each product read it from the configuration store of

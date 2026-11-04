@@ -2,7 +2,9 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Licensing.Registration;
+using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Utilities;
 using System;
 using System.Collections.Generic;
@@ -16,18 +18,23 @@ namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
 /// The <see cref="ILicenseRegistrationService"/> of a composite product. It reports the licenses and the editions of
-/// every product, and routes each registration to the store of one product.
+/// every product, and registers a license key in the store of every product that accepts it.
 /// </summary>
 /// <remarks>
 /// <para>
-/// A license key is routed to the product that owns the product of the key (see
-/// <see cref="CompositeProductMembers.GetMemberForLicense(string)"/>), which is the product to which it is native. A key that two
-/// families accept, such as a PostSharp Ultimate key, is native to one family only, so it goes to that family. A license
-/// server URL, and a string that is not a license key, go to the primary product, which reports the error of a string
-/// that it cannot register.
+/// A license key is registered in the store of every product whose family accepts its product (see
+/// <see cref="CompositeProductMembers.GetMembersAcceptingLicense(string)"/>), so that a PostSharp Ultimate key, which
+/// Metalama also accepts, is seen by the builds of both products. The product to which the key is native registers it
+/// first, and its result is the result of the registration. When another product cannot register the key, the failure
+/// is reported as an exception of the tooling, and the registration still succeeds.
 /// </para>
 /// <para>
-/// The interface removes licenses all at once, without naming a key, so <see cref="RemoveLicenses"/> removes the
+/// A license server URL, and a string that is not a license key, go to the primary product, which reports the error of
+/// a string that it cannot register.
+/// </para>
+/// <para>
+/// A license key held by several products is listed once, with the properties that the product to which it is native
+/// reads. The interface removes licenses all at once, without naming a key, so <see cref="RemoveLicenses"/> removes the
 /// licenses of every product.
 /// </para>
 /// </remarks>
@@ -64,15 +71,61 @@ internal sealed class CompositeLicenseRegistrationService : ILicenseRegistration
 
     public ImmutableArray<SelfRegisteredEdition> AvailableEditions => this.Services.SelectMany( s => s.AvailableEditions ).ToImmutableArray();
 
-    public ValueTask<LicenseRegistrationResult> RegisterLicenseAsync( string licenseString, CancellationToken cancellationToken = default )
-        => this.GetService( licenseString ).RegisterLicenseAsync( licenseString, cancellationToken );
+    public async ValueTask<LicenseRegistrationResult> RegisterLicenseAsync( string licenseString, CancellationToken cancellationToken = default )
+    {
+        var members = this._products.GetMembersAcceptingLicense( licenseString );
+        var result = await members[0].LicenseRegistrationService.RegisterLicenseAsync( licenseString, cancellationToken );
+
+        if ( !result.IsSuccess )
+        {
+            return result;
+        }
+
+        foreach ( var member in members.Skip( 1 ) )
+        {
+            try
+            {
+                var otherResult = await member.LicenseRegistrationService.RegisterLicenseAsync( licenseString, cancellationToken );
+
+                if ( !otherResult.IsSuccess )
+                {
+                    throw new InvalidOperationException(
+                        $"The license key could not be registered in the store of {member.Product.Profile.Name}: {otherResult.ErrorMessage}" );
+                }
+            }
+            catch ( Exception e ) when ( e is not OperationCanceledException )
+            {
+                this.ReportStoreFailure( e );
+            }
+        }
+
+        return result;
+    }
 
     [Obsolete( "Use RegisterLicenseAsync." )]
-    public LicenseRegistrationResult RegisterLicense( string licenseString ) => this.GetService( licenseString ).RegisterLicense( licenseString );
+    public LicenseRegistrationResult RegisterLicense( string licenseString )
+
+        // See LicenseRegistrationService.Block for why the work is started on the thread pool.
+        => Task.Run( () => this.RegisterLicenseAsync( licenseString ).AsTask() ).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Reports that a product other than the one to which a license key is native could not register it. The key is
+    /// registered where it matters most, so the failure is reported and logged rather than thrown.
+    /// </summary>
+    private void ReportStoreFailure( Exception exception )
+    {
+        this._products.ServiceProvider.GetLoggerFactory().Licensing().Warning?.Log( $"A license key could not be registered in every store: {exception.Message}" );
+        this._products.ServiceProvider.ReportToolingException( exception );
+    }
 
     public void RemoveLicenses() => this.Services.ForEachContinueOnException( s => s.RemoveLicenses() );
 
-    public IEnumerable<LicenseRegistrationProperties> RegisteredLicenses => this.Services.SelectMany( s => s.RegisteredLicenses );
+    public IEnumerable<LicenseRegistrationProperties> RegisteredLicenses
+        => this._products.Members
+            .SelectMany( m => m.LicenseRegistrationService.RegisteredLicenses.Select( l => (Member: m, License: l) ) )
+            .GroupBy( x => x.License.LicenseString, StringComparer.Ordinal )
+            .Select( g => g.FirstOrDefault( x => x.License.LicenseServerUrl == null && x.Member == this._products.GetMemberForProduct( x.License.Product ) ).License
+                          ?? g.First().License );
 
     public IEnumerable<Version> UnsupportedRegisteredLicenseVersions
         => this.Services.SelectMany( s => s.UnsupportedRegisteredLicenseVersions ).Distinct().OrderBy( v => v );

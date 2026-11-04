@@ -74,6 +74,13 @@ public sealed record BackstageProduct(
     internal Action<ServiceProviderBuilder, BackstageInitializationOptions>? OverrideServices { get; init; }
 
     /// <summary>
+    /// Gets a function that <see cref="RegisterServiceExtensions.AddBackstageServices"/> applies to the options before any
+    /// registration, so that a product can overrule the choices of its host. It is <see langword="null"/> except for a
+    /// composite product (see <see cref="CreateComposite"/>).
+    /// </summary>
+    internal Func<BackstageInitializationOptions, BackstageInitializationOptions>? AdjustOptions { get; init; }
+
+    /// <summary>
     /// Creates a product that hosts the Backstage services of several product families in one process, for instance
     /// Metalama and PostSharp in the Visual Studio extension that serves both.
     /// </summary>
@@ -86,8 +93,10 @@ public sealed record BackstageProduct(
     /// <remarks>
     /// <para>
     /// The service provider created for the composite product is the outer service provider. It holds the services of
-    /// the primary member, and runs the only logger, usage and exception telemetry, notifications, welcome page and RSS
-    /// client of the process.
+    /// the primary member, and runs the only logger and usage and exception telemetry of the process. It detects no
+    /// notification and runs no RSS client, whatever the host asks, because the builds of each product show their own.
+    /// It keeps the welcome page service but does not open the welcome page when telemetry is activated, because the
+    /// extension opens a welcome page of its own.
     /// </para>
     /// <para>
     /// The outer provider creates, when it first needs it, one inner service provider for each other member. An inner
@@ -105,11 +114,16 @@ public sealed record BackstageProduct(
     /// </para>
     /// <list type="bullet">
     /// <item><description><see cref="Licensing.Registration.ILicenseRegistrationService"/> reports the licenses and the
-    /// editions of every member. It registers a license key in the store of the product family to which the product of
-    /// the key is native (see <see cref="ILicenseProductCatalog.IsNativeProduct"/>), registers a license server in the
-    /// store of the primary member, and removes the licenses of every store.</description></item>
+    /// editions of every member, each license key once. It registers a license key in the store of every member whose
+    /// family accepts it, the member to which it is native (see <see cref="ILicenseProductCatalog.IsNativeProduct"/>)
+    /// first; a store that cannot register it is reported as an exception and does not fail the registration. It
+    /// registers a license server in the store of the primary member, and removes the licenses of every
+    /// store.</description></item>
     /// <item><description><see cref="Licensing.Consumption.ILicenseConsumptionService"/> creates a consumer that
-    /// satisfies a requirement when the licenses of any member satisfy it.</description></item>
+    /// satisfies a requirement when the licenses of any member satisfy it. A key held by several members is consumed,
+    /// and so audited, by the member to which it is native.</description></item>
+    /// <item><description><see cref="UserInterface.Toasts.IToastNotificationStatusService"/> pauses the notifications of
+    /// every member.</description></item>
     /// <item><description><see cref="Telemetry.ITelemetryConfigurationService"/> reports the maximal consent of the
     /// members and writes a consent to every member.</description></item>
     /// <item><description><see cref="UserInterface.IIdeExtensionStatusService"/> keeps the installation status of the

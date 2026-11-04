@@ -159,10 +159,19 @@ internal sealed class LicenseConsumer : ILicenseConsumer
     /// Attempts to consume a license, without reporting that the requirement is not satisfied. The messages about the
     /// licenses that were skipped are still reported.
     /// </summary>
-    internal bool TryConsumeCore( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage )
+    /// <param name="requirement">The requirement.</param>
+    /// <param name="reportMessage">A delegate that receives the messages.</param>
+    /// <param name="isIgnored">A predicate that excludes some licenses, as a composite product does for a license that
+    /// another of its products consumes.</param>
+    internal bool TryConsumeCore( LicenseRequirement requirement, Action<LicensingMessage>? reportMessage, Func<LicenseConsumptionProperties, bool>? isIgnored = null )
     {
         foreach ( var license in this._licenses )
         {
+            if ( isIgnored?.Invoke( license.Properties ) == true )
+            {
+                continue;
+            }
+
             // Check project-bound license keys.
             if ( !string.IsNullOrEmpty( license.Properties.LicensedNamespace ) && !this.IsProjectInNamespace( license.Properties.LicensedNamespace! ) )
             {

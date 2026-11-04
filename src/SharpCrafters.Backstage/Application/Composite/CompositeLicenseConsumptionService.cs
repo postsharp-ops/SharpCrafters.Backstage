@@ -74,6 +74,7 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
 
         return new CompositeLicenseConsumer(
             consumers.MoveToImmutable(),
+            this._products,
             this._products.ServiceProvider.GetRequiredBackstageService<ILicenseProductCatalog>(),
             this._products.ServiceProvider.GetRequiredBackstageService<IEventDispatcher>() );
 
