@@ -8,6 +8,7 @@ using PostSharp.Backstage;
 using SharpCrafters.Backstage.Application;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Vsx.Composite;
+using System;
 
 namespace SharpCrafters.Backstage.Vsx;
 
@@ -60,14 +61,17 @@ public static class VsxProduct
     /// </summary>
     public static ProductProfile Profile { get; } = MetalamaProduct.Profile with
     {
-        Name = "PostSharp and Metalama VSX", LongName = "PostSharp and Metalama VSX"
+        Name = "Visual Studio Tools for PostSharp and Metalama", LongName = "Visual Studio Tools for PostSharp and Metalama"
     };
 
     /// <summary>
-    /// Gets the telemetry endpoints of the extension. The extension has no analytics site yet, so it sends no analytics
-    /// events of its own.
+    /// Gets the telemetry endpoints of the extension: the upload endpoint that Metalama and PostSharp share, and the
+    /// analytics site of the extension.
     /// </summary>
-    public static TelemetryInitializationOptions TelemetryOptions { get; } = MetalamaProduct.TelemetryOptions with { AnalyticsUri = null };
+    public static TelemetryInitializationOptions TelemetryOptions { get; } = MetalamaProduct.TelemetryOptions with
+    {
+        AnalyticsUri = new Uri( "https://postsharp.matomo.cloud/matomo.php?idsite=12" )
+    };
 
     /// <summary>
     /// Gets the product of the extension, which can be passed to <see cref="Extensibility.BackstageInitializationOptions"/>

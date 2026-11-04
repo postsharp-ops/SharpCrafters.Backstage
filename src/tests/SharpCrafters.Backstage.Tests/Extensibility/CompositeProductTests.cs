@@ -534,11 +534,12 @@ public sealed class CompositeProductTests : IDisposable
     [Fact]
     public void TheExtensionReportsUnderItsOwnNameAndKeepsTheConfigurationOfMetalama()
     {
-        Assert.Equal( "PostSharp and Metalama VSX", VsxProduct.Instance.Profile.Name );
+        Assert.Equal( "Visual Studio Tools for PostSharp and Metalama", VsxProduct.Instance.Profile.Name );
         Assert.Equal( MetalamaProduct.Profile.DataDirectoryName, VsxProduct.Instance.Profile.DataDirectoryName );
         Assert.Equal( MetalamaProduct.Profile.EnvironmentVariablePrefix, VsxProduct.Instance.Profile.EnvironmentVariablePrefix );
         Assert.Same( MetalamaProduct.LicenseProductCatalog, VsxProduct.Instance.LicenseProductCatalog );
-        Assert.Null( VsxProduct.Instance.TelemetryOptions.AnalyticsUri );
+        Assert.NotEqual( MetalamaProduct.TelemetryOptions.AnalyticsUri, VsxProduct.Instance.TelemetryOptions.AnalyticsUri );
+        Assert.Equal( MetalamaProduct.TelemetryOptions.UploadUri, VsxProduct.Instance.TelemetryOptions.UploadUri );
     }
 
     /// <summary>

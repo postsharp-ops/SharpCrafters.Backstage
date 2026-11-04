@@ -38,9 +38,9 @@ var serviceProvider = BackstageServiceFactory.CreateServiceProvider( new Backsta
 ```
 
 For its usage and exception reports, the extension is a product of its own: they are sent under the name
-`PostSharp and Metalama VSX`, with the telemetry endpoints of the extension. It keeps the configuration of Metalama, so
-its consents, notifications and device identifier are those of Metalama, and its license product catalog is the catalog
-of Metalama. The service provider is the outer provider: it holds the services of Metalama, the primary member, and runs
+`Visual Studio Tools for PostSharp and Metalama`, and its analytics events go to the analytics site of the extension.
+It keeps the configuration of Metalama, so its consents, notifications and device identifier are those of Metalama, and
+its license product catalog is the catalog of Metalama. The service provider is the outer provider: it holds the services of Metalama, the primary member, and runs
 the only logger, usage and exception telemetry, notifications, welcome page and RSS client of the process.
 
 PostSharp gets an inner service provider, which is created when it is first needed and disposed with the outer one. An
