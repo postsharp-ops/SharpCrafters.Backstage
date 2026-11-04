@@ -48,8 +48,8 @@ For its usage and exception reports, the extension is a product of its own: they
 It keeps the configuration of Metalama, so its consents, notifications and device identifier are those of Metalama, and
 its license product catalog is the catalog of Metalama. The service provider is the outer provider: it holds the services of Metalama, the primary member, and runs
 the only logger and usage and exception telemetry of the process. It detects no notification and runs no RSS client,
-whatever the host asks, because the builds of each product show their own. It keeps the welcome page service but does not
-open the welcome page when telemetry is activated: the extension opens its own, which depends on the product in use.
+whatever the host asks, because the builds of each product show their own. It opens no welcome page either: the
+extension opens its own, which depends on the product in use.
 
 PostSharp gets an inner service provider, which is created when it is first needed and disposed with the outer one. An
 inner provider has no user interface, notifications, welcome page, RSS client, crash dump service or tools extractor,

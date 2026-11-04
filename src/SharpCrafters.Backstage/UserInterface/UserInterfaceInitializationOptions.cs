@@ -22,13 +22,6 @@ public sealed record UserInterfaceInitializationOptions : IBackstageService
     public bool OpenWelcomePage { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether the welcome page is opened when telemetry is first activated, when
-    /// <see cref="OpenWelcomePage"/> is <c>true</c>. A composite product sets it to <c>false</c>, because the extension
-    /// that hosts it opens a welcome page of its own, which depends on the product in use.
-    /// </summary>
-    internal bool OpenWelcomePageOnTelemetryActivation { get; init; } = true;
-
-    /// <summary>
     /// Gets a value indicating whether the notifications that depend on the state of the machine (a missing license,
     /// an expiring subscription, a missing IDE extension) should be detected and shown. The default is <c>false</c>.
     /// </summary>

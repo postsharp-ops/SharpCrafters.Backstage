@@ -34,9 +34,7 @@ internal sealed class UserInterfaceEventSubscriber : IBackstageService, IDisposa
     public UserInterfaceEventSubscriber( IServiceProvider serviceProvider )
     {
         this._toastNotificationService = serviceProvider.GetRequiredBackstageService<IToastNotificationService>();
-        this._welcomePageService = serviceProvider.GetBackstageService<UserInterfaceInitializationOptions>() is { OpenWelcomePageOnTelemetryActivation: false }
-            ? null
-            : serviceProvider.GetBackstageService<WelcomePageService>();
+        this._welcomePageService = serviceProvider.GetBackstageService<WelcomePageService>();
         this._catalog = serviceProvider.GetBackstageService<ILicenseProductCatalog>();
         this._dispatcher = serviceProvider.GetRequiredBackstageService<IEventDispatcher>();
     }

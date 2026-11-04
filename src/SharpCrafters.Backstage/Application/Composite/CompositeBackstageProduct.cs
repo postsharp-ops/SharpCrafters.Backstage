@@ -93,21 +93,17 @@ internal sealed class CompositeBackstageProduct
 
         return host with
         {
-            OverrideServices = composite.OverrideServices,
-            AdjustOptions = AdjustOptions,
-
-            // The extension that hosts a composite product opens a welcome page of its own, which depends on the product in
-            // use, so the welcome page is not opened when telemetry is activated.
-            UserInterfaceOptions = host.UserInterfaceOptions with { OpenWelcomePageOnTelemetryActivation = false }
+            OverrideServices = composite.OverrideServices, AdjustOptions = AdjustOptions
         };
     }
 
     /// <summary>
     /// Overrules the options of the host: a composite product detects no notification and runs no RSS client, because
-    /// the builds of each product show their own notifications and their own news.
+    /// the builds of each product show their own notifications and their own news, and it opens no welcome page,
+    /// because the extension that hosts it opens a welcome page of its own, which depends on the product in use.
     /// </summary>
     private static BackstageInitializationOptions AdjustOptions( BackstageInitializationOptions options )
-        => options with { DetectToastNotifications = false, AddRssClient = false };
+        => options with { DetectToastNotifications = false, AddRssClient = false, OpenWelcomePage = false };
 
     private void OverrideServices( ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
     {

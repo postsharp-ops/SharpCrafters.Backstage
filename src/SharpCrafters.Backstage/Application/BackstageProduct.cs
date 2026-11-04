@@ -95,8 +95,7 @@ public sealed record BackstageProduct(
     /// The service provider created for the composite product is the outer service provider. It holds the services of
     /// the primary member, and runs the only logger and usage and exception telemetry of the process. It detects no
     /// notification and runs no RSS client, whatever the host asks, because the builds of each product show their own.
-    /// It keeps the welcome page service but does not open the welcome page when telemetry is activated, because the
-    /// extension opens a welcome page of its own.
+    /// It opens no welcome page either, because the extension that hosts it opens a welcome page of its own.
     /// </para>
     /// <para>
     /// The outer provider creates, when it first needs it, one inner service provider for each other member. An inner

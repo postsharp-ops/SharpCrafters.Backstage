@@ -507,11 +507,11 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that the composite product shows no notification or news of its own: the outer provider detects no
-    /// notification and runs no RSS client although the host asks for them, because the builds of each product show
-    /// their own. It keeps the notification service, for the notifications that the extension raises, and the welcome
-    /// page service, but leaves the opening of the welcome page to the extension. The inner provider has no user
-    /// interface at all, so nothing is shown twice.
+    /// Tests that the composite product shows no notification, news or welcome page of its own: the outer provider
+    /// detects no notification, runs no RSS client and opens no welcome page although the host asks for them, because
+    /// the builds of each product show their own notifications and news, and the extension opens its own welcome page.
+    /// It keeps the notification service, for the notifications that the extension raises. The inner provider has no
+    /// user interface at all, so nothing is shown twice.
     /// </summary>
     [Fact]
     public void TheCompositeUserInterfaceShowsNoNotificationOrNewsOfItsOwn()
@@ -521,8 +521,7 @@ public sealed class CompositeProductTests : IDisposable
 
         Assert.NotNull( serviceProvider.GetBackstageService<IToastNotificationService>() );
         Assert.Null( serviceProvider.GetBackstageService<IToastNotificationDetectionService>() );
-        Assert.NotNull( serviceProvider.GetBackstageService<WelcomePageService>() );
-        Assert.False( serviceProvider.GetRequiredBackstageService<UserInterfaceInitializationOptions>().OpenWelcomePageOnTelemetryActivation );
+        Assert.Null( serviceProvider.GetBackstageService<WelcomePageService>() );
         Assert.Null( serviceProvider.GetBackstageService<IRssClient>() );
         Assert.NotNull( serviceProvider.GetBackstageService<IMiniDumper>() );
 
