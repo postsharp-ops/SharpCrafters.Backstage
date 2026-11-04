@@ -19,11 +19,11 @@ using System.Linq;
 namespace SharpCrafters.Backstage.Application.Composite;
 
 /// <summary>
-/// Holds the services of each product of a composite product. The services of the primary product are created from the
-/// outer service provider, and the services of every other product from an inner service provider of its own, which is
-/// created when it is first needed and disposed with the current object.
+/// Holds the members of a composite product, one for each product, and chooses the member that handles a license. The
+/// services of the primary member are created from the outer service provider, and those of every other member from an
+/// inner service provider of its own, which is created when it is first needed and disposed with the current object.
 /// </summary>
-internal sealed class CompositeProductServices : IBackstageService, IDisposable
+internal sealed class CompositeProductMembers : IBackstageService, IDisposable
 {
     /// <summary>
     /// The services that an inner provider never registers, in addition to those that its options disable.
@@ -47,7 +47,7 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
     private readonly List<IDisposable> _innerServiceProviders = [];
     private bool _isDisposed;
 
-    public CompositeProductServices( IServiceProvider serviceProvider, ImmutableArray<BackstageProduct> products, BackstageInitializationOptions options )
+    public CompositeProductMembers( IServiceProvider serviceProvider, ImmutableArray<BackstageProduct> products, BackstageInitializationOptions options )
     {
         this._serviceProvider = serviceProvider;
         this._options = options;
@@ -109,7 +109,7 @@ internal sealed class CompositeProductServices : IBackstageService, IDisposable
         {
             if ( this._isDisposed )
             {
-                throw new ObjectDisposedException( nameof(CompositeProductServices) );
+                throw new ObjectDisposedException( nameof(CompositeProductMembers) );
             }
 
             var innerBuilder = new SimpleServiceProviderBuilder();

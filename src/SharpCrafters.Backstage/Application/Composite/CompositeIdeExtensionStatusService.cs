@@ -14,9 +14,9 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// </summary>
 internal sealed class CompositeIdeExtensionStatusService : IIdeExtensionStatusService
 {
-    private readonly CompositeProductServices _products;
+    private readonly CompositeProductMembers _products;
 
-    public CompositeIdeExtensionStatusService( CompositeProductServices products )
+    public CompositeIdeExtensionStatusService( CompositeProductMembers products )
     {
         this._products = products;
     }

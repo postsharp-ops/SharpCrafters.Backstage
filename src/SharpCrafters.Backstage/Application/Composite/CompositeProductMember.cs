@@ -55,7 +55,7 @@ internal sealed class CompositeProductMember
 
         this._telemetryConfigurationService = new Lazy<ITelemetryConfigurationService>(
             // The outer provider initializes the service of the primary product, through the composite service, and
-            // CompositeProductServices initializes the service of an inner provider when it creates the provider.
+            // CompositeProductMembers initializes the service of an inner provider when it creates the provider.
             () => isPrimary
                 ? new TelemetryConfigurationService( this.ServiceProvider )
                 : this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>(),

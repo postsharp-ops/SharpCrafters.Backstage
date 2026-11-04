@@ -76,28 +76,28 @@ internal sealed class CompositeBackstageProduct
 
     private void OverrideServices( ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
     {
-        serviceProviderBuilder.AddSingleton( serviceProvider => new CompositeProductServices( serviceProvider, this.Products, options ) );
+        serviceProviderBuilder.AddSingleton( serviceProvider => new CompositeProductMembers( serviceProvider, this.Products, options ) );
 
         if ( options.AddLicensing )
         {
             serviceProviderBuilder.AddSingleton<ILicenseRegistrationService>(
-                serviceProvider => new CompositeLicenseRegistrationService( serviceProvider.GetRequiredBackstageService<CompositeProductServices>() ) );
+                serviceProvider => new CompositeLicenseRegistrationService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
 
             serviceProviderBuilder.AddSingleton<ILicenseConsumptionService>(
-                serviceProvider => new CompositeLicenseConsumptionService( serviceProvider.GetRequiredBackstageService<CompositeProductServices>() ) );
+                serviceProvider => new CompositeLicenseConsumptionService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
         }
 
         if ( options.AddSupportServices )
         {
             serviceProviderBuilder.AddSingleton<ITelemetryConfigurationService>(
-                serviceProvider => new CompositeTelemetryConfigurationService( serviceProvider.GetRequiredBackstageService<CompositeProductServices>() ) );
+                serviceProvider => new CompositeTelemetryConfigurationService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
         }
 
         // The standard service is registered with the user interface, and on Windows only.
         if ( options.AddUserInterface && RuntimeInformation.IsOSPlatform( OSPlatform.Windows ) )
         {
             serviceProviderBuilder.AddSingleton<IIdeExtensionStatusService>(
-                serviceProvider => new CompositeIdeExtensionStatusService( serviceProvider.GetRequiredBackstageService<CompositeProductServices>() ) );
+                serviceProvider => new CompositeIdeExtensionStatusService( serviceProvider.GetRequiredBackstageService<CompositeProductMembers>() ) );
         }
     }
 }

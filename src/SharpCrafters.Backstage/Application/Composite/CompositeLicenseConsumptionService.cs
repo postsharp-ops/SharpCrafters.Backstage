@@ -20,9 +20,9 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// </summary>
 internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionService
 {
-    private readonly CompositeProductServices _products;
+    private readonly CompositeProductMembers _products;
 
-    public CompositeLicenseConsumptionService( CompositeProductServices products )
+    public CompositeLicenseConsumptionService( CompositeProductMembers products )
     {
         this._products = products;
 
@@ -39,7 +39,7 @@ internal sealed class CompositeLicenseConsumptionService : ILicenseConsumptionSe
     /// <para>
     /// A license key of the project, given by <see cref="LicenseConsumptionOptions.ProjectLicenseKey"/> or
     /// <see cref="LicenseConsumptionOptions.ExplicitLicenses"/>, is given only to the product that owns it (see
-    /// <see cref="CompositeProductServices.GetMemberForLicense(string)"/>). Another product would report the key as a key of
+    /// <see cref="CompositeProductMembers.GetMemberForLicense(string)"/>). Another product would report the key as a key of
     /// another product family, although the composite product can use it.
     /// </para>
     /// <para>

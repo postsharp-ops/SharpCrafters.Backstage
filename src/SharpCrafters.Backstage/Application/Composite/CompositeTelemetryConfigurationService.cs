@@ -22,9 +22,9 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// </remarks>
 internal sealed class CompositeTelemetryConfigurationService : ITelemetryConfigurationService
 {
-    private readonly CompositeProductServices _products;
+    private readonly CompositeProductMembers _products;
 
-    public CompositeTelemetryConfigurationService( CompositeProductServices products )
+    public CompositeTelemetryConfigurationService( CompositeProductMembers products )
     {
         this._products = products;
     }

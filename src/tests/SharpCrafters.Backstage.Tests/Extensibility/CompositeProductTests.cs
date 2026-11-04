@@ -113,8 +113,8 @@ public sealed class CompositeProductTests : IDisposable
         return serviceProvider;
     }
 
-    private static CompositeProductServices GetProducts( IServiceProvider serviceProvider )
-        => serviceProvider.GetRequiredBackstageService<CompositeProductServices>();
+    private static CompositeProductMembers GetProducts( IServiceProvider serviceProvider )
+        => serviceProvider.GetRequiredBackstageService<CompositeProductMembers>();
 
     private static IEnumerable<string> GetRegisteredLicenseStrings( CompositeProductMember member )
         => member.LicenseRegistrationService.RegisteredLicenses.Select( l => l.LicenseString );

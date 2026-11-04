@@ -21,7 +21,7 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// <remarks>
 /// <para>
 /// A license key is routed to the product that owns the product of the key (see
-/// <see cref="CompositeProductServices.GetMemberForLicense(string)"/>), which is the product to which it is native. A key that two
+/// <see cref="CompositeProductMembers.GetMemberForLicense(string)"/>), which is the product to which it is native. A key that two
 /// families accept, such as a PostSharp Ultimate key, is native to one family only, so it goes to that family. A license
 /// server URL, and a string that is not a license key, go to the primary product, which reports the error of a string
 /// that it cannot register.
@@ -33,9 +33,9 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// </remarks>
 internal sealed class CompositeLicenseRegistrationService : ILicenseRegistrationService
 {
-    private readonly CompositeProductServices _products;
+    private readonly CompositeProductMembers _products;
 
-    public CompositeLicenseRegistrationService( CompositeProductServices products )
+    public CompositeLicenseRegistrationService( CompositeProductMembers products )
     {
         this._products = products;
 
