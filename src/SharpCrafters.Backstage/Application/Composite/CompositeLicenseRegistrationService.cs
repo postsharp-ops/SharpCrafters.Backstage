@@ -34,8 +34,8 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// </para>
 /// <para>
 /// A license key held by several products is listed once, with the properties that the product to which it is native
-/// reads. The interface removes licenses all at once, without naming a key, so <see cref="RemoveLicenses"/> removes the
-/// licenses of every product.
+/// reads. Since it is listed once, <see cref="RemoveLicense"/> removes it from the store of every product, and
+/// <see cref="RemoveLicenses"/> removes the licenses of every product.
 /// </para>
 /// </remarks>
 internal sealed class CompositeLicenseRegistrationService : ILicenseRegistrationService
@@ -119,6 +119,8 @@ internal sealed class CompositeLicenseRegistrationService : ILicenseRegistration
     }
 
     public void RemoveLicenses() => this.Services.ForEachContinueOnException( s => s.RemoveLicenses() );
+
+    public void RemoveLicense( string licenseString ) => this.Services.ForEachContinueOnException( s => s.RemoveLicense( licenseString ) );
 
     public IEnumerable<LicenseRegistrationProperties> RegisteredLicenses
         => this._products.Members

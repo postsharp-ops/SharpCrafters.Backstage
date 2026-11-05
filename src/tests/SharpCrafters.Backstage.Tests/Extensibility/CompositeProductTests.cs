@@ -257,6 +257,49 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
+    /// Tests that removing one license key leaves the keys of the other products alone. Metalama holds a Metalama
+    /// Community key and PostSharp a PostSharp Ultimate key, as when each was registered by its own tools, and the
+    /// extension lists both: removing the first must keep the second.
+    /// </summary>
+    [Fact]
+    public async Task RemovingALicenseKeyLeavesTheKeysOfTheOtherProducts()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var products = GetProducts( serviceProvider );
+        var registrationService = serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
+
+        Assert.True( (await products.Members[0].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.MetalamaCommunity )).IsSuccess );
+        Assert.True( (await products.Members[1].LicenseRegistrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpUltimate )).IsSuccess );
+        Assert.Equal( 2, registrationService.RegisteredLicenses.Count() );
+
+        registrationService.RemoveLicense( this._licenseKeys.MetalamaCommunity );
+
+        Assert.Equal( [this._licenseKeys.PostSharpUltimate], registrationService.RegisteredLicenses.Select( l => l.LicenseString ) );
+        Assert.Empty( GetRegisteredLicenseStrings( products.Members[0] ) );
+        Assert.Equal( [this._licenseKeys.PostSharpUltimate], GetRegisteredLicenseStrings( products.Members[1] ) );
+    }
+
+    /// <summary>
+    /// Tests that removing a license key that several products hold removes it from the store of each of them, since
+    /// the extension lists it once.
+    /// </summary>
+    [Fact]
+    public async Task RemovingALicenseKeyHeldBySeveralProductsRemovesItFromEveryStore()
+    {
+        var serviceProvider = this.CreateServiceProvider();
+        var products = GetProducts( serviceProvider );
+        var registrationService = serviceProvider.GetRequiredBackstageService<ILicenseRegistrationService>();
+
+        Assert.True( (await registrationService.RegisterLicenseAsync( this._licenseKeys.PostSharpUltimate )).IsSuccess );
+        Assert.All( products.Members, m => Assert.Equal( [this._licenseKeys.PostSharpUltimate], GetRegisteredLicenseStrings( m ) ) );
+
+        registrationService.RemoveLicense( this._licenseKeys.PostSharpUltimate );
+
+        Assert.Empty( registrationService.RegisteredLicenses );
+        Assert.All( products.Members, m => Assert.Empty( GetRegisteredLicenseStrings( m ) ) );
+    }
+
+    /// <summary>
     /// Tests that a license key held by several products is consumed by the product to which it is native, whatever the
     /// requirement, so that it is audited once, by that product, and that the consumer lists it once.
     /// </summary>

@@ -277,6 +277,24 @@ public sealed class LicenseServerEndToEndTests : LicenseServerTestsBase
     }
 
     /// <summary>
+    /// Tests that removing a license server removes its lease as well as its URL.
+    /// </summary>
+    [Fact]
+    public async Task RemovingAServerRemovesItsLease()
+    {
+        var server = this.CreateServer();
+
+        await this.LicenseRegistrationService.RegisterLicenseAsync( server.Url );
+        Assert.True( this.LeaseStore.TryGetLease( server.Url, out _ ) );
+
+        var registered = Assert.Single( this.LicenseRegistrationService.RegisteredLicenses );
+        this.LicenseRegistrationService.RemoveLicense( registered.LicenseString );
+
+        Assert.Empty( this.LicenseRegistrationService.RegisteredLicenses );
+        Assert.False( this.LeaseStore.TryGetLease( server.Url, out _ ) );
+    }
+
+    /// <summary>
     /// Tests that a URL which cannot be a license server is refused with the reason it cannot be one, rather than
     /// with the reason it is not a valid license key either.
     /// </summary>

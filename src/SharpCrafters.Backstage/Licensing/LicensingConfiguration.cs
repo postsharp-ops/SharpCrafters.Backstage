@@ -144,6 +144,61 @@ public sealed record LicensingConfiguration : ConfigurationFile
     public LicensingConfiguration RemoveAllLicenses()
         => this with { LegacyLicense = null, Licenses = ImmutableArray<string?>.Empty, LicensesByMinimalVersion = null };
 
+    /// <summary>
+    /// Removes a license string from every place where a license is stored: the legacy slot, the list, and every group,
+    /// including the groups that the running version does not read.
+    /// </summary>
+    /// <param name="licenseString">The license key, or the URL of a license server.</param>
+    /// <remarks>
+    /// A license key is compared verbatim. A license server URL is compared by <see cref="LicenseServerUrl.GetStoreKey"/>,
+    /// so that the server is removed whatever the case of its scheme and host. A group that nothing is left in is
+    /// dropped, as in <see cref="SetLicense"/>.
+    /// </remarks>
+    public LicensingConfiguration RemoveLicense( string licenseString )
+    {
+        bool Matches( string? registered )
+            => registered != null
+               && (string.Equals( registered, licenseString, StringComparison.Ordinal )
+                   || (LicenseServerUrl.IsLicenseServerUrl( licenseString ) && LicenseServerUrl.IsLicenseServerUrl( registered )
+                                                                            && string.Equals(
+                                                                                LicenseServerUrl.GetStoreKey( registered ),
+                                                                                LicenseServerUrl.GetStoreKey( licenseString ),
+                                                                                StringComparison.Ordinal )));
+
+        var clone = this;
+
+        if ( Matches( clone.LegacyLicense ) )
+        {
+            clone = clone with { LegacyLicense = null };
+        }
+
+        var survivingLicenses = clone.Licenses.RemoveAll( Matches );
+
+        if ( survivingLicenses.Length != clone.Licenses.Length )
+        {
+            clone = clone with { Licenses = survivingLicenses };
+        }
+
+        if ( clone.LicensesByMinimalVersion is { } groups && groups.Values.Any( group => group.Any( Matches ) ) )
+        {
+            var survivingGroups = ImmutableDictionary.CreateBuilder<string, ImmutableArray<string?>>();
+
+            foreach ( var group in groups )
+            {
+                var survivingGroup = group.Value.RemoveAll( Matches );
+
+                if ( !survivingGroup.IsEmpty )
+                {
+                    survivingGroups.Add( group.Key, survivingGroup );
+                }
+            }
+
+            clone = clone with { LicensesByMinimalVersion = survivingGroups.Count == 0 ? null : survivingGroups.ToImmutable() };
+        }
+
+        return clone;
+    }
+
     private LicensingConfiguration RemoveAllLicensesExcept( ImmutableArray<LicenseProduct> products )
     {
         // The groups are filtered by the same rule as the two other slots, and not cleared. A family whose products
