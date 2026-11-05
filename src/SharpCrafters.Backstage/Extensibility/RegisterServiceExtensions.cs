@@ -97,6 +97,13 @@ public static class RegisterServiceExtensions
 
             serviceProviderBuilder.AddLicensingServices( licensingOptions, applicationInfo );
         }
+        else
+        {
+            // The catalog only describes the product family, and a process that consumes no license still describes
+            // the family to the user: the notifier names the premium edition in the notification that a project needs
+            // a license.
+            serviceProviderBuilder.AddSingleton( product.LicenseProductCatalog );
+        }
 
         serviceProviderBuilder.AddSingleton( serviceProvider => new BackstageServicesInitializer( serviceProvider, options ) );
 
