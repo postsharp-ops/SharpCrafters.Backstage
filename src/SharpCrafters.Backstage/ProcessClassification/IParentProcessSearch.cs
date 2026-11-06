@@ -10,6 +10,7 @@ namespace SharpCrafters.Backstage.ProcessClassification;
 /// <summary>
 /// Lists the ancestors of the current process.
 /// </summary>
+[ProductNeutralService]
 public interface IParentProcessSearch : IBackstageService
 {
     /// <summary>

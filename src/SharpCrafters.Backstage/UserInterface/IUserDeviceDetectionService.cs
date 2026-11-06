@@ -8,6 +8,7 @@ namespace SharpCrafters.Backstage.UserInterface;
 
 // This service is intentionally separate from IUnattendedProcessDetector, so that the enforcement of licensing does not
 // depend on variable factors such as the last user input or the size of the monitor.
+[ProductNeutralService]
 internal interface IUserDeviceDetectionService : IBackstageService
 {
     bool IsInteractiveDevice { get; }

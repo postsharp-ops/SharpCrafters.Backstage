@@ -21,9 +21,8 @@ public static class RegisterTelemetryServices
     /// </summary>
     public static ServiceProviderBuilder AddTelemetryServices( this ServiceProviderBuilder serviceProviderBuilder, TelemetryInitializationOptions options )
         => serviceProviderBuilder
-            .AddSingleton( options )
+            .AddTelemetryUploadServices( options )
             .AddSingleton<IRepositoryConfigurationService>( serviceProvider => new RepositoryConfigurationService( serviceProvider ) )
-            .AddSingleton( serviceProvider => new TelemetryLogger( serviceProvider ) )
             .AddSingleton( serviceProvider => new ExceptionSensitiveDataHelper( serviceProvider ) )
             .AddSingleton<LocalExceptionReporter>( serviceProvider => new LocalExceptionReporter( serviceProvider ) )
 
@@ -32,10 +31,19 @@ public static class RegisterTelemetryServices
             .AddSingleton<ExceptionReporter>( serviceProvider => new ExceptionReporter( new TelemetryQueue( serviceProvider ), serviceProvider ) )
             .AddSingleton<IExceptionReportManager>( serviceProvider => serviceProvider.GetRequiredBackstageService<ExceptionReporter>() )
             .AddSingleton<IExceptionCapturer>( serviceProvider => serviceProvider.GetRequiredBackstageService<ExceptionReporter>() )
-            .AddSingleton<ITelemetryUploader>( serviceProvider => new TelemetryUploader( serviceProvider ) )
             .AddSingleton<IUsageSessionFactory>( serviceProvider => new UsageSessionFactory( serviceProvider ) )
+            .AddSingleton<ITelemetryService>( serviceProvider => new TelemetryService( serviceProvider ) );
+
+    /// <summary>
+    /// Registers the telemetry configuration and the upload channel: the upload queue, the uploaders and the analytics
+    /// uploader, which the license audit uses. It registers nothing that collects usage or exceptions.
+    /// </summary>
+    internal static ServiceProviderBuilder AddTelemetryUploadServices( this ServiceProviderBuilder serviceProviderBuilder, TelemetryInitializationOptions options )
+        => serviceProviderBuilder
+            .AddSingleton( options )
+            .AddSingleton( serviceProvider => new TelemetryLogger( serviceProvider ) )
             .AddSingleton<ITelemetryConfigurationService>( serviceProvider => new TelemetryConfigurationService( serviceProvider ) )
-            .AddSingleton<ITelemetryService>( serviceProvider => new TelemetryService( serviceProvider ) )
+            .AddSingleton<ITelemetryUploader>( serviceProvider => new TelemetryUploader( serviceProvider ) )
             .AddSingleton<TelemetryReportUploader>( serviceProvider => new TelemetryReportUploader( serviceProvider ) )
             .AddSingleton<MatomoUploader>( serviceProvider => new MatomoUploader( serviceProvider ) );
 

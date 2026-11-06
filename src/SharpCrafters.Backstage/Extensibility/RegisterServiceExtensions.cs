@@ -27,6 +27,8 @@ public static class RegisterServiceExtensions
     /// </summary>
     public static void AddBackstageServices( this ServiceProviderBuilder serviceProviderBuilder, BackstageInitializationOptions options )
     {
+        options = options.Product.AdjustOptions?.Invoke( options ) ?? options;
+
         var applicationInfo = options.ApplicationInfo;
 
         var jsonTypeInfoResolvers = new List<IJsonTypeInfoResolver> { BackstageJsonContext.Default };
@@ -52,9 +54,13 @@ public static class RegisterServiceExtensions
         // both decided this way: see BackstageProduct.RegisterServices, which says which services a product owes.
         product.RegisterServices.Invoke( serviceProviderBuilder );
 
-        if ( options.AddSupportServices )
+        if ( options is { AddSupportServices: true, AddTelemetryCollection: true } )
         {
             serviceProviderBuilder.AddTelemetryServices( product.TelemetryOptions );
+        }
+        else if ( options.AddSupportServices )
+        {
+            serviceProviderBuilder.AddTelemetryUploadServices( product.TelemetryOptions );
         }
 
         var userInterfaceOptions = product.UserInterfaceOptions with
@@ -91,7 +97,17 @@ public static class RegisterServiceExtensions
 
             serviceProviderBuilder.AddLicensingServices( licensingOptions, applicationInfo );
         }
+        else
+        {
+            // The catalog only describes the product family, and a process that consumes no license still describes
+            // the family to the user: the notifier names the premium edition in the notification that a project needs
+            // a license.
+            serviceProviderBuilder.AddSingleton( product.LicenseProductCatalog );
+        }
 
         serviceProviderBuilder.AddSingleton( serviceProvider => new BackstageServicesInitializer( serviceProvider, options ) );
+
+        // Last, so that a composite product replaces the standard services that must answer for all of its products.
+        product.OverrideServices?.Invoke( serviceProviderBuilder, options );
     }
 }

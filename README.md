@@ -23,11 +23,60 @@ customizations `Metalama.Backstage*` and, later, `PostSharp.Backstage*`.
 | `SharpCrafters.Aspects.Introspection` | The forward-only reader and writer of the weaving symbol file of PostSharp (`.pssym`, schema version 1), which the PostSharp compiler writes through. It has no dependency, and no other package depends on it but the next one. The design is `Documentation/future/Introspection-Cli.md` of PostSharp, section 7.2 |
 | `SharpCrafters.Aspects.Introspection.Query` | The common model of the introspection of aspects (aspect classes, aspect instances, predecessors, transformations, annotations, declaration mappings, declarations), its loader from schema version 1, the conversion of the names of version 1 to documentation comment identifiers, the structural keys and 48-bit identifiers of the aspect instances and predecessors, the evaluation of the projects with the MSBuild of a .NET SDK, the OData queries of `--where` and `--order-by`, parsed by Microsoft.OData.Core and evaluated against the model, the merge of the files of the projects of a solution and their target frameworks, the caches of the evaluations and of the files (in `SharpCrafters/Introspection` of the local application data), and the `introspect` commands (`list`, `show`, `schema`, and `batch`, which runs several of them, one per line of the standard input or of a file, over one load of the files), which a tool adds with `IntrospectionCommandFactory.AddIntrospectBranch` and an `IntrospectionProvider` of its product (same document, sections 5 to 7). It depends on `SharpCrafters.Aspects.Introspection`, Spectre.Console, `Microsoft.OData.Core` and `Microsoft.Build.Locator`; the MSBuild assemblies come from the .NET SDK |
 | `Metalama.Backstage`, `PostSharp.Backstage` | What each product family adds: its profile, its licence catalogue, its web links and its telemetry endpoints |
+| `SharpCrafters.Backstage.Vsx` | The product of the Visual Studio extension, `VsxProduct`: a composite of Metalama and PostSharp. It is a private package |
 
 A type belongs in one of the packages that depend only on the abstractions when a component that starts no service
 needs it, such as a build task loaded by MSBuild. Those packages must not gain a dependency on
 `SharpCrafters.Backstage`. A type that needs the logging implementation, the configuration or the standard directories
 belongs in `SharpCrafters.Backstage`.
+
+## Hosting several products in one process
+
+The Visual Studio extension serves both Metalama and PostSharp. It creates one service provider from the product of
+the `SharpCrafters.Backstage.Vsx` package:
+
+```csharp
+var serviceProvider = BackstageServiceFactory.CreateServiceProvider( new BackstageInitializationOptions( applicationInfo, VsxProduct.Instance ) { ... } );
+```
+
+`VsxProduct.Instance` is a composite product, which `BackstageProduct.CreateComposite( host, members )` creates. The
+composite is implemented in `SharpCrafters.Backstage`, because it uses internal services of that package and only the
+test projects see its internals.
+
+For its usage and exception reports, the extension is a product of its own: they are sent under the name
+`Visual Studio Tools for PostSharp and Metalama`, and its analytics events go to the analytics site of the extension.
+It keeps the configuration of Metalama, so its consents, notifications and device identifier are those of Metalama, and
+its license product catalog is the catalog of Metalama. The service provider is the outer provider: it holds the services of Metalama, the primary member, and runs
+the only logger and usage and exception telemetry of the process. It detects no notification and runs no RSS client,
+whatever the host asks, because the builds of each product show their own. It opens no welcome page either: the
+extension opens its own, which depends on the product in use.
+
+PostSharp gets an inner service provider, which is created when it is first needed and disposed with the outer one. An
+inner provider has no user interface, notifications, welcome page, RSS client, crash dump service or tools extractor,
+and collects no usage or exception telemetry. It uses the instances of the outer provider for the services that do not
+depend on the product, which are the service types marked with `ProductNeutralServiceAttribute`, such as the logger
+factory, the clock, the HTTP client factory, the event dispatcher, the file system and the registry. It keeps its own
+configuration store, so Metalama keeps its files and PostSharp keeps its registry keys, and the build of each product
+reads what the extension writes. An inner provider has its own unattended process detector, because each product reads
+its own `<PREFIX>FORCE_ATTENDED` variable.
+
+Each product audits its own licenses. The audit report goes to the upload queue of the product, and the analytics event
+to the analytics site of the product. The outer provider audits the licenses of Metalama with the analytics site of
+Metalama. The inner provider audits the licenses of PostSharp, and the extension uploads the queue of PostSharp in its
+own process, once a day like any upload, because the worker of PostSharp may not have been extracted on the machine.
+
+The following services of the outer provider answer for all products:
+
+| Service | Behaviour |
+|---|---|
+| `ILicenseRegistrationService` | Lists the licenses and the editions of every product, each license key once. A license key is stored by every product family that accepts it, so a PostSharp Framework or PostSharp Ultimate key is stored by both PostSharp and Metalama, the family to which it is native (`ILicenseProductCatalog.IsNativeProduct`) first. A store that cannot register it is reported as an exception of the tooling and does not fail the registration. A license server is stored by Metalama. `RemoveLicenses` removes the licenses of every product |
+| `ILicenseConsumptionService` | A requirement is satisfied when the licenses of any product satisfy it. A key held by several products is consumed, and so audited, by the product to which it is native. When no license satisfies the requirement, one message and one notification name the licenses of every product. A license key of the project is given only to the product that owns it |
+| `IToastNotificationStatusService` | `PauseAll`, which the setup wizard of the extension calls, pauses the notifications of every product |
+| `ITelemetryConfigurationService` | Reports the maximal effective consent over all products, unless Metalama is opted out at the process level. Writes a consent to every product. A compare-exchange of a consent is made for each product against its own consent |
+| `IIdeExtensionStatusService` | The status is product-neutral: every product reads it from `HKEY_CURRENT_USER\Software\SharpCrafters\IdeExtensions`. The composite service also writes it to the configuration store of every product, where earlier versions of the products read it |
+
+The composite services update the products one after the other. A configuration file must not be updated inside the
+transformation of another one, so a product is never updated from inside the update of another product.
 
 ## Documentation
 

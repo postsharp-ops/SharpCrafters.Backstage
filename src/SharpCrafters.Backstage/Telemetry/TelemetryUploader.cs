@@ -259,7 +259,62 @@ namespace SharpCrafters.Backstage.Telemetry
                 return false;
             }
 
-            var now = this._time.UtcNow;
+            if ( !this.TryClaimUpload( force, out var previousUploadTime, out var claimedUploadTime ) )
+            {
+                return false;
+            }
+
+            // This method usually runs as a background task itself, because BackstageServicesInitializer enqueues it, so
+            // the enqueue below is a nested one. It used to be refused when the process started shutting down in
+            // between, and since the resulting exception was raised in a task nobody observes, the upload process was
+            // simply never started. The sync point lets a test hold us exactly here while it begins shutdown, rather
+            // than hope for that interleaving. See #1764.
+            this._testSynchronizationProvider?.SyncPoint( BeforeEnqueueUploadSyncPoint );
+
+            this._backgroundTasksService.Enqueue( () => this.StartUploadProcess( toolExecutor, previousUploadTime, claimedUploadTime ) );
+
+            return true;
+        }
+
+        /// <summary>
+        /// Starts the upload in a background task of the current process rather than in the worker process of the
+        /// product. It is throttled as <see cref="StartUpload"/> is.
+        /// </summary>
+        /// <remarks>
+        /// A process that hosts several products uploads the queue of a product other than its own this way, because
+        /// the worker of that product may not have been extracted on the machine.
+        /// </remarks>
+        internal bool StartUploadInProcess( bool force = false )
+        {
+            if ( !this.TryClaimUpload( force, out var previousUploadTime, out var claimedUploadTime ) )
+            {
+                return false;
+            }
+
+            this._backgroundTasksService.Enqueue(
+                async () =>
+                {
+                    try
+                    {
+                        await this.UploadAsync();
+                    }
+                    catch ( Exception e )
+                    {
+                        this._logger.LogException( e, "Cannot upload the telemetry" );
+                        this.ReleaseUploadClaim( previousUploadTime, claimedUploadTime );
+                    }
+                } );
+
+            return true;
+        }
+
+        /// <summary>
+        /// Claims the upload for the day by writing <see cref="TelemetryConfiguration.LastUploadTime"/>.
+        /// </summary>
+        private bool TryClaimUpload( bool force, out DateTime? previousUploadTimeResult, out DateTime now )
+        {
+            now = this._time.UtcNow;
+            var claimTime = now;
 
             this._logger.Trace?.Log( "Acquiring mutex." );
 
@@ -271,7 +326,7 @@ namespace SharpCrafters.Backstage.Telemetry
             if ( !this._configurationManager.UpdateIf<TelemetryConfiguration>(
                     c => force ||
                          c.LastUploadTime == null ||
-                         c.LastUploadTime.Value.AddDays( 1 ) < now,
+                         c.LastUploadTime.Value.AddDays( 1 ) < claimTime,
                     c =>
                     {
                         // Captured here, and not from a separate read, because this transformation runs inside the
@@ -279,10 +334,10 @@ namespace SharpCrafters.Backstage.Telemetry
                         // Releasing the wrong one would hand the day to a process that never uploaded.
                         previousUploadTime = c.LastUploadTime;
 
-                        // 'now', not a second reading of the clock: the value we claim with must be the one the
+                        // 'claimTime', not a second reading of the clock: the value we claim with must be the one the
                         // condition was evaluated against, and must be known here so that the release below can tell
                         // our own claim from somebody else's.
-                        return c with { LastUploadTime = now };
+                        return c with { LastUploadTime = claimTime };
                     } ) )
             {
                 // UpdateIf tells us that this call did not perform the transition, but not why: the throttle may not
@@ -290,21 +345,24 @@ namespace SharpCrafters.Backstage.Telemetry
                 // locked or written. Claiming a single one of those in the message sends whoever reads the trace
                 // after it, as it did in #1764.
                 this._logger.Trace?.Log( "Not uploading the telemetry now: it is not time yet, or another process has claimed the upload." );
+                previousUploadTimeResult = null;
 
                 return false;
             }
 
-            // This method usually runs as a background task itself, because BackstageServicesInitializer enqueues it, so
-            // the enqueue below is a nested one. It used to be refused when the process started shutting down in
-            // between, and since the resulting exception was raised in a task nobody observes, the upload process was
-            // simply never started. The sync point lets a test hold us exactly here while it begins shutdown, rather
-            // than hope for that interleaving. See #1764.
-            this._testSynchronizationProvider?.SyncPoint( BeforeEnqueueUploadSyncPoint );
-
-            this._backgroundTasksService.Enqueue( () => this.StartUploadProcess( toolExecutor, previousUploadTime, claimedUploadTime: now ) );
+            previousUploadTimeResult = previousUploadTime;
 
             return true;
         }
+
+        /// <summary>
+        /// Releases the claim made by <see cref="TryClaimUpload"/>, but only while it is still ours: another process may
+        /// have claimed the upload since, and that claim must stand.
+        /// </summary>
+        private void ReleaseUploadClaim( DateTime? previousUploadTime, DateTime claimedUploadTime )
+            => this._configurationManager.UpdateIf<TelemetryConfiguration>(
+                c => c.LastUploadTime == claimedUploadTime,
+                c => c with { LastUploadTime = previousUploadTime } );
 
         /// <summary>
         /// Starts the process that performs the upload, and releases the claim made by <see cref="StartUpload"/> if it
@@ -325,12 +383,7 @@ namespace SharpCrafters.Backstage.Telemetry
             catch ( Exception e )
             {
                 this._logger.LogException( e, "Cannot start the telemetry upload process" );
-
-                // Release the claim only while it is still ours: another process may have claimed the upload since, and
-                // that claim must stand.
-                this._configurationManager.UpdateIf<TelemetryConfiguration>(
-                    c => c.LastUploadTime == claimedUploadTime,
-                    c => c with { LastUploadTime = previousUploadTime } );
+                this.ReleaseUploadClaim( previousUploadTime, claimedUploadTime );
             }
         }
 

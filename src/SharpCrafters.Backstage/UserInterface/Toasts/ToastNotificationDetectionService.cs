@@ -32,7 +32,6 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
     private readonly SemaphoreSlim _semaphoreSlim = new( 1 );
     private readonly IRssClient? _rssClient;
     private readonly ILicenseRegistrationService? _licenseRegistrationService;
-    private readonly ILicenseProductCatalog? _catalog;
 
     private DateTime _lastTimeDetectionEnqueued;
 
@@ -51,7 +50,6 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( nameof(ToastNotificationDetectionService) );
         this._rssClient = serviceProvider.GetBackstageService<IRssClient>();
         this._licenseRegistrationService = serviceProvider.GetBackstageService<ILicenseRegistrationService>();
-        this._catalog = serviceProvider.GetBackstageService<ILicenseProductCatalog>();
     }
 
     private async Task DetectImplAsync( ITelemetryContext? telemetryContext, ToastNotificationCategories categories )
@@ -174,7 +172,7 @@ internal sealed class ToastNotificationDetectionService : IToastNotificationDete
             case { SubscriptionEndDate: not null }
                 when license.SubscriptionEndDate.Value - LicensingConstants.SubscriptionExpirationWarningPeriod < this._dateTimeProvider.UtcNow:
 
-                if ( this._catalog?.IsFreeLicense( license.Product, license.LicenseType ) == true )
+                if ( license.IsFree )
                 {
                     // TODO.
                 }

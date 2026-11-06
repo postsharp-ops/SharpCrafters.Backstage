@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Extensibility;
 
 namespace SharpCrafters.Backstage.Infrastructure;
 
+[ProductNeutralService]
 public interface IEnvironmentVariableProvider : IBackstageService
 {
     string? GetEnvironmentVariable( string variable );

@@ -79,6 +79,13 @@ public abstract class LicenseProductCatalog : ILicenseProductCatalog
     public abstract bool IsProductOfFamily( LicenseProduct product );
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The default is <see cref="IsProductOfFamily"/>, which is right for a family that consumes the keys of its own
+    /// products only. A family that also consumes the keys of another family overrides this.
+    /// </remarks>
+    public virtual bool IsNativeProduct( LicenseProduct product ) => this.IsProductOfFamily( product );
+
+    /// <inheritdoc />
     public abstract bool IsFreeLicense( LicenseProduct product, LicenseType licenseType );
 
     /// <inheritdoc />

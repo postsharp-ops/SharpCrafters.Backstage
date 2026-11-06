@@ -12,6 +12,7 @@ namespace SharpCrafters.Backstage.Maintenance;
 /// Finds the processes that match a list of <see cref="ProcessSpec"/>, for the implementations of
 /// <see cref="IProcessShutdownStrategy"/> in this package.
 /// </summary>
+[ProductNeutralService]
 internal interface IProcessManager : IBackstageService
 {
     /// <summary>

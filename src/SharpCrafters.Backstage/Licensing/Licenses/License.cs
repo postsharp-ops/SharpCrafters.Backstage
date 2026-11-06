@@ -44,7 +44,11 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
             this._catalog = services.GetRequiredBackstageService<ILicenseProductCatalog>();
         }
 
-        private static string CleanLicenseKey( string licenseKey )
+        /// <summary>
+        /// Removes from a license key every character that is neither a letter, a digit nor a dash, and converts it to
+        /// upper case, so that a key pasted with line breaks, spaces or quotes can be read.
+        /// </summary>
+        internal static string CleanLicenseKey( string licenseKey )
         {
             var stringBuilder = new StringBuilder( licenseKey.Length );
 

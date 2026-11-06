@@ -264,7 +264,11 @@ namespace SharpCrafters.Backstage.Licensing.Licenses
                 licenseServerEligible,
                 licenseKeyData.GetMinPostSharpVersion(),
                 licenseKeyData.Generation.GetValueOrDefault(),
-                licenseKeyData.NormalizeServicingPhase( catalog ) ) { MinVersion = catalog.GetMinimalVersion( licenseKeyData ) };
+                licenseKeyData.NormalizeServicingPhase( catalog ) )
+            {
+                MinVersion = catalog.GetMinimalVersion( licenseKeyData ),
+                IsFree = catalog.IsFreeLicense( licenseKeyData.NormalizeProduct(), licenseKeyData.NormalizeLicenseType() )
+            };
 
             return data;
         }

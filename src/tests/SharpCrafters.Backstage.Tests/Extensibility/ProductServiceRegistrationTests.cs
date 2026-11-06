@@ -9,6 +9,7 @@ using PostSharp.Backstage.Licensing;
 using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Configuration.Registry;
 using SharpCrafters.Backstage.Extensibility;
+using SharpCrafters.Backstage.Licensing;
 using SharpCrafters.Backstage.Licensing.Audit;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Testing;
@@ -41,6 +42,18 @@ public sealed class ProductServiceRegistrationTests
             } );
 
         return builder.ServiceCollection.BuildServiceProvider();
+    }
+
+    /// <summary>
+    /// A process that consumes no license, such as the notifier, still gets the catalog of the product, which it reads to
+    /// name the editions of the product family.
+    /// </summary>
+    [Fact]
+    public void TheCatalogOfTheProductIsRegisteredWithoutLicensing()
+    {
+        var catalog = BuildServices( PostSharpProduct.Instance ).GetBackstageService<ILicenseProductCatalog>();
+
+        Assert.Same( PostSharpProduct.LicenseProductCatalog, catalog );
     }
 
     /// <summary>

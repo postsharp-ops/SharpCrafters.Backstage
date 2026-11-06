@@ -244,6 +244,33 @@ public sealed class LicenseGroupTests : LicensingTestsBase
     }
 
     /// <summary>
+    /// Tests that removing one license key removes it from its group, drops the group that it leaves empty, and leaves
+    /// the other license keys alone, including those of a group that the running version does not support.
+    /// </summary>
+    [Fact]
+    public void RemoveLicenseRemovesOnlyThatKey()
+    {
+        this.SetLicensingConfiguration(
+            $$"""
+              {
+                "licenses": [ "{{LicenseKeyProvider.MetalamaCommunity}}" ],
+                "licensesByMinimalVersion": {
+                  "{{_supportedVersion}}": [ "{{LicenseKeyProvider.MetalamaProfessionalBusiness}}" ],
+                  "{{_futureVersion}}": [ "{{_unparsableLicenseKey}}" ]
+                }
+              }
+              """ );
+
+        this.LicenseRegistrationService.RemoveLicense( LicenseKeyProvider.MetalamaProfessionalBusiness );
+
+        Assert.Equal( [LicenseKeyProvider.MetalamaCommunity], this.LicenseRegistrationService.RegisteredLicenses.Select( l => l.LicenseString ) );
+
+        var configuration = this.ConfigurationManager!.Get<LicensingConfiguration>();
+        Assert.Equal( [_futureVersion], configuration.LicensesByMinimalVersion!.Keys );
+        Assert.Equal( [_unparsableLicenseKey], configuration.LicensesByMinimalVersion[_futureVersion] );
+    }
+
+    /// <summary>
     /// Tests that removing the registered license keys clears every group, including the groups that the running
     /// version does not support.
     /// </summary>

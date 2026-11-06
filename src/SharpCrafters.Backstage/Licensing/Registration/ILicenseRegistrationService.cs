@@ -59,6 +59,14 @@ public interface ILicenseRegistrationService : IBackstageService, INotifyPropert
     void RemoveLicenses();
 
     /// <summary>
+    /// Removes one registered license key or license server, and the lease held from that server, leaving the other
+    /// registered licenses alone. Removing a license string that is not registered does nothing.
+    /// </summary>
+    /// <param name="licenseString">The license key, or the URL of a license server, as
+    /// <see cref="LicenseRegistrationProperties.LicenseString"/> reports it in <see cref="RegisteredLicenses"/>.</param>
+    void RemoveLicense( string licenseString );
+
+    /// <summary>
     /// Gets the registered licences, which are the license keys and the license servers. A license server is reported
     /// with the properties of the licence it currently leases, if it holds one; no server is contacted.
     /// </summary>

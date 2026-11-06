@@ -6,6 +6,11 @@ using SharpCrafters.Backstage.Extensibility;
 
 namespace SharpCrafters.Backstage.UserInterface;
 
+/// <summary>
+/// Reads and writes whether the IDE extension is installed. One extension serves every product, so the status is the
+/// same for all of them.
+/// </summary>
+[ProductNeutralService]
 public interface IIdeExtensionStatusService : IBackstageService
 {
     bool ShouldRecommendToInstallVisualStudioExtension { get; }

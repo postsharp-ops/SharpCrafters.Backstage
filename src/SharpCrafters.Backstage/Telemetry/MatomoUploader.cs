@@ -23,9 +23,19 @@ internal sealed class MatomoUploader : IBackstageService
     private readonly string _productName;
 
     public MatomoUploader( IServiceProvider serviceProvider )
+        : this(
+            serviceProvider,
+            serviceProvider.GetRequiredBackstageService<ProductProfile>().Name,
+            serviceProvider.GetRequiredBackstageService<TelemetryInitializationOptions>().AnalyticsUri ) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MatomoUploader"/> class that reports for a product other than the one
+    /// of the service provider, as a process that hosts several products does for the license audit of each product.
+    /// </summary>
+    public MatomoUploader( IServiceProvider serviceProvider, string productName, Uri? analyticsUri )
     {
-        this._analyticsUri = serviceProvider.GetRequiredBackstageService<TelemetryInitializationOptions>().AnalyticsUri;
-        this._productName = serviceProvider.GetRequiredBackstageService<ProductProfile>().Name;
+        this._analyticsUri = analyticsUri;
+        this._productName = productName;
         this._logger = serviceProvider.GetLoggerFactory().GetLogger( "Metrics" );
         this._httpClientFactory = serviceProvider.GetRequiredBackstageService<IHttpClientFactory>();
         this._randomNumberGenerator = serviceProvider.GetRequiredBackstageService<RandomNumberGenerator>();

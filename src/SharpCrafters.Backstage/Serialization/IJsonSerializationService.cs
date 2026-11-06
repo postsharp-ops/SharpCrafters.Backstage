@@ -13,6 +13,7 @@ namespace SharpCrafters.Backstage.Serialization;
 /// Provides JSON serialization and deserialization services using System.Text.Json with source-generated contexts.
 /// </summary>
 [PublicAPI]
+[ProductNeutralService]
 public interface IJsonSerializationService : IBackstageService
 {
     /// <summary>

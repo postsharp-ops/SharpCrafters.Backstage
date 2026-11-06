@@ -6,6 +6,7 @@ using SharpCrafters.Backstage.Extensibility;
 
 namespace SharpCrafters.Backstage.ProcessClassification;
 
+[ProductNeutralService]
 public interface IContainerDetector : IBackstageService
 {
     bool IsRunningInContainer { get; }

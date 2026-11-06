@@ -14,6 +14,7 @@ namespace SharpCrafters.Backstage.Infrastructure;
 /// Provides runtime information about the current platform and process.
 /// </summary>
 [PublicAPI]
+[ProductNeutralService]
 public interface IRuntimeInformation : IBackstageService
 {
     /// <summary>

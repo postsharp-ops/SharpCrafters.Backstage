@@ -281,6 +281,22 @@ internal sealed class LicenseRegistrationService : ILicenseRegistrationService
         this._leaseStore.RemoveAllLeases();
     }
 
+    public void RemoveLicense( string licenseString )
+    {
+        if ( licenseString == null )
+        {
+            throw new ArgumentNullException( nameof(licenseString) );
+        }
+
+        this._configurationManager.Update<LicensingConfiguration>( config => config.RemoveLicense( licenseString ) );
+
+        // A separate transaction, for the same reason as in RemoveLicenses.
+        if ( LicenseServerUrl.IsLicenseServerUrl( licenseString ) )
+        {
+            this._leaseStore.RemoveLease( licenseString );
+        }
+    }
+
     /// <inheritdoc />
     /// <remarks>
     /// A license server is reported with the properties of the licence it currently leases, so that the user sees

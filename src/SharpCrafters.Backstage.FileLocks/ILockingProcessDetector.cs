@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 namespace SharpCrafters.Backstage.FileLocks;
 
+[ProductNeutralService]
 public interface ILockingProcessDetector : IBackstageService
 {
     IReadOnlyList<Process> GetProcessesUsingFiles( IReadOnlyList<string> filePaths );
