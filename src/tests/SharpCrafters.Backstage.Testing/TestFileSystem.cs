@@ -299,8 +299,51 @@ namespace SharpCrafters.Backstage.Testing
             return this._file.Execute( ExecutionKind.Write, WatcherChangeTypes.Created, path, _ => path );
         }
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The change is reported as the real watcher reports it: one <see cref="WatcherChangeTypes.Created"/> change for
+        /// each directory that did not exist, in the directory of its parent, from the outermost to the innermost, and
+        /// none when the directory already existed.
+        /// </remarks>
         public void CreateDirectory( string path )
-            => this._directory.Execute( ExecutionKind.Write, WatcherChangeTypes.Created, path, d => d.CreateDirectory( path ) );
+        {
+            var createdDirectories = new List<string>();
+
+            this._directory.Execute(
+                ExecutionKind.Write,
+                0,
+                path,
+                d =>
+                {
+                    for ( var directory = this.NormalizePath( path );
+                          directory != null && !d.Exists( directory );
+                          directory = Path.GetDirectoryName( directory ) )
+                    {
+                        createdDirectories.Add( directory );
+                    }
+
+                    d.CreateDirectory( path );
+                } );
+
+            for ( var i = createdDirectories.Count - 1; i >= 0; i-- )
+            {
+                this.RaiseChange( WatcherChangeTypes.Created, createdDirectories[i] );
+            }
+        }
+
+        /// <summary>
+        /// Returns the absolute form of a path, resolved against the current directory of <see cref="Mock"/>, without
+        /// <c>.</c> or <c>..</c> segments and without trailing separators except for a root. Every path that the
+        /// watchers compare or look up goes through this method, so that the spelling of a path never decides whether
+        /// a watcher is notified.
+        /// </summary>
+        private string NormalizePath( string path )
+        {
+            var fullPath = this.Mock.Path.GetFullPath( path );
+            var rootLength = Path.GetPathRoot( fullPath )?.Length ?? 0;
+
+            return fullPath.Length > rootLength ? fullPath.TrimEnd( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar ) : fullPath;
+        }
 
         public Stream Open( string path, FileMode mode )
             => this._file.Execute( ExecutionKind.Write, WatcherChangeTypes.Changed, path, f => f.Open( path, mode ) );
@@ -405,34 +448,78 @@ namespace SharpCrafters.Backstage.Testing
         public void AppendAllText( string path, string? contents, Encoding encoding )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.AppendAllText( path, contents, encoding ) );
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The change is reported as the real watcher reports it: a move within a directory is a
+        /// <see cref="WatcherChangeTypes.Renamed"/> change of that directory, and a move to another directory is a
+        /// <see cref="WatcherChangeTypes.Deleted"/> change of the source directory and a
+        /// <see cref="WatcherChangeTypes.Created"/> change of the destination one.
+        /// </remarks>
         public void MoveFile( string sourceFileName, string destFileName )
         {
-            this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destFileName, f => f.Move( sourceFileName, destFileName ) );
+            if ( this.IsInSameDirectory( sourceFileName, destFileName ) )
+            {
+                this._file.Execute( ExecutionKind.Manage, 0, destFileName, f => f.Move( sourceFileName, destFileName ) );
+                this.RaiseRenamed( sourceFileName, destFileName );
+            }
+            else
+            {
+                this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destFileName, f => f.Move( sourceFileName, destFileName ) );
 
-            // This is to raise the change event.
-            this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceFileName, _ => { } );
+                // This is to raise the change event.
+                this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceFileName, _ => { } );
+            }
         }
 
         public void DeleteFile( string path ) => this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, path, f => f.Delete( path ) );
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The change is reported as <see cref="MoveFile"/> reports it.
+        /// </remarks>
         public void MoveDirectory( string sourceDirName, string destDirName )
         {
-            this._directory.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destDirName, d => d.Move( sourceDirName, destDirName ) );
+            if ( this.IsInSameDirectory( sourceDirName, destDirName ) )
+            {
+                this._directory.Execute( ExecutionKind.Manage, 0, destDirName, d => d.Move( sourceDirName, destDirName ) );
+                this.RaiseRenamed( sourceDirName, destDirName );
+            }
+            else
+            {
+                this._directory.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destDirName, d => d.Move( sourceDirName, destDirName ) );
 
-            // This is to raise the change event.
-            this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceDirName, _ => { } );
+                // This is to raise the change event.
+                this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceDirName, _ => { } );
+            }
         }
+
+        private bool IsInSameDirectory( string path1, string path2 )
+            => string.Equals(
+                Path.GetDirectoryName( this.NormalizePath( path1 ) ),
+                Path.GetDirectoryName( this.NormalizePath( path2 ) ),
+                StringComparison.OrdinalIgnoreCase );
 
         public void DeleteDirectory( string path, bool recursive )
             => this._directory.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, path, d => d.Delete( path, recursive ) );
 
         public bool IsDirectoryEmpty( string path ) => this._directory.Execute( ExecutionKind.Read, 0, path, d => !d.EnumerateFileSystemEntries( path ).Any() );
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// Like the real implementation, this one throws an <see cref="ArgumentException"/> when the directory does not
+        /// exist, and calls the callback on a thread of the thread pool, one event at a time and in order. The filter
+        /// is matched as a suffix of the file name once its <c>*</c> characters are removed, which is enough for
+        /// filters such as <c>*.json</c>.
+        /// </remarks>
         public IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback )
         {
-            // Normalize the directory path to ensure consistent lookup.
-            // Path.GetFullPath normalizes separators and removes trailing slashes.
-            var normalizedDirectory = Path.GetFullPath( directory );
+            var normalizedDirectory = this.NormalizePath( directory );
+
+            // This is what FileSystemWatcher does.
+            if ( !this.DirectoryExists( normalizedDirectory ) )
+            {
+                throw new ArgumentException( $"The directory name '{directory}' does not exist.", nameof(directory) );
+            }
 
             var subDictionary = this._changeWatchers.GetOrAdd(
                 normalizedDirectory,
@@ -444,12 +531,80 @@ namespace SharpCrafters.Backstage.Testing
             return handle;
         }
 
+        /// <summary>
+        /// Posts to every watcher of the directory of <paramref name="path"/> whose filter matches its name.
+        /// </summary>
+        private void RaiseChange( WatcherChangeTypes changeType, string path )
+        {
+            path = this.NormalizePath( path );
+            var directoryName = Path.GetDirectoryName( path );
+            var name = Path.GetFileName( path );
+
+            if ( directoryName != null && this._changeWatchers.TryGetValue( directoryName, out var watchers ) )
+            {
+                foreach ( var watcher in watchers )
+                {
+                    if ( watcher.Key.Matches( name ) )
+                    {
+                        watcher.Key.Post( watcher.Value, new FileSystemEventArgs( changeType, directoryName, name ) );
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Posts to every watcher of the directory of <paramref name="newPath"/> whose filter matches the old name or
+        /// the new name, as <see cref="FileSystemWatcher"/> does. Both paths must be in the same directory.
+        /// </summary>
+        private void RaiseRenamed( string oldPath, string newPath )
+        {
+            oldPath = this.NormalizePath( oldPath );
+            newPath = this.NormalizePath( newPath );
+            var directoryName = Path.GetDirectoryName( newPath );
+            var oldName = Path.GetFileName( oldPath );
+            var newName = Path.GetFileName( newPath );
+
+            if ( directoryName != null && this._changeWatchers.TryGetValue( directoryName, out var watchers ) )
+            {
+                foreach ( var watcher in watchers )
+                {
+                    if ( watcher.Key.Matches( oldName ) || watcher.Key.Matches( newName ) )
+                    {
+                        watcher.Key.Post( watcher.Value, new RenamedEventArgs( WatcherChangeTypes.Renamed, directoryName, newName, oldName ) );
+                    }
+                }
+            }
+        }
+
         private sealed class WatcherHandle : IDisposable
         {
             private readonly TestFileSystem _fileSystem;
             private readonly string _directory;
 
+            private readonly object _dispatchLock = new();
+            private Task _lastDispatch = Task.CompletedTask;
+
             public string Filter { get; }
+
+            /// <summary>
+            /// Calls the callback on a thread of the thread pool, after the callbacks of the events posted before, as
+            /// <see cref="FileSystemWatcher"/> delivers the events of one watcher in order and one at a time.
+            /// </summary>
+            public void Post( Action<FileSystemEventArgs> callback, FileSystemEventArgs args )
+            {
+                lock ( this._dispatchLock )
+                {
+                    this._lastDispatch = this._lastDispatch.ContinueWith(
+                        _ => callback( args ),
+                        CancellationToken.None,
+                        TaskContinuationOptions.None,
+                        TaskScheduler.Default );
+                }
+            }
+
+#pragma warning disable CA1307
+            public bool Matches( string name ) => name.EndsWith( this.Filter.Replace( "*", "" ), StringComparison.OrdinalIgnoreCase );
+#pragma warning restore CA1307
 
             public WatcherHandle( TestFileSystem fileSystem, string directory, string filter )
             {
