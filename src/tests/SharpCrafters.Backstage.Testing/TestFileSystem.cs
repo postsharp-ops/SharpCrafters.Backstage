@@ -405,34 +405,79 @@ namespace SharpCrafters.Backstage.Testing
         public void AppendAllText( string path, string? contents, Encoding encoding )
             => this._file.Execute( ExecutionKind.Write, this.GetWriteChangeKind( path ), path, f => f.AppendAllText( path, contents, encoding ) );
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The change is reported as the real watcher reports it: a move within a directory is a
+        /// <see cref="WatcherChangeTypes.Renamed"/> change of that directory, and a move to another directory is a
+        /// <see cref="WatcherChangeTypes.Deleted"/> change of the source directory and a
+        /// <see cref="WatcherChangeTypes.Created"/> change of the destination one.
+        /// </remarks>
         public void MoveFile( string sourceFileName, string destFileName )
         {
-            this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destFileName, f => f.Move( sourceFileName, destFileName ) );
+            if ( IsInSameDirectory( sourceFileName, destFileName ) )
+            {
+                this._file.Execute( ExecutionKind.Manage, 0, destFileName, f => f.Move( sourceFileName, destFileName ) );
+                this.RaiseRenamed( sourceFileName, destFileName );
+            }
+            else
+            {
+                this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destFileName, f => f.Move( sourceFileName, destFileName ) );
 
-            // This is to raise the change event.
-            this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceFileName, _ => { } );
+                // This is to raise the change event.
+                this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceFileName, _ => { } );
+            }
         }
 
         public void DeleteFile( string path ) => this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, path, f => f.Delete( path ) );
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The change is reported as <see cref="MoveFile"/> reports it.
+        /// </remarks>
         public void MoveDirectory( string sourceDirName, string destDirName )
         {
-            this._directory.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destDirName, d => d.Move( sourceDirName, destDirName ) );
+            if ( IsInSameDirectory( sourceDirName, destDirName ) )
+            {
+                this._directory.Execute( ExecutionKind.Manage, 0, destDirName, d => d.Move( sourceDirName, destDirName ) );
+                this.RaiseRenamed( sourceDirName, destDirName );
+            }
+            else
+            {
+                this._directory.Execute( ExecutionKind.Manage, WatcherChangeTypes.Created, destDirName, d => d.Move( sourceDirName, destDirName ) );
 
-            // This is to raise the change event.
-            this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceDirName, _ => { } );
+                // This is to raise the change event.
+                this._file.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, sourceDirName, _ => { } );
+            }
         }
+
+        private static bool IsInSameDirectory( string path1, string path2 )
+            => string.Equals(
+                Path.GetDirectoryName( Path.GetFullPath( path1 ) ),
+                Path.GetDirectoryName( Path.GetFullPath( path2 ) ),
+                StringComparison.OrdinalIgnoreCase );
 
         public void DeleteDirectory( string path, bool recursive )
             => this._directory.Execute( ExecutionKind.Manage, WatcherChangeTypes.Deleted, path, d => d.Delete( path, recursive ) );
 
         public bool IsDirectoryEmpty( string path ) => this._directory.Execute( ExecutionKind.Read, 0, path, d => !d.EnumerateFileSystemEntries( path ).Any() );
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// Like the real implementation, this one throws an <see cref="ArgumentException"/> when the directory does not
+        /// exist, and calls the callback on a thread of the thread pool. The filter is matched as a suffix of the
+        /// file name once its <c>*</c> characters are removed, which is enough for filters such as <c>*.json</c>.
+        /// </remarks>
         public IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback )
         {
             // Normalize the directory path to ensure consistent lookup.
             // Path.GetFullPath normalizes separators and removes trailing slashes.
             var normalizedDirectory = Path.GetFullPath( directory );
+
+            // This is what FileSystemWatcher does.
+            if ( !this.DirectoryExists( normalizedDirectory ) )
+            {
+                throw new ArgumentException( $"The directory name '{directory}' does not exist.", nameof(directory) );
+            }
 
             var subDictionary = this._changeWatchers.GetOrAdd(
                 normalizedDirectory,
@@ -444,12 +489,60 @@ namespace SharpCrafters.Backstage.Testing
             return handle;
         }
 
+        /// <summary>
+        /// Calls, on a thread of the thread pool, the callback of every watcher of the directory of
+        /// <paramref name="path"/> whose filter matches its name.
+        /// </summary>
+        private void RaiseChange( WatcherChangeTypes changeType, string path )
+        {
+            var directoryName = Path.GetDirectoryName( path );
+            var name = Path.GetFileName( path );
+
+            if ( directoryName != null && this._changeWatchers.TryGetValue( directoryName, out var watchers ) )
+            {
+                foreach ( var watcher in watchers )
+                {
+                    if ( watcher.Key.Matches( name ) )
+                    {
+                        Task.Run( () => watcher.Value.Invoke( new FileSystemEventArgs( changeType, directoryName, name ) ) );
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calls, on a thread of the thread pool, the callback of every watcher of the directory of
+        /// <paramref name="newPath"/> whose filter matches the old name or the new name, as
+        /// <see cref="FileSystemWatcher"/> does. Both paths must be in the same directory.
+        /// </summary>
+        private void RaiseRenamed( string oldPath, string newPath )
+        {
+            var directoryName = Path.GetDirectoryName( newPath );
+            var oldName = Path.GetFileName( oldPath );
+            var newName = Path.GetFileName( newPath );
+
+            if ( directoryName != null && this._changeWatchers.TryGetValue( directoryName, out var watchers ) )
+            {
+                foreach ( var watcher in watchers )
+                {
+                    if ( watcher.Key.Matches( oldName ) || watcher.Key.Matches( newName ) )
+                    {
+                        Task.Run( () => watcher.Value.Invoke( new RenamedEventArgs( WatcherChangeTypes.Renamed, directoryName, newName, oldName ) ) );
+                    }
+                }
+            }
+        }
+
         private sealed class WatcherHandle : IDisposable
         {
             private readonly TestFileSystem _fileSystem;
             private readonly string _directory;
 
             public string Filter { get; }
+
+#pragma warning disable CA1307
+            public bool Matches( string name ) => name.EndsWith( this.Filter.Replace( "*", "" ), StringComparison.OrdinalIgnoreCase );
+#pragma warning restore CA1307
 
             public WatcherHandle( TestFileSystem fileSystem, string directory, string filter )
             {

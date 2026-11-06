@@ -530,12 +530,14 @@ namespace SharpCrafters.Backstage.Infrastructure
         public void ExtractZipArchiveToDirectory( ZipArchive sourceZipArchive, string destinationDirectoryPath )
             => sourceZipArchive.ExtractToDirectory( destinationDirectoryPath );
 
+        /// <inheritdoc />
         public IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback )
         {
             var fileSystemWatcher = new FileSystemWatcher( directory, filter );
             fileSystemWatcher.Created += ( _, args ) => callback( args );
             fileSystemWatcher.Changed += ( _, args ) => callback( args );
             fileSystemWatcher.Deleted += ( _, args ) => callback( args );
+            fileSystemWatcher.Renamed += ( _, args ) => callback( args );
             fileSystemWatcher.EnableRaisingEvents = true;
 
             return fileSystemWatcher;

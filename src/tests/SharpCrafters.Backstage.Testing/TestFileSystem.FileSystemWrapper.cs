@@ -4,7 +4,6 @@
 
 using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace SharpCrafters.Backstage.Testing;
 
@@ -62,22 +61,7 @@ public partial class TestFileSystem
 
                 if ( changeType != 0 )
                 {
-                    var directoryName = Path.GetDirectoryName( path );
-
-                    if ( directoryName != null && this.Parent._changeWatchers.TryGetValue( directoryName, out var watchers ) )
-                    {
-                        foreach ( var watcher in watchers )
-                        {
-#pragma warning disable CA1307
-                            var isMatch = path.EndsWith( watcher.Key.Filter.Replace( "*", "" ), StringComparison.OrdinalIgnoreCase );
-#pragma warning restore CA1307
-
-                            if ( isMatch )
-                            {
-                                Task.Run( () => watcher.Value.Invoke( new FileSystemEventArgs( changeType, directoryName, Path.GetFileName( path ) ) ) );
-                            }
-                        }
-                    }
+                    this.Parent.RaiseChange( changeType, path );
                 }
 
                 return result;

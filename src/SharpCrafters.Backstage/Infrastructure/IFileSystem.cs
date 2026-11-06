@@ -646,6 +646,23 @@ namespace SharpCrafters.Backstage.Infrastructure
         /// </param>
         void ExtractZipArchiveToDirectory( ZipArchive sourceZipArchive, string destinationDirectoryPath );
 
+        /// <summary>
+        /// Watches the files of a directory and calls a callback whenever one that matches a filter is created,
+        /// changed, deleted or renamed.
+        /// </summary>
+        /// <param name="directory">The directory to watch. It must exist. Its subdirectories are not watched.</param>
+        /// <param name="filter">The filter that the name of a file must match, for instance <c>*.json</c>.</param>
+        /// <param name="callback">
+        /// The callback, which receives the <see cref="FileSystemEventArgs"/> of the change. Its
+        /// <see cref="FileSystemEventArgs.ChangeType"/> is <see cref="WatcherChangeTypes.Created"/>,
+        /// <see cref="WatcherChangeTypes.Changed"/>, <see cref="WatcherChangeTypes.Deleted"/> or
+        /// <see cref="WatcherChangeTypes.Renamed"/>, and for <see cref="WatcherChangeTypes.Renamed"/> the argument is a
+        /// <see cref="RenamedEventArgs"/>, raised when the old name or the new name matches the filter. A file moved
+        /// to another directory is reported as deleted from the source directory and created in the destination one.
+        /// The callback is called on a thread of the thread pool, never on the thread that made the change.
+        /// </param>
+        /// <returns>An object that stops watching when it is disposed.</returns>
+        /// <exception cref="ArgumentException"><paramref name="directory"/> does not exist.</exception>
         IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback );
     }
 }
