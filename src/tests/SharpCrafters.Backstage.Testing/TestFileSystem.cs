@@ -299,8 +299,44 @@ namespace SharpCrafters.Backstage.Testing
             return this._file.Execute( ExecutionKind.Write, WatcherChangeTypes.Created, path, _ => path );
         }
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The change is reported as the real watcher reports it: one <see cref="WatcherChangeTypes.Created"/> change for
+        /// each directory that did not exist, in the directory of its parent, from the outermost to the innermost, and
+        /// none when the directory already existed.
+        /// </remarks>
         public void CreateDirectory( string path )
-            => this._directory.Execute( ExecutionKind.Write, WatcherChangeTypes.Created, path, d => d.CreateDirectory( path ) );
+        {
+            var createdDirectories = new List<string>();
+
+            this._directory.Execute(
+                ExecutionKind.Write,
+                0,
+                path,
+                d =>
+                {
+                    for ( var directory = TrimTrailingSeparators( Path.GetFullPath( path ) );
+                          directory != null && !d.Exists( directory );
+                          directory = Path.GetDirectoryName( directory ) )
+                    {
+                        createdDirectories.Add( directory );
+                    }
+
+                    d.CreateDirectory( path );
+                } );
+
+            for ( var i = createdDirectories.Count - 1; i >= 0; i-- )
+            {
+                this.RaiseChange( WatcherChangeTypes.Created, createdDirectories[i] );
+            }
+        }
+
+        private static string TrimTrailingSeparators( string fullPath )
+        {
+            var rootLength = Path.GetPathRoot( fullPath )?.Length ?? 0;
+
+            return fullPath.Length > rootLength ? fullPath.TrimEnd( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar ) : fullPath;
+        }
 
         public Stream Open( string path, FileMode mode )
             => this._file.Execute( ExecutionKind.Write, WatcherChangeTypes.Changed, path, f => f.Open( path, mode ) );
@@ -464,8 +500,9 @@ namespace SharpCrafters.Backstage.Testing
         /// <inheritdoc />
         /// <remarks>
         /// Like the real implementation, this one throws an <see cref="ArgumentException"/> when the directory does not
-        /// exist, and calls the callback on a thread of the thread pool. The filter is matched as a suffix of the
-        /// file name once its <c>*</c> characters are removed, which is enough for filters such as <c>*.json</c>.
+        /// exist, and calls the callback on a thread of the thread pool, one event at a time and in order. The filter
+        /// is matched as a suffix of the file name once its <c>*</c> characters are removed, which is enough for
+        /// filters such as <c>*.json</c>.
         /// </remarks>
         public IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback )
         {
@@ -490,8 +527,7 @@ namespace SharpCrafters.Backstage.Testing
         }
 
         /// <summary>
-        /// Calls, on a thread of the thread pool, the callback of every watcher of the directory of
-        /// <paramref name="path"/> whose filter matches its name.
+        /// Posts to every watcher of the directory of <paramref name="path"/> whose filter matches its name.
         /// </summary>
         private void RaiseChange( WatcherChangeTypes changeType, string path )
         {
@@ -504,16 +540,15 @@ namespace SharpCrafters.Backstage.Testing
                 {
                     if ( watcher.Key.Matches( name ) )
                     {
-                        Task.Run( () => watcher.Value.Invoke( new FileSystemEventArgs( changeType, directoryName, name ) ) );
+                        watcher.Key.Post( watcher.Value, new FileSystemEventArgs( changeType, directoryName, name ) );
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Calls, on a thread of the thread pool, the callback of every watcher of the directory of
-        /// <paramref name="newPath"/> whose filter matches the old name or the new name, as
-        /// <see cref="FileSystemWatcher"/> does. Both paths must be in the same directory.
+        /// Posts to every watcher of the directory of <paramref name="newPath"/> whose filter matches the old name or
+        /// the new name, as <see cref="FileSystemWatcher"/> does. Both paths must be in the same directory.
         /// </summary>
         private void RaiseRenamed( string oldPath, string newPath )
         {
@@ -527,7 +562,7 @@ namespace SharpCrafters.Backstage.Testing
                 {
                     if ( watcher.Key.Matches( oldName ) || watcher.Key.Matches( newName ) )
                     {
-                        Task.Run( () => watcher.Value.Invoke( new RenamedEventArgs( WatcherChangeTypes.Renamed, directoryName, newName, oldName ) ) );
+                        watcher.Key.Post( watcher.Value, new RenamedEventArgs( WatcherChangeTypes.Renamed, directoryName, newName, oldName ) );
                     }
                 }
             }
@@ -538,7 +573,26 @@ namespace SharpCrafters.Backstage.Testing
             private readonly TestFileSystem _fileSystem;
             private readonly string _directory;
 
+            private readonly object _dispatchLock = new();
+            private Task _lastDispatch = Task.CompletedTask;
+
             public string Filter { get; }
+
+            /// <summary>
+            /// Calls the callback on a thread of the thread pool, after the callbacks of the events posted before, as
+            /// <see cref="FileSystemWatcher"/> delivers the events of one watcher in order and one at a time.
+            /// </summary>
+            public void Post( Action<FileSystemEventArgs> callback, FileSystemEventArgs args )
+            {
+                lock ( this._dispatchLock )
+                {
+                    this._lastDispatch = this._lastDispatch.ContinueWith(
+                        _ => callback( args ),
+                        CancellationToken.None,
+                        TaskContinuationOptions.None,
+                        TaskScheduler.Default );
+                }
+            }
 
 #pragma warning disable CA1307
             public bool Matches( string name ) => name.EndsWith( this.Filter.Replace( "*", "" ), StringComparison.OrdinalIgnoreCase );

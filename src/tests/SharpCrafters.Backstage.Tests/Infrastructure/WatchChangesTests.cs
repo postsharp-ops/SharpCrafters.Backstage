@@ -91,6 +91,80 @@ public abstract class WatchChangesTests : TestsBase, IDisposable
     }
 
     /// <summary>
+    /// Tests that creating several missing levels of directories at once notifies a watcher of the outermost existing
+    /// one, with the level created in it. A product waiting for an output directory that the first build will create
+    /// watches its nearest existing ancestor and re-arms on each level that appears; if the creation were reported
+    /// only for the innermost directory, in a directory nobody could watch yet, it would never notice the build.
+    /// </summary>
+    [Fact]
+    public async Task CreatingNestedDirectoriesRaisesCreatedForOutermostLevel()
+    {
+        var createdNames = await this.WatchCreatedUntilMarkerAsync(
+            () => this.WatchedFileSystem.CreateDirectory( Path.Combine( this.Directory, "b", "c" ) ) );
+
+        Assert.Equal( ["b"], createdNames );
+    }
+
+    /// <summary>
+    /// Tests that creating a directory that already exists is not reported. A watcher re-arming on a creation would
+    /// otherwise react to a build that changed nothing.
+    /// </summary>
+    [Fact]
+    public async Task CreatingExistingDirectoryRaisesNothing()
+    {
+        var existing = Path.Combine( this.Directory, "existing" );
+        this.WatchedFileSystem.CreateDirectory( existing );
+
+        var createdNames = await this.WatchCreatedUntilMarkerAsync( () => this.WatchedFileSystem.CreateDirectory( existing ) );
+
+        Assert.Empty( createdNames );
+    }
+
+    /// <summary>
+    /// Watches <see cref="Directory"/> for every name, runs an action, then writes a marker file, and returns the
+    /// names of the <see cref="WatcherChangeTypes.Created"/> events received other than the marker's, once the
+    /// marker's has been received.
+    /// </summary>
+    /// <remarks>
+    /// The marker bounds the observation without a delay. Events of other change types are ignored, because the real
+    /// file system also reports a <see cref="WatcherChangeTypes.Changed"/> of a directory when its content changes.
+    /// </remarks>
+    private async Task<string[]> WatchCreatedUntilMarkerAsync( Action action )
+    {
+        const string markerName = "marker.txt";
+        var created = new ConcurrentQueue<string>();
+        var markerCreated = new TaskCompletionSource<bool>( TaskCreationOptions.RunContinuationsAsynchronously );
+
+        using ( this.WatchedFileSystem.WatchChanges(
+                   this.Directory,
+                   "*",
+                   args =>
+                   {
+                       if ( args.ChangeType != WatcherChangeTypes.Created )
+                       {
+                           return;
+                       }
+
+                       if ( args.Name == markerName )
+                       {
+                           markerCreated.TrySetResult( true );
+                       }
+                       else
+                       {
+                           created.Enqueue( args.Name! );
+                       }
+                   } ) )
+        {
+            action();
+            this.WatchedFileSystem.WriteAllText( Path.Combine( this.Directory, markerName ), "marker" );
+
+            await this.WaitAsync( markerCreated, () => $"The marker was not reported. Other creations: [{string.Join( ", ", created )}]." );
+
+            return created.ToArray();
+        }
+    }
+
+    /// <summary>
     /// Waits for a task, failing the test when <see cref="_timeout"/> elapses first.
     /// </summary>
     protected async Task<T> WaitAsync<T>( TaskCompletionSource<T> completionSource, Func<string> describeFailure )
