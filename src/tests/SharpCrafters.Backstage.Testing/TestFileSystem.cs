@@ -315,7 +315,7 @@ namespace SharpCrafters.Backstage.Testing
                 path,
                 d =>
                 {
-                    for ( var directory = TrimTrailingSeparators( Path.GetFullPath( path ) );
+                    for ( var directory = this.NormalizePath( path );
                           directory != null && !d.Exists( directory );
                           directory = Path.GetDirectoryName( directory ) )
                     {
@@ -331,8 +331,15 @@ namespace SharpCrafters.Backstage.Testing
             }
         }
 
-        private static string TrimTrailingSeparators( string fullPath )
+        /// <summary>
+        /// Returns the absolute form of a path, resolved against the current directory of <see cref="Mock"/>, without
+        /// <c>.</c> or <c>..</c> segments and without trailing separators except for a root. Every path that the
+        /// watchers compare or look up goes through this method, so that the spelling of a path never decides whether
+        /// a watcher is notified.
+        /// </summary>
+        private string NormalizePath( string path )
         {
+            var fullPath = this.Mock.Path.GetFullPath( path );
             var rootLength = Path.GetPathRoot( fullPath )?.Length ?? 0;
 
             return fullPath.Length > rootLength ? fullPath.TrimEnd( Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar ) : fullPath;
@@ -450,7 +457,7 @@ namespace SharpCrafters.Backstage.Testing
         /// </remarks>
         public void MoveFile( string sourceFileName, string destFileName )
         {
-            if ( IsInSameDirectory( sourceFileName, destFileName ) )
+            if ( this.IsInSameDirectory( sourceFileName, destFileName ) )
             {
                 this._file.Execute( ExecutionKind.Manage, 0, destFileName, f => f.Move( sourceFileName, destFileName ) );
                 this.RaiseRenamed( sourceFileName, destFileName );
@@ -472,7 +479,7 @@ namespace SharpCrafters.Backstage.Testing
         /// </remarks>
         public void MoveDirectory( string sourceDirName, string destDirName )
         {
-            if ( IsInSameDirectory( sourceDirName, destDirName ) )
+            if ( this.IsInSameDirectory( sourceDirName, destDirName ) )
             {
                 this._directory.Execute( ExecutionKind.Manage, 0, destDirName, d => d.Move( sourceDirName, destDirName ) );
                 this.RaiseRenamed( sourceDirName, destDirName );
@@ -486,10 +493,10 @@ namespace SharpCrafters.Backstage.Testing
             }
         }
 
-        private static bool IsInSameDirectory( string path1, string path2 )
+        private bool IsInSameDirectory( string path1, string path2 )
             => string.Equals(
-                Path.GetDirectoryName( Path.GetFullPath( path1 ) ),
-                Path.GetDirectoryName( Path.GetFullPath( path2 ) ),
+                Path.GetDirectoryName( this.NormalizePath( path1 ) ),
+                Path.GetDirectoryName( this.NormalizePath( path2 ) ),
                 StringComparison.OrdinalIgnoreCase );
 
         public void DeleteDirectory( string path, bool recursive )
@@ -506,9 +513,7 @@ namespace SharpCrafters.Backstage.Testing
         /// </remarks>
         public IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback )
         {
-            // Normalize the directory path to ensure consistent lookup.
-            // Path.GetFullPath normalizes separators and removes trailing slashes.
-            var normalizedDirectory = Path.GetFullPath( directory );
+            var normalizedDirectory = this.NormalizePath( directory );
 
             // This is what FileSystemWatcher does.
             if ( !this.DirectoryExists( normalizedDirectory ) )
@@ -531,6 +536,7 @@ namespace SharpCrafters.Backstage.Testing
         /// </summary>
         private void RaiseChange( WatcherChangeTypes changeType, string path )
         {
+            path = this.NormalizePath( path );
             var directoryName = Path.GetDirectoryName( path );
             var name = Path.GetFileName( path );
 
@@ -552,6 +558,8 @@ namespace SharpCrafters.Backstage.Testing
         /// </summary>
         private void RaiseRenamed( string oldPath, string newPath )
         {
+            oldPath = this.NormalizePath( oldPath );
+            newPath = this.NormalizePath( newPath );
             var directoryName = Path.GetDirectoryName( newPath );
             var oldName = Path.GetFileName( oldPath );
             var newName = Path.GetFileName( newPath );

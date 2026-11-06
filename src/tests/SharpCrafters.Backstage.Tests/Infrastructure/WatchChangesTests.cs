@@ -188,7 +188,7 @@ public abstract class WatchChangesTests : TestsBase, IDisposable
     /// Watches <see cref="Directory"/> for <c>*.json</c> files, runs an action, and returns the first
     /// <see cref="WatcherChangeTypes.Renamed"/> event it raises.
     /// </summary>
-    private async Task<RenamedEventArgs> WatchUntilRenamedAsync( Action action )
+    protected async Task<RenamedEventArgs> WatchUntilRenamedAsync( Action action )
     {
         var renamed = new TaskCompletionSource<RenamedEventArgs>( TaskCreationOptions.RunContinuationsAsynchronously );
         var otherEvents = new ConcurrentQueue<WatcherChangeTypes>();
@@ -231,6 +231,58 @@ public sealed class TestFileSystemWatchChangesTests : WatchChangesTests
     protected override IFileSystem WatchedFileSystem => this.FileSystem;
 
     protected override string Directory { get; }
+
+    /// <summary>
+    /// Tests that the test double reports a directory rename spelled with trailing separators. The real watcher
+    /// reports the rename whatever the spelling, so a test passing such paths to the double must not see it vanish.
+    /// </summary>
+    [Fact]
+    public async Task DirectoryRenameWithTrailingSeparatorsRaisesRenamed()
+    {
+        var oldPath = Path.Combine( this.Directory, "old.json" );
+        var newPath = Path.Combine( this.Directory, "new.json" );
+        this.FileSystem.CreateDirectory( oldPath );
+
+        var renamed = await this.WatchUntilRenamedAsync(
+            () => this.FileSystem.MoveDirectory( oldPath + Path.DirectorySeparatorChar, newPath + Path.DirectorySeparatorChar ) );
+
+        Assert.Equal( "old.json", renamed.OldName );
+        Assert.Equal( "new.json", renamed.Name );
+    }
+
+    /// <summary>
+    /// Tests that the test double reports a rename whose destination contains <c>..</c> segments, which the real
+    /// file system resolves before notifying the watcher of the directory it resolves to.
+    /// </summary>
+    [Fact]
+    public async Task RenameWithDotSegmentsRaisesRenamed()
+    {
+        var oldPath = Path.Combine( this.Directory, "file.tmp" );
+        var newPath = Path.Combine( this.Directory, "sub", "..", "file.json" );
+        this.FileSystem.CreateDirectory( Path.Combine( this.Directory, "sub" ) );
+        this.FileSystem.WriteAllText( oldPath, "content" );
+
+        var renamed = await this.WatchUntilRenamedAsync( () => this.FileSystem.MoveFile( oldPath, newPath ) );
+
+        Assert.Equal( "file.tmp", renamed.OldName );
+        Assert.Equal( "file.json", renamed.Name );
+    }
+
+    /// <summary>
+    /// Tests that the test double reports a rename given as paths relative to the current directory, which it
+    /// resolves as it resolves the paths of every other operation.
+    /// </summary>
+    [Fact]
+    public async Task RelativeRenameRaisesRenamed()
+    {
+        this.FileSystem.Mock.Directory.SetCurrentDirectory( this.Directory );
+        this.FileSystem.WriteAllText( "file.tmp", "content" );
+
+        var renamed = await this.WatchUntilRenamedAsync( () => this.FileSystem.MoveFile( "file.tmp", "file.json" ) );
+
+        Assert.Equal( "file.tmp", renamed.OldName );
+        Assert.Equal( "file.json", renamed.Name );
+    }
 
     /// <summary>
     /// Tests that the test double reports a move to another directory as the real watcher does, as a deletion from
