@@ -120,7 +120,7 @@ internal static class TextOutput
 
             foreach ( var mapping in Take( mappings, limit ) )
             {
-                builder.AppendLine( CultureInfo.InvariantCulture, $"  - {mapping.Source.Id} is {mapping.Kind?.ToString().ToLowerInvariant() ?? "mapped"} as {mapping.Target.Id}" );
+                builder.AppendLine( CultureInfo.InvariantCulture, $"  - {DeclarationMapping( mapping )}" );
             }
 
             AppendNote( builder, "declaration mappings", mappings, limit, next );
@@ -148,6 +148,20 @@ internal static class TextOutput
         }
 
         AppendNote( builder, "predecessors", instance.Predecessors, limit, RelatedLists.GetNext( "aspectInstance", "predecessors", instance ), "  " );
+
+        var provided = context.GetProvidedAspectInstances( instance );
+
+        if ( provided.Count > 0 )
+        {
+            builder.AppendLine( "  Provides:" );
+
+            foreach ( var child in Take( provided, limit ) )
+            {
+                builder.AppendLine( CultureInfo.InvariantCulture, $"    - {child.AspectClass.ShortName} [{child.Id}] on {child.TargetDeclaration.Kind.ToString().ToLowerInvariant()} {Name( child.TargetDeclaration )}" );
+            }
+
+            AppendNote( builder, "provided aspect instances", provided, limit, RelatedLists.GetNext( "aspectInstance", "providedAspectInstances", instance ), "    " );
+        }
 
         var listed = instance.Transformations.Where( t => transformations == null || transformations.Contains( t ) ).ToList();
 
@@ -228,6 +242,18 @@ internal static class TextOutput
             _ => $"Created by a predecessor of kind {predecessor.Kind} [{predecessor.Id}]{at}{inferred}."
         };
     }
+
+    /// <summary>
+    /// Describes a declaration mapping in one sentence, whose verb says what the kind means.
+    /// </summary>
+    public static string DeclarationMapping( IntrospectionDeclarationMapping mapping )
+        => mapping.Kind switch
+        {
+            DeclarationMappingKind.Renamed => $"{mapping.Source.Id} is renamed to {mapping.Target.Id}",
+            DeclarationMappingKind.Wrapped => $"{mapping.Source.Id} is wrapped by {mapping.Target.Id}",
+            DeclarationMappingKind.CompilerGenerated => $"{mapping.Source.Id} is implemented by the compiler-generated {mapping.Target.Id}",
+            _ => $"{mapping.Source.Id} is mapped to {mapping.Target.Id}"
+        };
 
     // A documentation comment identifier without its prefix, which reads as the C# name with its parameters.
     public static string Name( IntrospectionDeclaration? declaration ) => declaration == null ? "(unknown)" : declaration.Id.Length > 2 ? declaration.Id.Substring( 2 ) : declaration.Id;

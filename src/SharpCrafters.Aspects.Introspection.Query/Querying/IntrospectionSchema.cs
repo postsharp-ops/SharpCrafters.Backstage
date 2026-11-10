@@ -75,6 +75,11 @@ internal static class IntrospectionSchema
                     Field( "targetFrameworks", ValueKind.StringList, "The target frameworks in which the aspect instance appears.", ( c, o ) => c.GetTargetFrameworks( o ) ),
                     List( "predecessors", "predecessor", "What created the aspect instance.", ( _, o ) => ((IntrospectionAspectInstance) o).Predecessors ),
                     List( "transformations", "transformation", "The transformations, in order.", ( _, o ) => ((IntrospectionAspectInstance) o).Transformations ),
+                    List(
+                        "providedAspectInstances",
+                        "aspectInstance",
+                        "The aspect instances that the aspect instance provides as an aspect provider (IAspectProvider): those whose predecessor of kind ChildAspect has it as aspectInstance.",
+                        ( c, o ) => c.GetProvidedAspectInstances( (IntrospectionAspectInstance) o ) ),
                     Field( "isSkipped", ValueKind.Boolean, "Whether the aspect instance was skipped.", ( _, o ) => ((IntrospectionAspectInstance) o).IsSkipped ),
                     Field( "tags", ValueKind.StringList, "The tags, such as premium for an aspect instance that the licence does not cover.", ( _, o ) => QueryContext.SplitTags( ((IntrospectionAspectInstance) o).Tags ) ),
                     Field( "linesOfCodeAvoided", ValueKind.Integer, "The estimated number of lines of code that the aspect instance saves.", ( _, o ) => ((IntrospectionAspectInstance) o).LinesOfCodeAvoided )
