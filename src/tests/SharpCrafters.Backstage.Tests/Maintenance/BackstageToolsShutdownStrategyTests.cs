@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Xunit;
 
 namespace SharpCrafters.Backstage.Tests.Maintenance;
@@ -36,16 +37,83 @@ public sealed class BackstageToolsShutdownStrategyTests : TestsBase
     }
 
     /// <summary>
+    /// The name of the machine-wide mutex that makes the tests of this class mutually exclusive across processes.
+    /// </summary>
+    /// <remarks>
+    /// The strategy ends every process that has the name of a tool. The test assembly targets several frameworks, and
+    /// <c>dotnet test</c> runs them in parallel, each in its own process. Without the mutex, the strategy of one test run
+    /// ends the process that the other test run started, and the other test run then finds no process.
+    /// </remarks>
+    private const string _mutexName = @"Global\SharpCrafters.Backstage.Tests.BackstageToolsShutdownStrategyTests";
+
+    private static readonly TimeSpan _mutexTimeout = TimeSpan.FromMinutes( 2 );
+
+    /// <summary>
+    /// Acquires the mutex named <see cref="_mutexName"/>. The caller releases it by disposing the result, on the same thread.
+    /// </summary>
+    private static IDisposable AcquireMutex()
+    {
+        var mutex = new Mutex( false, _mutexName );
+
+        try
+        {
+            bool acquired;
+
+            try
+            {
+                acquired = mutex.WaitOne( _mutexTimeout );
+            }
+            catch ( AbandonedMutexException )
+            {
+                // A test process exited while it owned the mutex. The current thread owns it now.
+                acquired = true;
+            }
+
+            if ( !acquired )
+            {
+                throw new TimeoutException( $"The mutex '{_mutexName}' was not acquired within {_mutexTimeout}." );
+            }
+
+            return new MutexReleaser( mutex );
+        }
+        catch
+        {
+            mutex.Dispose();
+
+            throw;
+        }
+    }
+
+    private sealed class MutexReleaser : IDisposable
+    {
+        private readonly Mutex _mutex;
+
+        public MutexReleaser( Mutex mutex )
+        {
+            this._mutex = mutex;
+        }
+
+        public void Dispose()
+        {
+            this._mutex.ReleaseMutex();
+            this._mutex.Dispose();
+        }
+    }
+
+    /// <summary>
     /// Tests that a running desktop notifier is ended and reported, even without <c>--force</c>. The <c>shutdown</c> command
     /// ends the tools before files are replaced, and a notifier that is not ended keeps them locked.
     /// </summary>
     /// <remarks>
-    /// The notifier is impersonated by a copy of <c>cmd.exe</c> named after it, which waits for input that never comes.
+    /// The notifier is impersonated by a copy of <c>cmd.exe</c> named after it, which waits for a key on a console without a
+    /// window.
     /// It runs on Windows only, where the notifier exists.
     /// </remarks>
     [PlatformFact( TestPlatforms.Windows )]
     public void ARunningNotifierIsShutDown()
     {
+        using var mutex = AcquireMutex();
+
         var profile = this.ServiceProvider.GetRequiredBackstageService<ProductProfile>();
         var directory = Path.Combine( Path.GetTempPath(), "ToolProcessesTests", Guid.NewGuid().ToString( "N" ) );
         Directory.CreateDirectory( directory );
@@ -53,8 +121,11 @@ public sealed class BackstageToolsShutdownStrategyTests : TestsBase
         var executable = Path.Combine( directory, BackstageTool.DesktopWindows.GetAssemblyName( profile ) + ".exe" );
         File.Copy( Path.Combine( Environment.SystemDirectory, "cmd.exe" ), executable );
 
-        using var process = Process.Start(
-            new ProcessStartInfo( executable, "/d /c pause" ) { UseShellExecute = false, RedirectStandardInput = true, CreateNoWindow = true } )!;
+        // The standard input is not redirected. On .NET Framework, the writer of a redirected standard input writes the
+        // preamble of the console input encoding as soon as it is created. With the UTF-8 code page, 'pause' reads it as a
+        // key, and the process exits before the strategy looks for it. Without redirection, the process gets a console of
+        // its own, without a window, and 'pause' waits on it.
+        using var process = Process.Start( new ProcessStartInfo( executable, "/d /c pause" ) { UseShellExecute = false, CreateNoWindow = true } )!;
 
         try
         {
