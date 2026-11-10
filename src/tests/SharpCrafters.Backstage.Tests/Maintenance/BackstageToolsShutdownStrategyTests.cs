@@ -7,12 +7,12 @@ using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Threading;
 using SharpCrafters.Backstage.Tools;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using Xunit;
 
 namespace SharpCrafters.Backstage.Tests.Maintenance;
@@ -37,67 +37,21 @@ public sealed class BackstageToolsShutdownStrategyTests : TestsBase
     }
 
     /// <summary>
-    /// The name of the machine-wide mutex that makes the tests of this class mutually exclusive across processes.
+    /// Acquires the machine-wide lock that makes the tests of this class mutually exclusive across processes.
     /// </summary>
     /// <remarks>
     /// The strategy ends every process that has the name of a tool. The test assembly targets several frameworks, and
-    /// <c>dotnet test</c> runs them in parallel, each in its own process. Without the mutex, the strategy of one test run
-    /// ends the process that the other test run started, and the other test run then finds no process.
+    /// <c>dotnet test</c> runs them in parallel, each in its own process. Without the lock, the strategy of one test run
+    /// ends the process that the other test run started, and the other test run then finds no process. The lock comes from
+    /// <see cref="NamedLockServiceFactory"/> and not from the service provider, because the service provider of the tests
+    /// gives a <see cref="TestNamedLockService"/>, whose locks exist in the current process only.
     /// </remarks>
-    private const string _mutexName = @"Global\SharpCrafters.Backstage.Tests.BackstageToolsShutdownStrategyTests";
-
-    private static readonly TimeSpan _mutexTimeout = TimeSpan.FromMinutes( 2 );
-
-    /// <summary>
-    /// Acquires the mutex named <see cref="_mutexName"/>. The caller releases it by disposing the result, on the same thread.
-    /// </summary>
-    private static IDisposable AcquireMutex()
+    private IDisposable AcquireToolProcessesLock()
     {
-        var mutex = new Mutex( false, _mutexName );
+        var profile = this.ServiceProvider.GetRequiredBackstageService<ProductProfile>();
 
-        try
-        {
-            bool acquired;
-
-            try
-            {
-                acquired = mutex.WaitOne( _mutexTimeout );
-            }
-            catch ( AbandonedMutexException )
-            {
-                // A test process exited while it owned the mutex. The current thread owns it now.
-                acquired = true;
-            }
-
-            if ( !acquired )
-            {
-                throw new TimeoutException( $"The mutex '{_mutexName}' was not acquired within {_mutexTimeout}." );
-            }
-
-            return new MutexReleaser( mutex );
-        }
-        catch
-        {
-            mutex.Dispose();
-
-            throw;
-        }
-    }
-
-    private sealed class MutexReleaser : IDisposable
-    {
-        private readonly Mutex _mutex;
-
-        public MutexReleaser( Mutex mutex )
-        {
-            this._mutex = mutex;
-        }
-
-        public void Dispose()
-        {
-            this._mutex.ReleaseMutex();
-            this._mutex.Dispose();
-        }
+        return NamedLockServiceFactory.Create( profile.GlobalLockNamePrefix )
+            .WithGlobalLock( nameof(BackstageToolsShutdownStrategyTests), TimeSpan.FromMinutes( 2 ) );
     }
 
     /// <summary>
@@ -112,7 +66,7 @@ public sealed class BackstageToolsShutdownStrategyTests : TestsBase
     [PlatformFact( TestPlatforms.Windows )]
     public void ARunningNotifierIsShutDown()
     {
-        using var mutex = AcquireMutex();
+        using var toolProcessesLock = this.AcquireToolProcessesLock();
 
         var profile = this.ServiceProvider.GetRequiredBackstageService<ProductProfile>();
         var directory = Path.Combine( Path.GetTempPath(), "ToolProcessesTests", Guid.NewGuid().ToString( "N" ) );
