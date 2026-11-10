@@ -20,6 +20,7 @@ internal sealed class QueryContext
     private readonly Dictionary<IntrospectionDeclaration, List<IntrospectionTransformation>> _transformationsByTarget = new();
     private readonly Dictionary<IntrospectionDeclaration, List<IntrospectionAnnotation>> _annotationsByTarget = new();
     private readonly Dictionary<IntrospectionDeclaration, List<IntrospectionDeclarationMapping>> _mappingsByDeclaration = new();
+    private readonly Dictionary<IntrospectionAspectInstance, List<IntrospectionAspectInstance>> _providedAspectInstances = new();
 
     private readonly Dictionary<IntrospectionTarget, IIntrospectionSourceLocations?> _locations = new();
 
@@ -59,7 +60,21 @@ internal sealed class QueryContext
             }
         }
 
-        static void Add<T>( Dictionary<IntrospectionDeclaration, List<T>> index, IntrospectionDeclaration key, T value )
+        // The aspect instances that an aspect provider provides, in the order of the file: those of the predecessors whose aspect
+        // instance it is (kind ChildAspect).
+        foreach ( var predecessor in model.Predecessors )
+        {
+            if ( predecessor.AspectInstance is { } providingInstance )
+            {
+                foreach ( var instance in predecessor.AspectInstances )
+                {
+                    Add( this._providedAspectInstances, providingInstance, instance );
+                }
+            }
+        }
+
+        static void Add<TKey, T>( Dictionary<TKey, List<T>> index, TKey key, T value )
+            where TKey : notnull
         {
             if ( !index.TryGetValue( key, out var list ) )
             {
@@ -135,6 +150,13 @@ internal sealed class QueryContext
 
     public IReadOnlyList<IntrospectionDeclarationMapping> GetDeclarationMappings( IntrospectionDeclaration declaration )
         => this._mappingsByDeclaration.GetValueOrDefault( declaration ) ?? [];
+
+    /// <summary>
+    /// Gets the aspect instances that an aspect instance provides as an aspect provider: the reverse of the predecessors of kind
+    /// <see cref="AspectPredecessorKind.ChildAspect"/>.
+    /// </summary>
+    public IReadOnlyList<IntrospectionAspectInstance> GetProvidedAspectInstances( IntrospectionAspectInstance instance )
+        => this._providedAspectInstances.GetValueOrDefault( instance ) ?? [];
 
     /// <summary>
     /// Gets the location of a declaration as <c>path:line:column</c>, the path relative to the working directory, or <c>null</c>.

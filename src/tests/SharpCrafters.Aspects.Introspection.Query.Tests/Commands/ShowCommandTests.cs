@@ -144,6 +144,81 @@ public sealed class ShowCommandTests : IDisposable
     }
 
     [Fact]
+    public void AnAspectProviderListsTheAspectInstancesThatItProvides()
+    {
+        // The provider on Customer provides Log on Repository.Get and on Repository.Save, in one predecessor of kind ChildAspect.
+        this.WriteSymbols(
+            """
+            <Class Class="T:[App]App.ProviderAttribute">
+              <Instance Declaration="T:[App]App.Customer" Id="1" Origin="Attribute"><Target Id="10" /></Instance>
+            </Class>
+            <Class Class="T:[App]App.LogAttribute">
+              <Instance Declaration="T:[App]App.Customer" Id="aspect:11" Origin="ChildAspect" ProvidedBy="10">
+                <Target Target="M:[App]App.Repository::Get(System.Int32)" Id="11"><JoinPoint Ordinal="1" /></Target>
+                <Target Target="M:[App]App.Repository::Save([App]App.Customer)" Id="12"><JoinPoint Ordinal="2" /></Target>
+              </Instance>
+            </Class>
+            """ );
+
+        var provider = this.RunJson( "list", "aspect-instances", "--where", "aspectClass/shortName eq 'Provider'", "--select", "id" ).GetProperty( "items" )[0].GetProperty( "id" ).GetString()!;
+
+        var (exitCode, output, error) = this.Run( "show", "aspect-instance", provider, "--format", "text" );
+
+        Assert.True( exitCode == 0, error );
+        Assert.Contains( "  Provides:", output, StringComparison.Ordinal );
+        Assert.Contains( "on method App.Repository.Get(System.Int32)", output, StringComparison.Ordinal );
+        Assert.Contains( "on method App.Repository.Save(App.Customer)", output, StringComparison.Ordinal );
+
+        var provided = this.RunJson( "show", "aspect-instance", provider ).GetProperty( "aspectInstance" ).GetProperty( "providedAspectInstances" );
+        Assert.Equal( 2, provided.GetProperty( "count" ).GetInt32() );
+
+        // The command that a truncated list names lists the same aspect instances.
+        var listed = this.RunJson( "list", "aspect-instances", "--where", $"predecessors/any(p: p/aspectInstance/id eq '{provider}')", "--select", "id" );
+        Assert.Equal(
+            provided.GetProperty( "items" ).EnumerateArray().Select( i => i.GetProperty( "id" ).GetString() ).Order(),
+            listed.GetProperty( "items" ).EnumerateArray().Select( i => i.GetProperty( "id" ).GetString() ).Order() );
+
+        // An aspect instance that provides nothing has no such section.
+        var log = this.Run( "show", "aspect-instance", provided.GetProperty( "items" )[0].GetProperty( "id" ).GetString()!, "--format", "text" ).Output;
+        Assert.DoesNotContain( "Provides:", log, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void ADeclarationMappingIsDescribedByItsKind()
+    {
+        this.WriteSymbols(
+            """
+            <Evolution Source="F:[App]App.Customer::Name" Target="F:[App]App.Customer::&lt;Name&gt;k__OriginalField" Kind="Renamed" />
+            <Evolution Source="F:[App]App.Customer::&lt;Name&gt;k__OriginalField" Target="P:[App]App.Customer::Name()" Kind="Wrapped" />
+            <Evolution Source="M:[App]App.Customer::Run()" Target="M:[App]App.Customer+&lt;Run&gt;d__0::MoveNext()" Kind="CompilerGenerated" />
+            <Evolution Source="M:[App]App.Customer::Stop()" Target="M:[App]App.Customer::Stop2()" />
+            <Class Class="T:[App]App.LogAttribute">
+              <Instance Declaration="M:[App]App.Customer::Run()"><Target><JoinPoint Ordinal="1" /></Target></Instance>
+            </Class>
+            """ );
+
+        var field = this.Run( "show", "declaration", "F:App.Customer.<Name>k__OriginalField", "--format", "text" );
+        Assert.True( field.ExitCode == 0, field.Error );
+        Assert.Contains( "  - F:App.Customer.Name is renamed to F:App.Customer.<Name>k__OriginalField", field.Output, StringComparison.Ordinal );
+        Assert.Contains( "  - F:App.Customer.<Name>k__OriginalField is wrapped by P:App.Customer.Name", field.Output, StringComparison.Ordinal );
+
+        var method = this.Run( "show", "declaration", "M:App.Customer.Run", "--format", "text" );
+        Assert.True( method.ExitCode == 0, method.Error );
+        Assert.Contains( "  - M:App.Customer.Run is implemented by the compiler-generated M:App.Customer.<Run>d__0.MoveNext", method.Output, StringComparison.Ordinal );
+
+        // A mapping whose kind the file does not give.
+        var other = this.Run( "show", "declaration", "M:App.Customer.Stop", "--format", "text" );
+        Assert.True( other.ExitCode == 0, other.Error );
+        Assert.Contains( "  - M:App.Customer.Stop is mapped to M:App.Customer.Stop2", other.Output, StringComparison.Ordinal );
+    }
+
+    // Replaces the symbol file of the project with one made of the given elements.
+    private void WriteSymbols( string elements )
+        => File.WriteAllText(
+            Path.Combine( this._project.Directory, "bin", "Debug", "net10.0", "App.pssym" ),
+            $"""<Symbols xmlns="{TestProject.SymbolsNamespace}" PostSharpVersion="2027.0.7" SchemaVersion="1">{elements}</Symbols>""" );
+
+    [Fact]
     public void AnAspectClassIsSelectedByItsShortName()
     {
         var result = this.RunJson( "show", "aspect-class", "Log" );

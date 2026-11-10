@@ -53,6 +53,7 @@ internal static class RelatedLists
             (IntrospectionAspectClass c, "aspectInstances") => List( "aspect-instances", $"aspectClass/name eq {Literal( c.FullName )}" ),
             (IntrospectionAspectInstance i, "predecessors") => List( "predecessors", $"aspectInstances/any(a: a/id eq {Literal( i.Id )})" ),
             (IntrospectionAspectInstance i, "transformations") => List( "transformations", $"aspectInstance/id eq {Literal( i.Id )}" ),
+            (IntrospectionAspectInstance i, "providedAspectInstances") => List( "aspect-instances", $"predecessors/any(p: p/aspectInstance/id eq {Literal( i.Id )})" ),
             (IntrospectionPredecessor p, "aspectInstances") => List( "aspect-instances", $"predecessors/any(p: p/id eq {Literal( p.Id )})" ),
             (IntrospectionDeclaration d, "aspectInstances") => List( "aspect-instances", $"targetDeclaration/qualifiedId eq {Literal( d.QualifiedId )}" ),
             (IntrospectionDeclaration d, "transformations") => List( "transformations", $"targetDeclaration/qualifiedId eq {Literal( d.QualifiedId )}" ),
