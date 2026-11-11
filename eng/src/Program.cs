@@ -11,15 +11,11 @@ using PostSharp.Engineering.BuildTools.ContinuousIntegration.TeamCity.Arguments;
 using PostSharp.Engineering.BuildTools.Docker;
 using BackstageDependencies = PostSharp.Engineering.BuildTools.Dependencies.Definitions.BackstageDependencies.V2027_0;
 
-// The .NET 11 SDK, which global.json names as the main SDK of the product. The version is a literal instead of a
-// member of the product family, because the .NET 11 SDK is a prerelease and PostSharp.Engineering names only released
-// feature bands. Keep it equal to the constant of the same name in the Metalama repository, which consumes the
-// packages of this repository, and move both to BackstageDependencies.V2027_0.Family.PreferredVersions.DotNetSdk once
-// the .NET 11 SDK is released.
+// The .NET 11 SDK, which global.json names as the main SDK of the product.
 //
 // The Razor source generator of 11.0.100-rc.1.26425.128 miscompiled three pages of SharpCrafters.Backstage.Worker, so
-// global.json named the .NET 10 SDK while that version was current. 11.0.100-rc.2.26504.105 compiles those pages.
-const string dotNet11SdkVersion = "11.0.100-rc.2.26504.105";
+// global.json named the .NET 10 SDK while that version was current. 11.0.100-rc.2.26504.105 compiled those pages.
+var dotNet11SdkVersion = BackstageDependencies.Family.PreferredVersions.DotNetSdk.V_11_0;
 
 // The .NET 10 SDK, which the build container installs beside the .NET 11 one, and which the Linux images of the
 // platform tests install. The version comes from the product family, so that every product of the family requests
@@ -51,7 +47,7 @@ var product = new Product( BackstageDependencies.Backstage )
 
     // Writes each TeamCity build configuration to its own file under .teamcity/buildTypes instead of into settings.kts.
     GenerateTeamCityBuildTypesInSeparateFiles = true,
-    DotNetSdkVersion = new DotNetSdkVersion( dotNet11SdkVersion ) { AllowPrerelease = true },
+    DotNetSdkVersion = new DotNetSdkVersion( dotNet11SdkVersion ),
 
     // The test projects are xunit.v3 applications of Microsoft.Testing.Platform. Build.ps1 test runs them with
     // `dotnet test` in the mode of that platform, and Build.ps1 build packs them into test archives, which the
