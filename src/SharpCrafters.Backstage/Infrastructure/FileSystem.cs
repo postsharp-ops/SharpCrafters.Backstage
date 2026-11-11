@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.FileLocks;
 using SharpCrafters.Backstage.Utilities;
@@ -44,6 +45,12 @@ namespace SharpCrafters.Backstage.Infrastructure
         /// </summary>
         private readonly ITestSynchronizationProvider? _testSynchronizationProvider;
 
+        /// <summary>
+        /// Reports the exceptions thrown by the callbacks of <see cref="WatchChanges"/>, or <see langword="null"/> when the
+        /// instance was created without a service provider.
+        /// </summary>
+        private readonly IBackgroundExceptionReporter? _exceptionReporter;
+
         private IStandardDirectories? _standardDirectories;
 
         public FileSystem() { }
@@ -55,6 +62,10 @@ namespace SharpCrafters.Backstage.Infrastructure
             // Resolved untyped, because ITestSynchronizationProvider is shared with the layers above and therefore
             // cannot derive from IBackstageService.
             this._testSynchronizationProvider = (ITestSynchronizationProvider?) serviceProvider.GetService( typeof(ITestSynchronizationProvider) );
+
+            // The reporter resolves nothing when it is constructed, so depending on it does not create a cycle with the
+            // telemetry services, which depend on the file system.
+            this._exceptionReporter = serviceProvider.GetBackstageService<IBackgroundExceptionReporter>();
         }
 
         /// <summary>
@@ -534,13 +545,36 @@ namespace SharpCrafters.Backstage.Infrastructure
         public IDisposable WatchChanges( string directory, string filter, Action<FileSystemEventArgs> callback )
         {
             var fileSystemWatcher = new FileSystemWatcher( directory, filter );
-            fileSystemWatcher.Created += ( _, args ) => callback( args );
-            fileSystemWatcher.Changed += ( _, args ) => callback( args );
-            fileSystemWatcher.Deleted += ( _, args ) => callback( args );
-            fileSystemWatcher.Renamed += ( _, args ) => callback( args );
+            fileSystemWatcher.Created += ( _, args ) => this.InvokeWatcherCallback( callback, args );
+            fileSystemWatcher.Changed += ( _, args ) => this.InvokeWatcherCallback( callback, args );
+            fileSystemWatcher.Deleted += ( _, args ) => this.InvokeWatcherCallback( callback, args );
+            fileSystemWatcher.Renamed += ( _, args ) => this.InvokeWatcherCallback( callback, args );
             fileSystemWatcher.EnableRaisingEvents = true;
 
             return fileSystemWatcher;
+        }
+
+        private void InvokeWatcherCallback( Action<FileSystemEventArgs> callback, FileSystemEventArgs args )
+        {
+            // The events of FileSystemWatcher are raised on a thread pool thread, where an exception would terminate
+            // the process. See metalama/Metalama#2317.
+            try
+            {
+                callback( args );
+            }
+            catch ( Exception e )
+            {
+                var boundary = $"{nameof(FileSystemWatcher)} callback for '{args.FullPath}'";
+
+                if ( this._exceptionReporter != null )
+                {
+                    this._exceptionReporter.Report( e, null, boundary );
+                }
+                else
+                {
+                    System.Diagnostics.Trace.TraceError( $"Metalama: unhandled exception in the {boundary}: {e}" );
+                }
+            }
         }
     }
 }

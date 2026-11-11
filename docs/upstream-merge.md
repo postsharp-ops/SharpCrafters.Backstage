@@ -9,7 +9,7 @@ merged, and describes the procedure.
 
 | Metalama commit | Commit date | Merged into `develop/2026.1` of this repository |
 |---|---|---|
-| `159c403fe7bebdbb6174e8f92cfe1e1b2dfe223c` | 2026-10-01T12:29:20-07:00 | 2026-10-01 |
+| `1251b4af073558cf32d4e1376e085dfadadd9eaa` | 2026-11-10T03:51:31-08:00 | 2026-11-11 |
 
 The next merge starts from this commit. At each merge, replace this row and move the previous one to the table of
 earlier merged points.
@@ -18,6 +18,7 @@ earlier merged points.
 
 | Metalama commit | Commit date | Merged into `develop/2026.1` of this repository |
 |---|---|---|
+| `159c403fe7bebdbb6174e8f92cfe1e1b2dfe223c` | 2026-10-01T12:29:20-07:00 | 2026-10-01 |
 | `b58b2c1748b65f91845df71be4324fb59ed83863` | 2026-09-04T13:42:27+02:00 | Initial mirror (`mirror/metalama-2026.1`), produced by `git filter-repo` |
 
 ## Branches

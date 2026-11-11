@@ -103,14 +103,23 @@ internal sealed class MiniDumper : IMiniDumper, IDisposable
 
         // The latest dumper is asked first, because it has read the latest configuration. One dump is enough for one
         // exception, so the first dumper that accepts the exception writes it and the others are not asked.
-        for ( var i = dumpers.Length - 1; i >= 0; i-- )
+        // An exception thrown here would replace the exception being thrown in whatever code raised it, and reporting
+        // it would raise this event again. See metalama/Metalama#2317.
+        try
         {
-            if ( dumpers[i].TryGetTarget( out var dumper ) && dumper.MustWrite( e.Exception ) )
+            for ( var i = dumpers.Length - 1; i >= 0; i-- )
             {
-                dumper.Write();
+                if ( dumpers[i].TryGetTarget( out var dumper ) && dumper.MustWrite( e.Exception ) )
+                {
+                    dumper.Write();
 
-                return;
+                    return;
+                }
             }
+        }
+        catch ( Exception exception )
+        {
+            System.Diagnostics.Trace.TraceError( $"Metalama: cannot write a crash dump: {exception.Message}" );
         }
     }
 

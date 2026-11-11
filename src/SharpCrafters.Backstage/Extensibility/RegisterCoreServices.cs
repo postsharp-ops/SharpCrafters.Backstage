@@ -60,6 +60,9 @@ public static class RegisterCoreServices
         serviceProviderBuilder
             .AddSingleton( options.ProductProfile )
             .AddSingleton<INamedLockServiceEnvironment>( options.ProductProfile )
+
+            // Registered first because the most basic services depend on it. It resolves nothing when it is constructed.
+            .AddSingleton<IBackgroundExceptionReporter>( serviceProvider => new BackgroundExceptionReporter( serviceProvider ) )
             .AddSingleton( _ => new EarlyLoggerFactory() )
             .AddSingleton<IEventDispatcher>( serviceProvider => new EventDispatcher( serviceProvider ) )
             .AddSingleton( _ => new RandomNumberGenerator() )
@@ -70,7 +73,8 @@ public static class RegisterCoreServices
             .AddSingleton<IRecoverableExceptionService>( serviceProvider => new RecoverableExceptionService( serviceProvider ) )
             .AddSingleton<IApplicationInfoProvider>( _ => applicationInfoProvider )
             .AddSingleton<IUserDeviceDetectionService>( serviceProvider => new WindowsUserDeviceDetectionService( serviceProvider ) )
-            .AddSingleton<IDateTimeProvider>( _ => new CurrentDateTimeProvider() )
+            .AddSingleton<IDateTimeProvider>(
+                serviceProvider => new CurrentDateTimeProvider( serviceProvider.GetRequiredBackstageService<IBackgroundExceptionReporter>() ) )
             .AddSingleton<IFileSystem>( serviceProvider => new FileSystem( serviceProvider ) )
             .AddSingleton<IStandardDirectories>( serviceProvider => new StandardDirectories( serviceProvider ) )
             .AddSingleton<IProcessExecutor>( _ => new ProcessExecutor() )
