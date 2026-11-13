@@ -24,4 +24,10 @@ public readonly struct V2SourceLocation
     /// <see cref="Line"/>.
     /// </summary>
     public int? Column { get; init; }
+
+    /// <summary>
+    /// Gets the last line of the declaration that starts at this location (<c>endLine</c>), or <c>null</c>. A reader uses it to find
+    /// the declaration that contains a line. A writer writes it only with <see cref="Line"/>.
+    /// </summary>
+    public int? EndLine { get; init; }
 }

@@ -77,7 +77,7 @@ public sealed class IntrospectionV2LoaderTests
         var add = model.AspectInstances[0];
         Assert.Equal( "[Sample]M:Sample.Calculator.Add(System.Int32,System.Int32)", add.TargetDeclaration.QualifiedId );
         Assert.False( add.IsSkipped );
-        Assert.Equal( new IntrospectionSourceLocation( "Calculator.cs", 8, 5 ), add.TargetDeclaration.Location );
+        Assert.Equal( new IntrospectionSourceLocation( "Calculator.cs", 8, 5 ) { EndLine = 8 }, add.TargetDeclaration.Location );
 
         Assert.Collection(
             add.Transformations,
@@ -324,7 +324,7 @@ public sealed class IntrospectionV2LoaderTests
         => model.AspectClasses.Select( c => $"{c.FullName} {c.DisplayName} {c.Description} {string.Join( ",", c.Layers )}" )
             .Concat(
                 model.AspectInstances.Select(
-                    i => $"{i.Id} {i.IsSkipped} {i.TargetDeclaration.Location} "
+                    i => $"{i.Id} {i.IsSkipped} {i.TargetDeclaration.Location} {i.TargetDeclaration.Location?.EndLine} "
                          + string.Join( ";", i.Predecessors.Select( p => $"{p.StructuralKey} {p.Degree} {p.File}({p.Line},{p.Column})" ) ) + " "
                          + string.Join( ";", i.Transformations.Select( t => $"{t.Kind} {t.AdviceKind} {t.Layer} {t.Order} {t.IntroducedDeclaration?.QualifiedId}" ) ) + " "
                          + string.Join( ";", i.Diagnostics.Select( d => $"{d.Id} {d.Severity} {d.Message} {d.Declaration?.QualifiedId} {d.File}({d.Line},{d.Column})" ) ) ) )

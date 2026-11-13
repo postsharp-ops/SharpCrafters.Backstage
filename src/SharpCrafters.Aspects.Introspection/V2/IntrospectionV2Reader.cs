@@ -866,11 +866,17 @@ public sealed class IntrospectionV2Reader : IDisposable
         string? file = null;
         int? line = null;
         int? column = null;
+        int? endLine = null;
 
         while ( this.NextProperty( ref reader, null, out var property ) )
         {
             switch ( property )
             {
+                case V2Property.EndLine:
+                    endLine = this.GetInt32( ref reader );
+
+                    break;
+
                 case V2Property.File:
                     file = this.GetString( ref reader );
 
@@ -898,7 +904,7 @@ public sealed class IntrospectionV2Reader : IDisposable
             throw this.CreateException( "A location has no 'file' property.", start );
         }
 
-        return new V2SourceLocation { File = file!, Line = line, Column = line == null ? null : column };
+        return new V2SourceLocation { File = file!, Line = line, Column = line == null ? null : column, EndLine = line == null ? null : endLine };
     }
 
     // Moves to the value of the next property of the current object. Returns false at the end of the object, and then marks the
@@ -1143,7 +1149,8 @@ public sealed class IntrospectionV2Reader : IDisposable
         (V2Names.Message, V2Property.Message),
         (V2Names.File, V2Property.File),
         (V2Names.Line, V2Property.Line),
-        (V2Names.Column, V2Property.Column)
+        (V2Names.Column, V2Property.Column),
+        (V2Names.EndLine, V2Property.EndLine)
     ];
 
     private enum V2Property
@@ -1181,7 +1188,8 @@ public sealed class IntrospectionV2Reader : IDisposable
         Message,
         File,
         Line,
-        Column
+        Column,
+        EndLine
     }
 
     private enum FrameKind

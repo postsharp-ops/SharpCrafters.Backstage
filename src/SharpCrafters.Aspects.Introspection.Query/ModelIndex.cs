@@ -29,7 +29,7 @@ namespace SharpCrafters.Aspects.Introspection.Query;
 internal static class ModelIndex
 {
     // Changed whenever the format or what the loader builds changes.
-    private const int _formatVersion = 4;
+    private const int _formatVersion = 5;
     private const int _magic = 0x58494353; // "SCIX"
 
     /// <summary>
@@ -140,6 +140,7 @@ internal static class ModelIndex
             w.Write( S( d.Location?.File ) );
             w.Write( d.Location?.Line ?? int.MinValue );
             w.Write( d.Location?.Column ?? int.MinValue );
+            w.Write( d.Location?.EndLine ?? int.MinValue );
         }
 
         foreach ( var d in model.Declarations )
@@ -342,10 +343,11 @@ internal static class ModelIndex
             var locationFile = S();
             var locationLine = N();
             var locationColumn = N();
+            var locationEndLine = N();
 
             if ( locationFile != null )
             {
-                declaration.Location = new IntrospectionSourceLocation( locationFile, locationLine ?? 1, locationColumn ?? 1 );
+                declaration.Location = new IntrospectionSourceLocation( locationFile, locationLine ?? 1, locationColumn ?? 1 ) { EndLine = locationEndLine };
             }
 
             declarations[i] = declaration;

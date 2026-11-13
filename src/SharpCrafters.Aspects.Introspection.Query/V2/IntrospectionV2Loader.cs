@@ -158,7 +158,7 @@ public static class IntrospectionV2Loader
 
             if ( data.Location is { } location && location.Line != null )
             {
-                target.Location ??= new IntrospectionSourceLocation( location.File, location.Line.Value, location.Column ?? 1 );
+                target.Location ??= new IntrospectionSourceLocation( location.File, location.Line.Value, location.Column ?? 1 ) { EndLine = location.EndLine };
             }
 
             var instance = new IntrospectionAspectInstance( aspectClass, target ) { IsSkipped = data.IsSkipped, FileId = data.Id.ToString( System.Globalization.CultureInfo.InvariantCulture ) };

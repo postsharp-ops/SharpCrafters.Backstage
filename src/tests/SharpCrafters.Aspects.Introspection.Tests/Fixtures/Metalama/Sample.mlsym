@@ -24,7 +24,8 @@
           "location": {
             "file": "Calculator.cs",
             "line": 8,
-            "column": 5
+            "column": 5,
+            "endLine": 8
           },
           "predecessors": [
             {

@@ -68,4 +68,5 @@ internal static class V2Names
     public static readonly JsonEncodedText File = JsonEncodedText.Encode( "file" );
     public static readonly JsonEncodedText Line = JsonEncodedText.Encode( "line" );
     public static readonly JsonEncodedText Column = JsonEncodedText.Encode( "column" );
+    public static readonly JsonEncodedText EndLine = JsonEncodedText.Encode( "endLine" );
 }

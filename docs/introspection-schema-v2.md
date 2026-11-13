@@ -135,6 +135,7 @@ such as a fabric, is repeated in each of them. A reader treats the repeated pred
 | `file` | string | yes | The path of the source file. |
 | `line` | integer | no | The line, from 1. |
 | `column` | integer | no | The column, from 1. It is written only with `line`. |
+| `endLine` | integer | no | The last line of the declaration that starts at this location, for the location of a target declaration. A reader uses it to find the declarations that contain a line. It is written only with `line`. |
 
 ## Identifiers
 

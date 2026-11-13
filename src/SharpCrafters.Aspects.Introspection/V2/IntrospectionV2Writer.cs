@@ -318,7 +318,8 @@ public sealed class IntrospectionV2Writer : IDisposable
         }
     }
 
-    // The line and the column are a position in the file, so they are written only with it.
+    // The line and the column are a position in the file, so they are written only with it. The end line is written only with
+    // the line.
     private void WriteLocation( V2SourceLocation? location )
     {
         if ( location == null )
@@ -343,6 +344,11 @@ public sealed class IntrospectionV2Writer : IDisposable
             if ( value.Column != null )
             {
                 this._writer.WriteNumber( V2Names.Column, value.Column.Value );
+            }
+
+            if ( value.EndLine != null )
+            {
+                this._writer.WriteNumber( V2Names.EndLine, value.EndLine.Value );
             }
         }
 

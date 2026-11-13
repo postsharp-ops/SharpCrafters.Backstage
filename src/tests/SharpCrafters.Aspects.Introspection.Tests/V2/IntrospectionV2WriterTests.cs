@@ -154,8 +154,35 @@ public sealed class IntrospectionV2WriterTests
             options: _compact );
 
         // The column is written only with the line.
+        Assert.DoesNotContain( "endLine", json, StringComparison.Ordinal );
         Assert.Contains( "\"location\":{\"file\":\"C.cs\"},", json, StringComparison.Ordinal );
         Assert.Contains( "\"location\":{\"file\":\"C.cs\",\"line\":4,\"column\":5}", json, StringComparison.Ordinal );
+    }
+
+    [Fact]
+    public void TheEndLineIsWrittenAfterTheColumnAndReadBack()
+    {
+        var json = V2TestHelper.Write(
+            writer =>
+            {
+                writer.WriteStartAspectClass( new V2AspectClassData { AspectClass = writer.Declare( "T:A" ) } );
+
+                writer.WriteStartAspectInstance(
+                    new V2AspectInstanceData
+                    {
+                        Id = 1,
+                        TargetDeclaration = writer.Declare( "M:C.M" ),
+                        Location = new V2SourceLocation { File = "C.cs", Line = 4, Column = 5, EndLine = 9 }
+                    } );
+            },
+            options: _compact );
+
+        Assert.Contains( "\"location\":{\"file\":\"C.cs\",\"line\":4,\"column\":5,\"endLine\":9}", json, StringComparison.Ordinal );
+
+        using var reader = V2TestHelper.CreateReader( json );
+        reader.Read();
+        reader.Read();
+        Assert.Equal( 9, reader.AspectInstance.Location?.EndLine );
     }
 
     [Fact]
