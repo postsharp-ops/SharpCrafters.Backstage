@@ -185,9 +185,10 @@ internal sealed class V2DeclarationId
 
             case 'M' or 'P' or 'F' or 'E':
                 {
-                    // The parameters, which contain periods, follow the name of the member.
-                    var parenthesis = body.IndexOf( '(', StringComparison.Ordinal );
-                    var head = parenthesis < 0 ? body : body.Substring( 0, parenthesis );
+                    // The parameters, which contain periods, follow the name of the member, and the return type that Metalama writes
+                    // after ~ follows the parameters or, for a member without parameters, the name.
+                    var end = body.IndexOfAny( ['(', '~'] );
+                    var head = end < 0 ? body : body.Substring( 0, end );
                     var lastDot = head.LastIndexOf( '.' );
 
                     if ( lastDot < 0 )

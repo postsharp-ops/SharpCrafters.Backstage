@@ -40,8 +40,9 @@ internal static class ModelMerger
         var aspectClasses = new Dictionary<string, IntrospectionAspectClass>( StringComparer.Ordinal );
         var aspectInstances = new Dictionary<string, IntrospectionAspectInstance>( StringComparer.Ordinal );
         var predecessors = new Dictionary<string, IntrospectionPredecessor>( StringComparer.Ordinal );
-        var transformations = new HashSet<(string, string, string?, string?, string?, string?, string?)>();
-        var diagnostics = new HashSet<(string, string, string?, string?, int?, int?)>();
+        // The identity of a transformation and of a diagnostic: all the fields that the files give them.
+        var transformations = new Dictionary<(string, string, string?, string?, string?, string?, string?, string?, string?), IntrospectionTransformation>();
+        var diagnostics = new Dictionary<(string, string, string, string?, string?, string?, int?, int?), IntrospectionDiagnostic>();
         var annotations = new HashSet<(string, string?, string?, string?)>();
         var mappings = new HashSet<(string, string)>();
 
@@ -143,11 +144,12 @@ internal static class ModelMerger
                 foreach ( var transformation in instance.Transformations )
                 {
                     var key = (instance.StructuralKey, transformation.TargetDeclaration.QualifiedId, transformation.AdviceDeclaration?.QualifiedId, transformation.Semantic,
-                               transformation.Description, transformation.Kind, transformation.IntroducedDeclaration?.QualifiedId);
+                               transformation.Description, transformation.Kind, transformation.IntroducedDeclaration?.QualifiedId, transformation.AdviceKind,
+                               transformation.Layer);
 
-                    if ( transformations.Add( key ) )
+                    if ( !transformations.TryGetValue( key, out var copy ) )
                     {
-                        var copy = new IntrospectionTransformation( canonical, Map( transformation.TargetDeclaration ) )
+                        copy = new IntrospectionTransformation( canonical, Map( transformation.TargetDeclaration ) )
                         {
                             AdviceDeclaration = MapOptional( transformation.AdviceDeclaration ),
                             Description = transformation.Description,
@@ -160,26 +162,23 @@ internal static class ModelMerger
                             IntroducedDeclaration = MapOptional( transformation.IntroducedDeclaration )
                         };
 
+                        transformations.Add( key, copy );
                         canonical.TransformationsList.Add( copy );
                         merged.TransformationsList.Add( copy );
-                        provenance.Add( copy, target );
                     }
-                    else
-                    {
-                        provenance.Add(
-                            canonical.TransformationsList.First(
-                                t => t.TargetDeclaration.QualifiedId == key.Item2 && t.AdviceDeclaration?.QualifiedId == key.Item3 && t.Semantic == key.Semantic
-                                     && t.Description == key.Description && t.Kind == key.Kind && t.IntroducedDeclaration?.QualifiedId == key.Item7 ),
-                            target );
-                    }
+
+                    provenance.Add( copy, target );
                 }
 
                 // A diagnostic that several target frameworks report is kept once.
                 foreach ( var diagnostic in instance.Diagnostics )
                 {
-                    if ( diagnostics.Add( (instance.StructuralKey, diagnostic.Id, diagnostic.Message, diagnostic.File, diagnostic.Line, diagnostic.Column) ) )
+                    var key = (instance.StructuralKey, diagnostic.Id, diagnostic.Severity, diagnostic.Message, diagnostic.Declaration?.QualifiedId, diagnostic.File,
+                               diagnostic.Line, diagnostic.Column);
+
+                    if ( !diagnostics.TryGetValue( key, out var copy ) )
                     {
-                        var copy = new IntrospectionDiagnostic( canonical, diagnostic.Id, diagnostic.Severity )
+                        copy = new IntrospectionDiagnostic( canonical, diagnostic.Id, diagnostic.Severity )
                         {
                             Message = diagnostic.Message,
                             Declaration = MapOptional( diagnostic.Declaration ),
@@ -188,10 +187,13 @@ internal static class ModelMerger
                             Column = diagnostic.Column
                         };
 
+                        diagnostics.Add( key, copy );
                         canonical.DiagnosticsList.Add( copy );
                         merged.DiagnosticsList.Add( copy );
-                        provenance.Add( copy, target );
                     }
+
+                    // The target frameworks of a diagnostic are all those that report it.
+                    provenance.Add( copy, target );
                 }
             }
         }

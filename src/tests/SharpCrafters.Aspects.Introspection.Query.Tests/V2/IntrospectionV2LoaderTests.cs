@@ -219,6 +219,36 @@ public sealed class IntrospectionV2LoaderTests
     }
 
     [Fact]
+    public void AMemberWithoutParametersEndsBeforeItsReturnType()
+    {
+        var model = Load(
+            """
+            { "id": "T:App.LogAttribute", "aspectInstances": [
+                { "id": 1, "targetDeclaration": "P:App.C.Value", "transformations": [ { "kind": "OverrideMember", "targetDeclaration": "M:App.C.get_Value~System.Int32" } ] } ] }
+            """ );
+
+        var getter = model.GetDeclaration( "[App]M:App.C.get_Value~System.Int32" )!;
+        Assert.Equal( "get_Value", getter.Name );
+        Assert.Equal( "[App]T:App.C", getter.DeclaringType?.QualifiedId );
+        Assert.Same( getter, Assert.Single( model.AspectInstances[0].TargetDeclaration.Accessors ) );
+        Assert.Null( model.GetDeclaration( "[App]T:App.C.get_Value~System" ) );
+    }
+
+    [Fact]
+    public void TheAttributesOfTwoAspectsOnOneDeclarationAreTwoPredecessors()
+    {
+        var model = Load(
+            """
+            { "id": "T:App.LogAttribute", "aspectInstances": [ { "id": 1, "targetDeclaration": "M:App.C.M", "predecessors": [ { "kind": "Attribute", "declaration": "M:App.C.M" } ] } ] },
+            { "id": "T:App.CacheAttribute", "aspectInstances": [ { "id": 2, "targetDeclaration": "M:App.C.M", "predecessors": [ { "kind": "Attribute", "declaration": "M:App.C.M" } ] } ] }
+            """ );
+
+        Assert.Equal( 2, model.Predecessors.Count );
+        Assert.Equal( "App.LogAttribute", Assert.Single( model.AspectInstances[0].Predecessors ).AttributeClass?.FullName );
+        Assert.Equal( "App.CacheAttribute", Assert.Single( model.AspectInstances[1].Predecessors ).AttributeClass?.FullName );
+    }
+
+    [Fact]
     public void AnInvalidIdentifierThrows()
         => Assert.Throws<FormatException>( () => Load( """{ "id": "X:App.A" }""" ) );
 
@@ -250,6 +280,29 @@ public sealed class IntrospectionV2LoaderTests
         var (merged, _) = ModelMerger.Merge( [(CreateTarget( "net10.0" ), LoadSample()), (CreateTarget( "net48" ), LoadSample())] );
 
         Assert.Equal( Describe( LoadSample() ), Describe( merged ) );
+    }
+
+    [Fact]
+    public void TheMergeKeepsTheTransformationsOfTwoLayersAndTheFrameworksOfADiagnostic()
+    {
+        const string aspectClasses = """
+                                     { "id": "T:App.LogAttribute", "aspectInstances": [ { "id": 1, "targetDeclaration": "M:App.C.M",
+                                         "transformations": [
+                                             { "kind": "OverrideMember", "targetDeclaration": "M:App.C.M" },
+                                             { "kind": "OverrideMember", "layer": "Second", "targetDeclaration": "M:App.C.M" } ],
+                                         "diagnostics": [
+                                             { "id": "X1", "severity": "Warning", "message": "M", "declaration": "M:App.C.M" },
+                                             { "id": "X1", "severity": "Warning", "message": "M", "declaration": "T:App.C" } ] } ] }
+                                     """;
+
+        var net10 = CreateTarget( "net10.0" );
+        var net48 = CreateTarget( "net48" );
+        var (merged, provenance) = ModelMerger.Merge( [(net10, Load( aspectClasses )), (net48, Load( aspectClasses ))] );
+
+        Assert.Equal( [null, "Second"], merged.Transformations.Select( t => t.Layer ) );
+        Assert.Equal( 2, merged.Diagnostics.Count );
+        Assert.All( merged.Diagnostics, d => Assert.Equal( [net10, net48], provenance.GetTargets( d ) ) );
+        Assert.All( merged.Transformations, t => Assert.Equal( [net10, net48], provenance.GetTargets( t ) ) );
     }
 
     private static IntrospectionTarget CreateTarget( string framework )

@@ -156,6 +156,19 @@ public sealed class IntrospectionV2ReaderTests
         => Assert.Throws<IntrospectionFormatException>( () => V2TestHelper.CreateReader( """{ "schemaVersion": 2 }""" ) );
 
     [Fact]
+    public void AnAspectClassesPropertyThatIsNotAnArrayIsRejected()
+        => Assert.Throws<IntrospectionFormatException>(
+            () => V2TestHelper.CreateReader( """{ "schemaVersion": 2, "product": "M", "aspectClasses": { "id": "T:A" } }""" ) );
+
+    [Fact]
+    public void ANullAspectClassesPropertyIsAnEmptyList()
+    {
+        using var reader = V2TestHelper.CreateReader( """{ "schemaVersion": 2, "product": "M", "aspectClasses": null }""" );
+
+        Assert.False( reader.Read() );
+    }
+
+    [Fact]
     public void AFileThatIsNotAnObjectIsRejected()
         => Assert.Throws<IntrospectionFormatException>( () => V2TestHelper.CreateReader( "[]" ) );
 

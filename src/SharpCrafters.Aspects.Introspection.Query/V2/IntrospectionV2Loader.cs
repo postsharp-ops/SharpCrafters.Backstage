@@ -217,8 +217,13 @@ public static class IntrospectionV2Loader
             var attributeClassDeclaration = this.GetDeclaration( data.AttributeClass );
             var location = data.Location;
 
-            var key = (kind, declaration?.QualifiedId, attributeClassDeclaration?.QualifiedId, data.AspectInstance, location?.File, location?.Line,
-                       location?.Column);
+            // The attribute class of an attribute predecessor is that of the aspect when the file does not give it, so that two aspects
+            // whose attributes are on the same declaration do not share a predecessor.
+            var effectiveAttributeClass = kind is AspectPredecessorKind.Attribute or AspectPredecessorKind.Inherited
+                ? attributeClassDeclaration?.QualifiedId ?? instance.AspectClass.Declaration.QualifiedId
+                : attributeClassDeclaration?.QualifiedId;
+
+            var key = (kind, declaration?.QualifiedId, effectiveAttributeClass, data.AspectInstance, location?.File, location?.Line, location?.Column);
 
             if ( !this._predecessors.TryGetValue( key, out var predecessor ) )
             {

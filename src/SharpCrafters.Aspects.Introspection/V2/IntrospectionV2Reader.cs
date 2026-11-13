@@ -294,11 +294,15 @@ public sealed class IntrospectionV2Reader : IDisposable
             owner.GetPropertyName( ref reader, out var known );
             owner.Next( ref reader );
 
-            if ( known == V2Property.AspectClasses && reader.TokenType == JsonTokenType.StartArray )
+            if ( known == V2Property.AspectClasses )
             {
-                owner._frames.Push( new Frame( FrameKind.AspectClasses ) );
+                // TryEnterList rejects a value that is not an array or null.
+                if ( owner.TryEnterList( ref reader, FrameKind.Root, known ) )
+                {
+                    break;
+                }
 
-                break;
+                continue;
             }
 
             switch ( known )
