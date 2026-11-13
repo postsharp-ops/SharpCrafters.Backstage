@@ -8,7 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Xml;
 
-namespace SharpCrafters.Aspects.Introspection;
+namespace SharpCrafters.Aspects.Introspection.V1;
 
 /// <summary>
 /// Reads a weaving symbol file of version 1, the <c>.pssym</c> file of PostSharp, forward only, as <see cref="XmlReader"/> does:

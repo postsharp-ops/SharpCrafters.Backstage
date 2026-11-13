@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Aspects.Introspection.Query.Projects;
+using SharpCrafters.Aspects.Introspection.Query.V1;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;

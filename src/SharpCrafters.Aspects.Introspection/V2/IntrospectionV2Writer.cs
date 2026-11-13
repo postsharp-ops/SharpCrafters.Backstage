@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-namespace SharpCrafters.Aspects.Introspection;
+namespace SharpCrafters.Aspects.Introspection.V2;
 
 /// <summary>
 /// Writes a file of schema version 2, the <c>.mlsym</c> file of Metalama, as one JSON document. The writer is forward only: each

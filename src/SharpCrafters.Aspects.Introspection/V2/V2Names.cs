@@ -4,7 +4,7 @@
 
 using System.Text.Json;
 
-namespace SharpCrafters.Aspects.Introspection;
+namespace SharpCrafters.Aspects.Introspection.V2;
 
 /// <summary>
 /// The property names of schema version 2, the JSON format of the <c>.mlsym</c> file of Metalama.

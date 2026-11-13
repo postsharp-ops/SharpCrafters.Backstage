@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Xml;
 
-namespace SharpCrafters.Aspects.Introspection;
+namespace SharpCrafters.Aspects.Introspection.V1;
 
 /// <summary>
 /// Writes a weaving symbol file of version 1, the <c>.pssym</c> file of PostSharp, forward only: each element is written as

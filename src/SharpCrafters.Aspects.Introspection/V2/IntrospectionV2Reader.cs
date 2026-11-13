@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
-namespace SharpCrafters.Aspects.Introspection;
+namespace SharpCrafters.Aspects.Introspection.V2;
 
 /// <summary>
 /// Reads a file of schema version 2, the <c>.mlsym</c> file of Metalama, forward only. Each call to <see cref="Read"/> moves to

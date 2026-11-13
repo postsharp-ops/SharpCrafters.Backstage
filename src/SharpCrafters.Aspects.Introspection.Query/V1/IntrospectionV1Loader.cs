@@ -2,13 +2,13 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
-using SharpCrafters.Aspects.Introspection.Query.V1;
+using SharpCrafters.Aspects.Introspection.V1;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace SharpCrafters.Aspects.Introspection.Query;
+namespace SharpCrafters.Aspects.Introspection.Query.V1;
 
 /// <summary>
 /// Loads a weaving symbol file of version 1, the <c>.pssym</c> file of PostSharp, into the common model
