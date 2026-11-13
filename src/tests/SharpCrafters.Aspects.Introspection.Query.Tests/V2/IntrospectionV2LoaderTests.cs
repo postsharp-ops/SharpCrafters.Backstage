@@ -18,8 +18,14 @@ namespace SharpCrafters.Aspects.Introspection.Query.Tests.V2;
 /// </summary>
 public sealed class IntrospectionV2LoaderTests
 {
+    /// <summary>
+    /// Gets the path of the fixture <c>Sample.mlsym</c>, linked from the tests of the reader.
+    /// </summary>
     public static string SampleFile => Path.Combine( AppContext.BaseDirectory, "Fixtures", "Metalama", "Sample.mlsym" );
 
+    /// <summary>
+    /// Loads the fixture <c>Sample.mlsym</c>.
+    /// </summary>
     private static IntrospectionModel LoadSample()
     {
         using var stream = File.OpenRead( SampleFile );
@@ -27,11 +33,17 @@ public sealed class IntrospectionV2LoaderTests
         return IntrospectionV2Loader.Load( stream );
     }
 
+    /// <summary>
+    /// Loads a file of the assembly <c>App</c> whose aspect classes are given as JSON.
+    /// </summary>
     internal static IntrospectionModel Load( string aspectClasses, string? assembly = null )
         => IntrospectionV2Loader.Load(
             new MemoryStream( Encoding.UTF8.GetBytes( $$"""{ "schemaVersion": 2, "product": "Metalama", "assembly": "App", "aspectClasses": [ {{aspectClasses}} ] }""" ) ),
             assembly );
 
+    /// <summary>
+    /// Checks that the model takes its assembly, schema version and product version from the header of the file.
+    /// </summary>
     [Fact]
     public void TheHeaderGivesTheAssemblyAndTheVersion()
     {
@@ -42,6 +54,9 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( "2027.0.8", model.ProductVersion );
     }
 
+    /// <summary>
+    /// Checks that the assembly given by the caller replaces the one of the file.
+    /// </summary>
     [Fact]
     public void TheAssemblyOfTheCallerWins()
     {
@@ -50,6 +65,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( "Other", IntrospectionV2Loader.Load( stream, "Other" ).Assembly );
     }
 
+    /// <summary>
+    /// Checks that the aspect classes have their names, descriptions and aspect layers, and that an aspect class of another
+    /// assembly is qualified with it.
+    /// </summary>
     [Fact]
     public void TheAspectClassesHaveTheirNamesDescriptionsAndLayers()
     {
@@ -67,6 +86,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( "[Sample.Aspects]T:Sample.Aspects.NotifyPropertyChangedAttribute", notify.Declaration.QualifiedId );
     }
 
+    /// <summary>
+    /// Checks that the aspect instances have their target declarations and locations, their transformations with the fields of
+    /// Metalama, and their diagnostics.
+    /// </summary>
     [Fact]
     public void TheAspectInstancesHaveTheirTransformationsAndDiagnostics()
     {
@@ -111,6 +134,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( 4, model.Transformations.Count );
     }
 
+    /// <summary>
+    /// Checks the predecessors of each kind of the fixture: attribute, fabric, inherited attribute, and child aspect, which
+    /// refers to its parent aspect instance.
+    /// </summary>
     [Fact]
     public void ThePredecessorsHaveTheirKindsAndReferences()
     {
@@ -141,6 +168,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.StartsWith( "aspect:", child.StructuralKey, StringComparison.Ordinal );
     }
 
+    /// <summary>
+    /// Checks that a predecessor repeated in several aspect instances, such as a fabric, becomes one predecessor that lists all
+    /// of them.
+    /// </summary>
     [Fact]
     public void EqualPredecessorsBecomeOne()
     {
@@ -156,6 +187,9 @@ public sealed class IntrospectionV2LoaderTests
         Assert.All( model.AspectInstances, i => Assert.Same( fabric, Assert.Single( i.Predecessors ) ) );
     }
 
+    /// <summary>
+    /// Checks that a predecessor that refers to an aspect instance written later in the file is resolved.
+    /// </summary>
     [Fact]
     public void AReferenceToALaterAspectInstanceIsResolved()
     {
@@ -170,6 +204,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Same( model.AspectInstances[1], required.AspectInstance );
     }
 
+    /// <summary>
+    /// Checks that the identifiers are parsed into the kind, name, namespace, declaring type and containing declaration of each
+    /// declaration, including parameters, return parameters, assemblies and declarations of other assemblies.
+    /// </summary>
     [Fact]
     public void TheDeclarationsAreParsed()
     {
@@ -218,6 +256,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( (IntrospectionDeclarationKind.Event, "Lib", "[Lib]T:Lib.Base"), (changed.Kind, changed.Assembly, changed.DeclaringType?.QualifiedId) );
     }
 
+    /// <summary>
+    /// Checks that the name of a member without parameters ends before the return type that Metalama writes after <c>~</c>, so
+    /// that a getter is linked to its property.
+    /// </summary>
     [Fact]
     public void AMemberWithoutParametersEndsBeforeItsReturnType()
     {
@@ -234,6 +276,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Null( model.GetDeclaration( "[App]T:App.C.get_Value~System" ) );
     }
 
+    /// <summary>
+    /// Checks that the attributes of two aspects on one declaration, without an attribute class in the file, are two
+    /// predecessors, each with the class of its aspect.
+    /// </summary>
     [Fact]
     public void TheAttributesOfTwoAspectsOnOneDeclarationAreTwoPredecessors()
     {
@@ -248,10 +294,16 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( "App.CacheAttribute", Assert.Single( model.AspectInstances[1].Predecessors ).AttributeClass?.FullName );
     }
 
+    /// <summary>
+    /// Checks that an identifier with an unknown prefix is rejected.
+    /// </summary>
     [Fact]
     public void AnInvalidIdentifierThrows()
         => Assert.Throws<FormatException>( () => Load( """{ "id": "X:App.A" }""" ) );
 
+    /// <summary>
+    /// Checks that two loads of one file give the same identifiers, and that the identifiers of the aspect instances are unique.
+    /// </summary>
     [Fact]
     public void TheIdentifiersAreStableAcrossLoads()
     {
@@ -263,6 +315,9 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( first.AspectInstances.Count, first.AspectInstances.Select( i => i.Id ).Distinct().Count() );
     }
 
+    /// <summary>
+    /// Checks that the index of a model keeps the fields that only version 2 records.
+    /// </summary>
     [Fact]
     public void TheIndexKeepsTheFieldsOfVersion2()
     {
@@ -274,6 +329,9 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( Describe( model ), Describe( read ) );
     }
 
+    /// <summary>
+    /// Checks that the merge of two target frameworks keeps the fields of version 2 and one copy of each diagnostic.
+    /// </summary>
     [Fact]
     public void TheMergeKeepsTheFieldsOfVersion2AndOneCopyOfEachDiagnostic()
     {
@@ -282,6 +340,10 @@ public sealed class IntrospectionV2LoaderTests
         Assert.Equal( Describe( LoadSample() ), Describe( merged ) );
     }
 
+    /// <summary>
+    /// Checks that the merge keeps two transformations that differ only by their layer and two diagnostics that differ only by
+    /// their declaration, and that each has the targets of both target frameworks.
+    /// </summary>
     [Fact]
     public void TheMergeKeepsTheTransformationsOfTwoLayersAndTheFrameworksOfADiagnostic()
     {
@@ -305,6 +367,9 @@ public sealed class IntrospectionV2LoaderTests
         Assert.All( merged.Transformations, t => Assert.Equal( [net10, net48], provenance.GetTargets( t ) ) );
     }
 
+    /// <summary>
+    /// Creates a target of the project <c>Sample</c> for a target framework.
+    /// </summary>
     private static IntrospectionTarget CreateTarget( string framework )
     {
         var directory = Path.Combine( Path.GetTempPath(), "introspection-v2" );
@@ -319,7 +384,9 @@ public sealed class IntrospectionV2LoaderTests
             null );
     }
 
-    // The fields of version 2, which ModelIndexTests does not describe.
+    /// <summary>
+    /// Describes the fields of a model that only version 2 records, which <see cref="ModelIndexTests"/> does not describe.
+    /// </summary>
     private static List<string> Describe( IntrospectionModel model )
         => model.AspectClasses.Select( c => $"{c.FullName} {c.DisplayName} {c.Description} {string.Join( ",", c.Layers )}" )
             .Concat(

@@ -8,8 +8,15 @@ using Xunit;
 
 namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
+/// <summary>
+/// Tests that a file of schema version 2 read by <see cref="IntrospectionV2Reader"/> and written again by <see
+/// cref="IntrospectionV2Writer"/> has the same content.
+/// </summary>
 public sealed class IntrospectionV2RoundTripTests
 {
+    /// <summary>
+    /// Checks that the fixture <c>Sample.mlsym</c>, read and written again, has the same text.
+    /// </summary>
     [Fact]
     public void TheSampleIsWrittenAgainWithTheSameText()
     {
@@ -18,6 +25,10 @@ public sealed class IntrospectionV2RoundTripTests
         Assert.Equal( json, V2TestHelper.RoundTrip( json ) );
     }
 
+    /// <summary>
+    /// Checks that every value that the writer writes is read back, including strings that need escaping, and that the file is
+    /// written again with the same text.
+    /// </summary>
     [Fact]
     public void AWrittenFileIsReadWithTheSameContent()
     {

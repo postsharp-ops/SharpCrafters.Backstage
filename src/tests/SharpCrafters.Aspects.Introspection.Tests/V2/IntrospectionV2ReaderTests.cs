@@ -11,8 +11,15 @@ using Xunit;
 
 namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
+/// <summary>
+/// Tests of <see cref="IntrospectionV2Reader"/>: the nodes and values that it reads, the properties that it ignores, and the
+/// errors that it reports for malformed files.
+/// </summary>
 public sealed class IntrospectionV2ReaderTests
 {
+    /// <summary>
+    /// Checks that the fixture <c>Sample.mlsym</c> is read node by node, with the values of every kind of node.
+    /// </summary>
     [Fact]
     public void TheSampleIsReadNodeByNode()
     {
@@ -48,6 +55,10 @@ public sealed class IntrospectionV2ReaderTests
             lines );
     }
 
+    /// <summary>
+    /// Checks that a file without aspect classes gives its header and no node, and that <see cref="IntrospectionV2Reader.Read"/>
+    /// keeps returning <c>false</c> at the end.
+    /// </summary>
     [Fact]
     public void AFileWithoutAspectClassesHasNoNode()
     {
@@ -60,6 +71,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.False( reader.Read() );
     }
 
+    /// <summary>
+    /// Checks that an aspect class without lists, or with an empty list, gives its start and its end.
+    /// </summary>
     [Fact]
     public void AnEmptyObjectEndsBeforeItsLists()
     {
@@ -69,6 +83,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Equal( ["Header 2 Metalama    True", "AspectClass T:A  ", "EndAspectClass", "AspectClass T:B  ", "EndAspectClass"], lines );
     }
 
+    /// <summary>
+    /// Checks that two uses of one identifier give the same handle and the same string instance.
+    /// </summary>
     [Fact]
     public void TheSameIdentifierGivesTheSameHandle()
     {
@@ -86,6 +103,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Same( reader.GetIdentifier( aspectInstance.TargetDeclaration ), reader.GetIdentifier( predecessor.Declaration ) );
     }
 
+    /// <summary>
+    /// Checks that unknown properties, unknown lists, and properties that come after the lists of an object are ignored.
+    /// </summary>
     [Fact]
     public void UnknownPropertiesAreIgnored()
     {
@@ -120,6 +140,9 @@ public sealed class IntrospectionV2ReaderTests
             lines );
     }
 
+    /// <summary>
+    /// Checks that JSON comments and a UTF-8 byte order mark are accepted.
+    /// </summary>
     [Fact]
     public void CommentsAndAByteOrderMarkAreAllowed()
     {
@@ -131,6 +154,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.False( reader.Read() );
     }
 
+    /// <summary>
+    /// Checks that a file of a schema version above 2 is read, and that its version is exposed.
+    /// </summary>
     [Fact]
     public void ALaterSchemaVersionIsRead()
     {
@@ -139,6 +165,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Equal( 3, reader.SchemaVersion );
     }
 
+    /// <summary>
+    /// Checks that a file of a schema version below 2 is rejected, with the line of the root object.
+    /// </summary>
     [Fact]
     public void AnEarlierSchemaVersionIsRejected()
     {
@@ -147,19 +176,31 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Equal( 1, exception.LineNumber );
     }
 
+    /// <summary>
+    /// Checks that a file without a schema version is rejected.
+    /// </summary>
     [Fact]
     public void TheSchemaVersionIsRequired()
         => Assert.Throws<IntrospectionFormatException>( () => V2TestHelper.CreateReader( """{ "product": "Metalama" }""" ) );
 
+    /// <summary>
+    /// Checks that a file without a product is rejected.
+    /// </summary>
     [Fact]
     public void TheProductIsRequired()
         => Assert.Throws<IntrospectionFormatException>( () => V2TestHelper.CreateReader( """{ "schemaVersion": 2 }""" ) );
 
+    /// <summary>
+    /// Checks that an <c>aspectClasses</c> property that is not an array is rejected.
+    /// </summary>
     [Fact]
     public void AnAspectClassesPropertyThatIsNotAnArrayIsRejected()
         => Assert.Throws<IntrospectionFormatException>(
             () => V2TestHelper.CreateReader( """{ "schemaVersion": 2, "product": "M", "aspectClasses": { "id": "T:A" } }""" ) );
 
+    /// <summary>
+    /// Checks that an <c>aspectClasses</c> property whose value is <c>null</c> is read as an empty list.
+    /// </summary>
     [Fact]
     public void ANullAspectClassesPropertyIsAnEmptyList()
     {
@@ -168,10 +209,17 @@ public sealed class IntrospectionV2ReaderTests
         Assert.False( reader.Read() );
     }
 
+    /// <summary>
+    /// Checks that a file whose root is not a JSON object is rejected.
+    /// </summary>
     [Fact]
     public void AFileThatIsNotAnObjectIsRejected()
         => Assert.Throws<IntrospectionFormatException>( () => V2TestHelper.CreateReader( "[]" ) );
 
+    /// <summary>
+    /// Checks that invalid JSON is reported with its line, which is counted from the start of the file and not from the start of
+    /// the current read.
+    /// </summary>
     [Fact]
     public void InvalidJsonGivesItsLine()
     {
@@ -195,6 +243,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.IsAssignableFrom<System.Text.Json.JsonException>( exception.InnerException );
     }
 
+    /// <summary>
+    /// Checks that an object without a required property is reported with the line and the position of the object.
+    /// </summary>
     [Fact]
     public void AMissingRequiredPropertyGivesItsLine()
     {
@@ -223,6 +274,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Contains( "targetDeclaration", exception.Message, StringComparison.Ordinal );
     }
 
+    /// <summary>
+    /// Checks that a predecessor kind that the format does not define is rejected.
+    /// </summary>
     [Fact]
     public void AnUnknownPredecessorKindIsRejected()
     {
@@ -235,10 +289,16 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Throws<IntrospectionFormatException>( () => reader.Read() );
     }
 
+    /// <summary>
+    /// Checks that a property whose value has the wrong JSON type is rejected.
+    /// </summary>
     [Fact]
     public void AValueOfTheWrongTypeIsRejected()
         => Assert.Throws<IntrospectionFormatException>( () => V2TestHelper.CreateReader( """{ "schemaVersion": "2", "product": "M" }""" ) );
 
+    /// <summary>
+    /// Checks that a file that ends before the end of its root object is rejected.
+    /// </summary>
     [Fact]
     public void AFileThatEndsEarlyIsRejected()
     {
@@ -251,6 +311,9 @@ public sealed class IntrospectionV2ReaderTests
             } );
     }
 
+    /// <summary>
+    /// Checks that the data of a node kind cannot be read while the reader is positioned on another kind.
+    /// </summary>
     [Fact]
     public void TheDataOfAnotherNodeKindIsNotAvailable()
     {
@@ -261,6 +324,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Throws<InvalidOperationException>( () => reader.AspectInstance );
     }
 
+    /// <summary>
+    /// Checks that a handle returned by another reader, and the nil handle, are rejected.
+    /// </summary>
     [Fact]
     public void AHandleOfAnotherReaderIsRejected()
     {
@@ -273,6 +339,9 @@ public sealed class IntrospectionV2ReaderTests
         Assert.Throws<ArgumentException>( () => second.GetIdentifier( default ) );
     }
 
+    /// <summary>
+    /// Checks that a reader cannot read after it is disposed.
+    /// </summary>
     [Fact]
     public void AReaderCannotBeUsedAfterDispose()
     {

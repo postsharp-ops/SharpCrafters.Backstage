@@ -12,10 +12,19 @@ using System.Text.Json;
 
 namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
+/// <summary>
+/// The helpers of the tests of schema version 2.
+/// </summary>
 internal static class V2TestHelper
 {
+    /// <summary>
+    /// The root properties that the tests write when they give none: the product only.
+    /// </summary>
     public static readonly V2HeaderData DefaultHeader = new() { Product = "Metalama", CompilationSucceeded = true };
 
+    /// <summary>
+    /// Gets the path of the fixture <c>Sample.mlsym</c>, which is written by hand in the format of the writer.
+    /// </summary>
     public static string SampleFile => Path.Combine( TestHelper.FixturesDirectory, "Metalama", "Sample.mlsym" );
 
     /// <summary>
@@ -24,6 +33,9 @@ internal static class V2TestHelper
     /// </summary>
     public static JsonWriterOptions WriterOptions { get; } = new() { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
+    /// <summary>
+    /// Writes a file with <see cref="IntrospectionV2Writer"/> and returns its text, with LF line endings.
+    /// </summary>
     public static string Write( Action<IntrospectionV2Writer> write, V2HeaderData? header = null, JsonWriterOptions? options = null )
     {
         var stream = new MemoryStream();
@@ -37,17 +49,31 @@ internal static class V2TestHelper
         return Encoding.UTF8.GetString( stream.ToArray() ).ToLf();
     }
 
-    // A declaration of the tests: each call creates a key of its own, and so a handle of its own.
+    /// <summary>
+    /// Gets the handle of a declaration of the tests. Each call creates a key of its own, and so a handle of its own.
+    /// </summary>
     public static DeclarationHandle Declare( this IntrospectionV2Writer writer, string identifier )
         => writer.GetDeclarationHandle( new TestDeclaration( identifier ), _formatTestDeclaration );
 
+    /// <summary>
+    /// Formats the identifier of a declaration of the tests.
+    /// </summary>
     private static readonly Func<TestDeclaration, string> _formatTestDeclaration = d => d.Identifier;
 
+    /// <summary>
+    /// A declaration of the tests: a key whose identifier is given.
+    /// </summary>
     private sealed class TestDeclaration( string identifier )
     {
+        /// <summary>
+        /// Gets the identifier of the declaration.
+        /// </summary>
         public string Identifier { get; } = identifier;
     }
 
+    /// <summary>
+    /// Creates a reader for the given JSON text.
+    /// </summary>
     public static IntrospectionV2Reader CreateReader( string json ) => IntrospectionV2Reader.Create( new MemoryStream( Encoding.UTF8.GetBytes( json ) ) );
 
     /// <summary>
@@ -90,6 +116,9 @@ internal static class V2TestHelper
         return lines;
     }
 
+    /// <summary>
+    /// Describes a location as <c>file(line,column)</c>, or <c>-</c> when there is none.
+    /// </summary>
     private static string Describe( V2SourceLocation? location ) => location == null ? "-" : $"{location.Value.File}({location.Value.Line},{location.Value.Column})";
 
     /// <summary>
