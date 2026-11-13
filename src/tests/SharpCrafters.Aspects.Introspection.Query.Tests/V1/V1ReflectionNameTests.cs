@@ -6,7 +6,7 @@ using SharpCrafters.Aspects.Introspection.Query.V1;
 using System;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Query.Tests;
+namespace SharpCrafters.Aspects.Introspection.Query.Tests.V1;
 
 /// <summary>
 /// The conversion of the reflection names of version 1 to documentation comment identifiers. The expected identifiers are

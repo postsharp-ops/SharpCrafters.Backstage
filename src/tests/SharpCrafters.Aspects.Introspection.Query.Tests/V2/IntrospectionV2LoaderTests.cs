@@ -11,7 +11,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Query.Tests;
+namespace SharpCrafters.Aspects.Introspection.Query.Tests.V2;
 
 /// <summary>
 /// The loading of a file of schema version 2, the <c>.mlsym</c> file of Metalama, into the common model.
