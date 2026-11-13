@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
 public sealed class IntrospectionV2ReaderTests
 {

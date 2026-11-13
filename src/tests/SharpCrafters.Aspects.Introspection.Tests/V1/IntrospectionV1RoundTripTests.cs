@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V1;
 
 /// <summary>
 /// Reads files written by PostSharp and writes them again through the data structures. The files are compared element by
@@ -23,14 +23,14 @@ namespace SharpCrafters.Aspects.Introspection.Tests;
 public sealed class IntrospectionV1RoundTripTests
 {
     public static IEnumerable<object[]> Fixtures
-        => Directory.GetFiles( V1TestHelper.FixturesDirectory, "*.pssym", SearchOption.AllDirectories )
-            .Select( f => new object[] { f.Substring( V1TestHelper.FixturesDirectory.Length + 1 ) } );
+        => Directory.GetFiles( TestHelper.FixturesDirectory, "*.pssym", SearchOption.AllDirectories )
+            .Select( f => new object[] { f.Substring( TestHelper.FixturesDirectory.Length + 1 ) } );
 
     [Theory]
     [MemberData( nameof(Fixtures) )]
     public void AFileIsWrittenAgainWithTheSameContent( string relativePath )
     {
-        var original = File.ReadAllText( Path.Combine( V1TestHelper.FixturesDirectory, relativePath ) );
+        var original = File.ReadAllText( Path.Combine( TestHelper.FixturesDirectory, relativePath ) );
         var written = V1TestHelper.RoundTrip( original );
 
         Assert.Equal( V1TestHelper.Describe( original ), V1TestHelper.Describe( written ) );
@@ -42,7 +42,7 @@ public sealed class IntrospectionV1RoundTripTests
     [Fact]
     public void AFileOfPostSharpIsWrittenAgainIdenticallyButForTheExplicitImpliedValues()
     {
-        var original = V1TestHelper.Normalize( File.ReadAllText( Path.Combine( V1TestHelper.FixturesDirectory, "PostSharp.Patterns.Aggregation.Tests.pssym" ) ) );
+        var original = V1TestHelper.Normalize( File.ReadAllText( Path.Combine( TestHelper.FixturesDirectory, "PostSharp.Patterns.Aggregation.Tests.pssym" ) ) );
         var written = V1TestHelper.RoundTrip( original );
 
         // The name table is numbered alike, so the files differ only where WriteWeavingSymbolsTask wrote an implied value: an

@@ -6,7 +6,7 @@ using SharpCrafters.Aspects.Introspection.V1;
 using System;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V1;
 
 public sealed class IntrospectionV1WriterTests
 {

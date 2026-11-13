@@ -6,7 +6,7 @@ using SharpCrafters.Aspects.Introspection.V2;
 using System.IO;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
 public sealed class IntrospectionV2RoundTripTests
 {

@@ -10,13 +10,13 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
 internal static class V2TestHelper
 {
     public static readonly V2HeaderData DefaultHeader = new() { Product = "Metalama", CompilationSucceeded = true };
 
-    public static string SampleFile => Path.Combine( V1TestHelper.FixturesDirectory, "Metalama", "Sample.mlsym" );
+    public static string SampleFile => Path.Combine( TestHelper.FixturesDirectory, "Metalama", "Sample.mlsym" );
 
     /// <summary>
     /// The options with which Metalama writes the file: indented, and without the escaping of the characters that are safe in a

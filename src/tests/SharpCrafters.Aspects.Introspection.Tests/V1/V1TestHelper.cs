@@ -7,15 +7,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V1;
 
 internal static class V1TestHelper
 {
-    public static string FixturesDirectory => Path.Combine( AppContext.BaseDirectory, "Fixtures" );
-
     // Writes with the settings of WriteWeavingSymbolsTask of PostSharp: UTF-8 with a byte order mark, indented by two spaces.
     public static string Write( Action<IntrospectionV1Writer> write, SymbolsData symbols = default )
     {
@@ -42,9 +39,6 @@ internal static class V1TestHelper
     }
 
     public static IntrospectionV1Reader CreateReader( string xml ) => IntrospectionV1Reader.Create( new MemoryStream( Encoding.UTF8.GetBytes( xml ) ) );
-
-    // The line endings, which depend on the checkout and on the writer, are compared as LF.
-    public static string ToLf( this string text ) => Regex.Replace( text, "\r\n", "\n" );
 
     public static string Normalize( string text ) => text.TrimStart( '﻿' ).ToLf().TrimEnd();
 

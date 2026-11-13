@@ -8,7 +8,7 @@ using System.Globalization;
 using System.IO;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V1;
 
 public sealed class IntrospectionV1ReaderTests
 {
@@ -195,7 +195,7 @@ public sealed class IntrospectionV1ReaderTests
     [Fact]
     public void AFileWithoutContentIsRead()
     {
-        using var stream = File.OpenRead( Path.Combine( V1TestHelper.FixturesDirectory, "VisualStudio", "CSharp", "When_CodeWithoutAspect.pssym" ) );
+        using var stream = File.OpenRead( Path.Combine( TestHelper.FixturesDirectory, "VisualStudio", "CSharp", "When_CodeWithoutAspect.pssym" ) );
         using var reader = IntrospectionV1Reader.Create( stream );
 
         Assert.Empty( ReadAll( reader ) );

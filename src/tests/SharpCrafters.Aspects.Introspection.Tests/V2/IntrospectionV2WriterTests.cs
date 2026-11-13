@@ -8,7 +8,7 @@ using System.IO;
 using System.Text.Json;
 using Xunit;
 
-namespace SharpCrafters.Aspects.Introspection.Tests;
+namespace SharpCrafters.Aspects.Introspection.Tests.V2;
 
 public sealed class IntrospectionV2WriterTests
 {
