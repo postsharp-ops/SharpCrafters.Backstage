@@ -33,6 +33,7 @@ internal static class IntrospectionSchema
         var predecessorKinds = Enum.GetNames<AspectPredecessorKind>();
         var declarationKinds = Enum.GetNames<IntrospectionDeclarationKind>();
         var mappingKinds = Enum.GetNames<DeclarationMappingKind>();
+        var diagnosticSeverities = Enum.GetNames<V2DiagnosticSeverity>();
 
         Types =
         [
@@ -50,6 +51,13 @@ internal static class IntrospectionSchema
                         ( _, o ) => ((IntrospectionAspectClass) o).ShortName,
                         summary: true ),
                     Object( "declaration", "declaration", "The type of the class.", ( _, o ) => ((IntrospectionAspectClass) o).Declaration ),
+                    Field( "displayName", ValueKind.String, "The name of the class as the user interface shows it.", ( _, o ) => ((IntrospectionAspectClass) o).DisplayName ),
+                    Field( "description", ValueKind.String, "The description of the class.", ( _, o ) => ((IntrospectionAspectClass) o).Description ),
+                    Field(
+                        "layers",
+                        ValueKind.StringList,
+                        "The aspect layers of the class, in their order of execution. The default layer is named default.",
+                        ( _, o ) => ((IntrospectionAspectClass) o).Layers.OrderBy( l => l.Order ).Select( l => l.Name ?? "default" ).ToList() ),
                     Field( "hasLimitedLicense", ValueKind.Boolean, "Whether the licence covers the class only in part.", ( _, o ) => ((IntrospectionAspectClass) o).HasLimitedLicense ),
                     List( "aspectInstances", "aspectInstance", "The aspect instances of the class.", ( _, o ) => ((IntrospectionAspectClass) o).AspectInstances )
                 ],
@@ -80,6 +88,7 @@ internal static class IntrospectionSchema
                         "aspectInstance",
                         "The aspect instances that the aspect instance provides as an aspect provider (IAspectProvider): those whose predecessor of kind ChildAspect has it as aspectInstance.",
                         ( c, o ) => c.GetProvidedAspectInstances( (IntrospectionAspectInstance) o ) ),
+                    List( "diagnostics", "diagnostic", "The diagnostics that the aspect instance reported.", ( _, o ) => ((IntrospectionAspectInstance) o).Diagnostics ),
                     Field( "isSkipped", ValueKind.Boolean, "Whether the aspect instance was skipped.", ( _, o ) => ((IntrospectionAspectInstance) o).IsSkipped ),
                     Field( "tags", ValueKind.StringList, "The tags, such as premium for an aspect instance that the licence does not cover.", ( _, o ) => QueryContext.SplitTags( ((IntrospectionAspectInstance) o).Tags ) ),
                     Field( "linesOfCodeAvoided", ValueKind.Integer, "The estimated number of lines of code that the aspect instance saves.", ( _, o ) => ((IntrospectionAspectInstance) o).LinesOfCodeAvoided )
@@ -102,6 +111,7 @@ internal static class IntrospectionSchema
                         writtenByDefault: false ),
                     Field( "kind", ValueKind.Enum, "How the predecessor created its aspect instances: Attribute, a custom attribute on the target declaration; Multicast, a multicast attribute on an enclosing declaration or the assembly; Inherited, an attribute inherited from a base type or member; Xml, an element of a configuration file; ChildAspect, an aspect provider (IAspectProvider), which is the aspect instance of the predecessor; Fabric, RequiredAspect and Interactive, Metalama only.", ( _, o ) => ((IntrospectionPredecessor) o).Kind.ToString(), summary: true, values: predecessorKinds ),
                     Field( "isKindInferred", ValueKind.Boolean, "Whether the kind is inferred, because the file does not give it.", ( _, o ) => ((IntrospectionPredecessor) o).IsKindInferred, summary: true ),
+                    Field( "degree", ValueKind.Integer, "The number of aspect instances between the predecessor and the source code: 0 for a custom attribute or a fabric, 1 or more for an aspect instance.", ( _, o ) => ((IntrospectionPredecessor) o).Degree ),
                     Object( "declaration", "declaration", "The declaration that carries the attribute, or the fabric type.", ( _, o ) => ((IntrospectionPredecessor) o).Declaration, summary: true ),
                     Object( "attributeClass", "aspectClass", "The class of the attribute.", ( _, o ) => ((IntrospectionPredecessor) o).AttributeClass ),
                     Field( "location", ValueKind.String, "The location of the predecessor, as path:line:column, when the file gives it.", ( c, o ) => c.GetLocation( (IntrospectionPredecessor) o ), summary: true ),
@@ -121,6 +131,10 @@ internal static class IntrospectionSchema
                 [
                     Object( "aspectInstance", "aspectInstance", "The aspect instance.", ( _, o ) => ((IntrospectionTransformation) o).AspectInstance, summary: true ),
                     Object( "targetDeclaration", "declaration", "The declaration that the transformation changes.", ( _, o ) => ((IntrospectionTransformation) o).TargetDeclaration, summary: true ),
+                    Field( "kind", ValueKind.String, "The kind of the transformation, such as OverrideMember, IntroduceMember or ImplementInterface.", ( _, o ) => ((IntrospectionTransformation) o).Kind, summary: true ),
+                    Field( "adviceKind", ValueKind.String, "The kind of the advice that makes the transformation, such as OverrideMethod or IntroduceProperty.", ( _, o ) => ((IntrospectionTransformation) o).AdviceKind ),
+                    Field( "layer", ValueKind.String, "The aspect layer of the advice, or nothing for the default layer.", ( _, o ) => ((IntrospectionTransformation) o).Layer ),
+                    Object( "introducedDeclaration", "declaration", "The declaration that the transformation introduces, such as a member, a parameter or an interface.", ( _, o ) => ((IntrospectionTransformation) o).IntroducedDeclaration, summary: true ),
                     Object( "adviceDeclaration", "declaration", "The advice that makes the transformation.", ( _, o ) => ((IntrospectionTransformation) o).AdviceDeclaration ),
                     Field( "description", ValueKind.String, "A description of the transformation.", ( _, o ) => ((IntrospectionTransformation) o).Description, summary: true ),
                     Field( "semantic", ValueKind.String, "The accessor that the transformation changes, such as Getter.", ( _, o ) => ((IntrospectionTransformation) o).Semantic, summary: true ),
@@ -192,13 +206,17 @@ internal static class IntrospectionSchema
                 "diagnostic",
                 "The messages that aspects and the framework reported.",
                 [
-                    Field( "id", ValueKind.String, "The identifier of the diagnostic.", ( _, _ ) => null, summary: true ),
-                    Field( "severity", ValueKind.String, "The severity.", ( _, _ ) => null, summary: true ),
-                    Field( "message", ValueKind.String, "The message.", ( _, _ ) => null, summary: true ),
-                    Object( "aspectInstance", "aspectInstance", "The aspect instance that reported the diagnostic.", ( _, _ ) => null )
+                    Field( "id", ValueKind.String, "The identifier of the diagnostic.", ( _, o ) => ((IntrospectionDiagnostic) o).Id, summary: true ),
+                    Field( "severity", ValueKind.Enum, "The severity: Hidden, Info, Warning or Error.", ( _, o ) => ((IntrospectionDiagnostic) o).Severity, summary: true, values: diagnosticSeverities ),
+                    Field( "message", ValueKind.String, "The message.", ( _, o ) => ((IntrospectionDiagnostic) o).Message, summary: true ),
+                    Object( "declaration", "declaration", "The declaration on which the diagnostic is reported.", ( _, o ) => ((IntrospectionDiagnostic) o).Declaration ),
+                    Field( "location", ValueKind.String, "The location of the diagnostic, as path:line:column, when the file gives it.", ( c, o ) => c.GetLocation( (IntrospectionDiagnostic) o ), summary: true ),
+                    Object( "aspectInstance", "aspectInstance", "The aspect instance that reported the diagnostic.", ( _, o ) => ((IntrospectionDiagnostic) o).AspectInstance ),
+                    Field( "project", ValueKind.String, "The first project whose file holds the diagnostic.", ( c, o ) => c.GetProject( o ) ),
+                    Field( "targetFrameworks", ValueKind.StringList, "The target frameworks in which the diagnostic appears.", ( c, o ) => c.GetTargetFrameworks( o ) )
                 ],
-                ["id", "severity", "message"],
-                _ => [] ),
+                ["id", "severity", "message", "location"],
+                c => c.Model.Diagnostics ),
 
             new TypeDefinition(
                 "file",

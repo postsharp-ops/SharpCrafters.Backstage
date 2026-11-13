@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "product": "Metalama",
+  "productVersion": "2027.0.8",
+  "assembly": "Sample",
+  "targetFramework": "net10.0",
+  "compilationSucceeded": true,
+  "aspectClasses": [
+    {
+      "id": "T:Sample.LogAttribute",
+      "displayName": "Log",
+      "description": "Writes a message to the console when a method starts.",
+      "layers": [
+        {},
+        {
+          "name": "Build",
+          "order": 1
+        }
+      ],
+      "aspectInstances": [
+        {
+          "id": 1,
+          "targetDeclaration": "M:Sample.Calculator.Add(System.Int32,System.Int32)",
+          "location": {
+            "file": "Calculator.cs",
+            "line": 8,
+            "column": 5
+          },
+          "predecessors": [
+            {
+              "kind": "Attribute",
+              "declaration": "M:Sample.Calculator.Add(System.Int32,System.Int32)",
+              "attributeClass": "T:Sample.LogAttribute",
+              "location": {
+                "file": "Calculator.cs",
+                "line": 7,
+                "column": 6
+              }
+            }
+          ],
+          "transformations": [
+            {
+              "kind": "OverrideMember",
+              "adviceKind": "OverrideMethod",
+              "order": 1,
+              "targetDeclaration": "M:Sample.Calculator.Add(System.Int32,System.Int32)",
+              "description": "Override the 'Calculator.Add(int, int)' method by 'LogAttribute.OverrideMethod()'."
+            },
+            {
+              "kind": "IntroduceMember",
+              "adviceKind": "IntroduceField",
+              "layer": "Build",
+              "order": 2,
+              "targetDeclaration": "T:Sample.Calculator",
+              "introducedDeclaration": "F:Sample.Calculator._logger",
+              "description": "Introduce the field 'Calculator._logger'."
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "targetDeclaration": "M:Sample.Calculator.Divide(System.Int32,System.Int32)",
+          "isSkipped": true,
+          "predecessors": [
+            {
+              "kind": "Fabric",
+              "declaration": "T:Sample.Fabric"
+            }
+          ],
+          "diagnostics": [
+            {
+              "id": "LOG001",
+              "severity": "Warning",
+              "message": "The method 'Divide' cannot be logged.",
+              "declaration": "M:Sample.Calculator.Divide(System.Int32,System.Int32)",
+              "location": {
+                "file": "Calculator.cs",
+                "line": 12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "[Sample.Aspects]T:Sample.Aspects.NotifyPropertyChangedAttribute",
+      "displayName": "NotifyPropertyChanged",
+      "aspectInstances": [
+        {
+          "id": 3,
+          "targetDeclaration": "T:Sample.Customer",
+          "predecessors": [
+            {
+              "kind": "Inherited",
+              "declaration": "[Sample.Aspects]T:Sample.Aspects.EntityBase"
+            }
+          ],
+          "transformations": [
+            {
+              "kind": "ImplementInterface",
+              "adviceKind": "ImplementInterface",
+              "targetDeclaration": "T:Sample.Customer",
+              "introducedDeclaration": "T:System.ComponentModel.INotifyPropertyChanged"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "targetDeclaration": "P:Sample.Customer.Name",
+          "predecessors": [
+            {
+              "kind": "ChildAspect",
+              "degree": 1,
+              "aspectInstance": 3
+            }
+          ],
+          "transformations": [
+            {
+              "kind": "OverrideMember",
+              "adviceKind": "OverrideFieldOrPropertyOrIndexer",
+              "targetDeclaration": "P:Sample.Customer.Name",
+              "description": "Override the 'Customer.Name' property by 'NotifyPropertyChangedAttribute.OverrideProperty'."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

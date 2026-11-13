@@ -7,8 +7,9 @@ using System;
 namespace SharpCrafters.Aspects.Introspection;
 
 /// <summary>
-/// The exception that a reader throws when a weaving symbol file is malformed: XML that is not well formed, a reference to a
-/// name that the name table does not define, a missing required attribute, or an invalid number.
+/// The exception that a reader throws when a weaving symbol file is malformed. In version 1, it is XML that is not well formed, a
+/// reference to a name that the name table does not define, a missing required attribute, or an invalid number. In version 2, it
+/// is JSON that is not valid, a value of the wrong type, or a missing required property.
 /// </summary>
 public sealed class IntrospectionFormatException : FormatException
 {

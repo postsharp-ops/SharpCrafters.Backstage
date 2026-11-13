@@ -62,7 +62,7 @@ public sealed class ModelIndexTests
         }
     }
 
-    private static byte[] Write( IntrospectionModel model )
+    internal static byte[] Write( IntrospectionModel model )
     {
         using var stream = new MemoryStream();
 

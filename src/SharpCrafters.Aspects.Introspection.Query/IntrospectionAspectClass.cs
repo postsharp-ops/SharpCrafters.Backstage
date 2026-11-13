@@ -47,9 +47,26 @@ public sealed class IntrospectionAspectClass
     public bool HasLimitedLicense { get; internal set; }
 
     /// <summary>
+    /// Gets the name of the aspect class as the user interface shows it (Metalama), or <c>null</c>.
+    /// </summary>
+    public string? DisplayName { get; internal set; }
+
+    /// <summary>
+    /// Gets the description of the aspect class (Metalama), or <c>null</c>.
+    /// </summary>
+    public string? Description { get; internal set; }
+
+    /// <summary>
+    /// Gets the aspect layers of the aspect class (Metalama). A file of version 1 records no aspect layer.
+    /// </summary>
+    public IReadOnlyList<IntrospectionAspectLayer> Layers => this.LayersList;
+
+    /// <summary>
     /// Gets the aspect instances of the aspect class.
     /// </summary>
     public IReadOnlyList<IntrospectionAspectInstance> AspectInstances => this.AspectInstancesList;
+
+    internal List<IntrospectionAspectLayer> LayersList { get; } = [];
 
     internal List<IntrospectionAspectInstance> AspectInstancesList { get; } = [];
 

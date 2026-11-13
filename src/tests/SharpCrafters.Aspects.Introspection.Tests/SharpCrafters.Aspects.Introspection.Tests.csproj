@@ -23,6 +23,8 @@
         <!-- The fixtures: the files of PostSharp.VisualStudio.Tests (Metalama.Vsx, Services/Languages/RoslynCodeParsingServiceTests),
              and a file written by PostSharp 2027.0 for the tests of PostSharp.Patterns.Aggregation. -->
         <None Include="Fixtures\**\*.pssym" CopyToOutputDirectory="PreserveNewest" />
+        <!-- A file of schema version 2, written by hand in the format of IntrospectionV2Writer. -->
+        <None Include="Fixtures\**\*.mlsym" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

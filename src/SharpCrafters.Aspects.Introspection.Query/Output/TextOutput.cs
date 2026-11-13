@@ -173,7 +173,9 @@ internal static class TextOutput
 
             foreach ( var transformation in Take( ordered, limit ) )
             {
-                var semantic = transformation.Semantic != null ? $" ({transformation.Semantic})" : "";
+                // The accessor of PostSharp, or the kind of transformation of Metalama.
+                var qualifier = transformation.Semantic ?? transformation.Kind;
+                var semantic = qualifier != null ? $" ({qualifier})" : "";
                 builder.AppendLine( CultureInfo.InvariantCulture, $"    {transformation.Order}. {Name( transformation.TargetDeclaration )}{semantic}: {transformation.Description ?? "(no description)"}" );
             }
 

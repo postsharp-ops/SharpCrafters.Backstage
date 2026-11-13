@@ -66,6 +66,17 @@ public static class IntrospectionV1Loader
     public static IntrospectionModel Load( IntrospectionV1Reader reader, string? assembly = null, string? projectDirectory = null )
         => new Loader( reader, projectDirectory ).Load( assembly );
 
+    /// <summary>
+    /// Links the accessors and the backing fields of a model to their property or event, by the names that the C# and Visual Basic
+    /// compilers give them. The loader of version 2 uses it too.
+    /// </summary>
+    internal static void LinkMembers( IntrospectionModel model ) => Loader.LinkMembers( model );
+
+    /// <summary>
+    /// Gets the path of a file for a structural key: relative to the project, with forward slashes, when the file is in the project.
+    /// </summary>
+    internal static string? GetKeyFile( string? file, string? projectDirectory ) => Loader.GetKeyFile( file, projectDirectory );
+
     private sealed class Loader
     {
         private readonly IntrospectionV1Reader _reader;
@@ -164,7 +175,7 @@ public static class IntrospectionV1Loader
             }
 
             this.ResolveProvidedPredecessors();
-            this.LinkMembers();
+            LinkMembers( this._model );
             if ( assembly == null )
             {
                 this._model.Assembly = InferAssembly( this._model );
@@ -311,7 +322,7 @@ public static class IntrospectionV1Loader
 
             var predecessor = new IntrospectionPredecessor( kind, isInferred )
             {
-                File = file, KeyFile = this.GetKeyFile( file ), Line = data.Line, Column = data.Column
+                File = file, KeyFile = GetKeyFile( file, this._projectDirectory ), Line = data.Line, Column = data.Column
             };
 
             if ( kind is AspectPredecessorKind.Attribute or AspectPredecessorKind.Multicast or AspectPredecessorKind.Inherited )
@@ -346,14 +357,14 @@ public static class IntrospectionV1Loader
         }
 
         // The path of a file for a structural key: relative to the project, with forward slashes, when the file is in the project.
-        private string? GetKeyFile( string? file )
+        internal static string? GetKeyFile( string? file, string? projectDirectory )
         {
-            if ( file == null || this._projectDirectory == null || !Path.IsPathFullyQualified( file ) )
+            if ( file == null || projectDirectory == null || !Path.IsPathFullyQualified( file ) )
             {
                 return file?.Replace( '\\', '/' );
             }
 
-            var relative = Path.GetRelativePath( this._projectDirectory, file );
+            var relative = Path.GetRelativePath( projectDirectory, file );
 
             return (relative.StartsWith( "..", StringComparison.Ordinal ) ? file : relative).Replace( '\\', '/' );
         }
@@ -385,9 +396,9 @@ public static class IntrospectionV1Loader
 
         // Links the accessors and the backing fields to their property or event, by the names that the C# and Visual Basic
         // compilers give them.
-        private void LinkMembers()
+        internal static void LinkMembers( IntrospectionModel model )
         {
-            foreach ( var declaration in this._model.DeclarationsList )
+            foreach ( var declaration in model.DeclarationsList )
             {
                 var declaringType = declaration.DeclaringType;
 
@@ -479,9 +490,12 @@ public static class IntrospectionV1Loader
 
             static string[] GetParameters( string id )
             {
+                // The parameters end at the last parenthesis: an identifier of Metalama, as that of a conversion operator, can be
+                // followed by ~ and the return type.
                 var open = id.IndexOf( '(', StringComparison.Ordinal );
+                var close = id.LastIndexOf( ')' );
 
-                return open < 0 ? [] : SplitParameters( id.Substring( open + 1, id.Length - open - 2 ) );
+                return open < 0 || close < open ? [] : SplitParameters( id.Substring( open + 1, close - open - 1 ) );
             }
 
             static string[] SplitParameters( string text )

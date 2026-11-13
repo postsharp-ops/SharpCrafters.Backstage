@@ -8,8 +8,9 @@ using System.Runtime.CompilerServices;
 namespace SharpCrafters.Aspects.Introspection;
 
 /// <summary>
-/// Identifies a declaration in a weaving symbol file. A writer returns it from <see cref="IntrospectionV1Writer.GetDeclarationHandle{TKey}"/>,
-/// and a reader returns it in the data structures, where <see cref="IntrospectionV1Reader.GetIdentifier"/> gives its identifier.
+/// Identifies a declaration in a weaving symbol file. A writer returns it from <see cref="IntrospectionV1Writer.GetDeclarationHandle{TKey}"/>
+/// or <see cref="IntrospectionV2Writer.GetDeclarationHandle{TKey}"/>, and a reader returns it in the data structures, where
+/// <see cref="IntrospectionV1Reader.GetIdentifier"/> or <see cref="IntrospectionV2Reader.GetIdentifier"/> gives its identifier.
 /// The default value, <see cref="IsNil"/>, stands for no declaration. A handle belongs to the reader or writer that returned it: the
 /// handles of two instances are different even when their indexes are the same.
 /// </summary>

@@ -40,7 +40,8 @@ internal static class ModelMerger
         var aspectClasses = new Dictionary<string, IntrospectionAspectClass>( StringComparer.Ordinal );
         var aspectInstances = new Dictionary<string, IntrospectionAspectInstance>( StringComparer.Ordinal );
         var predecessors = new Dictionary<string, IntrospectionPredecessor>( StringComparer.Ordinal );
-        var transformations = new HashSet<(string, string, string?, string?, string?)>();
+        var transformations = new HashSet<(string, string, string?, string?, string?, string?, string?)>();
+        var diagnostics = new HashSet<(string, string, string?, string?, int?, int?)>();
         var annotations = new HashSet<(string, string?, string?, string?)>();
         var mappings = new HashSet<(string, string)>();
 
@@ -53,7 +54,7 @@ internal static class ModelMerger
                 {
                     canonical = new IntrospectionDeclaration( declaration.Assembly, declaration.Id, declaration.Kind, declaration.Name, declaration.SourceIdentifier )
                     {
-                        Namespace = declaration.Namespace
+                        Namespace = declaration.Namespace, Location = declaration.Location
                     };
 
                     declarations.Add( declaration.QualifiedId, canonical );
@@ -77,6 +78,7 @@ internal static class ModelMerger
                 canonical.DeclaringType ??= MapOptional( declaration.DeclaringType );
                 canonical.ContainingDeclaration ??= MapOptional( declaration.ContainingDeclaration );
                 canonical.BackingField ??= MapOptional( declaration.BackingField );
+                canonical.Location ??= declaration.Location;
                 AddDistinct( canonical.MembersList, declaration.Members.Select( Map ) );
                 AddDistinct( canonical.AccessorsList, declaration.Accessors.Select( Map ) );
             }
@@ -94,6 +96,13 @@ internal static class ModelMerger
             }
 
             canonical.HasLimitedLicense |= aspectClass.HasLimitedLicense;
+            canonical.DisplayName ??= aspectClass.DisplayName;
+            canonical.Description ??= aspectClass.Description;
+
+            if ( canonical.LayersList.Count == 0 )
+            {
+                canonical.LayersList.AddRange( aspectClass.Layers );
+            }
 
             return canonical;
         }
@@ -134,7 +143,7 @@ internal static class ModelMerger
                 foreach ( var transformation in instance.Transformations )
                 {
                     var key = (instance.StructuralKey, transformation.TargetDeclaration.QualifiedId, transformation.AdviceDeclaration?.QualifiedId, transformation.Semantic,
-                               transformation.Description);
+                               transformation.Description, transformation.Kind, transformation.IntroducedDeclaration?.QualifiedId);
 
                     if ( transformations.Add( key ) )
                     {
@@ -144,7 +153,11 @@ internal static class ModelMerger
                             Description = transformation.Description,
                             Semantic = transformation.Semantic,
                             Order = transformation.Order,
-                            LinesOfCodeAvoided = transformation.LinesOfCodeAvoided
+                            LinesOfCodeAvoided = transformation.LinesOfCodeAvoided,
+                            Kind = transformation.Kind,
+                            AdviceKind = transformation.AdviceKind,
+                            Layer = transformation.Layer,
+                            IntroducedDeclaration = MapOptional( transformation.IntroducedDeclaration )
                         };
 
                         canonical.TransformationsList.Add( copy );
@@ -156,8 +169,28 @@ internal static class ModelMerger
                         provenance.Add(
                             canonical.TransformationsList.First(
                                 t => t.TargetDeclaration.QualifiedId == key.Item2 && t.AdviceDeclaration?.QualifiedId == key.Item3 && t.Semantic == key.Semantic
-                                     && t.Description == key.Description ),
+                                     && t.Description == key.Description && t.Kind == key.Kind && t.IntroducedDeclaration?.QualifiedId == key.Item7 ),
                             target );
+                    }
+                }
+
+                // A diagnostic that several target frameworks report is kept once.
+                foreach ( var diagnostic in instance.Diagnostics )
+                {
+                    if ( diagnostics.Add( (instance.StructuralKey, diagnostic.Id, diagnostic.Message, diagnostic.File, diagnostic.Line, diagnostic.Column) ) )
+                    {
+                        var copy = new IntrospectionDiagnostic( canonical, diagnostic.Id, diagnostic.Severity )
+                        {
+                            Message = diagnostic.Message,
+                            Declaration = MapOptional( diagnostic.Declaration ),
+                            File = diagnostic.File,
+                            Line = diagnostic.Line,
+                            Column = diagnostic.Column
+                        };
+
+                        canonical.DiagnosticsList.Add( copy );
+                        merged.DiagnosticsList.Add( copy );
+                        provenance.Add( copy, target );
                     }
                 }
             }
@@ -179,6 +212,7 @@ internal static class ModelMerger
                         KeyFile = predecessor.KeyFile,
                         Line = predecessor.Line,
                         Column = predecessor.Column,
+                        Degree = predecessor.Degree,
                         AspectInstance = predecessor.AspectInstance == null ? null : aspectInstances[predecessor.AspectInstance.StructuralKey]
                     };
 
