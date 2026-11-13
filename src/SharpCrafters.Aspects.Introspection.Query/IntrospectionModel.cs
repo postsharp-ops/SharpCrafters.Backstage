@@ -2,6 +2,7 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using SharpCrafters.Aspects.Introspection.Query.V1;
 using System.Collections.Generic;
 
 namespace SharpCrafters.Aspects.Introspection.Query;
@@ -69,6 +70,11 @@ public sealed class IntrospectionModel
     public IReadOnlyList<IntrospectionAnnotation> Annotations => this.AnnotationsList;
 
     /// <summary>
+    /// Gets the diagnostics of all the aspect instances, in the order of the file (Metalama).
+    /// </summary>
+    public IReadOnlyList<IntrospectionDiagnostic> Diagnostics => this.DiagnosticsList;
+
+    /// <summary>
     /// Gets the declaration mappings, in the order of the file.
     /// </summary>
     public IReadOnlyList<IntrospectionDeclarationMapping> DeclarationMappings => this.DeclarationMappingsList;
@@ -93,6 +99,8 @@ public sealed class IntrospectionModel
     internal List<IntrospectionTransformation> TransformationsList { get; } = [];
 
     internal List<IntrospectionAnnotation> AnnotationsList { get; } = [];
+
+    internal List<IntrospectionDiagnostic> DiagnosticsList { get; } = [];
 
     internal List<IntrospectionDeclarationMapping> DeclarationMappingsList { get; } = [];
 

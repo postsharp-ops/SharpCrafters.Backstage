@@ -5,10 +5,10 @@
 using SharpCrafters.Aspects.Introspection.Query.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using System.IO;
-using System.Text.Json;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Xunit;
 
 namespace SharpCrafters.Aspects.Introspection.Query.Tests.Commands;

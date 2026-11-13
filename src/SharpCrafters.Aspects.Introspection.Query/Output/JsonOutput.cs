@@ -50,7 +50,7 @@ internal static class JsonOutput
         foreach ( var field in type.Fields )
         {
             if ( !field.IsWrittenByDefault || (detail == JsonDetail.Summary && !field.IsInSummary) || (detail == JsonDetail.Full && field.Kind == ValueKind.ObjectList)
-                 || !context.Provider.Provides( type.Name, field.Name ) )
+                 || !context.Provider.Provides( type, field ) )
             {
                 continue;
             }

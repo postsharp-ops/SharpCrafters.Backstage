@@ -9,4 +9,12 @@ namespace SharpCrafters.Aspects.Introspection.Query.Projects;
 /// </summary>
 /// <param name="Sdk">The SDK, or <c>null</c> when none could be registered.</param>
 /// <param name="Failure">Why no SDK could be registered, or <c>null</c>.</param>
-public sealed record DotNetSdkRegistration( DotNetSdk? Sdk, string? Failure );
+public sealed record DotNetSdkRegistration( DotNetSdk? Sdk, string? Failure )
+{
+    /// <summary>
+    /// Gets a value indicating whether .NET SDKs are installed but none of them can be loaded by the process, because of their major
+    /// version or of their processor architecture. A host can then advise the user to run the process on another runtime or
+    /// architecture.
+    /// </summary>
+    public bool HasIncompatibleSdks { get; init; }
+}

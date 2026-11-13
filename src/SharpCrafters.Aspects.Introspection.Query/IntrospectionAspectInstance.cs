@@ -49,6 +49,11 @@ public sealed class IntrospectionAspectInstance
     public IReadOnlyList<IntrospectionTransformation> Transformations => this.TransformationsList;
 
     /// <summary>
+    /// Gets the diagnostics that the aspect instance reported (Metalama). A file of version 1 records no diagnostic.
+    /// </summary>
+    public IReadOnlyList<IntrospectionDiagnostic> Diagnostics => this.DiagnosticsList;
+
+    /// <summary>
     /// Gets the number of lines of code that the aspect instance saves.
     /// </summary>
     public int LinesOfCodeAvoided { get; internal set; }
@@ -68,6 +73,8 @@ public sealed class IntrospectionAspectInstance
     internal List<IntrospectionPredecessor> PredecessorsList { get; } = [];
 
     internal List<IntrospectionTransformation> TransformationsList { get; } = [];
+
+    internal List<IntrospectionDiagnostic> DiagnosticsList { get; } = [];
 
     // The identifier that the file gives the aspect instance (Target/@Id of version 1), which the predecessors of the aspect
     // instances that it provides refer to.

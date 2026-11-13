@@ -20,8 +20,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- The fixtures of the tests of the reader and writer of version 1. -->
+        <!-- The fixtures of the tests of the readers and writers of versions 1 and 2. -->
         <None Include="..\SharpCrafters.Aspects.Introspection.Tests\Fixtures\**\*.pssym" Link="Fixtures\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="..\SharpCrafters.Aspects.Introspection.Tests\Fixtures\**\*.mlsym" Link="Fixtures\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

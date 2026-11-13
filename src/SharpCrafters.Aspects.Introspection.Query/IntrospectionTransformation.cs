@@ -31,6 +31,27 @@ public sealed class IntrospectionTransformation
     public IntrospectionDeclaration? AdviceDeclaration { get; internal set; }
 
     /// <summary>
+    /// Gets the kind of the transformation (Metalama), such as <c>OverrideMember</c> or <c>IntroduceMember</c>, or <c>null</c>.
+    /// </summary>
+    public string? Kind { get; internal set; }
+
+    /// <summary>
+    /// Gets the kind of the advice that makes the transformation (Metalama), such as <c>OverrideMethod</c>, or <c>null</c>.
+    /// </summary>
+    public string? AdviceKind { get; internal set; }
+
+    /// <summary>
+    /// Gets the name of the aspect layer of the advice (Metalama), or <c>null</c> for the default aspect layer.
+    /// </summary>
+    public string? Layer { get; internal set; }
+
+    /// <summary>
+    /// Gets the declaration that the transformation introduces (Metalama), such as an introduced member, parameter or interface,
+    /// or <c>null</c>.
+    /// </summary>
+    public IntrospectionDeclaration? IntroducedDeclaration { get; internal set; }
+
+    /// <summary>
     /// Gets a description of the transformation, or <c>null</c>.
     /// </summary>
     public string? Description { get; internal set; }
