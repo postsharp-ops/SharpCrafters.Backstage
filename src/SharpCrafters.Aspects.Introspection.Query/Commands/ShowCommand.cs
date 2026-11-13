@@ -221,7 +221,16 @@ public sealed partial class ShowCommand : IntrospectionCommand<ShowCommandSettin
         return IntrospectionExitCodes.Success;
 
         void WriteList( Utf8JsonWriter w, string name, string typeName, IEnumerable<object> items, JsonDetail detail )
-            => JsonOutput.WriteRelatedList( w, context, name, IntrospectionSchema.GetType( typeName ), items.ToList(), detail, lists, next, depth: 0 );
+        {
+            // A list of a collection that the product does not record would always be empty, which reads as "none" instead of
+            // "unknown".
+            if ( !context.Provider.Provides( typeName, null ) )
+            {
+                return;
+            }
+
+            JsonOutput.WriteRelatedList( w, context, name, IntrospectionSchema.GetType( typeName ), items.ToList(), detail, lists, next, depth: 0 );
+        }
     }
 
     // A position whose declarations no aspect applies to is a result, not an error: the declaration exists, and has no aspect. The

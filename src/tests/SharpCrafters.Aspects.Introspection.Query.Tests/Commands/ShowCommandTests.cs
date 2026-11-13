@@ -58,6 +58,29 @@ public sealed class ShowCommandTests : IDisposable
         Assert.Equal( "The FullName property depends on FirstName.", result.GetProperty( "annotations" ).GetProperty( "items" )[0].GetProperty( "description" ).GetString() );
     }
 
+    /// <summary>
+    /// Checks that <c>show</c> omits the lists of the collections that the product does not record, instead of writing them empty,
+    /// and that a query on a field of such a collection is an error that names the product.
+    /// </summary>
+    [Fact]
+    public void TheListsOfACollectionThatTheProductDoesNotRecordAreOmitted()
+    {
+        // TestProvider reads the collection itself as the field of an empty name.
+        this._provider.Unprovided.Add( "annotation." );
+        this._provider.Unprovided.Add( "declarationMapping." );
+
+        var result = this.RunJson( "show", "declaration", "Customer.FullName" );
+
+        Assert.False( result.TryGetProperty( "annotations", out _ ) );
+        Assert.False( result.TryGetProperty( "declarationMappings", out _ ) );
+        Assert.True( result.TryGetProperty( "aspectInstances", out _ ) );
+
+        var (exitCode, _, error) = this.Run( "list", "declarations", "--where", "annotations/$count gt 0" );
+
+        Assert.NotEqual( 0, exitCode );
+        Assert.Contains( "The files of TestProduct do not record 'annotations' of declaration.", error, StringComparison.Ordinal );
+    }
+
     [Fact]
     public void ADeclarationIsSelectedByItsPosition()
     {
