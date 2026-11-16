@@ -53,7 +53,7 @@ internal sealed class IntrospectionUriResolver : ODataUriResolver
                 position );
         }
 
-        if ( !this._provider.Provides( type.Name, field.Name ) )
+        if ( !this._provider.Provides( type, field ) )
         {
             throw this._query.Error( $"The files of {this._provider.ProductName} do not record '{field.Name}' of {type.Name}.", position );
         }

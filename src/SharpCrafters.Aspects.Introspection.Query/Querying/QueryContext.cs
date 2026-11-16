@@ -172,8 +172,15 @@ internal sealed class QueryContext
             }
         }
 
-        return null;
+        // The location that the file itself records, as Metalama does.
+        return declaration.Location is { } recorded ? this.FormatLocation( recorded.File, recorded.Line, recorded.Column ) : null;
     }
+
+    /// <summary>
+    /// Gets the location of a diagnostic, when the file gives it, or <c>null</c>.
+    /// </summary>
+    public string? GetLocation( IntrospectionDiagnostic diagnostic )
+        => diagnostic.File == null ? null : this.FormatLocation( diagnostic.File, diagnostic.Line, diagnostic.Column );
 
     /// <summary>
     /// Gets the location of a predecessor: the position of its XML element, or, for an attribute, the location that the file

@@ -3,6 +3,7 @@
 // Refer to LICENSE.md in the repository root for complete details.
 
 using SharpCrafters.Aspects.Introspection.Query.Projects;
+using SharpCrafters.Aspects.Introspection.V1;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,7 +29,7 @@ namespace SharpCrafters.Aspects.Introspection.Query;
 internal static class ModelIndex
 {
     // Changed whenever the format or what the loader builds changes.
-    private const int _formatVersion = 3;
+    private const int _formatVersion = 5;
     private const int _magic = 0x58494353; // "SCIX"
 
     /// <summary>
@@ -136,6 +137,10 @@ internal static class ModelIndex
             w.Write( S( d.Name ) );
             w.Write( S( d.SourceIdentifier ) );
             w.Write( S( d.Namespace ) );
+            w.Write( S( d.Location?.File ) );
+            w.Write( d.Location?.Line ?? int.MinValue );
+            w.Write( d.Location?.Column ?? int.MinValue );
+            w.Write( d.Location?.EndLine ?? int.MinValue );
         }
 
         foreach ( var d in model.Declarations )
@@ -153,6 +158,15 @@ internal static class ModelIndex
         {
             w.Write( D( c.Declaration ) );
             w.Write( c.HasLimitedLicense );
+            w.Write( S( c.DisplayName ) );
+            w.Write( S( c.Description ) );
+            w.Write( c.Layers.Count );
+
+            foreach ( var layer in c.Layers )
+            {
+                w.Write( S( layer.Name ) );
+                w.Write( layer.Order );
+            }
         }
 
         w.Write( model.AspectInstances.Count );
@@ -177,6 +191,23 @@ internal static class ModelIndex
                 w.Write( S( t.Semantic ) );
                 w.Write( t.Order );
                 w.Write( t.LinesOfCodeAvoided ?? int.MinValue );
+                w.Write( S( t.Kind ) );
+                w.Write( S( t.AdviceKind ) );
+                w.Write( S( t.Layer ) );
+                w.Write( D( t.IntroducedDeclaration ) );
+            }
+
+            w.Write( i.Diagnostics.Count );
+
+            foreach ( var diagnostic in i.Diagnostics )
+            {
+                w.Write( S( diagnostic.Id ) );
+                w.Write( S( diagnostic.Severity ) );
+                w.Write( S( diagnostic.Message ) );
+                w.Write( D( diagnostic.Declaration ) );
+                w.Write( S( diagnostic.File ) );
+                w.Write( diagnostic.Line ?? int.MinValue );
+                w.Write( diagnostic.Column ?? int.MinValue );
             }
         }
 
@@ -194,6 +225,7 @@ internal static class ModelIndex
             w.Write( S( p.KeyFile ) );
             w.Write( p.Line ?? int.MinValue );
             w.Write( p.Column ?? int.MinValue );
+            w.Write( p.Degree );
             w.Write( p.AspectInstance == null ? -1 : instances[p.AspectInstance] );
             WriteList( w, p.AspectInstances, i => instances[i] );
         }
@@ -308,6 +340,16 @@ internal static class ModelIndex
             var kind = (IntrospectionDeclarationKind) reader.ReadByte();
             var name = R();
             var declaration = new IntrospectionDeclaration( assembly, id, kind, name, S() ) { Namespace = S() };
+            var locationFile = S();
+            var locationLine = N();
+            var locationColumn = N();
+            var locationEndLine = N();
+
+            if ( locationFile != null )
+            {
+                declaration.Location = new IntrospectionSourceLocation( locationFile, locationLine ?? 1, locationColumn ?? 1 ) { EndLine = locationEndLine };
+            }
+
             declarations[i] = declaration;
             model.DeclarationsList.Add( declaration );
             model.DeclarationsByQualifiedId[declaration.QualifiedId] = declaration;
@@ -328,7 +370,8 @@ internal static class ModelIndex
 
         for ( var i = 0; i < classes.Length; i++ )
         {
-            classes[i] = new IntrospectionAspectClass( D()! ) { HasLimitedLicense = reader.ReadBoolean() };
+            classes[i] = new IntrospectionAspectClass( D()! ) { HasLimitedLicense = reader.ReadBoolean(), DisplayName = S(), Description = S() };
+            ReadList( classes[i].LayersList, () => new IntrospectionAspectLayer( S(), reader.ReadInt32() ) );
             model.AspectClassesList.Add( classes[i] );
         }
 
@@ -354,11 +397,28 @@ internal static class ModelIndex
             {
                 var transformation = new IntrospectionTransformation( instance, D()! )
                 {
-                    AdviceDeclaration = D(), Description = S(), Semantic = S(), Order = reader.ReadInt32(), LinesOfCodeAvoided = N()
+                    AdviceDeclaration = D(),
+                    Description = S(),
+                    Semantic = S(),
+                    Order = reader.ReadInt32(),
+                    LinesOfCodeAvoided = N(),
+                    Kind = S(),
+                    AdviceKind = S(),
+                    Layer = S(),
+                    IntroducedDeclaration = D()
                 };
 
                 instance.TransformationsList.Add( transformation );
                 model.TransformationsList.Add( transformation );
+            }
+
+            var diagnosticCount = Count();
+
+            for ( var d = 0; d < diagnosticCount; d++ )
+            {
+                var diagnostic = new IntrospectionDiagnostic( instance, R(), R() ) { Message = S(), Declaration = D(), File = S(), Line = N(), Column = N() };
+                instance.DiagnosticsList.Add( diagnostic );
+                model.DiagnosticsList.Add( diagnostic );
             }
 
             instances[i] = instance;
@@ -380,6 +440,7 @@ internal static class ModelIndex
                 KeyFile = S(),
                 Line = N(),
                 Column = N(),
+                Degree = reader.ReadInt32(),
                 AspectInstance = reader.ReadInt32() is var a and >= 0 ? instances[a] : null
             };
 

@@ -34,7 +34,7 @@ public sealed class SchemaCommand : IntrospectionCommand<SchemaCommandSettings>
 
                 foreach ( var field in type.Fields )
                 {
-                    var fieldProvided = provider.Provides( type.Name, field.Name ) ? "" : $" Not recorded by {provider.ProductName}.";
+                    var fieldProvided = provider.Provides( type, field ) ? "" : $" Not recorded by {provider.ProductName}.";
                     var values = field.EnumValues != null ? $" Values: {string.Join( ", ", field.EnumValues )}." : "";
                     options.StandardOutput.WriteLine( $"  {field.Name} ({Describe( field )}): {field.Description}{values}{fieldProvided}" );
                 }
@@ -72,7 +72,7 @@ public sealed class SchemaCommand : IntrospectionCommand<SchemaCommandSettings>
                             w.WriteString( "name", field.Name );
                             w.WriteString( "type", Describe( field ) );
                             w.WriteString( "description", field.Description );
-                            w.WriteBoolean( "provided", provider.Provides( type.Name, field.Name ) );
+                            w.WriteBoolean( "provided", provider.Provides( type, field ) );
                             w.WriteBoolean( "summary", field.IsInSummary );
 
                             if ( field.EnumValues != null )

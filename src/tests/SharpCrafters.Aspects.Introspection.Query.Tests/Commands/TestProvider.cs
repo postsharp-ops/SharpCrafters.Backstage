@@ -4,6 +4,7 @@
 
 using SharpCrafters.Aspects.Introspection.Query.Commands;
 using SharpCrafters.Aspects.Introspection.Query.Projects;
+using SharpCrafters.Aspects.Introspection.Query.V1;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System;

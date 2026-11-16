@@ -134,7 +134,7 @@ internal static partial class QueryOptionParser
                     text,
                     0,
                     ( current, segment, _ ) => current.GetField( segment ) is { } field
-                        ? provider.Provides( current.Name, field.Name ) ? field : null
+                        ? provider.Provides( current, field ) ? field : null
                         : throw new InvalidOperationException( $"The default column '{text}' of {type.Name} is not a path of the schema." ),
                     ( message, _ ) => new InvalidOperationException( $"The default column '{text}' of {type.Name} is invalid: {message}" ) ) )
             .OfType<FieldPath>()

@@ -84,7 +84,10 @@ public static partial class DotNetSdkLocator
 
         if ( sdk == null )
         {
-            return new DotNetSdkRegistration( null, DescribeNoCompatibleSdk( sdks, rejections, Environment.Version, RuntimeInformation.RuntimeIdentifier ) );
+            return new DotNetSdkRegistration( null, DescribeNoCompatibleSdk( sdks, rejections, Environment.Version, RuntimeInformation.RuntimeIdentifier ) )
+            {
+                HasIncompatibleSdks = sdks.Count > 0
+            };
         }
 
         RegisterSdk( sdk );

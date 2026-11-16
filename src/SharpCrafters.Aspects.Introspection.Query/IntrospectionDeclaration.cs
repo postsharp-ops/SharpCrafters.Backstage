@@ -81,6 +81,12 @@ public sealed class IntrospectionDeclaration
     public IntrospectionDeclaration? BackingField { get; internal set; }
 
     /// <summary>
+    /// Gets the location of the declaration that the file records (Metalama), or <c>null</c>. The location that the product records
+    /// apart from its file, such as the <c>.pspdb</c> of PostSharp, is given by <see cref="IIntrospectionSourceLocations"/>.
+    /// </summary>
+    public IntrospectionSourceLocation? Location { get; internal set; }
+
+    /// <summary>
     /// Gets the identifier of the declaration in the file it was read from, such as a reflection name of version 1, or <c>null</c>
     /// when it is the same as <see cref="Id"/>.
     /// </summary>

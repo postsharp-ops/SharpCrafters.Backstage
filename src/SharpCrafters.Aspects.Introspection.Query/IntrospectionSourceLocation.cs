@@ -10,4 +10,10 @@ namespace SharpCrafters.Aspects.Introspection.Query;
 /// <param name="File">The full path of the file.</param>
 /// <param name="Line">The line, from 1.</param>
 /// <param name="Column">The column, from 1.</param>
-public sealed record IntrospectionSourceLocation( string File, int Line, int Column );
+public sealed record IntrospectionSourceLocation( string File, int Line, int Column )
+{
+    /// <summary>
+    /// Gets the last line of the declaration that starts at this location, or <c>null</c> when the product does not record it.
+    /// </summary>
+    public int? EndLine { get; init; }
+}

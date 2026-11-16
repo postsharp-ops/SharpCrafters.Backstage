@@ -40,6 +40,12 @@ public sealed class IntrospectionPredecessor
     public bool IsKindInferred { get; }
 
     /// <summary>
+    /// Gets the number of aspect instances between the predecessor and the source code (Metalama): <c>0</c> for a custom attribute
+    /// or a fabric, and <c>1</c> or more for an aspect instance. It is <c>0</c> in a file of version 1.
+    /// </summary>
+    public int Degree { get; internal set; }
+
+    /// <summary>
     /// Gets the declaration that carries the custom attribute, for a predecessor of kind <see cref="AspectPredecessorKind.Attribute"/>,
     /// <see cref="AspectPredecessorKind.Multicast"/> or <see cref="AspectPredecessorKind.Inherited"/>, or the fabric type, or <c>null</c>.
     /// </summary>

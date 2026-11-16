@@ -4,6 +4,7 @@
 
 using SharpCrafters.Aspects.Introspection.Query.Projects;
 using SharpCrafters.Aspects.Introspection.Query.Querying;
+using SharpCrafters.Aspects.Introspection.V1;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -173,7 +174,9 @@ internal static class TextOutput
 
             foreach ( var transformation in Take( ordered, limit ) )
             {
-                var semantic = transformation.Semantic != null ? $" ({transformation.Semantic})" : "";
+                // The accessor of PostSharp, or the kind of transformation of Metalama.
+                var qualifier = transformation.Semantic ?? transformation.Kind;
+                var semantic = qualifier != null ? $" ({qualifier})" : "";
                 builder.AppendLine( CultureInfo.InvariantCulture, $"    {transformation.Order}. {Name( transformation.TargetDeclaration )}{semantic}: {transformation.Description ?? "(no description)"}" );
             }
 
