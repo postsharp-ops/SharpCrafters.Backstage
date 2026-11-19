@@ -333,16 +333,23 @@ public sealed class UsageSessionFactoryTests : TestsBase
 
     /// <summary>
     /// Tests that an application with its own analytics action claims its daily report independently of the default
-    /// action, and does not modify the claim of the default action. See metalama/Metalama#2387.
+    /// action, and does not modify the claim that versions earlier than 2027.0 record. See metalama/Metalama#2387.
     /// </summary>
     [Fact]
     public async Task SessionOfNonDefaultActionReportedToMatomoSeparatelyAsync()
     {
         this._applicationInfo = new TestApplicationInfo { IsTelemetryEnabled = true, UsageAnalyticsActionName = "mcp" };
 
-        // Another application has already sent the report of the default action today.
+        // Another application has already sent the report of the default action of this version line today, and an
+        // earlier version has recorded its own claim.
         var defaultActionPostTime = this.Time.UtcNow.AddHours( -1 );
-        this.ConfigurationManager!.Update<TelemetryConfiguration>( c => c with { LastMatomoPostTime = defaultActionPostTime } );
+
+        this.ConfigurationManager!.Update<TelemetryConfiguration>(
+            c => c with
+            {
+                LastMatomoPostTime = defaultActionPostTime,
+                LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:0.0", defaultActionPostTime )
+            } );
 
         async Task StartSessionAndAssert( bool isReportingExpected )
         {
@@ -376,7 +383,7 @@ public sealed class UsageSessionFactoryTests : TestsBase
 
         // The first session of the action is reported although the default action was reported today.
         await StartSessionAndAssert( true );
-        Assert.Equal( this.Time.UtcNow, this.ConfigurationManager!.Get<TelemetryConfiguration>().LastMatomoPostTimes["MCP"] );
+        Assert.Equal( this.Time.UtcNow, this.ConfigurationManager!.Get<TelemetryConfiguration>().LastMatomoPostTimes["MCP:0.0"] );
 
         // A second session of the same action on the same day is not reported.
         await StartSessionAndAssert( false );
@@ -385,4 +392,47 @@ public sealed class UsageSessionFactoryTests : TestsBase
         this.Time.AddTime( TimeSpan.FromDays( 1.1 ) );
         await StartSessionAndAssert( true );
     }
+
+    /// <summary>
+    /// Tests that the daily report of the default action is claimed per version line, so that neither the claim of an
+    /// earlier version nor the claim of another version line prevents it. See metalama/Metalama#2387.
+    /// </summary>
+    [Fact]
+    public async Task SessionReportedToMatomoOncePerVersionLineAsync()
+    {
+        // An earlier version and another version line have both sent their report today.
+        var otherPostTime = this.Time.UtcNow.AddHours( -1 );
+
+        this.ConfigurationManager!.Update<TelemetryConfiguration>(
+            c => c with
+            {
+                LastMatomoPostTime = otherPostTime,
+                LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:2026.1", otherPostTime )
+            } );
+
+        async Task<int> StartSessionAndCountReportsAsync()
+        {
+            this.HttpClientFactory.ClearProcessedRequests();
+
+            new UsageSessionFactory( this.ServiceProvider ).CreateSession( "TestSession" ).Dispose();
+            await this.BackgroundTasks.WhenNoPendingTaskAsync();
+
+            return this.HttpClientFactory.ProcessedRequests.Count( r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" );
+        }
+
+        Assert.Equal( 1, await StartSessionAndCountReportsAsync() );
+        Assert.Equal( 0, await StartSessionAndCountReportsAsync() );
+
+        var configuration = this.ConfigurationManager!.Get<TelemetryConfiguration>();
+        Assert.Equal( this.Time.UtcNow, configuration.LastMatomoPostTimes["usage:0.0"] );
+        Assert.Equal( otherPostTime, configuration.LastMatomoPostTimes["usage:2026.1"] );
+        Assert.Equal( otherPostTime, configuration.LastMatomoPostTime );
+    }
+
+    [Theory]
+    [InlineData( "usage", "2027.0.8.1234", "usage:2027.0" )]
+    [InlineData( "mcp", "2027.1", "mcp:2027.1" )]
+    [InlineData( "usage", null, "usage" )]
+    public void TheDailyAnalyticsBucketIsTheActionAndTheVersionLine( string actionName, string? version, string expected )
+        => Assert.Equal( expected, UsageSession.GetDailyAnalyticsBucket( actionName, version == null ? null : Version.Parse( version ) ) );
 }

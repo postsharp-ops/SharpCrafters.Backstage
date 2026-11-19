@@ -48,12 +48,12 @@ The device identifier and the anonymization salts are created on demand by `ITel
 
 ## The daily analytics report
 
-Disposing a usage session also sends an event to Matomo (`MatomoUploader`), whether or not the session collects metrics. A device sends at most one such event per action and per day. The action is given by `IApplicationInfo.UsageAnalyticsActionName`:
+Disposing a usage session also sends an event to Matomo (`MatomoUploader`), whether or not the session collects metrics. A device sends at most one such event per bucket and per day. A bucket is an action and a version line, for instance `usage:2027.0` (`UsageSession.GetDailyAnalyticsBucket`):
 
-- The default action is `usage`. Every application that does not override the action shares it, so the compiler, the IDE extensions and the tools of a device send one `usage` event per day together. The claim is `TelemetryConfiguration.LastMatomoPostTime`, which earlier versions also read and write.
-- An application that must be counted separately returns its own action. Metalama.Mcp returns `mcp` and Metalama.LinqPad returns `linqpad`. The claim of such an action is its entry in `TelemetryConfiguration.LastMatomoPostTimes`, so it does not depend on whether another application has already sent the `usage` event that day.
+- The action is given by `IApplicationInfo.UsageAnalyticsActionName`. The default action is `usage`. Every application that does not override the action shares it, so the compiler, the IDE extensions and the tools of a device send one `usage` event per version line and per day together. An application that must be counted separately returns its own action. Metalama.Mcp returns `mcp` and Metalama.LinqPad returns `linqpad`.
+- The version line is the major and minor version of the reported component, which is the latest component of the vendor in the process (`GetLatestVendorComponent`). This is also the version that the event carries in dimension 4. All builds of a version line share one event, and that event always carries the latest component of the process.
 
-> **Rule.** Do not move the default action into `LastMatomoPostTimes`. Earlier versions share `telemetry.json` and read only `LastMatomoPostTime`, so a device that runs two versions would then send the `usage` event twice a day. See metalama/Metalama#2387.
+The claim of a bucket is its entry in `TelemetryConfiguration.LastMatomoPostTimes`. Versions earlier than 2027.0 share `telemetry.json` and record a single machine-wide claim in `TelemetryConfiguration.LastMatomoPostTime`. Version 2027.0 and later neither read nor write that property, so a device that runs an earlier version and 2027.0 on the same day sends one event for each. See metalama/Metalama#2387.
 
 ## Anonymization
 

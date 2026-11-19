@@ -125,7 +125,7 @@ internal sealed class UsageSession : IUsageSession
         {
             var actionName = this._serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application.UsageAnalyticsActionName;
 
-            if ( this.TryClaimDailyAnalyticsReport( actionName ) )
+            if ( this.TryClaimDailyAnalyticsReport( GetDailyAnalyticsBucket( actionName, GetReport().AssemblyVersion ) ) )
             {
                 this._backgroundTasksService.Enqueue( () => this._matomoUploader.SendAsync( GetReport(), actionName, newVisit: true ) );
             }
@@ -133,29 +133,37 @@ internal sealed class UsageSession : IUsageSession
     }
 
     /// <summary>
-    /// Determines whether the daily usage report of an action must be sent now, and records that it is.
+    /// Gets the key under which the daily usage report of an action and of a version line is claimed.
     /// </summary>
     /// <param name="actionName">The action of the application, given by <see cref="IApplicationInfo.UsageAnalyticsActionName"/>.</param>
-    /// <returns><see langword="true"/> if no report of this action was sent during the last day.</returns>
+    /// <param name="version">The version of the reported component, which is the latest component of the vendor.</param>
+    /// <returns>The action followed by the major and minor version, for instance <c>usage:2027.0</c>.</returns>
     /// <remarks>
-    /// The default action is recorded in <see cref="TelemetryConfiguration.LastMatomoPostTime"/>, which earlier versions
-    /// also read and write. Every other action is recorded in <see cref="TelemetryConfiguration.LastMatomoPostTimes"/>.
+    /// The major and minor version identify the version line. They are also the version that the analytics service
+    /// receives. All builds of a version line therefore share one daily report, and that report carries the version of
+    /// the latest component of the vendor in the process.
     /// </remarks>
-    private bool TryClaimDailyAnalyticsReport( string actionName )
+    internal static string GetDailyAnalyticsBucket( string actionName, Version? version )
+        => version == null ? actionName : $"{actionName}:{version.ToString( 2 )}";
+
+    /// <summary>
+    /// Determines whether the daily usage report of a bucket must be sent now, and records that it is.
+    /// </summary>
+    /// <param name="bucket">The bucket, given by <see cref="GetDailyAnalyticsBucket"/>.</param>
+    /// <returns><see langword="true"/> if no report of this bucket was sent during the last day.</returns>
+    /// <remarks>
+    /// The claim is recorded in <see cref="TelemetryConfiguration.LastMatomoPostTimes"/>. Versions earlier than 2027.0
+    /// record their claim in <see cref="TelemetryConfiguration.LastMatomoPostTime"/>. This version neither reads nor
+    /// writes that property, so that each version line is counted separately.
+    /// </remarks>
+    private bool TryClaimDailyAnalyticsReport( string bucket )
     {
         var now = this._time.UtcNow;
         var threshold = now.AddDays( -1 );
 
-        if ( string.Equals( actionName, ApplicationInfoBase.DefaultUsageAnalyticsActionName, StringComparison.OrdinalIgnoreCase ) )
-        {
-            return this._configurationManager.UpdateIf<TelemetryConfiguration>(
-                c => c.LastMatomoPostTime == null || c.LastMatomoPostTime <= threshold,
-                c => c with { LastMatomoPostTime = now } );
-        }
-
         return this._configurationManager.UpdateIf<TelemetryConfiguration>(
-            c => !c.LastMatomoPostTimes.TryGetValue( actionName, out var lastPostTime ) || lastPostTime <= threshold,
-            c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( actionName, now ) } );
+            c => !c.LastMatomoPostTimes.TryGetValue( bucket, out var lastPostTime ) || lastPostTime <= threshold,
+            c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( bucket, now ) } );
     }
 
     private void TraceSample()

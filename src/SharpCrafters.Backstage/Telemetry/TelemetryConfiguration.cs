@@ -120,13 +120,13 @@ public sealed record TelemetryConfiguration : ConfigurationFile
 
     /// <summary>
     /// Gets the UTC time of the last daily usage report sent to the analytics service, keyed by the action of the
-    /// application (<see cref="Application.IApplicationInfo.UsageAnalyticsActionName"/>). The default action is not
-    /// recorded here but in <see cref="LastMatomoPostTime"/>.
+    /// application (<see cref="Application.IApplicationInfo.UsageAnalyticsActionName"/>) and the version line, for
+    /// instance <c>usage:2027.0</c>.
     /// </summary>
     /// <remarks>
-    /// Earlier versions share this file and read only <see cref="LastMatomoPostTime"/>. The default action keeps that
-    /// property, so that a device that runs both versions still sends at most one report of the default action per day.
-    /// See metalama/Metalama#2387.
+    /// Versions earlier than 2027.0 share this file and record their claim in <see cref="LastMatomoPostTime"/>. Each
+    /// version line is counted separately, so a device that runs two version lines on the same day sends one report for
+    /// each. See metalama/Metalama#2387.
     /// </remarks>
     [JsonConverter( typeof(CaseInsensitiveImmutableDictionaryConverterFactory<DateTime>) )]
     public ImmutableDictionary<string, DateTime> LastMatomoPostTimes
@@ -154,6 +154,13 @@ public sealed record TelemetryConfiguration : ConfigurationFile
     private readonly ImmutableDictionary<string, DateTime> _issuePrompts = _emptyDates;
     private readonly ImmutableDictionary<string, DateTime> _lastMatomoPostTimes = _emptyDates;
 
+    /// <summary>
+    /// Gets the UTC time of the last daily usage report that a version earlier than 2027.0 sent to the analytics service.
+    /// </summary>
+    /// <remarks>
+    /// This version does not use this property. It keeps it for the earlier versions that share this file. See
+    /// <see cref="LastMatomoPostTimes"/>.
+    /// </remarks>
     public DateTime? LastMatomoPostTime { get; init; }
 
     /// <summary>

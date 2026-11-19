@@ -41,8 +41,8 @@ namespace SharpCrafters.Backstage.Application
         /// Gets the name of the action under which the application reports its daily usage to the analytics service.
         /// </summary>
         /// <remarks>
-        /// The daily usage report is claimed once per action and per day on each device. Applications that share an
-        /// action therefore share a single daily report. An application that must be counted separately, for instance
+        /// The daily usage report is claimed once per action, per version line and per day on each device. Applications
+        /// of the same version line that share an action therefore share a single daily report. An application that must be counted separately, for instance
         /// a tool that is used without the compiler, returns its own action. The default action is
         /// <see cref="ApplicationInfoBase.DefaultUsageAnalyticsActionName"/>.
         /// </remarks>
