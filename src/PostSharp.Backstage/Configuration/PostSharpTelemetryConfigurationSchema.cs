@@ -57,7 +57,6 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
             UsageTrackingSalt = key.GetInt64( "UsageTrackingSalt" ),
             ExceptionReportingSalt = key.GetInt64( "ExceptionReportingSalt" ),
             LicenseAuditSalt = key.GetInt64( "LicenseAuditSalt" ),
-            LastMatomoPostTime = key.GetDateTime( "LastMatomoPostTime" ),
             LastMatomoPostTimes = ReadDictionaryOfValues( key, _lastMatomoPostTimesKeyName, RegistryValueConverters.QWordToDateTime ),
             RetentionPeriodInDays = key.GetInt32( "RetentionPeriodInDays" ),
             Issues = ReadDictionary( key, _issuesKeyName, value => (ReportingStatus) (value as int? ?? 0) ),
@@ -77,7 +76,6 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
         key.SetInt64( "UsageTrackingSalt", configuration.UsageTrackingSalt );
         key.SetInt64( "ExceptionReportingSalt", configuration.ExceptionReportingSalt );
         key.SetInt64( "LicenseAuditSalt", configuration.LicenseAuditSalt );
-        key.SetDateTime( "LastMatomoPostTime", configuration.LastMatomoPostTime );
         key.SetInt32( "RetentionPeriodInDays", configuration.RetentionPeriodInDays );
 
         WriteDictionary( key, _issuesKeyName, configuration.Issues, ( subKey, name, status ) => subKey.SetInt32( name, (int) status ) );

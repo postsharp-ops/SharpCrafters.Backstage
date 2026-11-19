@@ -36,7 +36,6 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
             UsageTrackingSalt = 9876543210L,
             ExceptionReportingSalt = 1357924680L,
             LastSaltChangeTime = new DateTime( 2025, 1, 1, 0, 0, 0, DateTimeKind.Utc ),
-            LastMatomoPostTime = new DateTime( 2025, 1, 10, 12, 0, 0, DateTimeKind.Utc ),
             Version = 5
         };
 
@@ -55,7 +54,6 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
                                       "Issues": {},
                                       "IssuePrompts": {},
                                       "LastMatomoPostTimes": {},
-                                      "LastMatomoPostTime": "2025-01-10T12:00:00Z",
                                       "RetentionPeriodInDays": null,
                                       "version": 5
                                     }
@@ -139,7 +137,6 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
                                         "ISSUE002": "2025-01-15T09:00:00Z"
                                       },
                                       "LastMatomoPostTimes": {},
-                                      "LastMatomoPostTime": null,
                                       "RetentionPeriodInDays": null,
                                       "version": null
                                     }
@@ -526,13 +523,16 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
         // Earlier versions of Metalama keep the time of the last usage report of each project in a 'Sessions' member of
         // telemetry.json, which they share with this version. This version no longer declares the member, so it must
         // carry it through a deserialization and a serialization unchanged. See IUsageSessionStore.
+        // The same applies to the 'LastMatomoPostTime' member, in which these versions record their daily analytics
+        // claim. See metalama/Metalama#2387.
         const string json = """
                             {
                               "UsageReportingAction": 1,
                               "Sessions": {
                                 "Project1": "2025-01-15T10:00:00Z",
                                 "Project2": "2020-01-01T00:00:00Z"
-                              }
+                              },
+                              "LastMatomoPostTime": "2025-01-10T12:00:00Z"
                             }
                             """;
 
@@ -548,6 +548,8 @@ public sealed class ConfigurationFileSerializationTests : JsonSerializationTests
         Assert.Equal(
             JsonSerializer.Serialize( original.RootElement.GetProperty( "Sessions" ) ),
             JsonSerializer.Serialize( roundTripped.RootElement.GetProperty( "Sessions" ) ) );
+
+        Assert.Equal( "2025-01-10T12:00:00Z", roundTripped.RootElement.GetProperty( "LastMatomoPostTime" ).GetString() );
     }
 
     [Fact]

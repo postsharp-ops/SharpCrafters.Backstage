@@ -124,9 +124,8 @@ public sealed record TelemetryConfiguration : ConfigurationFile
     /// instance <c>usage:2027.0</c>.
     /// </summary>
     /// <remarks>
-    /// Versions earlier than 2027.0 share this file and record their claim in <see cref="LastMatomoPostTime"/>. Each
-    /// version line is counted separately, so a device that runs two version lines on the same day sends one report for
-    /// each. See metalama/Metalama#2387.
+    /// Each version line is counted separately, so a device that runs two version lines on the same day sends one report
+    /// for each. See metalama/Metalama#2387.
     /// </remarks>
     [JsonConverter( typeof(CaseInsensitiveImmutableDictionaryConverterFactory<DateTime>) )]
     public ImmutableDictionary<string, DateTime> LastMatomoPostTimes
@@ -139,6 +138,10 @@ public sealed record TelemetryConfiguration : ConfigurationFile
     // of Metalama share this file and still keep that record in a 'Sessions' member, so this version must preserve it.
     // It does so without declaring the member: an undeclared member is read into UnknownMembers and written back
     // unchanged by every update. Declaring it again would make this version the owner of its content.
+
+    // Versions earlier than 2027.0 record a single daily analytics claim for the whole device in a 'LastMatomoPostTime'
+    // member. This version claims per action and version line in LastMatomoPostTimes, and preserves that member in the
+    // same way as 'Sessions'. See metalama/Metalama#2387.
 
     // A property that is absent from the JSON file deserializes to null rather than to its initializer, so every
     // dictionary normalizes null in its 'init' accessor (which 'with' expressions also go through). Without this, a
@@ -154,14 +157,6 @@ public sealed record TelemetryConfiguration : ConfigurationFile
     private readonly ImmutableDictionary<string, DateTime> _issuePrompts = _emptyDates;
     private readonly ImmutableDictionary<string, DateTime> _lastMatomoPostTimes = _emptyDates;
 
-    /// <summary>
-    /// Gets the UTC time of the last daily usage report that a version earlier than 2027.0 sent to the analytics service.
-    /// </summary>
-    /// <remarks>
-    /// This version does not use this property. It keeps it for the earlier versions that share this file. See
-    /// <see cref="LastMatomoPostTimes"/>.
-    /// </remarks>
-    public DateTime? LastMatomoPostTime { get; init; }
 
     /// <summary>
     /// The retention period applied when <see cref="RetentionPeriodInDays"/> is not set.

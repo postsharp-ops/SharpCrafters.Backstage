@@ -238,6 +238,28 @@ public sealed class PostSharpTelemetryConfigurationSchemaTests : TestsBase
     }
 
     /// <summary>
+    /// The <c>LastMatomoPostTime</c> value belongs to versions earlier than 2027.0. This version does not map it, so a
+    /// write of the telemetry configuration must leave it unchanged. See metalama/Metalama#2387.
+    /// </summary>
+    [Fact]
+    public void AnUpdateDoesNotTouchTheLegacyAnalyticsClaim()
+    {
+        var postTime = new DateTime( 2026, 9, 1, 0, 0, 0, DateTimeKind.Utc );
+
+        using ( var feedbackKey = this.FeedbackKey() )
+        {
+            feedbackKey.SetDateTime( "LastMatomoPostTime", postTime );
+        }
+
+        this.Update( c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:2027.0", postTime.AddDays( 1 ) ) } );
+
+        using ( var feedbackKey = this.FeedbackKey() )
+        {
+            Assert.Equal( postTime, feedbackKey.GetDateTime( "LastMatomoPostTime" )!.Value.ToUniversalTime() );
+        }
+    }
+
+    /// <summary>
     /// The <c>Sessions</c> sub-key belongs to <see cref="RegistryUsageSessionStore"/>, which writes one value at a time.
     /// A write of the telemetry configuration must leave it alone, otherwise it would delete the values that the store
     /// wrote since the configuration was read.

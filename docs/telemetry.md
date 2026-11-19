@@ -53,7 +53,7 @@ Disposing a usage session also sends an event to Matomo (`MatomoUploader`), whet
 - The action is given by `IApplicationInfo.UsageAnalyticsActionName`. The default action is `usage`. Every application that does not override the action shares it, so the compiler, the IDE extensions and the tools of a device send one `usage` event per version line and per day together. An application that must be counted separately returns its own action. Metalama.Mcp returns `mcp` and Metalama.LinqPad returns `linqpad`.
 - The version line is the major and minor version of the reported component, which is the latest component of the vendor in the process (`GetLatestVendorComponent`). This is also the version that the event carries in dimension 4. All builds of a version line share one event, and that event always carries the latest component of the process.
 
-The claim of a bucket is its entry in `TelemetryConfiguration.LastMatomoPostTimes`. Versions earlier than 2027.0 share `telemetry.json` and record a single machine-wide claim in `TelemetryConfiguration.LastMatomoPostTime`. Version 2027.0 and later neither read nor write that property, so a device that runs an earlier version and 2027.0 on the same day sends one event for each. See metalama/Metalama#2387.
+The claim of a bucket is its entry in `TelemetryConfiguration.LastMatomoPostTimes`. Versions earlier than 2027.0 share `telemetry.json` and record a single machine-wide claim in a `LastMatomoPostTime` member. Version 2027.0 and later do not declare that member. They preserve it unchanged, as they preserve `Sessions`, and neither read nor write its value, so a device that runs an earlier version and 2027.0 on the same day sends one event for each. See metalama/Metalama#2387.
 
 ## Anonymization
 
@@ -174,7 +174,7 @@ Writing `LastUploadTime` is how the once-a-day upload is claimed against other p
 
 | File | Scope | Contents |
 |---|---|---|
-| `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, the daily analytics claims (`LastMatomoPostTime`, `LastMatomoPostTimes`), retention |
+| `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, the daily analytics claims (`LastMatomoPostTimes`), retention |
 | `Telemetry\Sessions\*.session` (Metalama) | user | time of the last usage report of one project, one file per project |
 | `toastNotifications.json` | user | per-kind snooze / mute, last notification time |
 | `metalama.json` | repository, committed | `telemetry.enabled` |

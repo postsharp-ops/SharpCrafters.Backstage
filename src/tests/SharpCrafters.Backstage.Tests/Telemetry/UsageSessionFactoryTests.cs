@@ -333,23 +333,18 @@ public sealed class UsageSessionFactoryTests : TestsBase
 
     /// <summary>
     /// Tests that an application with its own analytics action claims its daily report independently of the default
-    /// action, and does not modify the claim that versions earlier than 2027.0 record. See metalama/Metalama#2387.
+    /// action, and does not modify the claim of the default action. See metalama/Metalama#2387.
     /// </summary>
     [Fact]
     public async Task SessionOfNonDefaultActionReportedToMatomoSeparatelyAsync()
     {
         this._applicationInfo = new TestApplicationInfo { IsTelemetryEnabled = true, UsageAnalyticsActionName = "mcp" };
 
-        // Another application has already sent the report of the default action of this version line today, and an
-        // earlier version has recorded its own claim.
+        // Another application has already sent the report of the default action of this version line today.
         var defaultActionPostTime = this.Time.UtcNow.AddHours( -1 );
 
         this.ConfigurationManager!.Update<TelemetryConfiguration>(
-            c => c with
-            {
-                LastMatomoPostTime = defaultActionPostTime,
-                LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:0.0", defaultActionPostTime )
-            } );
+            c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:0.0", defaultActionPostTime ) } );
 
         async Task StartSessionAndAssert( bool isReportingExpected )
         {
@@ -378,7 +373,7 @@ public sealed class UsageSessionFactoryTests : TestsBase
             }
 
             var configuration = this.ConfigurationManager!.Get<TelemetryConfiguration>();
-            Assert.Equal( defaultActionPostTime, configuration.LastMatomoPostTime );
+            Assert.Equal( defaultActionPostTime, configuration.LastMatomoPostTimes["usage:0.0"] );
         }
 
         // The first session of the action is reported although the default action was reported today.
@@ -394,21 +389,17 @@ public sealed class UsageSessionFactoryTests : TestsBase
     }
 
     /// <summary>
-    /// Tests that the daily report of the default action is claimed per version line, so that neither the claim of an
-    /// earlier version nor the claim of another version line prevents it. See metalama/Metalama#2387.
+    /// Tests that the daily report of the default action is claimed per version line, so that the claim of another
+    /// version line does not prevent it. See metalama/Metalama#2387.
     /// </summary>
     [Fact]
     public async Task SessionReportedToMatomoOncePerVersionLineAsync()
     {
-        // An earlier version and another version line have both sent their report today.
+        // Another version line has sent its report today.
         var otherPostTime = this.Time.UtcNow.AddHours( -1 );
 
         this.ConfigurationManager!.Update<TelemetryConfiguration>(
-            c => c with
-            {
-                LastMatomoPostTime = otherPostTime,
-                LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:2026.1", otherPostTime )
-            } );
+            c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "usage:2026.1", otherPostTime ) } );
 
         async Task<int> StartSessionAndCountReportsAsync()
         {
@@ -426,7 +417,6 @@ public sealed class UsageSessionFactoryTests : TestsBase
         var configuration = this.ConfigurationManager!.Get<TelemetryConfiguration>();
         Assert.Equal( this.Time.UtcNow, configuration.LastMatomoPostTimes["usage:0.0"] );
         Assert.Equal( otherPostTime, configuration.LastMatomoPostTimes["usage:2026.1"] );
-        Assert.Equal( otherPostTime, configuration.LastMatomoPostTime );
     }
 
     [Theory]

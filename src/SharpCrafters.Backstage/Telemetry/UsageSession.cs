@@ -153,8 +153,8 @@ internal sealed class UsageSession : IUsageSession
     /// <returns><see langword="true"/> if no report of this bucket was sent during the last day.</returns>
     /// <remarks>
     /// The claim is recorded in <see cref="TelemetryConfiguration.LastMatomoPostTimes"/>. Versions earlier than 2027.0
-    /// record their claim in <see cref="TelemetryConfiguration.LastMatomoPostTime"/>. This version neither reads nor
-    /// writes that property, so that each version line is counted separately.
+    /// record a single claim for the whole device in a <c>LastMatomoPostTime</c> member, which this version neither
+    /// reads nor writes, so that each version line is counted separately.
     /// </remarks>
     private bool TryClaimDailyAnalyticsReport( string bucket )
     {
