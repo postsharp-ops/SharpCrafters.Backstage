@@ -123,9 +123,16 @@ internal sealed class UsageSession : IUsageSession
 
         if ( this._matomoUploader != null )
         {
-            var actionName = this._serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application.UsageAnalyticsActionName;
+            var application = this._serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application;
+            var actionName = application.UsageAnalyticsActionName;
 
-            if ( this.TryClaimDailyAnalyticsReport( GetDailyAnalyticsBucket( actionName, GetReport().AssemblyVersion ) ) )
+            // The version is that of the component that the report carries (see TelemetryReport.ReportedComponent). It is
+            // read here without constructing the report, which accesses the file system.
+            var reportedVersion = application
+                .GetLatestVendorComponent( this._serviceProvider.GetRequiredBackstageService<ProductProfile>().Company )
+                .AssemblyVersion;
+
+            if ( this.TryClaimDailyAnalyticsReport( GetDailyAnalyticsBucket( actionName, reportedVersion ) ) )
             {
                 this._backgroundTasksService.Enqueue( () => this._matomoUploader.SendAsync( GetReport(), actionName, newVisit: true ) );
             }
