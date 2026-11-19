@@ -219,6 +219,25 @@ public sealed class PostSharpTelemetryConfigurationSchemaTests : TestsBase
     }
 
     /// <summary>
+    /// The time of the last daily analytics report of each non-default action is stored in its own sub-key, and is read
+    /// back. See metalama/Metalama#2387.
+    /// </summary>
+    [Fact]
+    public void TheLastAnalyticsReportTimeOfEachActionRoundTrips()
+    {
+        var postTime = new DateTime( 2026, 9, 1, 0, 0, 0, DateTimeKind.Utc );
+
+        this.Update( c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( "mcp", postTime ) } );
+
+        using ( var postTimesKey = this.FeedbackKey().OpenSubKey( "LastMatomoPostTimes" ) )
+        {
+            Assert.Equal( ["mcp"], postTimesKey!.GetValueNames() );
+        }
+
+        Assert.Equal( postTime, this.Read().LastMatomoPostTimes["mcp"].ToUniversalTime() );
+    }
+
+    /// <summary>
     /// The <c>Sessions</c> sub-key belongs to <see cref="RegistryUsageSessionStore"/>, which writes one value at a time.
     /// A write of the telemetry configuration must leave it alone, otherwise it would delete the values that the store
     /// wrote since the configuration was read.

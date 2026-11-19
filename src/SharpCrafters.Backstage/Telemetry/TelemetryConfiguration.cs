@@ -118,6 +118,23 @@ public sealed record TelemetryConfiguration : ConfigurationFile
         init => this._issuePrompts = value ?? _emptyDates;
     }
 
+    /// <summary>
+    /// Gets the UTC time of the last daily usage report sent to the analytics service, keyed by the action of the
+    /// application (<see cref="Application.IApplicationInfo.UsageAnalyticsActionName"/>). The default action is not
+    /// recorded here but in <see cref="LastMatomoPostTime"/>.
+    /// </summary>
+    /// <remarks>
+    /// Earlier versions share this file and read only <see cref="LastMatomoPostTime"/>. The default action keeps that
+    /// property, so that a device that runs both versions still sends at most one report of the default action per day.
+    /// See metalama/Metalama#2387.
+    /// </remarks>
+    [JsonConverter( typeof(CaseInsensitiveImmutableDictionaryConverterFactory<DateTime>) )]
+    public ImmutableDictionary<string, DateTime> LastMatomoPostTimes
+    {
+        get => this._lastMatomoPostTimes;
+        init => this._lastMatomoPostTimes = value ?? _emptyDates;
+    }
+
     // The time of the last usage report of each project is no longer held here: see IUsageSessionStore. Earlier versions
     // of Metalama share this file and still keep that record in a 'Sessions' member, so this version must preserve it.
     // It does so without declaring the member: an undeclared member is read into UnknownMembers and written back
@@ -135,6 +152,7 @@ public sealed record TelemetryConfiguration : ConfigurationFile
 
     private readonly ImmutableDictionary<string, ReportingStatus> _issues = _emptyIssues;
     private readonly ImmutableDictionary<string, DateTime> _issuePrompts = _emptyDates;
+    private readonly ImmutableDictionary<string, DateTime> _lastMatomoPostTimes = _emptyDates;
 
     public DateTime? LastMatomoPostTime { get; init; }
 

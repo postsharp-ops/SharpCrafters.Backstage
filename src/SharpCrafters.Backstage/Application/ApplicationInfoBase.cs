@@ -37,6 +37,15 @@ namespace SharpCrafters.Backstage.Application
         /// <inheritdoc />
         public virtual bool ShouldCreateLocalCrashReports => true;
 
+        /// <summary>
+        /// The name of the action under which an application reports its daily usage when it does not override
+        /// <see cref="UsageAnalyticsActionName"/>.
+        /// </summary>
+        public const string DefaultUsageAnalyticsActionName = "usage";
+
+        /// <inheritdoc />
+        public virtual string UsageAnalyticsActionName => DefaultUsageAnalyticsActionName;
+
         public virtual ImmutableArray<IComponentInfo> Components => ImmutableArray<IComponentInfo>.Empty;
     }
 }

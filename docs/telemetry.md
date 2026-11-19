@@ -46,6 +46,15 @@ The device identifier and the anonymization salts are created on demand by `ITel
 
 `GetSalt` throws if the configuration is not activated rather than returning a zeroed salt, because a zero salt would produce the *same* pseudonym on every not-yet-activated machine. Call `EnsureActivated` before reading a salt.
 
+## The daily analytics report
+
+Disposing a usage session also sends an event to Matomo (`MatomoUploader`), whether or not the session collects metrics. A device sends at most one such event per action and per day. The action is given by `IApplicationInfo.UsageAnalyticsActionName`:
+
+- The default action is `usage`. Every application that does not override the action shares it, so the compiler, the IDE extensions and the tools of a device send one `usage` event per day together. The claim is `TelemetryConfiguration.LastMatomoPostTime`, which earlier versions also read and write.
+- An application that must be counted separately returns its own action. Metalama.Mcp returns `mcp` and Metalama.LinqPad returns `linqpad`. The claim of such an action is its entry in `TelemetryConfiguration.LastMatomoPostTimes`, so it does not depend on whether another application has already sent the `usage` event that day.
+
+> **Rule.** Do not move the default action into `LastMatomoPostTimes`. Earlier versions share `telemetry.json` and read only `LastMatomoPostTime`, so a device that runs two versions would then send the `usage` event twice a day. See metalama/Metalama#2387.
+
 ## Anonymization
 
 Each channel hashes the device identifier with its **own** salt (`TelemetrySaltKind`), so the Matomo dataset, the usage-tracking data and the exception reports cannot be joined. The raw `DeviceId` GUID never leaves the machine.
@@ -165,7 +174,7 @@ Writing `LastUploadTime` is how the once-a-day upload is claimed against other p
 
 | File | Scope | Contents |
 |---|---|---|
-| `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, retention |
+| `telemetry.json` | user | consent per scenario, device id, salts, `Issues`, `IssuePrompts`, the daily analytics claims (`LastMatomoPostTime`, `LastMatomoPostTimes`), retention |
 | `Telemetry\Sessions\*.session` (Metalama) | user | time of the last usage report of one project, one file per project |
 | `toastNotifications.json` | user | per-kind snooze / mute, last notification time |
 | `metalama.json` | repository, committed | `telemetry.enabled` |

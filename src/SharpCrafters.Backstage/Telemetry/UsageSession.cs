@@ -123,15 +123,39 @@ internal sealed class UsageSession : IUsageSession
 
         if ( this._matomoUploader != null )
         {
-            var mustPerformAggregateAudit = this._configurationManager.UpdateIf<TelemetryConfiguration>(
-                c => c.LastMatomoPostTime == null || c.LastMatomoPostTime <= this._time.UtcNow.AddDays( -1 ),
-                c => c with { LastMatomoPostTime = this._time.UtcNow } );
+            var actionName = this._serviceProvider.GetRequiredBackstageService<IApplicationInfoProvider>().Application.UsageAnalyticsActionName;
 
-            if ( mustPerformAggregateAudit )
+            if ( this.TryClaimDailyAnalyticsReport( actionName ) )
             {
-                this._backgroundTasksService.Enqueue( () => this._matomoUploader.SendUsageAuditAsync( GetReport() ) );
+                this._backgroundTasksService.Enqueue( () => this._matomoUploader.SendAsync( GetReport(), actionName, newVisit: true ) );
             }
         }
+    }
+
+    /// <summary>
+    /// Determines whether the daily usage report of an action must be sent now, and records that it is.
+    /// </summary>
+    /// <param name="actionName">The action of the application, given by <see cref="IApplicationInfo.UsageAnalyticsActionName"/>.</param>
+    /// <returns><see langword="true"/> if no report of this action was sent during the last day.</returns>
+    /// <remarks>
+    /// The default action is recorded in <see cref="TelemetryConfiguration.LastMatomoPostTime"/>, which earlier versions
+    /// also read and write. Every other action is recorded in <see cref="TelemetryConfiguration.LastMatomoPostTimes"/>.
+    /// </remarks>
+    private bool TryClaimDailyAnalyticsReport( string actionName )
+    {
+        var now = this._time.UtcNow;
+        var threshold = now.AddDays( -1 );
+
+        if ( string.Equals( actionName, ApplicationInfoBase.DefaultUsageAnalyticsActionName, StringComparison.OrdinalIgnoreCase ) )
+        {
+            return this._configurationManager.UpdateIf<TelemetryConfiguration>(
+                c => c.LastMatomoPostTime == null || c.LastMatomoPostTime <= threshold,
+                c => c with { LastMatomoPostTime = now } );
+        }
+
+        return this._configurationManager.UpdateIf<TelemetryConfiguration>(
+            c => !c.LastMatomoPostTimes.TryGetValue( actionName, out var lastPostTime ) || lastPostTime <= threshold,
+            c => c with { LastMatomoPostTimes = c.LastMatomoPostTimes.SetItem( actionName, now ) } );
     }
 
     private void TraceSample()

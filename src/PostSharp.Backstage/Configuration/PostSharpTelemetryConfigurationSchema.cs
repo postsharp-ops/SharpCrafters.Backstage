@@ -35,6 +35,11 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
     // since this object was read.
     private const string _issuePromptsKeyName = "IssuePrompts";
 
+    /// <summary>
+    /// The sub-key that holds the time of the last daily analytics report of each action other than the default one.
+    /// </summary>
+    private const string _lastMatomoPostTimesKeyName = "LastMatomoPostTimes";
+
     public override string KeyPath => PostSharpRegistry.FeedbackKeyPath;
 
     protected override TelemetryConfiguration Read( IRegistryKey? key )
@@ -53,6 +58,7 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
             ExceptionReportingSalt = key.GetInt64( "ExceptionReportingSalt" ),
             LicenseAuditSalt = key.GetInt64( "LicenseAuditSalt" ),
             LastMatomoPostTime = key.GetDateTime( "LastMatomoPostTime" ),
+            LastMatomoPostTimes = ReadDictionaryOfValues( key, _lastMatomoPostTimesKeyName, RegistryValueConverters.QWordToDateTime ),
             RetentionPeriodInDays = key.GetInt32( "RetentionPeriodInDays" ),
             Issues = ReadDictionary( key, _issuesKeyName, value => (ReportingStatus) (value as int? ?? 0) ),
             IssuePrompts = ReadDictionaryOfValues( key, _issuePromptsKeyName, RegistryValueConverters.QWordToDateTime ),
@@ -76,6 +82,7 @@ internal sealed class PostSharpTelemetryConfigurationSchema : RegistryConfigurat
 
         WriteDictionary( key, _issuesKeyName, configuration.Issues, ( subKey, name, status ) => subKey.SetInt32( name, (int) status ) );
         WriteDictionary( key, _issuePromptsKeyName, configuration.IssuePrompts, ( subKey, name, date ) => subKey.SetDateTime( name, date ) );
+        WriteDictionary( key, _lastMatomoPostTimesKeyName, configuration.LastMatomoPostTimes, ( subKey, name, date ) => subKey.SetDateTime( name, date ) );
 
         if ( configuration.Version != null )
         {

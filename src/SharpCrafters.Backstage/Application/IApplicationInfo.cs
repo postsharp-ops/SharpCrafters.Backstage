@@ -38,6 +38,17 @@ namespace SharpCrafters.Backstage.Application
         bool ShouldCreateLocalCrashReports { get; }
 
         /// <summary>
+        /// Gets the name of the action under which the application reports its daily usage to the analytics service.
+        /// </summary>
+        /// <remarks>
+        /// The daily usage report is claimed once per action and per day on each device. Applications that share an
+        /// action therefore share a single daily report. An application that must be counted separately, for instance
+        /// a tool that is used without the compiler, returns its own action. The default action is
+        /// <see cref="ApplicationInfoBase.DefaultUsageAnalyticsActionName"/>.
+        /// </remarks>
+        string UsageAnalyticsActionName { get; }
+
+        /// <summary>
         /// Gets the list of additional components of the application.
         /// </summary>
         ImmutableArray<IComponentInfo> Components { get; }

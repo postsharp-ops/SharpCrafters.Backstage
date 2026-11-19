@@ -330,4 +330,59 @@ public sealed class UsageSessionFactoryTests : TestsBase
         await StartSessionAndAssert( "Project1", true, "624e91464771d36f", DeviceAgeBucket.From1To30 );
         await StartSessionAndAssert( "Project2", false, null, DeviceAgeBucket.From1To30 );
     }
+
+    /// <summary>
+    /// Tests that an application with its own analytics action claims its daily report independently of the default
+    /// action, and does not modify the claim of the default action. See metalama/Metalama#2387.
+    /// </summary>
+    [Fact]
+    public async Task SessionOfNonDefaultActionReportedToMatomoSeparatelyAsync()
+    {
+        this._applicationInfo = new TestApplicationInfo { IsTelemetryEnabled = true, UsageAnalyticsActionName = "mcp" };
+
+        // Another application has already sent the report of the default action today.
+        var defaultActionPostTime = this.Time.UtcNow.AddHours( -1 );
+        this.ConfigurationManager!.Update<TelemetryConfiguration>( c => c with { LastMatomoPostTime = defaultActionPostTime } );
+
+        async Task StartSessionAndAssert( bool isReportingExpected )
+        {
+            this.HttpClientFactory.ClearProcessedRequests();
+
+            new UsageSessionFactory( this.ServiceProvider ).CreateSession( "TestSession" ).Dispose();
+            await this.BackgroundTasks.WhenNoPendingTaskAsync();
+
+            var matomoRequests = this.HttpClientFactory.ProcessedRequests.Where( r => r.Request.RequestUri?.Host == "postsharp.matomo.cloud" ).ToList();
+
+            if ( isReportingExpected )
+            {
+                var (matomoRequest, _) = Assert.Single( matomoRequests );
+                var matomoRequestUri = matomoRequest.RequestUri!.ToString();
+
+                this.Logger.WriteLine( matomoRequestUri );
+
+                Assert.StartsWith(
+                    "https://postsharp.matomo.cloud/matomo.php?idsite=6&rec=1&action_name=mcp&_id=633a82166c05736f&uid=633a82166c05736f&dimension3=Metalama&",
+                    matomoRequestUri,
+                    StringComparison.Ordinal );
+            }
+            else
+            {
+                Assert.Empty( matomoRequests );
+            }
+
+            var configuration = this.ConfigurationManager!.Get<TelemetryConfiguration>();
+            Assert.Equal( defaultActionPostTime, configuration.LastMatomoPostTime );
+        }
+
+        // The first session of the action is reported although the default action was reported today.
+        await StartSessionAndAssert( true );
+        Assert.Equal( this.Time.UtcNow, this.ConfigurationManager!.Get<TelemetryConfiguration>().LastMatomoPostTimes["MCP"] );
+
+        // A second session of the same action on the same day is not reported.
+        await StartSessionAndAssert( false );
+
+        // A session of the next day is reported again.
+        this.Time.AddTime( TimeSpan.FromDays( 1.1 ) );
+        await StartSessionAndAssert( true );
+    }
 }
