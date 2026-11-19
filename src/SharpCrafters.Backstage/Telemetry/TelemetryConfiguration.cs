@@ -118,10 +118,30 @@ public sealed record TelemetryConfiguration : ConfigurationFile
         init => this._issuePrompts = value ?? _emptyDates;
     }
 
+    /// <summary>
+    /// Gets the UTC time of the last daily usage report sent to the analytics service, keyed by the action of the
+    /// application (<see cref="Application.IApplicationInfo.UsageAnalyticsActionName"/>) and the version line, for
+    /// instance <c>usage:2027.0</c>.
+    /// </summary>
+    /// <remarks>
+    /// Each version line is counted separately, so a device that runs two version lines on the same day sends one report
+    /// for each. See metalama/Metalama#2387.
+    /// </remarks>
+    [JsonConverter( typeof(CaseInsensitiveImmutableDictionaryConverterFactory<DateTime>) )]
+    public ImmutableDictionary<string, DateTime> LastMatomoPostTimes
+    {
+        get => this._lastMatomoPostTimes;
+        init => this._lastMatomoPostTimes = value ?? _emptyDates;
+    }
+
     // The time of the last usage report of each project is no longer held here: see IUsageSessionStore. Earlier versions
     // of Metalama share this file and still keep that record in a 'Sessions' member, so this version must preserve it.
     // It does so without declaring the member: an undeclared member is read into UnknownMembers and written back
     // unchanged by every update. Declaring it again would make this version the owner of its content.
+
+    // Versions earlier than 2027.0 record a single daily analytics claim for the whole device in a 'LastMatomoPostTime'
+    // member. This version claims per action and version line in LastMatomoPostTimes, and preserves that member in the
+    // same way as 'Sessions'. See metalama/Metalama#2387.
 
     // A property that is absent from the JSON file deserializes to null rather than to its initializer, so every
     // dictionary normalizes null in its 'init' accessor (which 'with' expressions also go through). Without this, a
@@ -135,8 +155,8 @@ public sealed record TelemetryConfiguration : ConfigurationFile
 
     private readonly ImmutableDictionary<string, ReportingStatus> _issues = _emptyIssues;
     private readonly ImmutableDictionary<string, DateTime> _issuePrompts = _emptyDates;
+    private readonly ImmutableDictionary<string, DateTime> _lastMatomoPostTimes = _emptyDates;
 
-    public DateTime? LastMatomoPostTime { get; init; }
 
     /// <summary>
     /// The retention period applied when <see cref="RetentionPeriodInDays"/> is not set.

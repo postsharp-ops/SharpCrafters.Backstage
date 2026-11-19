@@ -29,9 +29,8 @@ internal abstract class TelemetryReport
         this._machineIdProvider = serviceProvider.GetRequiredBackstageService<IMachineIdProvider>();
         this._userIdentityProvider = serviceProvider.GetRequiredBackstageService<IUserIdentityProvider>();
 
-        // Note that we are intentionally and "randomly" reporting the version of the first component that
-        // triggered audit, to prioritize having just one hit per day over having accurate version reporting
-        // (at least for Matomo reporting).
+        // The report carries the version of the latest component of the vendor in the process. The daily Matomo report
+        // is claimed per version line of this component (see UsageSession.GetDailyAnalyticsBucket).
         this.ReportedComponent = serviceProvider
             .GetRequiredBackstageService<IApplicationInfoProvider>()
             .Application

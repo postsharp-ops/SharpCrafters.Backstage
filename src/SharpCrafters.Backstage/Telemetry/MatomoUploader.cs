@@ -42,8 +42,6 @@ internal sealed class MatomoUploader : IBackstageService
         this._telemetryLogger = serviceProvider.GetRequiredBackstageService<TelemetryLogger>();
     }
 
-    public Task SendUsageAuditAsync( UsageTelemetryReport report ) => this.SendAsync( report, "usage", newVisit: true );
-
     /// <summary>
     /// Sends an event to the analytics endpoint. The dimensions 3 (product), 4 (version) and 5 (device age) are
     /// always sent; a caller adds its own dimensions, for instance the licensed product of an audit.

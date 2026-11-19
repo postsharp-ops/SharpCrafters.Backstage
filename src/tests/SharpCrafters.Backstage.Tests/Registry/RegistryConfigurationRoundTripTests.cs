@@ -131,7 +131,8 @@ public sealed class RegistryConfigurationRoundTripTests : TestsBase
                 DeviceId = new Guid( "3607ebb5-fd96-473e-a6f4-fbfe79b8200e" ),
                 LastSaltChangeTime = new DateTime( 2026, 8, 1, 10, 0, 0, DateTimeKind.Utc ),
                 LastUploadTime = new DateTime( 2026, 9, 1, 11, 0, 0, DateTimeKind.Utc ),
-                LastMatomoPostTime = new DateTime( 2026, 9, 2, 12, 0, 0, DateTimeKind.Utc ),
+                LastMatomoPostTimes = ImmutableDictionary<string, DateTime>.Empty
+                    .Add( "usage:2027.0", new DateTime( 2026, 9, 2, 12, 0, 0, DateTimeKind.Utc ) ),
                 MatomoSalt = 1234567890123,
                 UsageTrackingSalt = -987654321,
                 ExceptionReportingSalt = 42,

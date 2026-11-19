@@ -78,6 +78,9 @@ namespace SharpCrafters.Backstage.Testing
         public bool ShouldCreateLocalCrashReports => this.IsTelemetryEnabled;
 
         /// <inheritdoc />
+        public string UsageAnalyticsActionName { get; init; } = ApplicationInfoBase.DefaultUsageAnalyticsActionName;
+
+        /// <inheritdoc />
         public ImmutableArray<IComponentInfo> Components { get; init; } = ImmutableArray<IComponentInfo>.Empty;
     }
 }
