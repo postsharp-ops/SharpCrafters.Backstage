@@ -36,7 +36,8 @@ public static class BackstageCommandFactory
 
                         license.AddCommand<ListLicensesCommand>( "list" )
                             .WithData( options )
-                            .WithDescription( "Lists all registered licenses." );
+                            .WithDescription( "Lists all registered licenses." )
+                            .WithExample( "license", "list" );
 
                         // One command per edition that the product family gives away and that a user registers by
                         // hand, named by the alias the family gave it. The trial is one of them. An edition that
@@ -59,15 +60,20 @@ public static class BackstageCommandFactory
 
                         license.AddCommand<RegisterLicenseCommand>( "register" )
                             .WithData( options )
-                            .WithDescription( registerDescription );
+                            .WithDescription( registerDescription )
+                            .WithExample( "license", "register", "<license-key>" )
+                            .WithExample( "license", "register", "https://license-server.example.com" );
 
                         license.AddCommand<UnregisterCommand>( "unregister" )
                             .WithData( options )
-                            .WithDescription( "Unregisters all license keys and license servers." );
+                            .WithDescription( "Unregisters all license keys and license servers." )
+                            .WithExample( "license", "unregister" );
 
                         license.AddCommand<AcquireLeaseCommand>( "acquire-lease" )
                             .WithData( options )
-                            .WithDescription( "Acquires a lease from the registered license server and prints the license it leases." );
+                            .WithDescription( "Acquires a lease from the registered license server and prints the license it leases." )
+                            .WithExample( "license", "acquire-lease" )
+                            .WithExample( "license", "acquire-lease", "--force" );
 
                         // An edition that requires a reason gets the command that has the --reason option, so that the
                         // help of the other editions does not describe an option they ignore.
@@ -77,7 +83,7 @@ public static class BackstageCommandFactory
                                 ? license.AddCommand<RegisterCommunityEditionCommand>( edition.Alias )
                                 : license.AddCommand<RegisterEditionCommand>( edition.Alias );
 
-                            command.WithData( options ).WithDescription( edition.Description );
+                            command.WithData( options ).WithDescription( edition.Description ).WithExample( "license", edition.Alias );
                         }
 
                         configureBranch?.Invoke( "license", license );
@@ -91,34 +97,43 @@ public static class BackstageCommandFactory
 
                         config.AddCommand<ListConfigurationsCommand>( "list" )
                             .WithData( options )
-                            .WithDescription( "Lists all supported JSON configuration files." );
+                            .WithDescription( "Lists all supported JSON configuration files." )
+                            .WithExample( "config", "list" );
 
                         config.AddCommand<EditConfigurationCommand>( "edit" )
                             .WithData( options )
-                            .WithDescription( "Opens a JSON configuration file in the default text editor." );
+                            .WithDescription( "Opens a JSON configuration file in the default text editor." )
+                            .WithExample( "config", "edit", "diagnostics" );
 
                         config.AddCommand<ResetConfigurationCommand>( "reset" )
                             .WithData( options )
-                            .WithDescription( "Resets a configuration file to its default values." );
+                            .WithDescription( "Resets a configuration file to its default values." )
+                            .WithExample( "config", "reset", "diagnostics" );
 
                         config.AddCommand<PrintConfigurationCommand>( "print" )
                             .WithData( options )
-                            .WithDescription( "Displays the contents of a configuration file in the console." );
+                            .WithDescription( "Displays the contents of a configuration file in the console." )
+                            .WithExample( "config", "print", "telemetry" );
 
                         config.AddCommand<DumpConfigurationCommand>( "dump" )
                             .WithData( options )
-                            .WithDescription( "Writes every configuration, or one of them, to the console as a single JSON document." );
+                            .WithDescription( "Writes every configuration, or one of them, to the console as a single JSON document." )
+                            .WithExample( "config", "dump" )
+                            .WithExample( "config", "dump", "licensing" );
 
                         config.AddCommand<ValidateConfigurationCommand>( "validate" )
                             .WithData( options )
-                            .WithDescription( "Validates a configuration file against its schema." );
+                            .WithDescription( "Validates a configuration file against its schema." )
+                            .WithExample( "config", "validate", "diagnostics" );
 
                         configureBranch?.Invoke( "config", config );
                     } );
 
                 appConfig.AddCommand<CleanUpCommand>( "cleanup" )
                     .WithData( options )
-                    .WithDescription( $"Removes temporary files and cache generated by {productName}." );
+                    .WithDescription( $"Removes temporary files and cache generated by {productName}." )
+                    .WithExample( "cleanup" )
+                    .WithExample( "cleanup", "--all" );
 
                 // 'kill' is the earlier name of the command. Both names run the same command with the same options, and
                 // only --force ends the processes that remain.
@@ -126,7 +141,9 @@ public static class BackstageCommandFactory
                     .WithAlias( "kill" )
                     .WithData( options )
                     .WithDescription(
-                        $"Stops the processes that keep {productName} files locked after a build: asks them to exit, waits for them, and reports the ones that remain. Also available as 'kill'." );
+                        $"Stops the processes that keep {productName} files locked after a build: asks them to exit, waits for them, and reports the ones that remain. Also available as 'kill'." )
+                    .WithExample( "shutdown" )
+                    .WithExample( "shutdown", "--force", "--timeout", "30" );
 
                 appConfig.AddBranch(
                     "telemetry",
@@ -136,38 +153,55 @@ public static class BackstageCommandFactory
 
                         telemetry.AddCommand<EnableTelemetryCommand>( "enable" )
                             .WithData( options )
-                            .WithDescription( "Enables telemetry for a scenario (usage, exception, performance or all)." );
+                            .WithDescription( "Enables telemetry for a scenario (usage, exception, performance or all)." )
+                            .WithExample( "telemetry", "enable" )
+                            .WithExample( "telemetry", "enable", "usage" );
 
                         telemetry.AddCommand<DisableTelemetryCommand>( "disable" )
                             .WithData( options )
-                            .WithDescription( "Disables telemetry for a scenario (usage, exception, performance or all)." );
+                            .WithDescription( "Disables telemetry for a scenario (usage, exception, performance or all)." )
+                            .WithExample( "telemetry", "disable" )
+                            .WithExample( "telemetry", "disable", "performance" );
 
                         telemetry.AddCommand<ResetTelemetryCommand>( "reset" )
                             .WithData( options )
                             .WithDescription(
                                 "Resets telemetry for a scenario (usage, exception, performance or all) to its default state "
-                                + "(review-first for exceptions and performance problems)." );
+                                + "(review-first for exceptions and performance problems)." )
+                            .WithExample( "telemetry", "reset", "exception" );
 
                         telemetry.AddCommand<ResetDeviceIdCommand>( "reset-device-id" )
-                            .WithDescription( "Generates a new anonymous device identifier for telemetry." );
+                            .WithDescription( "Generates a new anonymous device identifier for telemetry." )
+                            .WithExample( "telemetry", "reset-device-id" );
 
                         telemetry.AddCommand<ResetDedupCommand>( "reset-dedup" )
                             .WithData( options )
-                            .WithDescription( "Clears the record of already-reported issues so they are captured again (testing aid)." );
+                            .WithDescription( "Clears the record of already-reported issues so they are captured again (testing aid)." )
+                            .WithExample( "telemetry", "reset-dedup" );
 
                         telemetry.AddCommand<UploadTelemetryCommand>( "upload" )
                             .WithData( options )
-                            .WithDescription( "Uploads all queued telemetry data immediately." );
+                            .WithDescription( "Uploads all queued telemetry data immediately." )
+                            .WithExample( "telemetry", "upload" )
+                            .WithExample( "telemetry", "upload", "--async" );
 
                         telemetry.AddCommand<TelemetryStatusCommand>( "status" )
                             .WithData( options )
-                            .WithDescription( "Displays current telemetry configuration and status." );
+                            .WithDescription( "Displays current telemetry configuration and status." )
+                            .WithExample( "telemetry", "status" );
 
                         configureBranch?.Invoke( "telemetry", telemetry );
                     } );
 
-                appConfig.AddCommand<DocsCommand>( "docs" ).WithData( options ).WithDescription( $"Opens the {productName} documentation in your browser." );
-                appConfig.AddCommand<OpenUICommand>( "ui" ).WithData( options ).WithDescription( "Opens the browser-based configuration interface." );
+                appConfig.AddCommand<DocsCommand>( "docs" )
+                    .WithData( options )
+                    .WithDescription( $"Opens the {productName} documentation in your browser." )
+                    .WithExample( "docs" );
+
+                appConfig.AddCommand<OpenUICommand>( "ui" )
+                    .WithData( options )
+                    .WithDescription( "Opens the browser-based configuration interface." )
+                    .WithExample( "ui" );
 
                 appConfig.AddBranch(
                     "news",
@@ -177,22 +211,38 @@ public static class BackstageCommandFactory
 
                         rss.AddCommand<DisplayLatestNewsCommand>( "notify" )
                             .WithData( options )
-                            .WithDescription( $"Displays a notification with the latest {productName} news." );
+                            .WithDescription( $"Displays a notification with the latest {productName} news." )
+                            .WithExample( "news", "notify" );
 
                         rss.AddCommand<DisableRssClientCommand>( "disable" )
                             .WithData( options )
-                            .WithDescription( $"Disables automatic notifications for new {productName} updates." );
+                            .WithDescription( $"Disables automatic notifications for new {productName} updates." )
+                            .WithExample( "news", "disable" );
 
                         rss.AddCommand<EnableRssClientCommand>( "enable" )
                             .WithData( options )
-                            .WithDescription( $"Enables automatic notifications for new {productName} updates." );
+                            .WithDescription( $"Enables automatic notifications for new {productName} updates." )
+                            .WithExample( "news", "enable" );
 
                         rss.AddCommand<RssStatusCommand>( "status" )
                             .WithData( options )
-                            .WithDescription( "Displays the current news notification settings." );
+                            .WithDescription( "Displays the current news notification settings." )
+                            .WithExample( "news", "status" );
                     } );
 
-                appConfig.AddCommand<VersionCommand>( "version" ).WithData( options ).WithDescription( "Prints version information." );
+                appConfig.AddCommand<VersionCommand>( "version" )
+                    .WithData( options )
+                    .WithDescription( "Prints version information." )
+                    .WithExample( "version" );
+
+                // The examples of the root help. When the root command has no example, Spectre.Console.Cli shows the
+                // examples of the first subcommands that it finds, so the root help would depend on the order in which
+                // the commands are registered. A host that adds commands in configureMoreCommands adds its own root
+                // examples there, and they come after these ones.
+                appConfig.AddExample( "license", "register", "<license-key>" );
+                appConfig.AddExample( "config", "edit", "diagnostics" );
+                appConfig.AddExample( "telemetry", "disable" );
+                appConfig.AddExample( "cleanup" );
 
                 configureMoreCommands?.Invoke( appConfig );
             } );
