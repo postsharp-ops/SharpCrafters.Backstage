@@ -17,30 +17,24 @@ public sealed class BackstageToolsExtractorTests : TestsBase
 {
     public BackstageToolsExtractorTests( ITestOutputHelper logger ) : base( logger )
     {
-        // The services take the profile of the extension, which names the notifier differently than the worker.
+        // The services take the profile of the extension, whose tools have names of their own.
         this.InitializationOptions = this.InitializationOptions with { Product = MetalamaProduct.Instance with { Profile = VsxProduct.Profile } };
     }
 
     /// <summary>
-    /// Tests that the extractor of the extension takes the worker from the tools of Metalama and the notifier from the tools
-    /// of the extension. The tools of Metalama are given twice, as they are when the extension merges the tools assemblies
-    /// into one assembly.
+    /// Tests that the extractor of the extension extracts the worker and the notifier of the extension.
     /// </summary>
     [Fact]
-    public void TheExtractorTakesEachToolFromTheAssemblyThatEmbedsIt()
+    public void TheToolsOfTheExtensionAreExtracted()
     {
-        var extractor = new BackstageToolsExtractor(
-            this.ServiceProvider,
-            typeof(Vsx.Tools.BackstageToolsExtensions).Assembly,
-            typeof(Metalama.Backstage.Tools.BackstageToolsExtensions).Assembly,
-            typeof(Metalama.Backstage.Tools.BackstageToolsExtensions).Assembly );
+        var extractor = new BackstageToolsExtractor( this.ServiceProvider, typeof(Vsx.Tools.BackstageToolsExtensions).Assembly );
 
         extractor.ExtractAll();
 
         var locator = this.ServiceProvider.GetRequiredBackstageService<IBackstageToolsLocator>();
 
         Assert.True(
-            this.FileSystem.FileExists( Path.Combine( locator.GetToolDirectory( BackstageTool.Worker ), "Metalama.Backstage.Worker.dll" ) ) );
+            this.FileSystem.FileExists( Path.Combine( locator.GetToolDirectory( BackstageTool.Worker ), "SharpCrafters.Backstage.Vsx.Worker.dll" ) ) );
 
         Assert.True(
             this.FileSystem.FileExists(
@@ -48,7 +42,7 @@ public sealed class BackstageToolsExtractorTests : TestsBase
     }
 
     /// <summary>
-    /// Tests that the extractor reports a tool whose archive none of its assemblies embeds.
+    /// Tests that the extractor reports a tool whose archive its assembly does not embed.
     /// </summary>
     [Fact]
     public void AMissingArchiveIsReported()
@@ -56,6 +50,6 @@ public sealed class BackstageToolsExtractorTests : TestsBase
         var extractor = new BackstageToolsExtractor( this.ServiceProvider, typeof(Metalama.Backstage.Tools.BackstageToolsExtensions).Assembly );
 
         var exception = Assert.Throws<InvalidOperationException>( extractor.ExtractAll );
-        Assert.Contains( ".SharpCrafters.Backstage.Vsx.Windows.zip", exception.Message, StringComparison.Ordinal );
+        Assert.Contains( ".SharpCrafters.Backstage.Vsx.Worker.zip", exception.Message, StringComparison.Ordinal );
     }
 }

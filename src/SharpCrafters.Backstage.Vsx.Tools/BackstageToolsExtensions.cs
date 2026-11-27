@@ -9,9 +9,8 @@ using SharpCrafters.Backstage.Tools;
 namespace SharpCrafters.Backstage.Vsx.Tools;
 
 /// <summary>
-/// Registers the extractor of the tool applications of the Visual Studio Tools for PostSharp and Metalama: the desktop
-/// notifier of the extension, which this assembly embeds as a zip archive, and the worker of Metalama, which
-/// <c>Metalama.Backstage.Tools</c> embeds.
+/// Registers the extractor of the tool applications of the Visual Studio Tools for PostSharp and Metalama, the worker and
+/// the desktop notifier of the extension, which this assembly embeds as zip archives.
 /// </summary>
 [PublicAPI]
 public static class BackstageToolsExtensions
@@ -20,10 +19,7 @@ public static class BackstageToolsExtensions
     {
         builder.AddService(
             typeof(IBackstageToolsExtractor),
-            serviceProvider => new BackstageToolsExtractor(
-                serviceProvider,
-                typeof(BackstageToolsExtensions).Assembly,
-                typeof(Metalama.Backstage.Tools.BackstageToolsExtensions).Assembly ) );
+            serviceProvider => new BackstageToolsExtractor( serviceProvider, typeof(BackstageToolsExtensions).Assembly ) );
 
         return builder;
     }

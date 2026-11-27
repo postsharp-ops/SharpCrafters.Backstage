@@ -85,6 +85,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Vsx
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Vsx.Tools", "src\SharpCrafters.Backstage.Vsx.Tools\SharpCrafters.Backstage.Vsx.Tools.csproj", "{5DB9C470-F4B9-488F-AF88-F467D0DE490B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpCrafters.Backstage.Vsx.Worker", "src\SharpCrafters.Backstage.Vsx.Worker\SharpCrafters.Backstage.Vsx.Worker.csproj", "{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -551,6 +553,18 @@ Global
 		{5DB9C470-F4B9-488F-AF88-F467D0DE490B}.Release|x64.Build.0 = Release|Any CPU
 		{5DB9C470-F4B9-488F-AF88-F467D0DE490B}.Release|x86.ActiveCfg = Release|Any CPU
 		{5DB9C470-F4B9-488F-AF88-F467D0DE490B}.Release|x86.Build.0 = Release|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Debug|x64.Build.0 = Debug|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Debug|x86.Build.0 = Debug|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Release|x64.ActiveCfg = Release|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Release|x64.Build.0 = Release|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Release|x86.ActiveCfg = Release|Any CPU
+		{6AA486CE-8EF9-49D5-A63E-E30EBC2D0F06}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

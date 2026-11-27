@@ -19,7 +19,6 @@
         <ProjectReference Include="..\..\PostSharp.Backstage\PostSharp.Backstage.csproj" />
         <ProjectReference Include="..\..\SharpCrafters.Backstage.Vsx\SharpCrafters.Backstage.Vsx.csproj" />
         <ProjectReference Include="..\..\SharpCrafters.Backstage.Vsx.Tools\SharpCrafters.Backstage.Vsx.Tools.csproj" />
-        <ProjectReference Include="..\..\PostSharp.Backstage.Tools\PostSharp.Backstage.Tools.csproj" />
         <ProjectReference Include="..\SharpCrafters.Backstage.Testing\SharpCrafters.Backstage.Testing.csproj" />
     </ItemGroup>
 

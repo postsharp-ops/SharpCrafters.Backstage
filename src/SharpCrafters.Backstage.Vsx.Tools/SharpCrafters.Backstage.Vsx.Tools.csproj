@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <PackageDescription>The Windows notifier of the PostSharp and Metalama Visual Studio extension, as a zipped executable that the extension extracts on the machine of the user. This package should only be installed as a dependency.</PackageDescription>
+        <PackageDescription>The Backstage tools of the Visual Studio Tools for PostSharp and Metalama, the worker and the Windows notifier, as zipped executables that the extension extracts on the machine of the user. This package should only be installed as a dependency.</PackageDescription>
 
         <!-- Workaround for having the runtimeconfig.json of the tools copied to the output directory.
              TODO: Figure out why this file doesn't respect the "PrivateAssets=all" flag. -->
@@ -17,19 +17,22 @@
     <ItemGroup>
         <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
 
-        <!-- The extension keeps the worker of Metalama, which Metalama.Backstage.Tools embeds. -->
-        <ProjectReference Include="..\Metalama.Backstage.Tools\Metalama.Backstage.Tools.csproj" />
-
         <!-- Annotations only, and with a sentinel version. PrivateAssets keeps it out of the dependency
              graph of every consumer of this package, which would otherwise publish it beside their own files. -->
         <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
         <PackageReference Include="Newtonsoft.Json" VersionOverride="$(NewtonsoftJsonMinVersion)" NoWarn="NU1903" />
     </ItemGroup>
 
-    <!-- The worker is not embedded here: it is the worker of Metalama, embedded in Metalama.Backstage.Tools. Embedding it
-         twice would break the extension, which merges both assemblies into one, and the extractor requires the archive of
-         each tool to be found exactly once. -->
+    <!-- The extension merges this assembly with the rest of Backstage, so it must not also reference the tools package of
+         another product: the extractor requires the archive of each tool to be found exactly once. -->
     <ItemGroup>
+        <EmbeddedResource Include="..\SharpCrafters.Backstage.Vsx.Worker\bin\SharpCrafters.Backstage.Vsx.Worker.zip" />
+
+        <ProjectReference Include="..\SharpCrafters.Backstage.Vsx.Worker\SharpCrafters.Backstage.Vsx.Worker.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all" />
+
         <EmbeddedResource Include="..\SharpCrafters.Backstage.Vsx.Windows\bin\SharpCrafters.Backstage.Vsx.Windows.zip" />
 
         <ProjectReference Include="..\SharpCrafters.Backstage.Vsx.Windows\SharpCrafters.Backstage.Vsx.Windows.csproj"

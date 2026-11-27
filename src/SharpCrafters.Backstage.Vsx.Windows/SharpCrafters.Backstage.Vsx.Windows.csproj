@@ -34,9 +34,8 @@
         <ProjectReference Include="..\SharpCrafters.Backstage.Vsx\SharpCrafters.Backstage.Vsx.csproj"/>
         <ProjectReference Include="..\SharpCrafters.Backstage.Windows\SharpCrafters.Backstage.Windows.csproj"/>
 
-        <!-- We need the Worker project to be built first because we invoke it as an executable. The extension keeps the
-             worker of Metalama, so this is the Metalama worker. -->
-        <ProjectReference Include="..\Metalama.Backstage.Worker\Metalama.Backstage.Worker.csproj"
+        <!-- We need the Worker project to be built first because we invoke it as an executable. -->
+        <ProjectReference Include="..\SharpCrafters.Backstage.Vsx.Worker\SharpCrafters.Backstage.Vsx.Worker.csproj"
                           ReferenceOutputAssembly="false"
                           SkipGetTargetFrameworkProperties="true"
                           PrivateAssets="all"/>

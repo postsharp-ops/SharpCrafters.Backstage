@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <OutputType>exe</OutputType>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <!-- Embedded pdb seems to be incompatible with `dotnet pack`. -->
+        <DebugType>portable</DebugType>
+        <RollForward>Major</RollForward>
+    </PropertyGroup>
+
+    <!-- This project is the executable of the worker of the Visual Studio Tools for PostSharp and Metalama. The worker
+         itself is the SharpCrafters.Backstage.Worker library; this project binds it to the product of the extension and
+         packages it as the zip archive that SharpCrafters.Backstage.Vsx.Tools embeds. The worker uploads the telemetry of
+         the extension and serves the web pages that its toast notifications open, so these pages name the extension, not
+         Metalama. See metalama/Metalama.Vsx.Public#51. -->
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <UseAppHost>false</UseAppHost>
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+        <!-- This app should run on any .NET 6+ runtime. -->
+        <RollForward>Major</RollForward>
+        <OutputZipFile>bin\$(MSBuildProjectName).zip</OutputZipFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Backstage.Vsx\SharpCrafters.Backstage.Vsx.csproj" />
+        <ProjectReference Include="..\SharpCrafters.Backstage.Worker\SharpCrafters.Backstage.Worker.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Properties\launchSettings.json" />
+    </ItemGroup>
+
+    <Import Project="../../eng/PackWorkerZip.targets"/>
+
+</Project>

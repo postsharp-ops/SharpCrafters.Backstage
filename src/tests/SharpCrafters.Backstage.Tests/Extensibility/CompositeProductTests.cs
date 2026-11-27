@@ -645,43 +645,39 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
-    /// Tests that the extension displays its notifications with a notifier of its own and the PostSharp logo, while it keeps
-    /// the worker of Metalama. Windows titles a toast notification with the title of the executable that displays it, so the
-    /// notifier of Metalama would present the notifications of the extension as notifications of Metalama. See
+    /// Tests that the extension has tools of its own and the PostSharp logo. Windows titles a toast notification with the
+    /// title of the executable that displays it, and the worker serves the web pages that the notifications open, so the
+    /// tools of Metalama would present the notifications of the extension as notifications of Metalama. See
     /// metalama/Metalama.Vsx.Public#51.
     /// </summary>
     [Fact]
-    public void TheExtensionHasANotifierOfItsOwnAndKeepsTheWorkerOfMetalama()
+    public void TheExtensionHasToolsOfItsOwn()
     {
+        Assert.Equal( "SharpCrafters.Backstage.Vsx.Worker", BackstageTool.Worker.GetAssemblyName( VsxProduct.Profile ) );
         Assert.Equal( "SharpCrafters.Backstage.Vsx.Windows", BackstageTool.DesktopWindows.GetAssemblyName( VsxProduct.Profile ) );
-        Assert.Equal( BackstageTool.Worker.GetAssemblyName( MetalamaProduct.Profile ), BackstageTool.Worker.GetAssemblyName( VsxProduct.Profile ) );
         Assert.Equal( "postsharp", VsxProduct.Profile.LogoName );
     }
 
     /// <summary>
-    /// Tests that the archive of each tool of the extension is embedded exactly once, both in the assemblies that its
-    /// extractor reads and in all the tools assemblies together. The extension merges the tools assemblies of every
-    /// product into one assembly, and the extractor fails when it finds the archive of a tool more than once.
+    /// Tests that the tools assembly of the extension embeds the archive of each tool of the extension exactly once, and no
+    /// archive of another product, since the extractor requires each archive to be found exactly once.
     /// </summary>
     [Fact]
-    public void TheArchiveOfEachToolOfTheExtensionIsEmbeddedOnce()
+    public void TheToolsAssemblyOfTheExtensionEmbedsEachOfItsToolsOnce()
     {
-        var extractorAssemblies = new[]
+        var resourceNames = typeof(SharpCrafters.Backstage.Vsx.Tools.BackstageToolsExtensions).Assembly.GetManifestResourceNames()
+            .Where( name => name.EndsWith( ".zip", StringComparison.Ordinal ) )
+            .ToList();
+
+        var expectedSuffixes = new[] { BackstageTool.Worker, BackstageTool.DesktopWindows }
+            .Select( tool => $".{tool.GetAssemblyName( VsxProduct.Profile )}.zip" )
+            .ToList();
+
+        Assert.Equal( expectedSuffixes.Count, resourceNames.Count );
+
+        foreach ( var suffix in expectedSuffixes )
         {
-            typeof(SharpCrafters.Backstage.Vsx.Tools.BackstageToolsExtensions).Assembly, typeof(Metalama.Backstage.Tools.BackstageToolsExtensions).Assembly
-        };
-
-        var mergedAssemblies = extractorAssemblies.Append( typeof(PostSharp.Backstage.Tools.BackstageToolsExtensions).Assembly );
-
-        foreach ( var assemblies in new[] { extractorAssemblies, mergedAssemblies } )
-        {
-            var resourceNames = assemblies.SelectMany( a => a.GetManifestResourceNames() ).ToList();
-
-            foreach ( var tool in new[] { BackstageTool.Worker, BackstageTool.DesktopWindows } )
-            {
-                var suffix = $".{tool.GetAssemblyName( VsxProduct.Profile )}.zip";
-                Assert.Single( resourceNames, name => name.EndsWith( suffix, StringComparison.Ordinal ) );
-            }
+            Assert.Single( resourceNames, name => name.EndsWith( suffix, StringComparison.Ordinal ) );
         }
     }
 
