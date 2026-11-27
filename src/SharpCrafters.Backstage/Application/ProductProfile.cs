@@ -68,7 +68,7 @@ public sealed record ProductProfile(
 
     /// <summary>
     /// Gets the prefix of the assembly names of the tool applications of the product: the worker is
-    /// <c>{prefix}.Worker</c> and the desktop notifier <c>{prefix}.Desktop.Windows</c>. The default is
+    /// <c>{prefix}.Worker</c> and the desktop notifier <c>{prefix}.Windows</c>. The default is
     /// <see cref="Name"/> followed by <c>.Backstage</c>, for instance <c>Metalama.Backstage</c>.
     /// </summary>
     public string ToolAssemblyNamePrefix { get; init; } = Name + ".Backstage";

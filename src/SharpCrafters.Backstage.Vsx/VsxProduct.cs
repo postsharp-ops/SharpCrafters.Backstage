@@ -31,11 +31,16 @@ public static class VsxProduct
 {
     /// <summary>
     /// Gets the profile of the extension: the profile of Metalama, whose configuration the extension keeps, under the name
-    /// of the extension.
+    /// of the extension. The extension has tools of its own, <c>SharpCrafters.Backstage.Vsx.Worker</c> and
+    /// <c>SharpCrafters.Backstage.Vsx.Windows</c>, and the PostSharp logo, so that its toast notifications and the web
+    /// pages they open name the extension and not Metalama.
     /// </summary>
     public static ProductProfile Profile { get; } = MetalamaProduct.Profile with
     {
-        Name = "Visual Studio Tools for PostSharp and Metalama", LongName = "Visual Studio Tools for PostSharp and Metalama"
+        Name = "Visual Studio Tools for PostSharp and Metalama",
+        LongName = "Visual Studio Tools for PostSharp and Metalama",
+        ToolAssemblyNamePrefix = "SharpCrafters.Backstage.Vsx",
+        LogoName = "postsharp"
     };
 
     /// <summary>

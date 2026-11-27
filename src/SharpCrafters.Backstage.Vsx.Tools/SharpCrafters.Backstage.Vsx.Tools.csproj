@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <PackageDescription>The Backstage tools of the Visual Studio Tools for PostSharp and Metalama, the worker and the Windows notifier, as zipped executables that the extension extracts on the machine of the user. This package should only be installed as a dependency.</PackageDescription>
+
+        <!-- Workaround for having the runtimeconfig.json of the tools copied to the output directory.
+             TODO: Figure out why this file doesn't respect the "PrivateAssets=all" flag. -->
+        <_GetChildProjectCopyToOutputDirectoryItems>false</_GetChildProjectCopyToOutputDirectoryItems>
+        <_GetChildProjectCopyToPublishDirectoryItems>false</_GetChildProjectCopyToPublishDirectoryItems>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Backstage\SharpCrafters.Backstage.csproj" />
+
+        <!-- Annotations only, and with a sentinel version. PrivateAssets keeps it out of the dependency
+             graph of every consumer of this package, which would otherwise publish it beside their own files. -->
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" />
+        <PackageReference Include="Newtonsoft.Json" VersionOverride="$(NewtonsoftJsonMinVersion)" NoWarn="NU1903" />
+    </ItemGroup>
+
+    <!-- The extension merges this assembly with the rest of Backstage, so it must not also reference the tools package of
+         another product: the extractor requires the archive of each tool to be found exactly once. -->
+    <ItemGroup>
+        <EmbeddedResource Include="..\SharpCrafters.Backstage.Vsx.Worker\bin\SharpCrafters.Backstage.Vsx.Worker.zip" />
+
+        <ProjectReference Include="..\SharpCrafters.Backstage.Vsx.Worker\SharpCrafters.Backstage.Vsx.Worker.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all" />
+
+        <EmbeddedResource Include="..\SharpCrafters.Backstage.Vsx.Windows\bin\SharpCrafters.Backstage.Vsx.Windows.zip" />
+
+        <ProjectReference Include="..\SharpCrafters.Backstage.Vsx.Windows\SharpCrafters.Backstage.Vsx.Windows.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all" />
+    </ItemGroup>
+
+</Project>

@@ -20,6 +20,7 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Rss;
 using SharpCrafters.Backstage.UserInterface.Toasts;
@@ -641,6 +642,43 @@ public sealed class CompositeProductTests : IDisposable
         Assert.Same( MetalamaProduct.LicenseProductCatalog, VsxProduct.Instance.LicenseProductCatalog );
         Assert.NotEqual( MetalamaProduct.TelemetryOptions.AnalyticsUri, VsxProduct.Instance.TelemetryOptions.AnalyticsUri );
         Assert.Equal( MetalamaProduct.TelemetryOptions.UploadUri, VsxProduct.Instance.TelemetryOptions.UploadUri );
+    }
+
+    /// <summary>
+    /// Tests that the extension has tools of its own and the PostSharp logo. Windows titles a toast notification with the
+    /// title of the executable that displays it, and the worker serves the web pages that the notifications open, so the
+    /// tools of Metalama would present the notifications of the extension as notifications of Metalama. See
+    /// metalama/Metalama.Vsx.Public#51.
+    /// </summary>
+    [Fact]
+    public void TheExtensionHasToolsOfItsOwn()
+    {
+        Assert.Equal( "SharpCrafters.Backstage.Vsx.Worker", BackstageTool.Worker.GetAssemblyName( VsxProduct.Profile ) );
+        Assert.Equal( "SharpCrafters.Backstage.Vsx.Windows", BackstageTool.DesktopWindows.GetAssemblyName( VsxProduct.Profile ) );
+        Assert.Equal( "postsharp", VsxProduct.Profile.LogoName );
+    }
+
+    /// <summary>
+    /// Tests that the tools assembly of the extension embeds the archive of each tool of the extension exactly once, and no
+    /// archive of another product, since the extractor requires each archive to be found exactly once.
+    /// </summary>
+    [Fact]
+    public void TheToolsAssemblyOfTheExtensionEmbedsEachOfItsToolsOnce()
+    {
+        var resourceNames = typeof(SharpCrafters.Backstage.Vsx.Tools.BackstageToolsExtensions).Assembly.GetManifestResourceNames()
+            .Where( name => name.EndsWith( ".zip", StringComparison.Ordinal ) )
+            .ToList();
+
+        var expectedSuffixes = new[] { BackstageTool.Worker, BackstageTool.DesktopWindows }
+            .Select( tool => $".{tool.GetAssemblyName( VsxProduct.Profile )}.zip" )
+            .ToList();
+
+        Assert.Equal( expectedSuffixes.Count, resourceNames.Count );
+
+        foreach ( var suffix in expectedSuffixes )
+        {
+            Assert.Single( resourceNames, name => name.EndsWith( suffix, StringComparison.Ordinal ) );
+        }
     }
 
     /// <summary>

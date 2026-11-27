@@ -5,6 +5,9 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Net.Http.Headers;
+using SharpCrafters.Backstage.Application;
+using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Testing;
 using SharpCrafters.Backstage.Worker.Worker;
 using SharpCrafters.Backstage.Worker.Worker.WebServer;
@@ -268,4 +271,32 @@ public sealed class WebServerAuthenticationTests : TestsBase
             DeleteContentRoot( contentRoot );
         }
     }
+
+    /// <summary>
+    /// Tests that the name of the cookie is a valid cookie name when the name of the product contains spaces, as the name
+    /// of the Visual Studio Tools for PostSharp and Metalama does. A cookie name with a space made every request of the
+    /// server of that product fail.
+    /// </summary>
+    [Fact]
+    public void TheCookieNameIsValidForAProductNameWithSpaces()
+    {
+        var profile = this.ServiceProvider.GetRequiredBackstageService<ProductProfile>() with
+        {
+            Name = "Visual Studio Tools for PostSharp and Metalama"
+        };
+
+        var cookieName = SetupWebServerAuthentication.GetCookieName( profile );
+
+        Assert.Equal( "visual-studio-tools-for-postsharp-and-metalama-setup-token", cookieName );
+
+        // Throws when the name is not a valid cookie name.
+        _ = new SetCookieHeaderValue( cookieName, _expectedToken );
+    }
+
+    /// <summary>
+    /// Tests that the name of the cookie of a product whose name is a single word is unchanged.
+    /// </summary>
+    [Fact]
+    public void TheCookieNameOfASingleWordProductIsUnchanged()
+        => Assert.Equal( _cookieName, SetupWebServerAuthentication.GetCookieName( this.ServiceProvider.GetRequiredBackstageService<ProductProfile>() ) );
 }

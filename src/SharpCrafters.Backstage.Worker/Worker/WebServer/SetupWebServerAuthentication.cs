@@ -33,9 +33,21 @@ internal static class SetupWebServerAuthentication
     /// The token arrives in the query string of the first URL opened in the browser, but the pages link to each other
     /// and post forms, and none of those requests would carry the query string. The cookie is what carries the token
     /// through the rest of the session. The name depends on the product so that the setup servers of two products
-    /// running on the same machine do not read each other's cookie.
+    /// running on the same machine do not read each other's cookie. A cookie name cannot contain spaces, so every
+    /// character of the product name that is not an ASCII letter or digit is replaced by a hyphen: the cookie of the
+    /// Visual Studio Tools for PostSharp and Metalama is <c>visual-studio-tools-for-postsharp-and-metalama-setup-token</c>.
     /// </remarks>
-    private static string GetCookieName( ProductProfile productProfile ) => $"{productProfile.Name.ToLowerInvariant()}-setup-token";
+    internal static string GetCookieName( ProductProfile productProfile )
+    {
+        var name = new StringBuilder( productProfile.Name.Length + 12 );
+
+        foreach ( var c in productProfile.Name.ToLowerInvariant() )
+        {
+            name.Append( c is >= 'a' and <= 'z' or >= '0' and <= '9' ? c : '-' );
+        }
+
+        return name.Append( "-setup-token" ).ToString();
+    }
 
     /// <summary>
     /// Adds the authentication middleware to <paramref name="app"/>. It must be added before any middleware that acts
