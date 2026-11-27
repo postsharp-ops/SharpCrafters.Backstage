@@ -43,10 +43,25 @@ namespace SharpCrafters.Backstage.Testing;
 /// The capturer and the session factory are the internal seams that a telemetry context calls once its policy allows the
 /// scenario. A product cannot replace them itself, because they are internal to Backstage.
 /// </para>
+/// <para>
+/// The telemetry configuration reads the process-level gates, which are the opt-out environment variable and the detection of
+/// unattended processes, when it is initialized. It is initialized when <see cref="TelemetryService"/> is first accessed. A
+/// test that sets <see cref="EnvironmentVariables"/> or <see cref="UnattendedProcessDetector"/> must therefore do it before it
+/// accesses <see cref="TelemetryService"/>. A change made afterwards has no effect.
+/// </para>
+/// <para>
+/// When the product registers its own <see cref="IRepositoryConfigurationReader"/>, as PostSharp does for its XML
+/// <c>postsharp.config</c> file, the environment registers it too, so that a repository configuration file is read as in
+/// production. <see cref="CreateRepository"/> then writes no configuration file, because the format of the file is the
+/// format of the product. The test writes the file itself through <see cref="FileSystem"/>.
+/// </para>
 /// </remarks>
 [PublicAPI]
 public sealed class TestTelemetryEnvironment
 {
+    private readonly Lazy<ITelemetryService> _telemetryService;
+    private readonly bool _hasProductRepositoryConfigurationReader;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TestTelemetryEnvironment"/> class.
     /// </summary>
@@ -56,6 +71,23 @@ public sealed class TestTelemetryEnvironment
     {
         product ??= MetalamaProduct.Instance;
         applicationInfo ??= new TestApplicationInfo { IsTelemetryEnabled = true };
+
+        // The product may read its repository configuration file with its own reader. Only this registration of the product is
+        // taken, because the other services of the product are not needed by the telemetry services and may require services
+        // that this environment does not provide. The registration does not create any service.
+        Func<IServiceProvider, object>? repositoryConfigurationReaderFactory = null;
+
+        product.RegisterServices(
+            new ServiceProviderBuilder(
+                ( type, factory ) =>
+                {
+                    if ( type == typeof(IRepositoryConfigurationReader) )
+                    {
+                        repositoryConfigurationReaderFactory = factory;
+                    }
+                } ) );
+
+        this._hasProductRepositoryConfigurationReader = repositoryConfigurationReaderFactory != null;
 
         var services = new ServiceCollection()
             .AddSingleton( new EarlyLoggerFactory() )
@@ -85,14 +117,24 @@ public sealed class TestTelemetryEnvironment
                 serviceProvider => new TestExceptionCapturer( serviceProvider.GetRequiredBackstageService<LocalExceptionReporter>() ) )
             .AddSingleton<ITelemetryService>( serviceProvider => new TelemetryService( serviceProvider ) );
 
+        if ( repositoryConfigurationReaderFactory != null )
+        {
+            services.AddSingleton( typeof(IRepositoryConfigurationReader), repositoryConfigurationReaderFactory );
+        }
+
         this.ServiceProvider = services.BuildServiceProvider();
-
-        // In production, BackstageServicesInitializer initializes the telemetry configuration when Backstage starts.
-        ((TelemetryConfigurationService) this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>()).Initialize();
-
         this.FileSystem = (TestFileSystem) this.ServiceProvider.GetRequiredBackstageService<IFileSystem>();
         this.ExceptionCapturer = (TestExceptionCapturer) this.ServiceProvider.GetRequiredBackstageService<IExceptionCapturer>();
-        this.TelemetryService = this.ServiceProvider.GetRequiredBackstageService<ITelemetryService>();
+
+        this._telemetryService = new Lazy<ITelemetryService>(
+            () =>
+            {
+                // In production, BackstageServicesInitializer initializes the telemetry configuration when Backstage starts.
+                // Here, it is initialized on first use, so that a test can configure the process-level gates before.
+                ((TelemetryConfigurationService) this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>()).Initialize();
+
+                return this.ServiceProvider.GetRequiredBackstageService<ITelemetryService>();
+            } );
     }
 
     /// <summary>
@@ -103,10 +145,14 @@ public sealed class TestTelemetryEnvironment
     /// <summary>
     /// Gets the real telemetry service, which the test registers in the services of the product under test.
     /// </summary>
-    public ITelemetryService TelemetryService { get; }
+    /// <remarks>
+    /// The first access initializes the telemetry configuration, which reads <see cref="EnvironmentVariables"/> and
+    /// <see cref="UnattendedProcessDetector"/>.
+    /// </remarks>
+    public ITelemetryService TelemetryService => this._telemetryService.Value;
 
     /// <summary>
-    /// Gets the in-memory file system on which the repositories and their <c>metalama.json</c> files are created.
+    /// Gets the in-memory file system on which the repositories and their repository configuration files are created.
     /// </summary>
     public TestFileSystem FileSystem { get; }
 
@@ -116,12 +162,14 @@ public sealed class TestTelemetryEnvironment
     public TestDateTimeProvider Time { get; } = new();
 
     /// <summary>
-    /// Gets the environment variables of the environment, which are empty by default.
+    /// Gets the environment variables of the environment, which are empty by default. Set them before the first access to
+    /// <see cref="TelemetryService"/>.
     /// </summary>
     public TestEnvironmentVariableProvider EnvironmentVariables { get; } = new();
 
     /// <summary>
-    /// Gets the detector of unattended processes. By default, the process is not unattended.
+    /// Gets the detector of unattended processes. By default, the process is not unattended. Configure it before the first
+    /// access to <see cref="TelemetryService"/>.
     /// </summary>
     public TestUnattendedProcessDetector UnattendedProcessDetector { get; } = new();
 
@@ -150,14 +198,21 @@ public sealed class TestTelemetryEnvironment
     }
 
     /// <summary>
-    /// Creates a git repository on the in-memory file system, optionally with a repository configuration file that enables or
-    /// disables telemetry.
+    /// Creates a git repository on the in-memory file system, optionally with a JSON repository configuration file, such as
+    /// <c>metalama.json</c>, that enables or disables telemetry.
     /// </summary>
     /// <param name="rootDirectory">The root directory of the repository.</param>
     /// <param name="telemetryEnabled">The value of the <c>telemetry.enabled</c> setting, or <see langword="null"/> to create no repository configuration file.</param>
     /// <exception cref="InvalidOperationException"><paramref name="telemetryEnabled"/> is not <see langword="null"/>, and the product has no repository configuration file.</exception>
+    /// <exception cref="NotSupportedException"><paramref name="telemetryEnabled"/> is not <see langword="null"/>, and the product reads its repository configuration file with its own reader, so the file is not JSON.</exception>
     public void CreateRepository( string rootDirectory, bool? telemetryEnabled )
     {
+        if ( telemetryEnabled != null && this._hasProductRepositoryConfigurationReader )
+        {
+            throw new NotSupportedException(
+                "The product reads its repository configuration file with its own reader. Create the repository without a configuration file, and write the file in the format of the product through the FileSystem property." );
+        }
+
         this.FileSystem.CreateDirectory( Path.Combine( rootDirectory, ".git" ) );
 
         if ( telemetryEnabled != null )

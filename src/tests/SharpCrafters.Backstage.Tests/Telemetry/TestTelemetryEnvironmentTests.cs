@@ -2,6 +2,8 @@
 // SharpCrafters s.r.o. licenses this file to you under either the MIT license or a proprietary license, depending on the repository from which it was obtained.
 // Refer to LICENSE.md in the repository root for complete details.
 
+using Metalama.Backstage;
+using PostSharp.Backstage;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Testing;
 using System;
@@ -79,5 +81,81 @@ public sealed class TestTelemetryEnvironmentTests
         Assert.Same( exception, report.Exception );
         Assert.Equal( ExceptionReportingKind.Exception, report.Kind );
         Assert.Single( environment.GetLocalCrashReports() );
+    }
+
+    /// <summary>
+    /// Checks that the opt-out environment variable, set after the construction of the environment and before the first access
+    /// to the telemetry service, disables telemetry.
+    /// </summary>
+    [Fact]
+    public void ProcessOptOutSetBeforeFirstUse_RecordsNoTelemetry()
+    {
+        var environment = new TestTelemetryEnvironment();
+        environment.CreateRepository( _repositoryRoot, telemetryEnabled: null );
+
+        var variableName = MetalamaProduct.Profile.GetEnvironmentVariableName( TelemetryConfiguration.OptOutEnvironmentVariable );
+        environment.EnvironmentVariables.Environment[variableName] = "true";
+
+        var context = environment.TelemetryService.OpenContext( environment.TelemetryService.GetPolicy( _projectDirectory ) );
+
+        context.StartUsageSession( "TestUsage", "Project" ).Dispose();
+        context.ReportException( new InvalidOperationException() );
+
+        Assert.Empty( environment.UsageSessionFactory.Sessions );
+        Assert.Empty( environment.ExceptionCapturer.CapturedReports );
+        Assert.Single( environment.GetLocalCrashReports() );
+    }
+
+    /// <summary>
+    /// Checks that an unattended process, configured after the construction of the environment and before the first access to
+    /// the telemetry service, does not start a usage session.
+    /// </summary>
+    [Fact]
+    public void UnattendedProcessSetBeforeFirstUse_RecordsNoSession()
+    {
+        var environment = new TestTelemetryEnvironment();
+        environment.CreateRepository( _repositoryRoot, telemetryEnabled: null );
+        environment.UnattendedProcessDetector.IsCurrentProcessUnattended = true;
+
+        var context = environment.TelemetryService.OpenContext( environment.TelemetryService.GetPolicy( _projectDirectory ) );
+
+        context.StartUsageSession( "TestUsage", "Project" ).Dispose();
+
+        Assert.Empty( environment.UsageSessionFactory.Sessions );
+    }
+
+    /// <summary>
+    /// Checks that <see cref="TestTelemetryEnvironment.CreateRepository"/> refuses to write a JSON configuration file for a product
+    /// that reads its repository configuration file with its own reader.
+    /// </summary>
+    [Fact]
+    public void ProductWithOwnReader_CreateRepositoryWithSettingThrows()
+    {
+        var environment = new TestTelemetryEnvironment( PostSharpProduct.Instance );
+
+        Assert.Throws<NotSupportedException>( () => environment.CreateRepository( _repositoryRoot, telemetryEnabled: false ) );
+    }
+
+    /// <summary>
+    /// Checks that the environment reads the repository configuration file with the reader of the product, so that the XML
+    /// <c>postsharp.config</c> opt-out of PostSharp is honored.
+    /// </summary>
+    [Fact]
+    public void ProductWithOwnReader_FileInProductFormatIsHonored()
+    {
+        var environment = new TestTelemetryEnvironment( PostSharpProduct.Instance );
+        environment.CreateRepository( _repositoryRoot, telemetryEnabled: null );
+
+        environment.FileSystem.WriteAllText(
+            Path.Combine( _repositoryRoot, "postsharp.config" ),
+            """<Project xmlns="http://schemas.postsharp.org/1.0/configuration"><Property Name="TelemetryEnabled" Value="False" /></Project>""" );
+
+        var context = environment.TelemetryService.OpenContext( environment.TelemetryService.GetPolicy( _projectDirectory ) );
+
+        context.StartUsageSession( "TestUsage", "Project" ).Dispose();
+        context.ReportException( new InvalidOperationException() );
+
+        Assert.Empty( environment.UsageSessionFactory.Sessions );
+        Assert.Empty( environment.ExceptionCapturer.CapturedReports );
     }
 }
