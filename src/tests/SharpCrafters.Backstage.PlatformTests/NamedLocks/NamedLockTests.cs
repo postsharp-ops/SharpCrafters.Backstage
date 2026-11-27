@@ -53,13 +53,20 @@ public sealed class NamedLockTests
         using var namedLock = this._service.GetLock( this._name );
         using var cancellation = new CancellationTokenSource();
 
-        var acquisition = Task.Run( () => namedLock.Acquire( HelperProcess.Timeout, cancellation.Token ) );
+        // A mutex is owned by the thread that acquired it, and only that thread can release it. The lock is therefore
+        // released on the thread that acquired it. A continuation of an await can run on another thread, and a release
+        // there throws an ApplicationException.
+        var acquisition = Task.Run(
+            () =>
+            {
+                using var releaser = namedLock.Acquire( HelperProcess.Timeout, cancellation.Token );
+            } );
 
         // The helper releases the lock only once this process is waiting for it, so that the wait is contended.
         await this._blocked.Task.WaitAsync( HelperProcess.Timeout );
         helper.Signal();
 
-        using var releaser = await acquisition.WaitAsync( HelperProcess.Timeout );
+        await acquisition.WaitAsync( HelperProcess.Timeout );
 
         this.AssertEvents( LockEventKind.Blocked, LockEventKind.Acquired );
         this.AssertNoEvent( LockEventKind.Degraded );
