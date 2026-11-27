@@ -48,6 +48,35 @@ public sealed class ToastNotificationStatusServiceTests : TestsBase
     }
 
     [Fact]
+    public void IsMutedReportsTheMute()
+    {
+        Assert.False( this._toastService.IsMuted( ToastNotificationKinds.RequiresLicense ) );
+
+        // A snooze is not a mute.
+        this._toastService.Snooze( ToastNotificationKinds.RequiresLicense );
+        Assert.False( this._toastService.IsMuted( ToastNotificationKinds.RequiresLicense ) );
+
+        this._toastService.Mute( ToastNotificationKinds.RequiresLicense );
+        Assert.True( this._toastService.IsMuted( ToastNotificationKinds.RequiresLicense ) );
+        Assert.False( this._toastService.IsMuted( ToastNotificationKinds.LicenseExpiring ) );
+    }
+
+    [Fact]
+    public void AKindThatCannotBeMutedIsNeverMuted()
+    {
+        // Written directly, as an earlier version or a hand-edited file would.
+        this.ConfigurationManager!.Update<ToastNotificationsConfiguration>(
+            c => c with
+            {
+                Notifications = c.Notifications.SetItem(
+                    ToastNotificationKinds.ExceptionReport.Name,
+                    new ToastNotificationConfiguration { Disabled = true } )
+            } );
+
+        Assert.False( this._toastService.IsMuted( ToastNotificationKinds.ExceptionReport ) );
+    }
+
+    [Fact]
     public void MuteStoredByAnEarlierVersionNoLongerSilencesErrorReports()
     {
         // #1751: versions up to 2026.1.21 offered a Mute button on the error-report notification, which is the only way

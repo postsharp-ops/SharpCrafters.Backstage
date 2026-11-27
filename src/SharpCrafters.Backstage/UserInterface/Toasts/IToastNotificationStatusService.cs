@@ -16,7 +16,20 @@ public interface IToastNotificationStatusService : IBackstageService
 
     void Snooze( ToastNotificationKind kind );
 
+    /// <summary>
+    /// Mutes a kind of notification for good. A kind that cannot be muted is not affected.
+    /// </summary>
+    /// <remarks>
+    /// Muting <see cref="ToastNotificationKinds.RequiresLicense"/> is also how the user tells that the license key is in
+    /// the source code, for instance in an MSBuild property, so that no license is registered on the machine.
+    /// </remarks>
     void Mute( ToastNotificationKind kind );
+
+    /// <summary>
+    /// Gets a value indicating whether a kind of notification has been muted by <see cref="Mute"/>. A kind that cannot be
+    /// muted is never muted, whatever the configuration stores.
+    /// </summary>
+    bool IsMuted( ToastNotificationKind kind );
 
     /// <summary>
     /// Pause all notifications. This is used when the VSX setup wizard is scheduled or open, and

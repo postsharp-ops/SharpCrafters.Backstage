@@ -14,10 +14,19 @@ namespace SharpCrafters.Backstage.Application.Composite;
 /// The <see cref="IToastNotificationStatusService"/> of a composite product.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The composite product shows no notification of its own detection, because the builds of each product show theirs.
 /// It pauses them, though, while the setup wizard of the extension is open, so <see cref="PauseAll"/> pauses the
-/// notifications of every product. The other members answer for the notifications that the extension shows, which
-/// are those of the primary member.
+/// notifications of every product.
+/// </para>
+/// <para>
+/// <see cref="Mute"/> also mutes the kind for every product, because the user mutes it in the extension, which hosts
+/// all of them. Muting <see cref="ToastNotificationKinds.RequiresLicense"/> is how the user tells that the license key
+/// is in the source code, and the build of every product must then stop asking for a license.
+/// </para>
+/// <para>
+/// The other members answer for the notifications that the extension shows, which are those of the primary member.
+/// </para>
 /// </remarks>
 internal sealed class CompositeToastNotificationStatusService : IToastNotificationStatusService
 {
@@ -34,7 +43,15 @@ internal sealed class CompositeToastNotificationStatusService : IToastNotificati
 
     public void Snooze( ToastNotificationKind kind ) => this._primary.Snooze( kind );
 
-    public void Mute( ToastNotificationKind kind ) => this._primary.Mute( kind );
+    public void Mute( ToastNotificationKind kind )
+    {
+        this._primary.Mute( kind );
+
+        // An inner provider has no user interface, so the status service of another member is created over its store.
+        this._members.Members.Skip( 1 ).ForEachContinueOnException( m => new ToastNotificationStatusService( m.ServiceProvider ).Mute( kind ) );
+    }
+
+    public bool IsMuted( ToastNotificationKind kind ) => this._primary.IsMuted( kind );
 
     public IDisposable PauseAll( TimeSpan timeSpan )
     {

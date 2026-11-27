@@ -147,6 +147,11 @@ public sealed class ToastNotificationStatusService : IToastNotificationStatusSer
             } );
     }
 
+    public bool IsMuted( ToastNotificationKind kind )
+        => kind.CanBeMuted
+           && this._configurationManager.Get<ToastNotificationsConfiguration>().Notifications.TryGetValue( kind.Name, out var kindConfiguration )
+           && kindConfiguration.Disabled;
+
     public IDisposable PauseAll( TimeSpan timeSpan )
     {
         var id = Guid.NewGuid().ToString();
