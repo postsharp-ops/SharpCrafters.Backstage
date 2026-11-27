@@ -40,10 +40,18 @@ public sealed class BackstageTool
 
     /// <summary>
     /// Gets the assembly name of the tool for a product, which is <see cref="ProductProfile.ToolAssemblyNamePrefix"/>
-    /// followed by <see cref="Suffix"/>, for instance <c>SharpCrafters.Backstage.Worker</c>. It names the executable file,
-    /// the embedded resource that holds it, and the directory to which it is extracted.
+    /// followed by <see cref="Suffix"/>, for instance <c>Metalama.Backstage.Worker</c>. The desktop notifier takes
+    /// <see cref="ProductProfile.DesktopToolAssemblyNamePrefix"/> instead when the profile sets it. The assembly name
+    /// names the executable file, the embedded resource that holds it, and the directory to which it is extracted.
     /// </summary>
-    public string GetAssemblyName( ProductProfile productProfile ) => $"{productProfile.ToolAssemblyNamePrefix}.{this.Suffix}";
+    public string GetAssemblyName( ProductProfile productProfile )
+    {
+        var prefix = ReferenceEquals( this, DesktopWindows )
+            ? productProfile.DesktopToolAssemblyNamePrefix ?? productProfile.ToolAssemblyNamePrefix
+            : productProfile.ToolAssemblyNamePrefix;
+
+        return $"{prefix}.{this.Suffix}";
+    }
 
     internal bool UseShellExecute { get; }
 

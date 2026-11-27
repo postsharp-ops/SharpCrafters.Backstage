@@ -20,6 +20,7 @@ using SharpCrafters.Backstage.Licensing.Registration;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Testing;
+using SharpCrafters.Backstage.Tools;
 using SharpCrafters.Backstage.UserInterface;
 using SharpCrafters.Backstage.UserInterface.Rss;
 using SharpCrafters.Backstage.UserInterface.Toasts;
@@ -641,6 +642,47 @@ public sealed class CompositeProductTests : IDisposable
         Assert.Same( MetalamaProduct.LicenseProductCatalog, VsxProduct.Instance.LicenseProductCatalog );
         Assert.NotEqual( MetalamaProduct.TelemetryOptions.AnalyticsUri, VsxProduct.Instance.TelemetryOptions.AnalyticsUri );
         Assert.Equal( MetalamaProduct.TelemetryOptions.UploadUri, VsxProduct.Instance.TelemetryOptions.UploadUri );
+    }
+
+    /// <summary>
+    /// Tests that the extension displays its notifications with a notifier of its own and the PostSharp logo, while it keeps
+    /// the worker of Metalama. Windows titles a toast notification with the title of the executable that displays it, so the
+    /// notifier of Metalama would present the notifications of the extension as notifications of Metalama. See
+    /// metalama/Metalama.Vsx.Public#51.
+    /// </summary>
+    [Fact]
+    public void TheExtensionHasANotifierOfItsOwnAndKeepsTheWorkerOfMetalama()
+    {
+        Assert.Equal( "SharpCrafters.Backstage.Vsx.Windows", BackstageTool.DesktopWindows.GetAssemblyName( VsxProduct.Profile ) );
+        Assert.Equal( BackstageTool.Worker.GetAssemblyName( MetalamaProduct.Profile ), BackstageTool.Worker.GetAssemblyName( VsxProduct.Profile ) );
+        Assert.Equal( "postsharp", VsxProduct.Profile.LogoName );
+    }
+
+    /// <summary>
+    /// Tests that the archive of each tool of the extension is embedded exactly once, both in the assemblies that its
+    /// extractor reads and in all the tools assemblies together. The extension merges the tools assemblies of every
+    /// product into one assembly, and the extractor fails when it finds the archive of a tool more than once.
+    /// </summary>
+    [Fact]
+    public void TheArchiveOfEachToolOfTheExtensionIsEmbeddedOnce()
+    {
+        var extractorAssemblies = new[]
+        {
+            typeof(SharpCrafters.Backstage.Vsx.Tools.BackstageToolsExtensions).Assembly, typeof(Metalama.Backstage.Tools.BackstageToolsExtensions).Assembly
+        };
+
+        var mergedAssemblies = extractorAssemblies.Append( typeof(PostSharp.Backstage.Tools.BackstageToolsExtensions).Assembly );
+
+        foreach ( var assemblies in new[] { extractorAssemblies, mergedAssemblies } )
+        {
+            var resourceNames = assemblies.SelectMany( a => a.GetManifestResourceNames() ).ToList();
+
+            foreach ( var tool in new[] { BackstageTool.Worker, BackstageTool.DesktopWindows } )
+            {
+                var suffix = $".{tool.GetAssemblyName( VsxProduct.Profile )}.zip";
+                Assert.Single( resourceNames, name => name.EndsWith( suffix, StringComparison.Ordinal ) );
+            }
+        }
     }
 
     /// <summary>

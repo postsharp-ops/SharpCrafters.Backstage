@@ -68,10 +68,22 @@ public sealed record ProductProfile(
 
     /// <summary>
     /// Gets the prefix of the assembly names of the tool applications of the product: the worker is
-    /// <c>{prefix}.Worker</c> and the desktop notifier <c>{prefix}.Desktop.Windows</c>. The default is
+    /// <c>{prefix}.Worker</c> and the desktop notifier <c>{prefix}.Windows</c>, unless
+    /// <see cref="DesktopToolAssemblyNamePrefix"/> gives another prefix to the desktop notifier. The default is
     /// <see cref="Name"/> followed by <c>.Backstage</c>, for instance <c>Metalama.Backstage</c>.
     /// </summary>
     public string ToolAssemblyNamePrefix { get; init; } = Name + ".Backstage";
+
+    /// <summary>
+    /// Gets the prefix of the assembly name of the desktop notifier, which is then <c>{prefix}.Windows</c>, or
+    /// <c>null</c> to use <see cref="ToolAssemblyNamePrefix"/>. The default is <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    /// Windows displays the title of the executable of the notifier in the header of every toast notification. A
+    /// product that shares the worker of another product, but whose notifications must carry its own name, gives its
+    /// notifier a prefix of its own.
+    /// </remarks>
+    public string? DesktopToolAssemblyNamePrefix { get; init; }
 
     /// <summary>
     /// Gets the name of the command line tool of the product, for instance <c>metalama</c>, or <c>null</c> when the

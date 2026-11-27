@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
+        <RollForward>Major</RollForward>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <AssemblyTitle>Visual Studio Tools for PostSharp and Metalama</AssemblyTitle>
+        <ApplicationIcon>Resources/postsharp.ico</ApplicationIcon>
+        <ProductName>Visual Studio Tools for PostSharp and Metalama</ProductName>
+        <OutputZipFile>bin\$(MSBuildProjectName).zip</OutputZipFile>
+        <EnableWindowsTargeting>True</EnableWindowsTargeting>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <!-- This project is the executable of the desktop notifier of the Visual Studio Tools for PostSharp and Metalama.
+         The notifier itself is the SharpCrafters.Backstage.Windows library; this project binds it to the product of the
+         extension, gives it the PostSharp icon, and packages it as the zip archive that SharpCrafters.Backstage.Vsx.Tools
+         embeds. Windows displays the AssemblyTitle of this executable in the header of every toast notification, so the
+         notifications of the extension are titled with the name of the extension, not Metalama. See
+         metalama/Metalama.Vsx.Public#51. -->
+
+    <!-- It seems the WinRT source generator runs when it shouldn't and causes bogus warnings, see https://github.com/dotnet/sdk/issues/44026, so we disable it. -->
+    <!-- This can be removed once that bug is fixed. -->
+    <Target Name="DisableWinRTSourceGenerator" BeforeTargets="CoreCompile">
+        <ItemGroup>
+            <Analyzer Remove="@(Analyzer)"
+                      Condition="'%(FileName)%(Extension)' == 'WinRT.SourceGenerator.dll'"/>
+        </ItemGroup>
+    </Target>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpCrafters.Backstage.Vsx\SharpCrafters.Backstage.Vsx.csproj"/>
+        <ProjectReference Include="..\SharpCrafters.Backstage.Windows\SharpCrafters.Backstage.Windows.csproj"/>
+
+        <!-- We need the Worker project to be built first because we invoke it as an executable. The extension keeps the
+             worker of Metalama, so this is the Metalama worker. -->
+        <ProjectReference Include="..\Metalama.Backstage.Worker\Metalama.Backstage.Worker.csproj"
+                          ReferenceOutputAssembly="false"
+                          SkipGetTargetFrameworkProperties="true"
+                          PrivateAssets="all"/>
+    </ItemGroup>
+
+    <Target Name="ResolveZipInputFiles" AfterTargets="Build" Condition="'$(IsCrossTargetingBuild)'!='true'">
+        <ItemGroup>
+            <ZipInputFiles Include="$(OutDir)\**\*"/>
+        </ItemGroup>
+    </Target>
+
+    <Import Project="../../eng/DeterministicZip.tasks"/>
+
+    <Target Name="Zip" Inputs="@(ZipInputFiles)" Outputs="$(OutputZipFile)" AfterTargets="Build" DependsOnTargets="ResolveZipInputFiles" Condition="'$(IsCrossTargetingBuild)'!='true'">
+
+        <CreateDeterministicZip SourceDirectory="$(OutDir)" DestinationFile="$(OutputZipFile)" PackageBuildDate="$(BuildDate)"/>
+        <Message Text="$(MSBuildProjectName) -&gt; $(MSBuildProjectDirectory)\$(OutputZipFile)" Importance="High"/>
+    </Target>
+
+</Project>
