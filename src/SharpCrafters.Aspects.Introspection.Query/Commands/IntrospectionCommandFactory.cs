@@ -36,7 +36,8 @@ public static class IntrospectionCommandFactory
 
                 branch.AddCommand<SchemaCommand>( "schema" )
                     .WithData( options )
-                    .WithDescription( "Describes the collections and their fields, which --where, --select and --order-by use." );
+                    .WithDescription( "Describes the collections and their fields, which --where, --select and --order-by use." )
+                    .WithExample( "introspect", "schema" );
 
                 branch.AddCommand<BatchCommand>( "batch" )
                     .WithData( options )
