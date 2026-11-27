@@ -43,7 +43,7 @@ internal static class SetupWebServerAuthentication
 
         foreach ( var c in productProfile.Name.ToLowerInvariant() )
         {
-            name.Append( c is >= 'a' and <= 'z' or >= '0' and <= '9' ? c : '-' );
+            name.Append( c is (>= 'a' and <= 'z') or (>= '0' and <= '9') ? c : '-' );
         }
 
         return name.Append( "-setup-token" ).ToString();
