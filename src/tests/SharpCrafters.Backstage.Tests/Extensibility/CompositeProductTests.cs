@@ -704,6 +704,26 @@ public sealed class CompositeProductTests : IDisposable
     }
 
     /// <summary>
+    /// Tests that muting a kind of notification in the extension mutes it for every product. The setup wizard of the
+    /// extension mutes <see cref="ToastNotificationKinds.RequiresLicense"/> when the user tells that the license key is in
+    /// the source code, and the build of every product must then stop asking for a license.
+    /// </summary>
+    [Fact]
+    public void MutingANotificationKindMutesItForEveryProduct()
+    {
+        var serviceProvider = this.CreateServiceProvider( addUserInterface: true );
+        var products = GetProducts( serviceProvider );
+        var statusService = serviceProvider.GetRequiredBackstageService<IToastNotificationStatusService>();
+
+        Assert.False( statusService.IsMuted( ToastNotificationKinds.RequiresLicense ) );
+
+        statusService.Mute( ToastNotificationKinds.RequiresLicense );
+
+        Assert.True( statusService.IsMuted( ToastNotificationKinds.RequiresLicense ) );
+        Assert.All( products.Members, m => Assert.True( new ToastNotificationStatusService( m.ServiceProvider ).IsMuted( ToastNotificationKinds.RequiresLicense ) ) );
+    }
+
+    /// <summary>
     /// Tests that the installation status of the extension is kept once for all products, and also written to the
     /// configuration store of every product, where earlier versions of the products read it. Without the legacy
     /// writes, a build that uses an earlier version of PostSharp would recommend installing the extension that is
