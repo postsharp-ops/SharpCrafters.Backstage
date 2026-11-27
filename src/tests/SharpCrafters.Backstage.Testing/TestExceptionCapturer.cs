@@ -25,13 +25,36 @@ public sealed record RecordedExceptionReport( Exception Exception, ExceptionRepo
 /// A test exception capturer that records each captured report instead of queuing it for upload.
 /// </summary>
 /// <remarks>
+/// <para>
 /// A telemetry context calls the capturer only when its policy allows telemetry for the scenario. A test therefore
 /// asserts that <see cref="CapturedReports"/> is empty to prove that a disabled policy sends no exception report.
+/// </para>
+/// <para>
+/// An exception has two outputs: the local crash report, which is written regardless of the policy, and the report for
+/// upload, which the policy controls. When the policy allows telemetry, the real capturer writes the local crash report
+/// itself. When the capturer is created with a <see cref="LocalExceptionReporter"/>, it writes the local crash report in the
+/// same way, so that a test sees the local crash report whatever the policy is.
+/// </para>
 /// </remarks>
 [PublicAPI]
 public class TestExceptionCapturer : IExceptionCapturer
 {
     private readonly ConcurrentQueue<RecordedExceptionReport> _capturedReports = new();
+    private readonly LocalExceptionReporter? _localExceptionReporter;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TestExceptionCapturer"/> class that writes no local crash report.
+    /// </summary>
+    public TestExceptionCapturer() { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TestExceptionCapturer"/> class that writes the local crash report through
+    /// the given reporter, as the real capturer does.
+    /// </summary>
+    internal TestExceptionCapturer( LocalExceptionReporter localExceptionReporter )
+    {
+        this._localExceptionReporter = localExceptionReporter;
+    }
 
     /// <summary>
     /// Gets the reports that were captured, in the order of capture.
@@ -44,5 +67,12 @@ public class TestExceptionCapturer : IExceptionCapturer
         TelemetryConsent telemetryConsent,
         bool writeLocalReport,
         IExceptionAdapter? adapter )
-        => this._capturedReports.Enqueue( new RecordedExceptionReport( classifiedException.Exception, exceptionReportingKind, telemetryConsent, writeLocalReport ) );
+    {
+        if ( classifiedException.IsError && exceptionReportingKind == ExceptionReportingKind.Exception && writeLocalReport )
+        {
+            this._localExceptionReporter?.ReportException( classifiedException.Exception );
+        }
+
+        this._capturedReports.Enqueue( new RecordedExceptionReport( classifiedException.Exception, exceptionReportingKind, telemetryConsent, writeLocalReport ) );
+    }
 }

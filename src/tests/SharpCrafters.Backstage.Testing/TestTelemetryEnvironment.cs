@@ -10,12 +10,14 @@ using SharpCrafters.Backstage.Configuration;
 using SharpCrafters.Backstage.Diagnostics;
 using SharpCrafters.Backstage.Extensibility;
 using SharpCrafters.Backstage.Infrastructure;
+using SharpCrafters.Backstage.Maintenance;
 using SharpCrafters.Backstage.ProcessClassification;
 using SharpCrafters.Backstage.Repositories;
 using SharpCrafters.Backstage.Serialization;
 using SharpCrafters.Backstage.Telemetry;
 using SharpCrafters.Backstage.Threading;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace SharpCrafters.Backstage.Testing;
@@ -28,8 +30,14 @@ namespace SharpCrafters.Backstage.Testing;
 /// <para>
 /// A test of a product that hosts Backstage uses this class to verify the telemetry that its own code produces. It registers
 /// <see cref="TelemetryService"/> in the services of the product, creates a repository with <see cref="CreateRepository"/>, and
-/// asserts on <see cref="ExceptionCapturer"/> and <see cref="UsageSessionFactory"/>. The policy is the policy of the real
-/// service, so the consent of the user and the <c>metalama.json</c> file of the repository are evaluated as in production.
+/// asserts on <see cref="ExceptionCapturer"/>, <see cref="UsageSessionFactory"/> and <see cref="GetLocalCrashReports"/>. The
+/// policy is the policy of the real service, so the consent of the user and the <c>metalama.json</c> file of the repository are
+/// evaluated as in production.
+/// </para>
+/// <para>
+/// An exception has two outputs. The local crash report is written by the real <c>LocalExceptionReporter</c> regardless of the
+/// policy, and <see cref="GetLocalCrashReports"/> lists it. The report for upload is created only when the policy allows
+/// telemetry, and <see cref="ExceptionCapturer"/> records it instead.
 /// </para>
 /// <para>
 /// The capturer and the session factory are the internal seams that a telemetry context calls once its policy allows the
@@ -59,17 +67,22 @@ public sealed class TestTelemetryEnvironment
             .AddSingleton( product.Profile )
             .AddSingleton( product.TelemetryOptions )
             .AddSingleton( new RandomNumberGenerator( 0 ) )
+            .AddSingleton( new BackstageBackgroundTasksService() )
             .AddSingleton<INamedLockService>( new TestNamedLockService() )
             .AddSingleton<IEventDispatcher>( serviceProvider => new EventDispatcher( serviceProvider ) )
             .AddSingleton<IFileSystem>( serviceProvider => new TestFileSystem( serviceProvider ) )
             .AddSingleton<IJsonSerializationService>( _ => new JsonSerializationService( [BackstageJsonContext.Default] ) )
             .AddSingleton<IConfigurationManager>( serviceProvider => new InMemoryConfigurationManager( serviceProvider ) )
             .AddSingleton<IStandardDirectories>( serviceProvider => new StandardDirectories( serviceProvider ) )
+            .AddSingleton<ITempFileManager>( serviceProvider => new TempFileManager( serviceProvider ) )
+            .AddSingleton( serviceProvider => new ExceptionSensitiveDataHelper( serviceProvider ) )
+            .AddSingleton( serviceProvider => new LocalExceptionReporter( serviceProvider ) )
             .AddSingleton<ITelemetryConfigurationService>( serviceProvider => new TelemetryConfigurationService( serviceProvider ) )
             .AddSingleton<IRepositoryConfigurationService>( serviceProvider => new RepositoryConfigurationService( serviceProvider ) )
             .AddSingleton<IUsageSessionStore>( serviceProvider => new FileUsageSessionStore( serviceProvider ) )
             .AddSingleton<IUsageSessionFactory>( this.UsageSessionFactory )
-            .AddSingleton<IExceptionCapturer>( this.ExceptionCapturer )
+            .AddSingleton<IExceptionCapturer>(
+                serviceProvider => new TestExceptionCapturer( serviceProvider.GetRequiredBackstageService<LocalExceptionReporter>() ) )
             .AddSingleton<ITelemetryService>( serviceProvider => new TelemetryService( serviceProvider ) );
 
         this.ServiceProvider = services.BuildServiceProvider();
@@ -78,6 +91,7 @@ public sealed class TestTelemetryEnvironment
         ((TelemetryConfigurationService) this.ServiceProvider.GetRequiredBackstageService<ITelemetryConfigurationService>()).Initialize();
 
         this.FileSystem = (TestFileSystem) this.ServiceProvider.GetRequiredBackstageService<IFileSystem>();
+        this.ExceptionCapturer = (TestExceptionCapturer) this.ServiceProvider.GetRequiredBackstageService<IExceptionCapturer>();
         this.TelemetryService = this.ServiceProvider.GetRequiredBackstageService<ITelemetryService>();
     }
 
@@ -114,12 +128,26 @@ public sealed class TestTelemetryEnvironment
     /// <summary>
     /// Gets the capturer that records the exception reports that a telemetry context allowed.
     /// </summary>
-    public TestExceptionCapturer ExceptionCapturer { get; } = new();
+    public TestExceptionCapturer ExceptionCapturer { get; }
 
     /// <summary>
     /// Gets the factory that records the usage sessions that a telemetry context allowed.
     /// </summary>
     public RecordingUsageSessionFactory UsageSessionFactory { get; } = new();
+
+    /// <summary>
+    /// Gets the paths of the local crash reports that were written on the in-memory file system.
+    /// </summary>
+    /// <remarks>
+    /// Only the files named as the local exception reporter names them are listed, because the crash report directory also
+    /// contains the files of the temporary file manager.
+    /// </remarks>
+    public IReadOnlyList<string> GetLocalCrashReports()
+    {
+        var directory = this.ServiceProvider.GetRequiredBackstageService<IStandardDirectories>().CrashReportsDirectory;
+
+        return this.FileSystem.DirectoryExists( directory ) ? this.FileSystem.GetFiles( directory, "exception-*.txt" ) : [];
+    }
 
     /// <summary>
     /// Creates a git repository on the in-memory file system, optionally with a repository configuration file that enables or
